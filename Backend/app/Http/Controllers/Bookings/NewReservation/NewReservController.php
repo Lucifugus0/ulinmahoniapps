@@ -14,7 +14,7 @@ class NewReservController extends Controller
 {
     public function index()
     {
-        $perPage = request('per_page', 8);
+        $perPage = request('per_page', 25);
 
         // Use the filterBookings method to get the base query
         $query = $this->filterBookings();
@@ -82,12 +82,12 @@ class NewReservController extends Controller
     {
         $query = $this->filterBookings();
 
-        $checkIns = $query->paginate($request->input('per_page', 8));
+        $checkIns = $query->paginate($request->input('per_page', 25));
 
         return response()->json([
             'table' => view('pages.bookings.newreservations.partials.newreserve_table', [
                 'checkIns' => $checkIns,
-                'per_page' => $request->input('per_page', 8),
+                'per_page' => $request->input('per_page', 25),
             ])->render(),
             'pagination' => $checkIns->appends($request->input())->links()->toHtml(),
         ]);
@@ -135,8 +135,10 @@ class NewReservController extends Controller
                 $filePath = $file->storeAs('documents', $fileName, 'public');
             }
 
+            /* Save check-in timestamp and the admin who performed the check-in */
             $updated = $booking->update([
                 'check_in_at' => now(),
+                'checked_in_by' => Auth::id(),
                 'doc_type' => $validated['doc_type'],
                 'doc_path' => $filePath,
                 'updated_by' => Auth::id(),

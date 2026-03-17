@@ -23,9 +23,11 @@ class Booking extends Model
         'user_phone_number',
         'property_id',
         'check_in_at',
+        'checked_in_by',
         'doc_type',
         'doc_path',
         'check_out_at',
+        'checked_out_by',
         'created_by',
         'updated_by',
         'status',
@@ -112,6 +114,22 @@ class Booking extends Model
     public function nextBookings()
     {
         return $this->hasMany(Booking::class, 'previous_booking_id', 'idrec');
+    }
+
+    /**
+     * Get the admin who performed the check-in.
+     */
+    public function checkedInByUser()
+    {
+        return $this->belongsTo(User::class, 'checked_in_by', 'id');
+    }
+
+    /**
+     * Get the admin who performed the check-out.
+     */
+    public function checkedOutByUser()
+    {
+        return $this->belongsTo(User::class, 'checked_out_by', 'id');
     }
 
     /**

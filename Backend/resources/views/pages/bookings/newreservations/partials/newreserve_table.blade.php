@@ -63,7 +63,8 @@
                     @endif
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                    <div class="text-sm font-medium text-indigo-600">{{ $booking->order_id }}</div>
+                    <!-- Booking ID uses same text color as user name -->
+                    <div class="text-sm font-medium text-gray-900">{{ $booking->order_id }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div class="flex items-center">
@@ -75,8 +76,9 @@
                             </svg>
                         </div>
                         <div class="ml-4">
+                            <!-- Display first_name + last_name from user model instead of transaction user_name -->
                             <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {{ $booking->transaction->user_name ?? 'N/A' }}</div>
+                                {{ ($booking->user->first_name ?? '') . ' ' . ($booking->user->last_name ?? '') ?: ($booking->transaction->user_name ?? 'N/A') }}</div>
                             <div class="text-sm text-gray-500">{{ $booking->transaction->user_email ?? '-' }}</div>
                             <div class="text-sm text-gray-500">{{ $booking->transaction->user_phone_number ?? '-' }}</div>
                         </div>
@@ -173,9 +175,9 @@
                                         <div class="bg-white rounded-lg shadow-xl overflow-auto w-full overflow-auto max-h-full flex flex-col text-left max-w-7xl"
                                             @click.outside="closeModal" @keydown.escape.window="closeModal">
 
-                                            <!-- Header Modal -->
+                                            <!-- Header Modal - dark mode uses darker bg for readability -->
                                             <div
-                                                class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
+                                                class="checkin-modal-header px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
                                                 <div class="flex justify-between items-center">
                                                     <div class="font-bold text-xl text-gray-800">{{ __('ui.process_checkin') }}</div>
                                                     <button type="button"

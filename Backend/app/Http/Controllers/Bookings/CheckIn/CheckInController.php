@@ -17,7 +17,7 @@ class CheckInController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 8);
+        $perPage = $request->input('per_page', 25);
 
         $query = Booking::with(['transaction', 'property', 'room', 'user'])
             ->where('status', 1) // Only show active bookings (filter out room-changed old records)
@@ -111,12 +111,13 @@ class CheckInController extends Controller
 
         $checkOuts = $query
             ->orderBy('check_in_at', 'desc')
-            ->paginate($request->input('per_page', 8));
+            ->paginate($request->input('per_page', 25));
 
         return response()->json([
             'table' => view('pages.bookings.checkin.partials.checkin_table', [
                 'checkOuts' => $checkOuts,
-                'per_page' => $request->input('per_page', 8),
+                'per_page' => $request->input('per_page', 25),
+                'showActions' => false,
             ])->render(),
             'pagination' => $checkOuts->appends($request->input())->links()->toHtml()
         ]);
@@ -154,7 +155,9 @@ class CheckInController extends Controller
                 ], 400);
             }
 
+            /* Save check-out timestamp and the admin who performed the check-out */
             $booking->check_out_at = now();
+            $booking->checked_out_by = Auth::id();
             $booking->status = 0; // Mark booking as inactive after checkout
             $booking->save();
 

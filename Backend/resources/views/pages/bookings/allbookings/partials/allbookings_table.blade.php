@@ -129,7 +129,8 @@
                     @endif
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    <div class="text-sm font-medium text-indigo-600">{{ $booking->order_id }}</div>
+                    <!-- Booking ID uses same text color as user name -->
+                    <div class="text-sm font-medium text-gray-900">{{ $booking->order_id }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div class="flex items-center">
@@ -141,8 +142,9 @@
                             </svg>
                         </div>
                         <div class="ml-4">
+                            <!-- Display first_name + last_name from user model instead of transaction user_name -->
                             <div class="text-sm font-medium text-gray-900">
-                                {{ $booking->transaction->user_name ?? 'N/A' }}</div>
+                                {{ ($booking->user->first_name ?? '') . ' ' . ($booking->user->last_name ?? '') ?: ($booking->transaction->user_name ?? 'N/A') }}</div>
                             <div class="text-sm text-gray-500">{{ $booking->transaction->user_email ?? '-' }}</div>
                             <div class="text-sm text-gray-500">{{ $booking->transaction->user_phone_number ?? '-' }}</div>
                         </div>
@@ -183,24 +185,27 @@
                     @endphp
 
                     <div class="flex flex-col items-center">
-                        <span
-                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClasses[$booking->status] ?? 'bg-gray-100 text-gray-800' }}">
-                            {{ $statusLabels[$booking->status] ?? $booking->status }}
-                        </span>
-
                         @if ($booking->status === 'Checked-In' && $booking->check_in_at)
-                            <!-- Check-in timestamp label translated via ui lang file -->
+                            <!-- Check-in: only show single badge with date/time -->
                             <div
-                                class="inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses['Checked-In'] }}">
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses['Checked-In'] }}">
                                 {{ __('ui.allbookings_checkin_at') }} {{ $booking->check_in_at->format('Y-m-d H:i') }}
                             </div>
                         @elseif ($booking->status === 'Checked-Out' && $booking->check_out_at)
-                            <!-- Check-out timestamp label translated via ui lang file -->
+                            <!-- Check-out: only show single badge with date/time -->
                             <div
-                                class="inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses['Checked-Out'] }}">
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses['Checked-Out'] }}">
                                 {{ __('ui.allbookings_checkout_at') }} {{ $booking->check_out_at->format('Y-m-d H:i') }}
                             </div>
-                        @elseif ($booking->status === 'Canceled')
+                        @else
+                            <!-- All other statuses: show the standard badge -->
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClasses[$booking->status] ?? 'bg-gray-100 text-gray-800' }}">
+                                {{ $statusLabels[$booking->status] ?? $booking->status }}
+                            </span>
+                        @endif
+
+                        @if ($booking->status === 'Canceled')
                             <div class="mt-2 w-full px-2 text-center">
                                 @if ($booking->reason)
                                     <!-- Cancellation reason label translated via ui lang file -->

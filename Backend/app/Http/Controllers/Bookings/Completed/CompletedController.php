@@ -61,7 +61,7 @@ class CompletedController extends Controller
         }
 
         $bookings = $query->orderByDesc('created_at')
-            ->paginate($request->input('per_page', 8));
+            ->paginate($request->input('per_page', 25));
 
         return view('pages.bookings.completed.index', compact('bookings'));
     }
@@ -117,12 +117,12 @@ class CompletedController extends Controller
         }
 
         $bookings = $query->orderByDesc('created_at')
-            ->paginate($request->input('per_page', 8));
+            ->paginate($request->input('per_page', 25));
 
         return response()->json([
             'table' => view('pages.bookings.allbookings.partials.allbookings_table', [
                 'bookings' => $bookings,
-                'per_page' => $request->input('per_page', 8),
+                'per_page' => $request->input('per_page', 25),
             ])->render(),
             'pagination' => $bookings->appends($request->input())->links()->toHtml()
         ]);

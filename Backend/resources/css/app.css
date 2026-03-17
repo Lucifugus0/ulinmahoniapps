@@ -151,7 +151,7 @@ html.dark .text-gray-900, html.dark .text-gray-800 { color: var(--color-gray-100
 html.dark .text-gray-700 { color: var(--color-gray-200) !important; }
 html.dark .text-gray-600 { color: var(--color-gray-300) !important; }
 html.dark .text-gray-500 { color: var(--color-gray-400) !important; }
-html.dark select, html.dark input[type="text"], html.dark input[type="search"], html.dark input[type="email"], html.dark input[type="password"], html.dark input[type="number"], html.dark input[type="date"], html.dark textarea {
+html.dark select, html.dark input[type="text"], html.dark input[type="search"], html.dark input[type="email"], html.dark input[type="password"], html.dark input[type="number"], html.dark input[type="date"], html.dark input[type="tel"], html.dark textarea {
   background-color: var(--color-gray-800) !important;
   border-color: var(--color-gray-600) !important;
   color: var(--color-gray-200) !important;
@@ -171,6 +171,16 @@ html.dark .from-gray-50 { --tw-gradient-from: var(--color-gray-900) !important; 
 html.dark .to-gray-100 { --tw-gradient-to: var(--color-gray-800) !important; }
 html.dark .from-gray-100 { --tw-gradient-from: var(--color-gray-800) !important; }
 html.dark .bg-gradient-to-r.from-gray-50 { background: var(--color-gray-900) !important; }
+/* Search/filter bar container - lighter bg to differentiate from page background in dark mode */
+html.dark div.search-filter-container.bg-white { background-color: #283548 !important; border-color: #475569 !important; }
+html.dark form.search-filter-form.bg-gradient-to-r { background: linear-gradient(to right, #283548, #304060) !important; border-color: #475569 !important; }
+/* Check-in/Check-out modal headers - darker bg in dark mode for readability */
+html.dark .checkout-modal-header,
+html.dark .checkin-modal-header { background: linear-gradient(to right, #374151, #4b5563) !important; border-color: #4b5563 !important; }
+html.dark .checkout-modal-header .text-gray-600,
+html.dark .checkin-modal-header .text-gray-600 { color: #d1d5db !important; }
+html.dark .checkout-modal-header .text-gray-800,
+html.dark .checkin-modal-header .text-gray-800 { color: #f3f4f6 !important; }
 
 /* Mobile Sidebar Optimizations */
 @layer components {

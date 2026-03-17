@@ -126,6 +126,13 @@ class AllBookingController extends Controller
             }
         }
 
+        /* Exclude expired bookings by default unless show_expired checkbox is checked */
+        if (!$request->filled('show_expired') && !($request->filled('status') && $request->status === 'expired')) {
+            $query->whereHas('transaction', function ($q) {
+                $q->where('transaction_status', '!=', 'expired');
+            });
+        }
+
         $bookings = $query->paginate($request->input('per_page', 25));
 
         return view('pages.bookings.allbookings.index', compact('bookings', 'startDate', 'endDate'));
@@ -245,6 +252,13 @@ class AllBookingController extends Controller
                     });
                     break;
             }
+        }
+
+        /* Exclude expired bookings by default unless show_expired checkbox is checked */
+        if (!$request->filled('show_expired') && !($request->filled('status') && $request->status === 'expired')) {
+            $query->whereHas('transaction', function ($q) {
+                $q->where('transaction_status', '!=', 'expired');
+            });
         }
 
         $bookings = $query->paginate($request->input('per_page', 25));

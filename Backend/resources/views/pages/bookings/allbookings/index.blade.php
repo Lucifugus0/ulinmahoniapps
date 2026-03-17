@@ -7,14 +7,17 @@
                     class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                     {{ __('ui.all_bookings') }}
                 </h1>
+                <!-- Description text explaining what all bookings page shows -->
+                <p class="text-sm text-gray-500 mt-1">{{ __('ui.all_bookings_desc') }}</p>
             </div>
         </div>
         
         <!-- Search and Filter Section -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
+        <!-- Search and filter container - lighter bg in dark mode to differentiate from page background -->
+        <div class="search-filter-container bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
             <form method="GET" action="{{ route('bookings.filter') }}"
                 onsubmit="event.preventDefault(); fetchFilteredBookings();"
-                class="flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 rounded-lg overflow-visible">
+                class="search-filter-form flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 rounded-lg overflow-visible">
 
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                     <!-- Search Booking -->
@@ -47,7 +50,7 @@
                         </option>
                     </select>
 
-                    <div class="md:col-span-2 flex gap-2">
+                    <div class="md:col-span-2 flex gap-2 items-end">
                         <div class="flex-1">
                             <!-- z-20 keeps datepicker below sticky header (z-30) but above table content -->
                             <div class="relative z-20">
@@ -59,6 +62,12 @@
                                 <input type="hidden" id="end_date" name="end_date" value="{{ request('end_date') }}">
                             </div>
                         </div>
+                        <!-- Checkbox to show/hide expired bookings -->
+                        <label class="flex items-center gap-2 cursor-pointer whitespace-nowrap pb-1">
+                            <input type="checkbox" id="show_expired" name="show_expired"
+                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm text-gray-600">{{ __('ui.show_expired_bookings') }}</span>
+                        </label>
                     </div>
 
                     <!-- Show Per Page (aligned to the right) -->
@@ -158,10 +167,14 @@
                 fetchFilteredBookings();
             };
 
+            // Show expired checkbox
+            const showExpiredCheckbox = document.getElementById('show_expired');
+
             // Event listeners
             searchInput.addEventListener('input', debounce(fetchFilteredBookings, 300));
             statusSelect.addEventListener('change', fetchFilteredBookings);
             perPageSelect.addEventListener('change', fetchFilteredBookings);
+            showExpiredCheckbox.addEventListener('change', fetchFilteredBookings);
 
             // Function to fetch filtered bookings
             function fetchFilteredBookings(url = null) {
@@ -196,6 +209,11 @@
                     /* Server-side sorting: pass current sort state */
                     params.append('sort_by', window._bookingSortBy || 'checkin');
                     params.append('sort_dir', window._bookingSortDir || 'asc');
+
+                    /* Pass show_expired checkbox state */
+                    if (document.getElementById('show_expired').checked) {
+                        params.append('show_expired', '1');
+                    }
                 }
 
                 // Show loading state
