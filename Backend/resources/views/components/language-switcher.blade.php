@@ -18,7 +18,7 @@
     </button>
 
     <div
-        class="origin-top-right z-10 absolute top-full right-0 min-w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 py-1.5 rounded-lg shadow-lg overflow-hidden mt-1"
+        class="origin-top-left z-10 absolute top-full left-0 min-w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 py-1.5 rounded-lg shadow-lg overflow-hidden mt-1"
         @click.outside="open = false"
         @keydown.escape.window="open = false"
         x-show="open"
@@ -40,7 +40,7 @@
                         @click="open = false"
                     >
                         <span class="fi fi-id fis rounded-sm mr-2" style="font-size: 1rem; line-height: 1;"></span>
-                        Bahasa Indonesia
+                        Indonesia
                     </button>
                 </form>
             </li>
