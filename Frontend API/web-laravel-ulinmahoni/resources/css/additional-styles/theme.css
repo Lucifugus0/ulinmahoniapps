@@ -1,0 +1,21 @@
+.form-input:focus,
+.form-textarea:focus,
+.form-multiselect:focus,
+.form-select:focus,
+.form-checkbox:focus,
+.form-radio:focus {
+    @apply ring-0;
+}
+
+/* Dark mode overrides for Vite-compiled pages */
+html.dark .form-input,
+html.dark .form-textarea,
+html.dark .form-multiselect,
+html.dark .form-select {
+    @apply bg-gray-700 border-gray-600 text-gray-200;
+}
+
+html.dark .form-checkbox,
+html.dark .form-radio {
+    @apply bg-gray-700 border-gray-600;
+}

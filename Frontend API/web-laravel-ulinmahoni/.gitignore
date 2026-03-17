@@ -1,0 +1,36 @@
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+iss.sql
+.env
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/.idea
+/.vscode
+/.zip
+*.zip
+
+*.DS_Store
+cursor_mac_id_modifier.sh
+
+
+Dockerfile
+docker-compose.yml
+
+# RUBY GENERATE FILE FOR APPLE LOGIN
+client_secret.rb
+AuthKey_L8MLZ4X864p8.txt
+
+# DOKU
+.DOKU_PRIVATE_KEY
+.DOKU_PUBLIC_KEY
+
+/tests
+/docs

@@ -1,0 +1,34 @@
+{
+  "project_info": {
+    "project_number": "57676238964",
+    "project_id": "ulin-mahoni",
+    "storage_bucket": "ulin-mahoni.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:57676238964:android:e98d4fe6f2f05e4ee54121",
+        "android_client_info": {
+          "package_name": "com.ulinmahoni.apps"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "398455187942-p789o6qv18v71ap08abkvjnam7qct2t5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvQkLWIV-K3MOTqQm4z0iJBiSGdyZjCos"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,43 @@
+# Credentials & secrets
+.env
+.env.*
+!.env.example
+CLAUDE.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+vendor/
+node_modules/
+
+# Laravel generated
+storage/app/public/room_images/
+storage/app/public/property_images/
+storage/app/public/facility_images/
+storage/app/public/profile_images/
+storage/logs/
+bootstrap/cache/*.php
+
+# Vite / build assets
+public/build/
+public/hot
+public/storage
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.iml
+
+# Claude Code
+.claude/

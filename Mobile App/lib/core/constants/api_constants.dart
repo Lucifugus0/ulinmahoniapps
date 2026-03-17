@@ -1,0 +1,71 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+class ApiConfig {
+  static String get baseUrl =>dotenv.env['BASE_URL'] ?? 'https://default-url.com';
+  static String get apiKey => dotenv.env['API_KEY'] ?? '';
+  static String get loginUrl => '$baseUrl/auth/login';
+  static String get registerUrl => '$baseUrl/auth/register';
+  static String get forgotPasswordUrl => '$baseUrl/forgot-password';
+  static String get updatePasswordUrl =>'$baseUrl/profile/{userId}/update-password';
+  static String get detailpropertyUrl => '$baseUrl/property/{propertyId}';
+  static String get roomdetailUrl => '$baseUrl/rooms/propertyId/{propertyId}';
+  static String get roomById => '$baseUrl/rooms/{roomId}';
+  static String get bookingUrl => '$baseUrl/booking';
+  static String get propertybytagUrl => '$baseUrl/property?tags={tags}';
+  static String get propertyUrl => '$baseUrl/property';
+  static String get propertybycitiesUrl => '$baseUrl/property?cities={cities}';
+  static String get mybookingUrl => '$baseUrl/booking/userId/{userId}';
+  static String get uploadimageUrl => '$baseUrl/booking/{idrec}/upload';
+  static String get updateprofileUrl => '$baseUrl/profile/{userId}';
+  static String get propertybyprovinceUrl =>'$baseUrl/property?province={province}';
+  static String get propertybyidUrl => '$baseUrl/property/{propertyId}';
+  static String get roombyidUrl => '$baseUrl/rooms/{roomId}';
+  static String get checkavailabilityUrl =>'$baseUrl/booking/check-availability';
+  // Multi-Tier Pricing: price preview endpoint for per-date breakdown
+  static String roomPricePreview(String roomId) => '$baseUrl/rooms/$roomId/price-preview';
+  static String get updateattachmentUrl =>'$baseUrl/booking/{idrec}/update-attachment';
+  static String get mybookingidUrl => '$baseUrl/booking/{idrec}';
+  static String get deactiveaccountUrl => '$baseUrl/users/{userId}/deactivate';
+  static String get userById => "$baseUrl/users/{userId}";
+  static String get allUsers => "$baseUrl/users/";
+  static String get checkIn => "$baseUrl/booking/{orderid}/check-in";
+  static String get uploadPicture => "$baseUrl/profile/{idrec}/profile-picture";
+  static String get validateVoucher => "$baseUrl/voucher/validate";
+  static String get applyVoucher => "$baseUrl/voucher/apply";
+  static String get dokuGenerateVA => "$baseUrl/doku/test-generate-va";
+  static String get dokuGenerateQRIS => "$baseUrl/doku/test-generate-qris";
+  static String get dokuGenerateCC => "$baseUrl/doku/test-generate-cc";
+  static String get updatePaymentMethod => "$baseUrl/booking/{idrec}/payment-method";
+
+  // Chat endpoints
+  static String get chatConversations => "$baseUrl/chat/conversations";
+  static String chatConversationById(int conversationId) => "$baseUrl/chat/conversations/$conversationId";
+  static String chatConversationMessages(int conversationId) => "$baseUrl/chat/conversations/$conversationId/messages";
+  static String chatConversationRead(int conversationId) => "$baseUrl/chat/conversations/$conversationId/read";
+  static String chatMessageById(int messageId) => "$baseUrl/chat/messages/$messageId";
+
+  // Promo Banner endpoints - Public access
+  static String get promoBanners => "$baseUrl/promo-banner";
+  static String promoBannerById(int bannerId) => "$baseUrl/promo-banner?id=$bannerId";
+
+  // Promo Banner endpoints - Admin only (for future admin panel)
+  static String get promoBannerImages => "$baseUrl/promo-banner";
+  static String promoBannerbyId(int bannerId) => "$baseUrl/promo-banner?id=$bannerId";
+
+  // FCM (Firebase Cloud Messaging) endpoints
+  static String get fcmToken => "$baseUrl/users/fcm-token";
+  static String get fcmTokenDelete => "$baseUrl/users/fcm-token";
+
+  static const dokuUrl = "https://api-sandbox.doku.com";
+  static const dokuPayment ="$dokuUrl/checkout/v1/payment"; // Ini boleh const krn dokuUrl juga const
+  static const dokuPaymentPath = "/checkout/v1/payment";
+  static const dokuClientId = "BRN-0205-1761118951136";
+  static const dokuRequestId = "93626957-8ebe-4e0e-9778-3a1a623ea18b";
+  static const dokuSecretKey = "SK-ZeP6ayrLAQopEpTotpiO";
+
+  static Map<String, String> get defaultHeaders => {
+    'x-api-key': apiKey,
+    'Accept': 'application/json',
+    'Cache-Control': 'no-cache',
+  };
+}

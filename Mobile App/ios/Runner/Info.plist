@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Ulin Mahoni</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Ulin Mahoni</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Akses Kamera digunakan untuk mengambil gambar bukti pembayaran dan ID card</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Akses Photo Library digunakan untuk memilih gambar bukti pembayaran dan ID card</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Akses Photo Library digunakan untuk menyimpan QR code pembayaran Anda</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Akses Face ID dibutuhkan untuk membuka kunci aplikasi ini.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Aplikasi memerlukan izin notifikasi untuk memberitahu Anda saat ada pesan baru dari customer service.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+		<!-- TEMPORARY DISABLED: processing mode causing SIGABRT crash
+		     TODO: Re-enable after fixing BGTask implementation
+		     See: feature_guide/BGTASK_TEMPORARY_DISABLE.md -->
+		<!-- <string>processing</string> -->
+	</array>
+	<!-- TEMPORARY DISABLED: BGTask causing SIGABRT crash due to Bundle ID mismatch
+	     TODO: Re-enable after fixing Bundle ID from com.ulinmahoni.apps.* to com.ulinmahoni.app.*
+	     See: feature_guide/BGTASK_TEMPORARY_DISABLE.md
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.ulinmahoni.app.chatSync</string>
+		<string>com.ulinmahoni.app.notificationProcessing</string>
+		<string>com.ulinmahoni.app.dataRefresh</string>
+	</array>
+	-->
+	<key>GIDClientID</key>
+	<string>398455187942-cis4kcbq55o31qp36mv1l61c70qk4vut.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.398455187942-cis4kcbq55o31qp36mv1l61c70qk4vut</string>
+			</array>
+		</dict>
+	</array>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIStatusBarHidden</key>
+	<false/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+</dict>
+</plist>

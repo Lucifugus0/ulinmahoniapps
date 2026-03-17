@@ -1,0 +1,215 @@
+@import 'tailwindcss';
+@import './additional-styles/flatpickr.css';
+@import './additional-styles/utility-patterns.css' layer(components);
+
+@plugin "@tailwindcss/forms" {
+  strategy: base;
+}
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant sidebar-expanded (&:is(.sidebar-expanded *));
+
+@theme {
+  --shadow-sm: 0 1px 1px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.02);
+
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #bfc4cd;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-gray-950: #030712;
+
+  --color-violet-50: #f1eeff;
+  --color-violet-100: #e6e1ff;
+  --color-violet-200: #d2cbff;
+  --color-violet-300: #b7acff;
+  --color-violet-400: #9c8cff;
+  --color-violet-500: #8470ff;
+  --color-violet-600: #755ff8;
+  --color-violet-700: #5d47de;
+  --color-violet-800: #4634b1;
+  --color-violet-900: #2f227c;
+  --color-violet-950: #1c1357;
+
+  --color-sky-50: #e3f3ff;
+  --color-sky-100: #d1ecff;
+  --color-sky-200: #b6e1ff;
+  --color-sky-300: #a0d7ff;
+  --color-sky-400: #7bc8ff;
+  --color-sky-500: #67bfff;
+  --color-sky-600: #56b1f3;
+  --color-sky-700: #3193da;
+  --color-sky-800: #1c71ae;
+  --color-sky-900: #124d79;
+  --color-sky-950: #0b324f;
+
+  --color-green-50: #d2ffe2;
+  --color-green-100: #b1fdcd;
+  --color-green-200: #8bf0b0;
+  --color-green-300: #67e294;
+  --color-green-400: #4bd37d;
+  --color-green-500: #3ec972;
+  --color-green-600: #34bd68;
+  --color-green-700: #239f52;
+  --color-green-800: #15773a;
+  --color-green-900: #0f5429;
+  --color-green-950: #0a3f1e;
+
+  --color-red-50: #ffe8e8;
+  --color-red-100: #ffd1d1;
+  --color-red-200: #ffb2b2;
+  --color-red-300: #ff9494;
+  --color-red-400: #ff7474;
+  --color-red-500: #ff5656;
+  --color-red-600: #fa4949;
+  --color-red-700: #e63939;
+  --color-red-800: #c52727;
+  --color-red-900: #941818;
+  --color-red-950: #600f0f;
+
+  --color-yellow-50: #fff2c9;
+  --color-yellow-100: #ffe7a0;
+  --color-yellow-200: #ffe081;
+  --color-yellow-300: #ffd968;
+  --color-yellow-400: #f7cd4c;
+  --color-yellow-500: #f0bb33;
+  --color-yellow-600: #dfad2b;
+  --color-yellow-700: #bc9021;
+  --color-yellow-800: #816316;
+  --color-yellow-900: #4f3d0e;
+  --color-yellow-950: #342809;
+
+  --font-inter: "Inter", "sans-serif";
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5715;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5;
+  --text-base--letter-spacing: -0.01em;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.5;
+  --text-lg--letter-spacing: -0.01em;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.5;
+  --text-xl--letter-spacing: -0.01em;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.33;
+  --text-2xl--letter-spacing: -0.01em;
+  --text-3xl: 1.88rem;
+  --text-3xl--line-height: 1.33;
+  --text-3xl--letter-spacing: -0.01em;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 1.25;
+  --text-4xl--letter-spacing: -0.02em;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.25;
+  --text-5xl--letter-spacing: -0.02em;
+  --text-6xl: 3.75rem;
+  --text-6xl--line-height: 1.2;
+  --text-6xl--letter-spacing: -0.02em;
+
+  --breakpoint-xs: 480px;
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+/* Global Dark Mode Overrides - outside @layer for highest specificity */
+html.dark .bg-white { background-color: var(--color-gray-900) !important; }
+html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: none !important; }
+html.dark .rounded-xl.border { border-color: var(--color-gray-700) !important; }
+html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color: var(--color-gray-800) !important; }
+html.dark .border-gray-100, html.dark .border-gray-200 { border-color: var(--color-gray-700) !important; }
+html.dark .border-gray-300 { border-color: var(--color-gray-600) !important; }
+html.dark .divide-gray-200 > :not(:last-child) { border-color: var(--color-gray-700) !important; }
+html.dark .text-gray-900, html.dark .text-gray-800 { color: var(--color-gray-100) !important; }
+html.dark .text-gray-700 { color: var(--color-gray-200) !important; }
+html.dark .text-gray-600 { color: var(--color-gray-300) !important; }
+html.dark .text-gray-500 { color: var(--color-gray-400) !important; }
+html.dark select, html.dark input[type="text"], html.dark input[type="search"], html.dark input[type="email"], html.dark input[type="password"], html.dark input[type="number"], html.dark input[type="date"], html.dark textarea {
+  background-color: var(--color-gray-800) !important;
+  border-color: var(--color-gray-600) !important;
+  color: var(--color-gray-200) !important;
+}
+html.dark ::placeholder { color: var(--color-gray-500) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(49, 46, 129, 0.4) !important; }
+html.dark .bg-purple-50 { background-color: rgba(88, 28, 135, 0.4) !important; }
+html.dark .bg-red-50 { background-color: rgba(127, 29, 29, 0.3) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.3) !important; }
+html.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.3) !important; }
+html.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.3) !important; }
+html.dark .bg-indigo-100 { background-color: rgba(49, 46, 129, 0.3) !important; }
+html.dark .from-gray-50 { --tw-gradient-from: var(--color-gray-900) !important; }
+html.dark .to-gray-100 { --tw-gradient-to: var(--color-gray-800) !important; }
+html.dark .from-gray-100 { --tw-gradient-from: var(--color-gray-800) !important; }
+html.dark .bg-gradient-to-r.from-gray-50 { background: var(--color-gray-900) !important; }
+
+/* Mobile Sidebar Optimizations */
+@layer components {
+  /* Better touch targets for mobile */
+  @media (max-width: 1023px) {
+    #sidebar a,
+    #sidebar button {
+      min-height: 44px; /* iOS recommended touch target size */
+      touch-action: manipulation; /* Prevents double-tap zoom */
+    }
+
+    /* Prevent text selection on tap */
+    #sidebar {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Smooth scrolling on mobile */
+    #sidebar {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+
+    /* Fix for iOS momentum scrolling */
+    #sidebar::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* Tablet optimization */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    #sidebar {
+      width: 280px !important;
+    }
+
+    #sidebar.sidebar-expanded {
+      width: 280px !important;
+    }
+  }
+
+  /* Prevent backdrop from interfering with touch events on desktop */
+  @media (min-width: 1024px) {
+    .sidebar-backdrop {
+      display: none !important;
+    }
+  }
+}

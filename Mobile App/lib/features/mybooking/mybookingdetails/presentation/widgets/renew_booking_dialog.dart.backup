@@ -1,0 +1,405 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../../../core/constants/appcolor_constants.dart';
+import '../../../../../core/constants/appfontweight_constants.dart';
+import '../../../mybooking/model/mybooking_model.dart';
+
+class RenewBookingDialog extends ConsumerStatefulWidget {
+  final MyBookingModel bookingData;
+
+  const RenewBookingDialog({
+    Key? key,
+    required this.bookingData,
+  }) : super(key: key);
+
+  @override
+  ConsumerState<RenewBookingDialog> createState() => _RenewBookingDialogState();
+}
+
+class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
+  DateTime? _checkInDate; // Locked to previous checkout
+  DateTime? _checkOutDate;
+  String? _dateError;
+
+  @override
+  void initState() {
+    super.initState();
+    // Lock check-in to previous checkout date
+    if (widget.bookingData.checkOut != null) {
+      try {
+        _checkInDate = DateTime.parse(widget.bookingData.checkOut!);
+      } catch (e) {
+        _checkInDate = DateTime.now();
+      }
+    }
+  }
+
+  Future<void> _selectCheckOutDate() async {
+    if (_checkInDate == null) {
+      setState(() {
+        _dateError = 'Tanggal check-in tidak valid';
+      });
+      return;
+    }
+
+    final DateTime minCheckout = _checkInDate!.add(const Duration(days: 1));
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _checkOutDate ?? minCheckout,
+      firstDate: minCheckout,
+      lastDate: DateTime.now().add(const Duration(days: 395)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primaryColor,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _checkOutDate = picked;
+        _validateDates();
+      });
+    }
+  }
+
+  void _validateDates() {
+    if (_checkInDate == null || _checkOutDate == null) {
+      setState(() {
+        _dateError = null;
+      });
+      return;
+    }
+
+    if (_checkOutDate!.isBefore(_checkInDate!) || _checkOutDate!.isAtSameMomentAs(_checkInDate!)) {
+      setState(() {
+        _dateError = 'Tanggal check-out harus setelah check-in';
+      });
+    } else {
+      setState(() {
+        _dateError = null;
+      });
+    }
+  }
+
+  bool _canContinue() {
+    return _checkInDate != null && _checkOutDate != null && _dateError == null;
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Pilih tanggal';
+    return DateFormat('dd MMM yyyy', 'id_ID').format(date);
+  }
+
+  void _handleContinue() {
+    if (!_canContinue()) return;
+
+    final String checkInStr = DateFormat('yyyy-MM-dd').format(_checkInDate!);
+    final String checkOutStr = DateFormat('yyyy-MM-dd').format(_checkOutDate!);
+
+    // Return dates to parent
+    Navigator.of(context).pop({
+      'check_in': checkInStr,
+      'check_out': checkOutStr,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      elevation: 8,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header with close button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Perpanjang Booking',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: AppFontWeight.bold,
+                        color: AppColors.fontcolor,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      color: Colors.grey[600],
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Property and Room Info
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primaryColor.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.home_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.bookingData.propertyName ?? 'Property',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: AppFontWeight.bold,
+                                color: AppColors.fontcolor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.bookingData.roomName ?? 'Room',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Check-in Date (Locked/Read-only)
+                Text(
+                  'Tanggal Check-in',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: AppFontWeight.semiBold,
+                    color: AppColors.fontcolor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey[400]!,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lock_outline,
+                        color: Colors.grey[600],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _formatDate(_checkInDate),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '(Checkout sebelumnya)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Check-out Date (Selectable)
+                Text(
+                  'Tanggal Check-out Baru',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: AppFontWeight.semiBold,
+                    color: AppColors.fontcolor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _selectCheckOutDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _checkOutDate != null
+                            ? AppColors.primaryColor.withValues(alpha: 0.5)
+                            : Colors.grey[300]!,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          color: AppColors.primaryColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _formatDate(_checkOutDate),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: _checkOutDate != null
+                                  ? AppColors.fontcolor
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.grey[600],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Date Error Message
+                if (_dateError != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red[700],
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _dateError!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.red[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // Info Message
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.blue[700],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Voucher dan metode pembayaran dapat dipilih di halaman berikutnya',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue[900],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Continue Button
+                ElevatedButton(
+                  onPressed: _canContinue() ? _handleContinue : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    disabledBackgroundColor: Colors.grey[300],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: Text(
+                    'Lanjutkan ke Pembayaran',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: AppFontWeight.semiBold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

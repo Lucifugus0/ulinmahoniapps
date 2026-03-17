@@ -1,0 +1,9 @@
+# CLAUDE ACCOUNT TRACKER
+# Update this file manually setiap kali switch akun Claude
+# Ini hanya untuk tracking pribadi, tidak mempengaruhi functionality
+
+CURRENT_ACCOUNT=Account 1
+# Ganti dengan: Account 1, Account 2, atau nama akun lainnya
+
+# History:
+# 2026-02-10: Using Account 1 - Working on deposit & parking fees + staging build setup
