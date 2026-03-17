@@ -1,32 +1,108 @@
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+<!-- Room availability table with client-side sorting and dark mode via html.dark CSS overrides -->
+<!-- Sorting: Alpine.js sorts rows by data-* attributes. Default: Property asc, Room asc -->
+<!-- Action column: only visible to admin_tsno@gmail.com -->
+@php
+    $isAdmin = Auth::check() && Auth::user()->email === 'admin_tsno@gmail.com';
+    $colCount = $isAdmin ? 5 : 4;
+@endphp
+<div class="room-avail-table bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+    x-data="{
+        sortColumn: 'property',
+        sortDirection: 'asc',
+        /* Sort table rows by column. Toggles direction if same column clicked again */
+        sortTable(column) {
+            if (this.sortColumn === column) {
+                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortColumn = column;
+                this.sortDirection = 'asc';
+            }
+            this.performSort();
+        },
+        /* Re-order DOM rows based on sortColumn and sortDirection */
+        performSort() {
+            const tbody = this.$el.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr[data-sortable]'));
+            const dir = this.sortDirection === 'asc' ? 1 : -1;
+            const col = this.sortColumn;
+            rows.sort((a, b) => {
+                let aVal = (a.dataset[col] || '').toLowerCase();
+                let bVal = (b.dataset[col] || '').toLowerCase();
+                /* For status, sort numerically (0=available first when asc) */
+                if (col === 'status') {
+                    return (parseInt(aVal) - parseInt(bVal)) * dir;
+                }
+                let cmp = aVal.localeCompare(bVal) * dir;
+                /* Secondary sort: property->room or room->property */
+                if (cmp === 0) {
+                    let secKey = col === 'property' ? 'room' : 'property';
+                    let aS = (a.dataset[secKey] || '').toLowerCase();
+                    let bS = (b.dataset[secKey] || '').toLowerCase();
+                    cmp = aS.localeCompare(bS);
+                }
+                return cmp;
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        },
+        /* Apply default sort on init */
+        init() { this.performSort(); }
+    }">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-slate-100">
                 <tr>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        {{ __('ui.room') }}
+                    <!-- Sortable Room column header -->
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                        @click="sortTable('room')">
+                        <div class="flex items-center gap-1">
+                            {{ __('ui.room') }}
+                            <!-- Sort direction indicator -->
+                            <template x-if="sortColumn === 'room' && sortDirection === 'asc'"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 7.414l-3.293 3.293a1 1 0 01-1.414-1.414z"/></svg></template>
+                            <template x-if="sortColumn === 'room' && sortDirection === 'desc'"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 10.293l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 12.586l3.293-3.293a1 1 0 111.414 1.414z"/></svg></template>
+                            <template x-if="sortColumn !== 'room'"><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg></template>
+                        </div>
                     </th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        {{ __('ui.property') }}
+                    <!-- Sortable Property column header -->
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                        @click="sortTable('property')">
+                        <div class="flex items-center gap-1">
+                            {{ __('ui.property') }}
+                            <template x-if="sortColumn === 'property' && sortDirection === 'asc'"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 7.414l-3.293 3.293a1 1 0 01-1.414-1.414z"/></svg></template>
+                            <template x-if="sortColumn === 'property' && sortDirection === 'desc'"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 10.293l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 12.586l3.293-3.293a1 1 0 111.414 1.414z"/></svg></template>
+                            <template x-if="sortColumn !== 'property'"><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg></template>
+                        </div>
                     </th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        {{ __('ui.type_capacity') }}
+                    <!-- Sortable Status column header -->
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                        @click="sortTable('status')">
+                        <div class="flex items-center gap-1">
+                            {{ __('ui.status') }}
+                            <template x-if="sortColumn === 'status' && sortDirection === 'asc'"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 7.414l-3.293 3.293a1 1 0 01-1.414-1.414z"/></svg></template>
+                            <template x-if="sortColumn === 'status' && sortDirection === 'desc'"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 10.293l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 12.586l3.293-3.293a1 1 0 111.414 1.414z"/></svg></template>
+                            <template x-if="sortColumn !== 'status'"><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg></template>
+                        </div>
                     </th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        {{ __('ui.status') }}
-                    </th>
+                    <!-- Related Bookings (not sortable) -->
                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         {{ __('ui.related_bookings') }}
                     </th>
-                    <th scope="col" class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        {{ __('ui.action') }}
-                    </th>
+                    <!-- Action column: only visible to admin_tsno@gmail.com -->
+                    @if($isAdmin)
+                        <th scope="col" class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            {{ __('ui.action') }}
+                        </th>
+                    @endif
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-100">
                 @forelse($rooms as $index => $room)
-                    <tr class="hover:bg-blue-50/30 transition-all duration-200 {{ $index % 2 == 0 ? 'bg-white' : 'bg-gray-50/50' }}">
-                        <!-- Kamar -->
+                    <!-- Each row has data-* attributes for client-side sorting -->
+                    <tr class="hover:bg-blue-50/30 transition-all duration-200 {{ $index % 2 == 0 ? 'bg-white' : 'bg-gray-50/50' }}"
+                        data-sortable
+                        data-property="{{ strtolower($room->property->name ?? '') }}"
+                        data-room="{{ strtolower($room->no ?? '') }}"
+                        data-status="{{ $room->rental_status }}">
+                        <!-- Room column: Room Number (plain text), Room Type (badge) | Capacity (badge) -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-4">
                                 <div class="flex-shrink-0 h-12 w-12 relative group">
@@ -44,12 +120,18 @@
                                     @endif
                                 </div>
                                 <div>
-                                    <div class="text-sm font-semibold text-gray-900">{{ $room->name }}</div>
-                                    <div class="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                                        </svg>
-                                        No. {{ $room->no }}
+                                    <!-- Room number as plain text -->
+                                    <div class="text-sm font-semibold text-gray-900">No. {{ $room->no }}</div>
+                                    <!-- Room Type badge | Capacity badge -->
+                                    <div class="flex items-center gap-1.5 mt-1">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-medium capitalize">{{ $room->name }}</span>
+                                        <span class="text-gray-300">|</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium">
+                                            <svg class="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                            {{ $room->capacity }} {{ __('ui.person') }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -64,19 +146,6 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                                 {{ $room->property->province ?? '-' }}
-                            </div>
-                        </td>
-
-                        <!-- Tipe & Kapasitas -->
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="inline-flex items-center px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-medium capitalize">
-                                {{ $room->name }}
-                            </div>
-                            <div class="flex items-center gap-1 text-xs text-gray-500 mt-1.5">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                                {{ $room->capacity }} {{ __('ui.person') }}
                             </div>
                         </td>
 
@@ -95,7 +164,7 @@
                             @endif
                         </td>
 
-                        <!-- Booking Terkait -->
+                        <!-- Related Bookings -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             @php
                                 $startDate = request('start_date');
@@ -232,8 +301,10 @@
                                                     <div class="grid gap-4 md:grid-cols-2">
                                                         <template x-for="booking in selectedProperty.bookings" :key="booking.id">
                                                             <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 overflow-hidden">
-                                                                <!-- Card Header -->
+                                                                <!-- Card Header: invoice number on top, then user info with status badges -->
                                                                 <div class="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/50">
+                                                                    <!-- Invoice number displayed as text above user name -->
+                                                                    <p class="font-semibold text-gray-900 mb-2" x-text="booking.booking_code"></p>
                                                                     <div class="flex justify-between items-start">
                                                                         <div class="flex-1 min-w-0">
                                                                             <div class="flex items-center gap-2">
@@ -248,13 +319,12 @@
                                                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="booking.status_badge" x-text="booking.status"></span>
                                                                             <span x-show="booking.is_renewal" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-700 ring-1 ring-yellow-200">
                                                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                                                                Perpanjangan
+                                                                                {{ __('ui.renewal') }}
                                                                             </span>
                                                                             <span x-show="booking.is_room_changed" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700 ring-1 ring-purple-200">
                                                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                                                                                Pindah Kamar
+                                                                                {{ __('ui.room_change') }}
                                                                             </span>
-                                                                            <span class="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded" x-text="booking.booking_code"></span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -343,32 +413,35 @@
                             @endif
                         </td>
 
-                        <!-- Aksi -->
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex justify-center items-center">
-                                @if ($room->rental_status == 1)
-                                    <button onclick="updateRoomStatus({{ $room->idrec }}, 0)"
-                                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                        {{ __('ui.set_available') }}
-                                    </button>
-                                @else
-                                    <button onclick="updateRoomStatus({{ $room->idrec }}, 1)"
-                                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                        {{ __('ui.set_booked') }}
-                                    </button>
-                                @endif
-                            </div>
-                        </td>
+                        <!-- Action column: only visible to admin_tsno@gmail.com -->
+                        @if($isAdmin)
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex justify-center items-center">
+                                    @if ($room->rental_status == 1)
+                                        <button onclick="updateRoomStatus({{ $room->idrec }}, 0)"
+                                            class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            {{ __('ui.set_available') }}
+                                        </button>
+                                    @else
+                                        <button onclick="updateRoomStatus({{ $room->idrec }}, 1)"
+                                            class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                            {{ __('ui.set_booked') }}
+                                        </button>
+                                    @endif
+                                </div>
+                            </td>
+                        @endif
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-16 text-center">
+                        <!-- Dynamic colspan based on whether Action column is shown -->
+                        <td colspan="{{ $colCount }}" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center justify-center">
                                 <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                     <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -385,3 +458,43 @@
         </table>
     </div>
 </div>
+
+<!-- Dark mode overrides for room availability table and modal -->
+<style>
+    /* Table dark mode */
+    html.dark .room-avail-table { background-color: #1e293b !important; border-color: #334155 !important; }
+    html.dark .room-avail-table table { border-color: #334155 !important; }
+    html.dark .room-avail-table thead { background: #334155 !important; }
+    html.dark .room-avail-table thead th { color: #cbd5e1 !important; }
+    html.dark .room-avail-table thead th:hover { background-color: #475569 !important; }
+    html.dark .room-avail-table tbody { background-color: #1e293b !important; }
+    html.dark .room-avail-table tbody tr { background-color: #1e293b !important; border-color: #334155 !important; }
+    html.dark .room-avail-table tbody tr:nth-child(even) { background-color: #1e293b !important; }
+    html.dark .room-avail-table tbody tr:hover { background-color: #334155 !important; }
+    html.dark .room-avail-table .text-gray-900 { color: #f1f5f9 !important; }
+    html.dark .room-avail-table .text-gray-500 { color: #94a3b8 !important; }
+    html.dark .room-avail-table .bg-indigo-50 { background-color: #312e81 !important; }
+    html.dark .room-avail-table .text-indigo-700 { color: #a5b4fc !important; }
+    html.dark .room-avail-table .bg-blue-50 { background-color: #1e3a5f !important; }
+    html.dark .room-avail-table .text-blue-700 { color: #93c5fd !important; }
+    html.dark .room-avail-table .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+
+    /* Modal dark mode: dialog container, header, content, footer, and booking cards */
+    html.dark #property-detail-modal .bg-white { background-color: #1e293b !important; }
+    html.dark #property-detail-modal .bg-gradient-to-r { background: #1e293b !important; }
+    html.dark #property-detail-modal .border-gray-200,
+    html.dark #property-detail-modal .border-gray-100 { border-color: #334155 !important; }
+    html.dark #property-detail-modal .text-gray-900 { color: #f1f5f9 !important; }
+    html.dark #property-detail-modal .text-gray-700 { color: #cbd5e1 !important; }
+    html.dark #property-detail-modal .text-gray-500 { color: #94a3b8 !important; }
+    html.dark #property-detail-modal .text-gray-400 { color: #64748b !important; }
+    html.dark #property-detail-modal .text-gray-600 { color: #94a3b8 !important; }
+    html.dark #property-detail-modal .bg-gray-50,
+    html.dark #property-detail-modal .bg-gray-50\/50 { background-color: #0f172a !important; }
+    html.dark #property-detail-modal .bg-gray-100 { background-color: #334155 !important; }
+    html.dark #property-detail-modal .bg-blue-50 { background-color: #1e3a5f !important; }
+    html.dark #property-detail-modal .bg-emerald-50 { background-color: #064e3b !important; }
+    html.dark #property-detail-modal .bg-white.rounded-lg.shadow-sm { background-color: #334155 !important; }
+    /* Invoice number badge: make visible in dark mode */
+    html.dark #property-detail-modal .text-\[10px\].font-mono.text-gray-400 { color: #94a3b8 !important; background-color: #334155 !important; }
+</style>

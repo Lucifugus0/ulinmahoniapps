@@ -531,4 +531,5 @@
             attachPaginationListeners();
         });
     </script>
+    @include('pages.bookings.partials.dark-badge-styles')
 </x-app-layout>

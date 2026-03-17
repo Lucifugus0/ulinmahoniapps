@@ -67,50 +67,57 @@
                 onsubmit="event.preventDefault(); fetchFilteredBookings();"
                 class="flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 rounded-lg overflow-visible">
 
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <!-- Compact single-row filter layout -->
+                <div class="flex flex-wrap items-center gap-3">
                     <!-- Search Room -->
-                    <div class="md:col-span-1 relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-2.5"
+                    <div class="relative flex-1 min-w-[160px]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 absolute left-3 top-2.5"
                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <input type="text" id="search" name="search" placeholder="{{ __('ui.search_room_placeholder') }}"
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value="{{ request('search') }}">
                     </div>
 
+                    <!-- Property filter dropdown -->
+                    <select id="property_id" name="property_id" class="px-3 py-2 text-sm border border-gray-300 rounded-md min-w-[140px]"
+                        onchange="fetchFilteredBookings()">
+                        <option value="">{{ __('ui.all_properties') }}</option>
+                        @foreach($properties as $property)
+                            <option value="{{ $property->idrec }}" {{ request('property_id') == $property->idrec ? 'selected' : '' }}>
+                                {{ $property->name }}
+                            </option>
+                        @endforeach
+                    </select>
+
                     <!-- Status -->
-                    <select id="status" name="status" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                    <select id="status" name="status" class="px-3 py-2 text-sm border border-gray-300 rounded-md min-w-[120px]">
                         <option value="all">{{ __('ui.all_status') }}</option>
                         <option value="available" {{ request('status') == 'available' ? 'selected' : '' }}>{{ __('ui.available') }}</option>
                         <option value="booked" {{ request('status') == 'booked' ? 'selected' : '' }}>{{ __('ui.occupied') }}</option>
                     </select>
 
-                    <div class="md:col-span-2 flex gap-2">
-                        <div class="flex-1">
-                            <div class="relative z-50">
-                                <input type="text" id="date_picker" placeholder="{{ __('ui.select_date_range') }}"
-                                    data-input
-                                    class="w-full min-w-[320px] px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                                <input type="hidden" id="start_date" name="start_date" value="{{ request('start_date') }}">
-                                <input type="hidden" id="end_date" name="end_date" value="{{ request('end_date') }}">
-                            </div>
-                        </div>
+                    <!-- Date range -->
+                    <div class="relative z-50">
+                        <input type="text" id="date_picker" placeholder="{{ __('ui.select_date_range') }}"
+                            data-input
+                            class="w-[220px] px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <input type="hidden" id="start_date" name="start_date" value="{{ request('start_date') }}">
+                        <input type="hidden" id="end_date" name="end_date" value="{{ request('end_date') }}">
                     </div>
 
-                    <!-- Show Per Page (aligned to the right) -->
-                    <div class="md:col-span-1 flex justify-end items-end">
-                        <div class="flex items-center gap-2">
-                            <label for="per_page" class="text-sm text-gray-600">{{ __('ui.show') }}:</label>
-                            <select name="per_page" id="per_page"
-                                class="border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                onchange="fetchFilteredBookings()">
-                                <option value="8" {{ request('per_page') == 8 ? 'selected' : '' }}>8</option>
-                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
-                            </select>
-                        </div>
+                    <!-- Show Per Page -->
+                    <div class="flex items-center gap-1 ml-auto">
+                        <label for="per_page" class="text-sm text-gray-600">{{ __('ui.show') }}:</label>
+                        <select name="per_page" id="per_page"
+                            class="border-gray-200 rounded-md text-sm py-2 px-2"
+                            onchange="fetchFilteredBookings()">
+                            <option value="8" {{ request('per_page') == 8 ? 'selected' : '' }}>8</option>
+                            <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                            <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                        </select>
                     </div>
                 </div>
             </form>
@@ -398,6 +405,7 @@
             showLoading();
 
             const search = document.getElementById('search').value;
+            const propertyId = document.getElementById('property_id').value; /* Property filter */
             const status = document.getElementById('status').value;
             const startDate = document.getElementById('start_date').value;
             const endDate = document.getElementById('end_date').value;
@@ -408,6 +416,7 @@
 
             const params = new URLSearchParams({
                 search: search,
+                property_id: propertyId,
                 status: status,
                 start_date: startDate,
                 end_date: endDate,

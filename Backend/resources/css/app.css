@@ -140,7 +140,10 @@
 html.dark .bg-white { background-color: var(--color-gray-900) !important; }
 html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: none !important; }
 html.dark .rounded-xl.border { border-color: var(--color-gray-700) !important; }
-html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color: var(--color-gray-800) !important; }
+html.dark .bg-gray-50 { background-color: var(--color-gray-800) !important; }
+/* Body bg-gray-100 matches sidebar/header dark:bg-gray-900 */
+html.dark body.bg-gray-100 { background-color: var(--color-gray-900) !important; }
+html.dark .bg-gray-100:not(body) { background-color: var(--color-gray-800) !important; }
 html.dark .border-gray-100, html.dark .border-gray-200 { border-color: var(--color-gray-700) !important; }
 html.dark .border-gray-300 { border-color: var(--color-gray-600) !important; }
 html.dark .divide-gray-200 > :not(:last-child) { border-color: var(--color-gray-700) !important; }
@@ -161,6 +164,9 @@ html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.3) !important; }
 html.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.3) !important; }
 html.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.3) !important; }
 html.dark .bg-indigo-100 { background-color: rgba(49, 46, 129, 0.3) !important; }
+/* Global table dark mode: lighter background for contrast against page bg */
+html.dark table tbody.bg-white { background-color: #1e293b !important; } /* slate-800 */
+html.dark table thead.bg-gray-50 { background-color: #334155 !important; } /* slate-700 */
 html.dark .from-gray-50 { --tw-gradient-from: var(--color-gray-900) !important; }
 html.dark .to-gray-100 { --tw-gradient-to: var(--color-gray-800) !important; }
 html.dark .from-gray-100 { --tw-gradient-from: var(--color-gray-800) !important; }

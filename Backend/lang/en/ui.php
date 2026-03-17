@@ -173,7 +173,7 @@ return [
     'checked_out_desc' => 'History of guests who have checked out',
     'completed' => 'Completed',
     'completed_desc' => 'List of completed or cancelled bookings',
-    'order_id_or_guest' => 'Order ID or Guest Name',
+    'order_id_or_guest' => 'Booking ID or Guest Name',
     'all_status' => 'All Status',
     'booking_status' => 'Booking Status',
     'upcoming' => 'Upcoming',
@@ -187,7 +187,7 @@ return [
     'paid' => 'Paid',
     'waiting_verification' => 'Waiting Verification',
     'booking_details' => 'Booking Details',
-    'order_id' => 'Order ID',
+    'order_id' => 'Booking ID',
     'transaction_date' => 'Transaction Date',
     'duration' => 'Duration',
     'total_price' => 'Total Price',
@@ -679,7 +679,7 @@ return [
     'rejected' => 'Rejected',
     'canceled' => 'Canceled',
     'items_per_page' => 'Items per page',
-    'order_id' => 'Order ID',
+    'order_id' => 'Booking ID',
     'select_booking_order' => 'Select a booking order',
     'no_checked_in_bookings' => 'No checked-in bookings available',
     'error_loading_orders' => 'Error loading orders',
@@ -732,7 +732,7 @@ return [
     'select_cancel_reason' => 'Select cancellation reason',
     'custom_reason' => 'Other reason',
     'enter_custom_reason' => 'Please explain the cancellation reason.',
-    'order_id_or_guest_payment' => 'Order ID or Guest Name',
+    'order_id_or_guest_payment' => 'Booking ID or Guest Name',
 
     // User Management
     'account_management' => 'Account Management',
@@ -868,7 +868,7 @@ return [
     'no_related_bookings' => 'No related bookings',
     'type_capacity' => 'Type & Capacity',
     'related_bookings' => 'Related Bookings',
-    'active_users_list' => 'Active Users List',
+    'active_users_list' => 'Active Bookings',
     'no_active_bookings' => 'No active bookings',
     'no_active_bookings_desc' => 'No active bookings for this room in the selected period.',
     'loading_booking_data' => 'Loading booking data...',
@@ -1333,7 +1333,7 @@ return [
     'checkout_not_checked_out' => 'Not Checked-Out',
     'checkout_already_done' => 'Already Checked-Out',
     'checkout_waiting' => 'Waiting for Check-Out',
-    'checkout_col_order_id' => 'Order ID',
+    'checkout_col_order_id' => 'Booking ID',
     'checkout_col_name' => 'Name',
     'checkout_col_property_room' => 'Property/Room',
     'checkout_no_bookings' => 'No bookings',
@@ -1341,7 +1341,7 @@ return [
     'checkout_verify_room' => 'Please verify room conditions and complete the check-out process',
     'checkout_late_warning' => 'Late check-out! Guest has passed the scheduled check-out time.',
     'checkout_booking_details' => 'Booking Details',
-    'checkout_order_id_label' => 'Order ID:',
+    'checkout_order_id_label' => 'Booking ID:',
     'checkout_checkin_date_label' => 'Check-In Date:',
     'checkout_checkout_date_label' => 'Check-Out Date:',
     'checkout_guest_name_label' => 'Guest Name:',
@@ -1361,7 +1361,7 @@ return [
     'checkout_complete' => 'Complete Check-Out',
 
     // Checkin (New)
-    'checkin_col_order_id' => 'Order ID',
+    'checkin_col_order_id' => 'Booking ID',
     'checkin_col_name' => 'Name',
     'checkin_col_property_room' => 'Property/Room',
     'checkin_col_status' => 'Status',
@@ -1426,6 +1426,20 @@ return [
 
     // All Bookings (New)
     'allbookings_no_data' => 'No Orders Completed',
+    'allbookings_col_checkin' => 'Check-In',
+    'allbookings_col_checkout' => 'Check-Out',
+    'allbookings_col_booking_id' => 'Booking ID',
+    'allbookings_col_name' => 'Name',
+    'allbookings_col_property_room' => 'Property/Room',
+    'allbookings_col_status' => 'Status',
+    'allbookings_not_checked_in' => 'Not checked in',
+    'allbookings_not_checked_out' => 'Not checked out',
+    'allbookings_checkin_at' => 'Check-in at:',
+    'allbookings_checkout_at' => 'Check-out at:',
+    'allbookings_reason' => 'Reason:',
+    'allbookings_description' => 'Description:',
+    'allbookings_refund_status' => 'Refund Status:',
+    'allbookings_refund_amount' => 'Refund Amount:',
 
     // Livewire Components (New)
     'livewire_checkin_property_type' => 'Property Type',
@@ -1483,4 +1497,11 @@ return [
     'changeroom_search_placeholder' => 'Search Booking ID or Guest Name...',
     'changeroom_select_booking' => 'Select a booking to view details',
     'promo_banner_edit' => 'Edit Banner',
+    /* Room availability modal: renewal and room change labels */
+    'renewal' => 'Renewal',
+    'room_change' => 'Room Change',
+    /* Room status toggle: blocked when room has current/future bookings */
+    'room_status_has_bookings' => 'Cannot change status: room has current or future bookings',
+    'room_activated' => 'Room activated successfully',
+    'room_deactivated' => 'Room deactivated successfully',
 ];

@@ -49,7 +49,8 @@
 
                     <div class="md:col-span-2 flex gap-2">
                         <div class="flex-1">
-                            <div class="relative z-50">
+                            <!-- z-20 keeps datepicker below sticky header (z-30) but above table content -->
+                            <div class="relative z-20">
                                 <input type="text" id="date_picker" placeholder="{{ __('ui.select_date_range') }}"
                                     data-input
                                     class="w-full min-w-[320px] px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
@@ -66,9 +67,10 @@
                             <label for="per_page" class="text-sm text-gray-600">{{ __('ui.show') }}:</label>
                             <select name="per_page" id="per_page"
                                 class="border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="8" {{ request('per_page') == 8 ? 'selected' : '' }}>8</option>
-                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                <!-- Default 25 per page -->
+                                <option value="8" {{ request('per_page', 25) == 8 ? 'selected' : '' }}>8</option>
+                                <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ request('per_page', 25) == 50 ? 'selected' : '' }}>50</option>
                             </select>
                         </div>
                     </div>
@@ -81,7 +83,7 @@
         <div class="overflow-x-auto rounded-lg" id="bookingsTableContainer">
             @include('pages.bookings.allbookings.partials.allbookings_table', [
                 'bookings' => $bookings,
-                'per_page' => request('per_page', 8),
+                'per_page' => request('per_page', 25),
             ])
         </div>
 
@@ -140,6 +142,22 @@
                 };
             };
 
+            /* Sort state: persists across AJAX refreshes */
+            /* Default sort: check-in descending, property ascending */
+            window._bookingSortBy = 'checkin';
+            window._bookingSortDir = 'desc';
+
+            /* Server-side sort: toggle direction or switch column, then refetch */
+            window.sortBookingsBy = function(column) {
+                if (window._bookingSortBy === column) {
+                    window._bookingSortDir = window._bookingSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    window._bookingSortBy = column;
+                    window._bookingSortDir = 'asc';
+                }
+                fetchFilteredBookings();
+            };
+
             // Event listeners
             searchInput.addEventListener('input', debounce(fetchFilteredBookings, 300));
             statusSelect.addEventListener('change', fetchFilteredBookings);
@@ -174,6 +192,10 @@
                     // Get per page value
                     const perPage = document.getElementById('per_page').value;
                     params.append('per_page', perPage);
+
+                    /* Server-side sorting: pass current sort state */
+                    params.append('sort_by', window._bookingSortBy || 'checkin');
+                    params.append('sort_dir', window._bookingSortDir || 'asc');
                 }
 
                 // Show loading state
@@ -240,4 +262,7 @@
             attachPaginationListeners();
         });
     </script>
+
+    @include('pages.bookings.partials.dark-badge-styles')
+
 </x-app-layout>

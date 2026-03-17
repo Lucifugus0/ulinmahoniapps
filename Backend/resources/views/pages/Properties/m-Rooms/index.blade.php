@@ -2752,6 +2752,7 @@
         //     }
         // });
 
+        /* Toggle room status with booking check: blocks if room has current/future bookings */
         function toggleRoomStatus(checkbox) {
             const roomId = checkbox.getAttribute('data-id');
             const newStatus = checkbox.checked ? 1 : 0;
@@ -2769,21 +2770,23 @@
                     })
                 })
                 .then(res => {
-                    if (!res.ok) throw new Error("Gagal update status");
+                    /* Handle 422 response: room has active bookings */
+                    if (res.status === 422) {
+                        return res.json().then(data => { throw new Error(data.message || '{{ __("ui.room_status_has_bookings") }}'); });
+                    }
+                    if (!res.ok) throw new Error("{{ __('ui.room_status_update_failed') }}");
                     return res.json();
                 })
                 .then(() => {
-                    // Update label status
                     statusLabel.textContent = newStatus === 1 ? 'Active' : 'Inactive';
                     statusLabel.classList.remove('text-green-600', 'text-red-600');
                     statusLabel.classList.add(newStatus === 1 ? 'text-green-600' : 'text-red-600');
 
-                    // Show success toast
                     Swal.fire({
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: newStatus === 1 ? 'Kamar berhasil diaktifkan' : 'Kamar berhasil dinonaktifkan',
+                        title: newStatus === 1 ? '{{ __("ui.room_activated") }}' : '{{ __("ui.room_deactivated") }}',
                         showConfirmButton: false,
                         timer: 2000
                     });
@@ -2796,7 +2799,7 @@
                         toast: true,
                         position: 'top-end',
                         icon: 'error',
-                        title: 'Gagal memperbarui status kamar',
+                        title: err.message,
                         showConfirmButton: false,
                         timer: 3000
                     });

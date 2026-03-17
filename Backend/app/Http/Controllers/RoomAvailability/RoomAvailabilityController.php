@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Room;
 use App\Models\Booking;
+use App\Models\Property;
 
 class RoomAvailabilityController extends Controller
 {
@@ -15,6 +16,7 @@ class RoomAvailabilityController extends Controller
         $perPage = $request->get('per_page', 8);
         $search = $request->get('search');
         $status = $request->get('status', 'all');
+        $propertyId = $request->get('property_id'); /* Property dropdown filter */
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
 
@@ -55,6 +57,10 @@ class RoomAvailabilityController extends Controller
                         });
                 });
             })
+            /* Filter by selected property from dropdown */
+            ->when($propertyId, function ($query, $propertyId) {
+                $query->where('property_id', $propertyId);
+            })
             ->when($status !== 'all', function ($query) use ($status) {
                 if ($status === 'available') {
                     $query->where('rental_status', 0);
@@ -62,7 +68,9 @@ class RoomAvailabilityController extends Controller
                     $query->where('rental_status', 1);
                 }
             })
-            ->orderBy('created_at', 'desc')
+            /* Default sort: property name ascending, then room number ascending */
+            ->orderBy('property_id', 'asc')
+            ->orderBy('no', 'asc')
             ->paginate($perPage)
             ->withQueryString();
 
@@ -74,7 +82,10 @@ class RoomAvailabilityController extends Controller
             ]);
         }
 
-        return view('pages.room_availability.index', compact('rooms'));
+        /* Get all active properties for the filter dropdown */
+        $properties = Property::where('status', 1)->orderBy('name', 'asc')->get(['idrec', 'name']);
+
+        return view('pages.room_availability.index', compact('rooms', 'properties'));
     }
 
     public function getRoomBookings($roomId, Request $request)
@@ -179,7 +190,8 @@ class RoomAvailabilityController extends Controller
 
         return response()->json([
             'success' => true,
-            'room_name' => $room->name . ' - ' . ($room->property->property_name ?? ''),
+            /* Modal header: Property - Room Type - Room Number */
+            'room_name' => ($room->property->name ?? '') . ' - ' . $room->name . ' - ' . ($room->no ?? ''),
             'bookings' => $formattedBookings,
             'total_bookings' => $uniqueTenantCount,
         ]);

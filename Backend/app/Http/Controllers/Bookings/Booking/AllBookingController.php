@@ -12,9 +12,42 @@ class AllBookingController extends Controller
 {
     public function index(Request $request)
     {
+        /* Server-side sorting: accepts sort_by and sort_dir params from the frontend */
+        $sortBy = $request->input('sort_by', 'checkin');
+        $sortDir = in_array($request->input('sort_dir'), ['asc', 'desc']) ? $request->input('sort_dir') : 'desc';
+
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('status', 1) // Only show active bookings (filter out room-changed old records)
-            ->orderByDesc('check_in_at');
+            ->where('t_booking.status', 1)
+            ->select('t_booking.*')
+            ->leftJoin('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+            ->leftJoin('m_properties', 't_booking.property_id', '=', 'm_properties.idrec');
+
+        /* Apply primary sort based on sort_by parameter */
+        switch ($sortBy) {
+            case 'checkout':
+                $query->orderBy('t_transactions.check_out', $sortDir);
+                break;
+            case 'orderid':
+                $query->orderBy('t_booking.order_id', $sortDir);
+                break;
+            case 'name':
+                $query->orderBy('t_transactions.user_name', $sortDir);
+                break;
+            case 'property':
+                $query->orderBy('m_properties.name', $sortDir);
+                break;
+            case 'checkin':
+            default:
+                $query->orderBy('t_transactions.check_in', $sortDir);
+                break;
+        }
+        /* Secondary sort for stable ordering */
+        if ($sortBy !== 'property') {
+            $query->orderBy('m_properties.name', 'asc');
+        }
+        if ($sortBy !== 'checkin') {
+            $query->orderBy('t_transactions.check_in', 'asc');
+        }
 
         // Filter by property_id for site users
         $user = Auth::user();
@@ -93,16 +126,49 @@ class AllBookingController extends Controller
             }
         }
 
-        $bookings = $query->paginate($request->input('per_page', 8));
+        $bookings = $query->paginate($request->input('per_page', 25));
 
         return view('pages.bookings.allbookings.index', compact('bookings', 'startDate', 'endDate'));
     }
 
     public function filter(Request $request)
     {
+        /* Server-side sorting: accepts sort_by and sort_dir params from the frontend */
+        $sortBy = $request->input('sort_by', 'checkin');
+        $sortDir = in_array($request->input('sort_dir'), ['asc', 'desc']) ? $request->input('sort_dir') : 'desc';
+
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('status', 1) // Only show active bookings (filter out room-changed old records)
-            ->orderByDesc('check_in_at');
+            ->where('t_booking.status', 1)
+            ->select('t_booking.*')
+            ->leftJoin('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+            ->leftJoin('m_properties', 't_booking.property_id', '=', 'm_properties.idrec');
+
+        /* Apply primary sort based on sort_by parameter */
+        switch ($sortBy) {
+            case 'checkout':
+                $query->orderBy('t_transactions.check_out', $sortDir);
+                break;
+            case 'orderid':
+                $query->orderBy('t_booking.order_id', $sortDir);
+                break;
+            case 'name':
+                $query->orderBy('t_transactions.user_name', $sortDir);
+                break;
+            case 'property':
+                $query->orderBy('m_properties.name', $sortDir);
+                break;
+            case 'checkin':
+            default:
+                $query->orderBy('t_transactions.check_in', $sortDir);
+                break;
+        }
+        /* Secondary sort for stable ordering */
+        if ($sortBy !== 'property') {
+            $query->orderBy('m_properties.name', 'asc');
+        }
+        if ($sortBy !== 'checkin') {
+            $query->orderBy('t_transactions.check_in', 'asc');
+        }
 
         // Filter by property_id for site users
         $user = Auth::user();
@@ -181,7 +247,7 @@ class AllBookingController extends Controller
             }
         }
 
-        $bookings = $query->paginate($request->input('per_page', 8));
+        $bookings = $query->paginate($request->input('per_page', 25));
 
         return response()->json([
             'table' => view('pages.bookings.allbookings.partials.allbookings_table', [

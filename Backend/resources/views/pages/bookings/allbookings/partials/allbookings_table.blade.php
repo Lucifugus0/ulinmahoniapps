@@ -1,23 +1,97 @@
-<table class="min-w-full divide-y divide-gray-200">
+<!-- All Bookings table with server-side sorting -->
+<!-- Sortable columns: Check-in, Check-out, Booking ID, Name, Property -->
+<!-- Clicking a header triggers fetchFilteredBookings with sort params -->
+<table class="min-w-full divide-y divide-gray-200" id="allbookings-sortable-table">
     <thead class="bg-gray-50">
         <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-in
+            @php
+                /* Get current sort state from request for icon display */
+                $currentSort = request('sort_by', 'checkin');
+                $currentDir = request('sort_dir', 'asc');
+            @endphp
+            <!-- Sortable Check-in header (translated via ui lang file) -->
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                onclick="sortBookingsBy('checkin')">
+                <div class="flex items-center gap-1">
+                    {{ __('ui.allbookings_col_checkin') }}
+                    @if($currentSort === 'checkin')
+                        @if($currentDir === 'asc')
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 7.414l-3.293 3.293a1 1 0 01-1.414-1.414z"/></svg>
+                        @else
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 10.293l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 12.586l3.293-3.293a1 1 0 111.414 1.414z"/></svg>
+                        @endif
+                    @else
+                        <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg>
+                    @endif
+                </div>
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-out
+            <!-- Sortable Check-out header (translated via ui lang file) -->
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                onclick="sortBookingsBy('checkout')">
+                <div class="flex items-center gap-1">
+                    {{ __('ui.allbookings_col_checkout') }}
+                    @if($currentSort === 'checkout')
+                        @if($currentDir === 'asc')
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 7.414l-3.293 3.293a1 1 0 01-1.414-1.414z"/></svg>
+                        @else
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 10.293l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 12.586l3.293-3.293a1 1 0 111.414 1.414z"/></svg>
+                        @endif
+                    @else
+                        <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg>
+                    @endif
+                </div>
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Order ID
+            <!-- Sortable Booking ID header (translated via ui lang file) -->
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                onclick="sortBookingsBy('orderid')">
+                <div class="flex items-center gap-1">
+                    {{ __('ui.allbookings_col_booking_id') }}
+                    @if($currentSort === 'orderid')
+                        @if($currentDir === 'asc')
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 7.414l-3.293 3.293a1 1 0 01-1.414-1.414z"/></svg>
+                        @else
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 10.293l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 12.586l3.293-3.293a1 1 0 111.414 1.414z"/></svg>
+                        @endif
+                    @else
+                        <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg>
+                    @endif
+                </div>
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
+            <!-- Sortable Name header (translated via ui lang file) -->
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                onclick="sortBookingsBy('name')">
+                <div class="flex items-center gap-1">
+                    {{ __('ui.allbookings_col_name') }}
+                    @if($currentSort === 'name')
+                        @if($currentDir === 'asc')
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 7.414l-3.293 3.293a1 1 0 01-1.414-1.414z"/></svg>
+                        @else
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 10.293l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 12.586l3.293-3.293a1 1 0 111.414 1.414z"/></svg>
+                        @endif
+                    @else
+                        <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg>
+                    @endif
+                </div>
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Property/Room
+            <!-- Sortable Property header (translated via ui lang file) -->
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
+                onclick="sortBookingsBy('property')">
+                <div class="flex items-center gap-1">
+                    {{ __('ui.allbookings_col_property_room') }}
+                    @if($currentSort === 'property')
+                        @if($currentDir === 'asc')
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 7.414l-3.293 3.293a1 1 0 01-1.414-1.414z"/></svg>
+                        @else
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 10.293l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 12.586l3.293-3.293a1 1 0 111.414 1.414z"/></svg>
+                        @endif
+                    @else
+                        <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg>
+                    @endif
+                </div>
             </th>
+            <!-- Status header (not sortable, translated via ui lang file) -->
             <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+                {{ __('ui.allbookings_col_status') }}
             </th>
         </tr>
     </thead>
@@ -35,9 +109,9 @@
                             </span>
                         </div>
                     @else
-                        <span
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Not checked in
+                        <!-- "Not checked in" label translated via ui lang file -->
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {{ __('ui.allbookings_not_checked_in') }}
                         </span>
                     @endif
                 </td>
@@ -50,7 +124,8 @@
                             {{ $booking->transaction->check_out->format('H:i') }}
                         </div>
                     @else
-                        <div class="text-sm text-gray-500 italic">Not checked out</div>
+                        <!-- "Not checked out" label translated via ui lang file -->
+                        <div class="text-sm text-gray-500 italic">{{ __('ui.allbookings_not_checked_out') }}</div>
                     @endif
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -114,44 +189,50 @@
                         </span>
 
                         @if ($booking->status === 'Checked-In' && $booking->check_in_at)
+                            <!-- Check-in timestamp label translated via ui lang file -->
                             <div
                                 class="inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses['Checked-In'] }}">
-                                Check-in at: {{ $booking->check_in_at->format('Y-m-d H:i') }}
+                                {{ __('ui.allbookings_checkin_at') }} {{ $booking->check_in_at->format('Y-m-d H:i') }}
                             </div>
                         @elseif ($booking->status === 'Checked-Out' && $booking->check_out_at)
+                            <!-- Check-out timestamp label translated via ui lang file -->
                             <div
                                 class="inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses['Checked-Out'] }}">
-                                Check-out at: {{ $booking->check_out_at->format('Y-m-d H:i') }}
+                                {{ __('ui.allbookings_checkout_at') }} {{ $booking->check_out_at->format('Y-m-d H:i') }}
                             </div>
                         @elseif ($booking->status === 'Canceled')
                             <div class="mt-2 w-full px-2 text-center">
                                 @if ($booking->reason)
+                                    <!-- Cancellation reason label translated via ui lang file -->
                                     <div class="text-xs text-gray-700 font-medium">
-                                        <span class="font-semibold">Reason:</span>
+                                        <span class="font-semibold">{{ __('ui.allbookings_reason') }}</span>
                                         <span class="inline-block">{{ $booking->reason }}</span>
                                     </div>
                                 @endif
 
                                 @if ($booking->description)
+                                    <!-- Cancellation description label translated via ui lang file -->
                                     <div class="text-xs text-gray-600 mt-1">
-                                        <span class="font-semibold">Description:</span>
+                                        <span class="font-semibold">{{ __('ui.allbookings_description') }}</span>
                                         <span class="inline-block">{{ $booking->description }}</span>
                                     </div>
                                 @endif
 
                                 @if ($booking->refund)
+                                    <!-- Refund status label translated via ui lang file -->
                                     <div class="text-xs text-gray-600 mt-1">
-                                        <span class="font-semibold">Refund Status:</span>
+                                        <span class="font-semibold">{{ __('ui.allbookings_refund_status') }}</span>
                                         <span
-                                            class="px-2 py-0.5 rounded-full inline-block 
+                                            class="px-2 py-0.5 rounded-full inline-block
                 {{ $booking->refund->status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
                                             {{ ucfirst($booking->refund->status) }}
                                         </span>
                                     </div>
 
                                     @if ($booking->refund->amount)
+                                        <!-- Refund amount label translated via ui lang file -->
                                         <div class="text-xs text-gray-600 mt-1">
-                                            <span class="font-semibold">Refund Amount:</span>
+                                            <span class="font-semibold">{{ __('ui.allbookings_refund_amount') }}</span>
                                             <span class="inline-block">Rp
                                                 {{ number_format($booking->refund->amount, 0, ',', '.') }}</span>
                                         </div>
@@ -166,7 +247,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
                     {{ __('ui.allbookings_no_data') }}
                 </td>
             </tr>

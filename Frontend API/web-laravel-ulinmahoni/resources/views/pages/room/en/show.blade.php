@@ -21,6 +21,31 @@
         .fa-spin {
             animation: spin 1s linear infinite;
         }
+
+        /* Dark mode overrides for booking form card, containers, and inputs */
+        html.dark .bg-white { background-color: #1e293b !important; }
+        html.dark .bg-blue-50 { background-color: #374151 !important; }
+        html.dark .bg-purple-50 { background-color: #374151 !important; }
+        html.dark .border-gray-100,
+        html.dark .border-blue-200,
+        html.dark .border-purple-200,
+        html.dark .border-gray-300 { border-color: #4b5563 !important; }
+        html.dark #dailyBookingComponent input,
+        html.dark #dailyBookingComponent select,
+        html.dark #monthlyBookingComponent input,
+        html.dark #monthlyBookingComponent select,
+        html.dark #bookingForm select {
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+            border-color: #4b5563 !important;
+        }
+        html.dark #dailyBookingComponent label,
+        html.dark #monthlyBookingComponent label,
+        html.dark #dailyBookingComponent h3,
+        html.dark #monthlyBookingComponent h3,
+        html.dark .text-gray-700 {
+            color: #d1d5db !important;
+        }
     </style>
 </head>
 <body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
@@ -209,7 +234,7 @@
                             {{-- <input type="hidden" name="tax_fees" id="taxFees" value="{{ $room['tax_fees'] ?? 0 }}"> --}}
                             <!-- Rental Type -->
                             <div class="mb-6">
-                                <label for="rent_type" class="block text-sm font-medium text-gray-700 mb-2">Booking Type</label>
+                                <label for="rent_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Booking Type</label>
                                 <select id="rent_type" name="rent_type"
                                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                                     onchange="updateRentalType()">
@@ -224,30 +249,30 @@
 
                             <!-- Daily Booking Component -->
                             <div id="dailyBookingComponent" class="space-y-4 hidden">
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-gray-600 rounded-lg p-4">
                                     <div class="flex items-center mb-3">
                                         <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
-                                        <h3 class="text-sm font-semibold text-gray-800">Daily Booking</h3>
+                                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">Daily Booking</h3>
                                     </div>
 
                                     <!-- Check-in Date -->
                                     <div class="mb-4">
-                                        <label for="check_in" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="check_in" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-sign-in-alt mr-1 text-gray-500"></i>Check In
                                         </label>
                                         <input type="text" id="check_in" name="check_in"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             placeholder="Select check-in date" data-required="true" readonly>
                                         <div id="check_inError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
                                     </div>
 
                                     <!-- Check-out Date -->
                                     <div>
-                                        <label for="check_out" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="check_out" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-sign-out-alt mr-1 text-gray-500"></i>Check Out
                                         </label>
                                         <input type="text" id="check_out" name="check_out"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             placeholder="Select check-out date" data-required="true" readonly>
                                         <div id="check_outError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
                                     </div>
@@ -256,30 +281,30 @@
 
                             <!-- Monthly Booking Component -->
                             <div id="monthlyBookingComponent" class="space-y-4 hidden">
-                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <div class="bg-purple-50 dark:bg-gray-700 border border-purple-200 dark:border-gray-600 rounded-lg p-4">
                                     <div class="flex items-center mb-3">
                                         <i class="fas fa-calendar-alt text-purple-600 mr-2"></i>
-                                        <h3 class="text-sm font-semibold text-gray-800">Monthly Booking</h3>
+                                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">Monthly Booking</h3>
                                     </div>
 
                                     <!-- Check-in Date -->
                                     <div class="mb-4">
-                                        <label for="check_in_monthly" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="check_in_monthly" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-calendar-check mr-1 text-gray-500"></i>Check In
                                         </label>
                                         <input type="text" id="check_in_monthly" name="check_in_monthly"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             placeholder="Select check-in date" data-required="true" readonly>
                                         <div id="check_in_monthlyError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
                                     </div>
 
                                     <!-- Months Selection -->
                                     <div>
-                                        <label for="months" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="months" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-hourglass-half mr-1 text-gray-500"></i>Rental Duration
                                         </label>
                                         <select id="months" name="months"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             onchange="updatePriceSummary()">
                                             @for ($i = 1; $i <= 12; $i++)
                                                 <option value="{{ $i }}">{{ $i }} {{ $i > 1 ? 'Months' : 'Month' }}</option>

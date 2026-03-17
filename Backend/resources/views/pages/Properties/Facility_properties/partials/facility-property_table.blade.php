@@ -41,7 +41,8 @@
                             {{ $facility->facility }}
                         </div>
                         <div class="text-sm text-gray-500 break-words whitespace-normal">
-                            {{ $facility->description ?? '{{ __('ui.facility_no_description') }}' }}
+                            <!-- Display facility description, fallback to translation if null -->
+                            {{ $facility->description ?? __('ui.facility_no_description') }}
                         </div>
                     </div>
                 </td>

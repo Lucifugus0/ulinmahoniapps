@@ -857,6 +857,22 @@ class ManajementRoomsController extends Controller
             'status' => 'required|boolean'
         ]);
 
+        /* Block status change if room has current or future bookings (check_out >= today) */
+        $hasActiveBookings = $room->bookings()
+            ->where('status', 1)
+            ->whereHas('transaction', function ($q) {
+                $q->where('check_out', '>=', now())
+                  ->where('transaction_status', 'paid');
+            })
+            ->exists();
+
+        if ($hasActiveBookings) {
+            return response()->json([
+                'success' => false,
+                'message' => __('ui.room_status_has_bookings')
+            ], 422);
+        }
+
         $room->update([
             'status' => $request->status,
             'updated_at' => now(),

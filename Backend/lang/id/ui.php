@@ -173,7 +173,7 @@ return [
     'checked_out_desc' => 'Riwayat tamu yang sudah check-out',
     'completed' => 'Selesai',
     'completed_desc' => 'Daftar pemesanan yang sudah selesai atau dibatalkan',
-    'order_id_or_guest' => 'ID Pesanan atau Nama Tamu',
+    'order_id_or_guest' => 'ID Pemesanan atau Nama Tamu',
     'all_status' => 'Semua Status',
     'booking_status' => 'Status Pemesanan',
     'upcoming' => 'Akan Datang',
@@ -187,7 +187,7 @@ return [
     'paid' => 'Dibayar',
     'waiting_verification' => 'Menunggu Verifikasi',
     'booking_details' => 'Detail Pemesanan',
-    'order_id' => 'ID Pesanan',
+    'order_id' => 'ID Pemesanan',
     'transaction_date' => 'Tanggal Transaksi',
     'duration' => 'Durasi',
     'total_price' => 'Total Harga',
@@ -679,7 +679,7 @@ return [
     'rejected' => 'Ditolak',
     'canceled' => 'Dibatalkan',
     'items_per_page' => 'Item per halaman',
-    'order_id' => 'ID Pesanan',
+    'order_id' => 'ID Pemesanan',
     'select_booking_order' => 'Pilih pesanan booking',
     'no_checked_in_bookings' => 'Tidak ada booking yang sudah check-in',
     'error_loading_orders' => 'Error memuat pesanan',
@@ -732,7 +732,7 @@ return [
     'select_cancel_reason' => 'Pilih alasan pembatalan',
     'custom_reason' => 'Alasan lainnya',
     'enter_custom_reason' => 'Silakan jelaskan alasan pembatalan.',
-    'order_id_or_guest_payment' => 'ID Pesanan atau Nama Tamu',
+    'order_id_or_guest_payment' => 'ID Pemesanan atau Nama Tamu',
 
     // User Management
     'account_management' => 'Manajemen Akun',
@@ -868,7 +868,7 @@ return [
     'no_related_bookings' => 'Tidak ada pemesanan terkait',
     'type_capacity' => 'Tipe & Kapasitas',
     'related_bookings' => 'Pemesanan Terkait',
-    'active_users_list' => 'Daftar Pengguna Aktif',
+    'active_users_list' => 'Pemesanan Aktif',
     'no_active_bookings' => 'Tidak ada pemesanan aktif',
     'no_active_bookings_desc' => 'Tidak ada pemesanan aktif untuk kamar ini pada periode yang dipilih.',
     'loading_booking_data' => 'Memuat data pemesanan...',
@@ -1333,7 +1333,7 @@ return [
     'checkout_not_checked_out' => 'Belum Check-Out',
     'checkout_already_done' => 'Sudah Check-Out',
     'checkout_waiting' => 'Menunggu Check-Out',
-    'checkout_col_order_id' => 'ID Pesanan',
+    'checkout_col_order_id' => 'ID Pemesanan',
     'checkout_col_name' => 'Nama',
     'checkout_col_property_room' => 'Properti/Kamar',
     'checkout_no_bookings' => 'Tidak ada pemesanan',
@@ -1341,7 +1341,7 @@ return [
     'checkout_verify_room' => 'Silakan verifikasi kondisi kamar dan selesaikan proses check-out',
     'checkout_late_warning' => 'Check-out terlambat! Tamu telah melewati waktu check-out yang dijadwalkan.',
     'checkout_booking_details' => 'Detail Pemesanan',
-    'checkout_order_id_label' => 'ID Pesanan:',
+    'checkout_order_id_label' => 'ID Pemesanan:',
     'checkout_checkin_date_label' => 'Tanggal Check-In:',
     'checkout_checkout_date_label' => 'Tanggal Check-Out:',
     'checkout_guest_name_label' => 'Nama Tamu:',
@@ -1361,7 +1361,7 @@ return [
     'checkout_complete' => 'Selesaikan Check-Out',
 
     // Checkin (New)
-    'checkin_col_order_id' => 'ID Pesanan',
+    'checkin_col_order_id' => 'ID Pemesanan',
     'checkin_col_name' => 'Nama',
     'checkin_col_property_room' => 'Properti/Kamar',
     'checkin_col_status' => 'Status',
@@ -1426,6 +1426,20 @@ return [
 
     // All Bookings (New)
     'allbookings_no_data' => 'Tidak ada pesanan selesai',
+    'allbookings_col_checkin' => 'Check-In',
+    'allbookings_col_checkout' => 'Check-Out',
+    'allbookings_col_booking_id' => 'ID Pemesanan',
+    'allbookings_col_name' => 'Nama',
+    'allbookings_col_property_room' => 'Properti/Kamar',
+    'allbookings_col_status' => 'Status',
+    'allbookings_not_checked_in' => 'Belum check-in',
+    'allbookings_not_checked_out' => 'Belum check-out',
+    'allbookings_checkin_at' => 'Check-in pada:',
+    'allbookings_checkout_at' => 'Check-out pada:',
+    'allbookings_reason' => 'Alasan:',
+    'allbookings_description' => 'Deskripsi:',
+    'allbookings_refund_status' => 'Status Refund:',
+    'allbookings_refund_amount' => 'Jumlah Refund:',
 
     // Livewire Components (New)
     'livewire_checkin_property_type' => 'Tipe Properti',
@@ -1483,4 +1497,11 @@ return [
     'changeroom_search_placeholder' => 'Cari ID Pemesanan atau Nama Tamu...',
     'changeroom_select_booking' => 'Pilih pemesanan untuk melihat detail',
     'promo_banner_edit' => 'Edit Banner',
+    /* Room availability modal: renewal and room change labels */
+    'renewal' => 'Perpanjangan',
+    'room_change' => 'Pindah Kamar',
+    /* Room status toggle: blocked when room has current/future bookings */
+    'room_status_has_bookings' => 'Tidak dapat mengubah status: kamar memiliki pemesanan aktif atau mendatang',
+    'room_activated' => 'Kamar berhasil diaktifkan',
+    'room_deactivated' => 'Kamar berhasil dinonaktifkan',
 ];
