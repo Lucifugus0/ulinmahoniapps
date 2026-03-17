@@ -43,6 +43,8 @@ build/
 Frontend API/web-laravel-ulinmahoni/public/images/assets/My_Movie.mp4
 Frontend API/web-laravel-ulinmahoni/public/public.zip
 Mobile App/Ulin Mahoni.apk
+Backend/public/video/My_Movie.mp4
+Mobile App/assets/videos/myvideo.mp4
 
 # Claude Code
 .claude/
