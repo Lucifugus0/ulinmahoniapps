@@ -70,7 +70,8 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <!-- Room Details (left) -->
                 <div class="lg:col-span-7">
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                    <!-- Liquid glass room detail card — frosted container with glass tokens -->
+                    <div class="overflow-hidden" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                         <!-- Room Image Gallery -->
                         <div class="relative h-96" x-data="{ showModal: false, modalImg: '', modalAlt: '' }">
                             <!-- Modal Popup -->
@@ -203,7 +204,8 @@
 
                 <!-- Booking Form (right) -->
                 <div class="lg:col-span-5 lg:pl-4">
-                    <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-8 sticky top-8">
+                    <!-- Liquid glass booking form card -->
+                    <div class="p-8 sticky top-8" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                         <!-- Status and Price Summary -->
                         <div class="flex items-center justify-between mb-8">
                             <div>

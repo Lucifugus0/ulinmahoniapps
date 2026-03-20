@@ -7,12 +7,40 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     @include('components.homepage.styles')
+    <style>
+        /* Glass login panel — highly transparent with strong blur */
+        .login-box {
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(48px);
+            -webkit-backdrop-filter: blur(48px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 2rem;
+            max-width: 28rem;
+            width: 100%;
+        }
+        /* Darker text for glass on light gradient background */
+        .login-box input::placeholder {
+          color: #3d3d55 !important;
+          opacity: 1 !important;
+        }
+        .login-box .text-gray-400 {
+          color: #3d3d55 !important;
+        }
+        .login-box input {
+          color: #0f0f1a !important;
+          background: rgba(255, 255, 255, 0.25) !important;
+          border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     @include('components.homepage.header')
 
     <main class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
+        <!-- Glass panel replaces opaque white box -->
+        <div class="login-box space-y-8">
             <div>
                 <h2 class="text-4xl font-light text-center text-gray-900 mb-2">{{ __('auth.forgot_password') }}</h2>
                 <p class="text-center text-gray-600 text-lg">{{ __('auth.forgot_password_description') }}</p>

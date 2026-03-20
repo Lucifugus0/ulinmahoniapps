@@ -34,10 +34,13 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
             z-index: 2;
         }
+        /* Glass login panel — highly transparent with strong blur */
         .login-box {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(48px);
+            -webkit-backdrop-filter: blur(48px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 2rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             padding: 2.5rem;
             max-width: 28rem;
@@ -51,6 +54,35 @@
                 margin: 1rem;
                 padding: 1.5rem;
             }
+        }
+        /* Glass content card — translucent panel */
+        .content-card {
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        /* Dark mode overrides for glass content cards */
+        html.dark .content-card {
+            background: rgba(255, 255, 255, 0.06) !important;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.10) !important;
+            color: #e5e7eb;
+        }
+        html.dark .content-card h1,
+        html.dark .content-card h2,
+        html.dark .content-card h3,
+        html.dark .content-card h4 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .content-card p,
+        html.dark .content-card span,
+        html.dark .content-card li {
+            color: #d1d5db !important;
         }
     </style>
 </head>
@@ -89,8 +121,8 @@
             <div class="max-w-6xl mx-auto px-4 sm:px-6">
                 <!-- Business Solutions -->
                 <div class="grid md:grid-cols-2 gap-12 mb-16">
-                    <!-- Corporate Housing -->
-                    <div class="bg-white p-8 rounded-lg shadow-md">
+                    <!-- Corporate Housing — glass card styling -->
+                    <div class="content-card">
                         <h3 class="text-2xl font-bold mb-4">Corporate Housing</h3>
                         <p class="text-gray-600 mb-6">Accommodation solutions for your employees and corporate guests</p>
                         <ul class="space-y-4">
@@ -124,8 +156,8 @@
                         </ul>
                     </div>
 
-                    <!-- Office Space -->
-                    <div class="bg-white p-8 rounded-lg shadow-md">
+                    <!-- Office Space — glass card styling -->
+                    <div class="content-card">
                         <h3 class="text-2xl font-bold mb-4">Office Space</h3>
                         <p class="text-gray-600 mb-6">Workspace solutions tailored to your business needs</p>
                         <ul class="space-y-4">

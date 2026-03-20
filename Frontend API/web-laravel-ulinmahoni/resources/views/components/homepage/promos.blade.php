@@ -71,19 +71,21 @@
         width: 100%;
     }
 
-    /* Full width image with 1911x372 aspect ratio */
+    /* Full width image with 1911x372 aspect ratio — glass card container */
     .promo-image-container {
         width: 100%;
         aspect-ratio: 1911 / 372;
-        background-color: #e5e7eb;
+        background: var(--glass-bg, rgba(255, 255, 255, 0.45));
         overflow: hidden;
-        border-radius: 1rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        transition: box-shadow 0.3s ease;
+        border-radius: var(--radius-xl, 2rem);
+        border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.25));
+        box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .promo-link:hover .promo-image-container {
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        transform: translateY(-4px);
+        box-shadow: var(--glass-shadow-hover, 0 12px 40px rgba(0, 0, 0, 0.12));
     }
 
     .promo-image {

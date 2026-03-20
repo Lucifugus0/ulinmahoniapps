@@ -40,6 +40,19 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
+
+        /* Liquid glass — main promo content card */
+        .bg-white.rounded-xl.shadow-lg {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+        /* Liquid glass — CTA footer section */
+        .bg-gray-50.p-8.text-center {
+            background: var(--glass-bg) !important;
+        }
     </style>
     @include('components.homepage.styles')
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>

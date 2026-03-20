@@ -144,20 +144,25 @@
         text-decoration: none;
     }
 
+    /* Glass property card — frosted translucent surface with depth */
     .property-card {
-        background: #ffffff;
-        border-radius: 0.5rem; /* 8px */
+        background: var(--glass-bg, rgba(255, 255, 255, 0.45));
+        backdrop-filter: var(--glass-blur, blur(20px));
+        -webkit-backdrop-filter: var(--glass-blur, blur(20px));
+        border-radius: var(--radius-lg, 1.75rem);
         overflow: hidden;
-        box-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.1);
-        border: 0.0625rem solid #e5e7eb; /* 1px */
+        box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
         height: 100%;
         display: flex;
         flex-direction: column;
-        transition: box-shadow 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .property-card:hover {
-        box-shadow: 0 0.25rem 0.375rem rgba(0, 0, 0, 0.1);
+        transform: translateY(-6px);
+        box-shadow: var(--glass-shadow-hover, 0 12px 40px rgba(0, 0, 0, 0.12));
+        background: var(--glass-bg-hover, rgba(255, 255, 255, 0.6));
     }
 
     .property-card-image {
@@ -197,54 +202,61 @@
         font-size: 0.875rem; /* 14px */
     }
 
+    /* Glass badge — image count pill with frosted background */
     .property-card-image-count {
         position: absolute;
-        top: 0.75rem; /* 12px */
-        right: 0.75rem; /* 12px */
-        background: rgba(0, 0, 0, 0.6);
+        top: 0.75rem;
+        right: 0.75rem;
+        background: rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         color: #ffffff;
-        font-size: 0.75rem; /* 12px */
-        padding: 0.375rem 0.625rem; /* 6px 10px */
+        font-size: 0.75rem;
+        padding: 0.375rem 0.625rem;
         border-radius: 9999px;
         font-weight: 500;
-        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .property-card-image-count i {
         margin-right: 0.25rem; /* 4px */
     }
 
+    /* Glass availability badge — green tinted glass pill */
     .property-card-available-badge {
         position: absolute;
-        bottom: 0.5rem; /* 8px */
-        right: 0.5rem; /* 8px */
-        background: #22c55e;
+        bottom: 0.5rem;
+        right: 0.5rem;
+        background: rgba(34, 197, 94, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         color: #ffffff;
-        font-size: 0.75rem; /* 12px */
-        padding: 0.25rem 0.5rem; /* 4px 8px */
+        font-size: 0.75rem;
+        padding: 0.25rem 0.625rem;
         border-radius: 9999px;
         font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    .property-card-available-badge i {
-        margin-right: 0.25rem; /* 4px */
-    }
+    .property-card-available-badge i { margin-right: 0.25rem; }
 
+    /* Glass full badge — red tinted glass pill */
     .property-card-full-badge {
         position: absolute;
-        bottom: 0.5rem; /* 8px */
-        right: 0.5rem; /* 8px */
-        background: #ef4444;
+        bottom: 0.5rem;
+        right: 0.5rem;
+        background: rgba(239, 68, 68, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         color: #ffffff;
-        font-size: 0.75rem; /* 12px */
-        padding: 0.25rem 0.5rem; /* 4px 8px */
+        font-size: 0.75rem;
+        padding: 0.25rem 0.625rem;
         border-radius: 9999px;
         font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    .property-card-full-badge i {
-        margin-right: 0.25rem; /* 4px */
-    }
+    .property-card-full-badge i { margin-right: 0.25rem; }
 
     .property-card-content {
         padding: 0.75rem; /* 12px */
@@ -265,7 +277,7 @@
     }
 
     .property-card:hover .property-card-title {
-        color: #0d9488;
+        color: var(--accent, #0ea5a0);
     }
 
     .property-card-gender {
@@ -321,8 +333,9 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-top: 0.5rem; /* 8px */
-        border-top: 0.0625rem solid #f3f4f6; /* 1px */
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.25));
+        margin-top: auto;
     }
 
     .property-card-price {
@@ -366,12 +379,15 @@
         grid-column: 1 / -1;
     }
 
+    /* Glass empty state card */
     .property-cards-empty-content {
-        background: #ffffff;
-        border-radius: 0.75rem; /* 12px */
-        box-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.1);
-        border: 0.0625rem solid #f3f4f6; /* 1px */
-        padding: 2rem; /* 32px */
+        background: var(--glass-bg, rgba(255, 255, 255, 0.45));
+        backdrop-filter: var(--glass-blur, blur(20px));
+        -webkit-backdrop-filter: var(--glass-blur, blur(20px));
+        border-radius: var(--radius-lg, 1.75rem);
+        box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
+        padding: 2rem;
         text-align: center;
     }
 

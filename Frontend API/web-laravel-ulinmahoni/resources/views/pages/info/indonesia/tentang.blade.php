@@ -43,21 +43,23 @@
             z-index: 2;
         }
 
-        /* Content containers — 50% transparent, same as header */
+        /* Glass content card — translucent panel */
         .content-card {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             border-radius: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.20);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             padding: 2rem;
         }
 
         /* Dark mode overrides for content containers */
         html.dark .content-card {
-            background: rgba(17, 24, 39, 0.5) !important;
-            border-color: rgba(75, 85, 99, 0.5) !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.10) !important;
             color: #e5e7eb;
         }
         html.dark .content-card h1,

@@ -4,7 +4,8 @@
             @forelse($houses as $house)
             <div class="swiper-slide">
                 <a href="{{ route('houses.show', ['id' => $house['id']]) }}" class="block h-full">
-                    <div class="property-card bg-white rounded-lg shadow-md overflow-hidden h-full flex flex-col">
+                    <!-- Liquid glass property card — uses shared .property-card glass styles -->
+                    <div class="property-card overflow-hidden h-full flex flex-col">
                         <div class="relative">
                             <div class="relative pb-[56.25%] h-48">
                                 <div class="absolute inset-0">

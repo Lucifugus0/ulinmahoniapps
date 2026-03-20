@@ -118,6 +118,26 @@
   --breakpoint-xs: 480px;
 }
 
+/* Glass design tokens — Apple-style glassmorphism / liquid glass variables
+   used across light and dark mode for translucent surfaces, blur, and shadows */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.18);
+  --glass-bg-hover: rgba(255, 255, 255, 0.28);
+  --glass-bg-strong: rgba(255, 255, 255, 0.30);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-border-subtle: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+  --glass-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.15);
+  --glass-blur: blur(24px);
+  --glass-blur-strong: blur(48px);
+  --accent: #0ea5a0;
+  --accent-hover: #0d9488;
+  --radius-sm: 0.75rem;
+  --radius-md: 1.25rem;
+  --radius-lg: 1.75rem;
+  --radius-xl: 2rem;
+}
+
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -136,51 +156,131 @@
   }
 }
 
+/* Light mode animated gradient background — gives a subtle liquid motion effect */
+body.bg-gray-100 {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 25%, #f5f0eb 50%, #eef2f7 75%, #f0f4f8 100%) !important;
+  background-size: 400% 400%;
+  animation: liquidShift 20s ease infinite;
+}
+/* Keyframes for the liquid gradient animation used by both light and dark body backgrounds */
+@keyframes liquidShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Light mode text darkening — ensure contrast on translucent glass surfaces */
+.text-gray-400 { color: #555570 !important; }
+.text-gray-500 { color: #4a4a68 !important; }
+::placeholder { color: #6b7280 !important; }
+
 /* Global Dark Mode Overrides - outside @layer for highest specificity */
-html.dark .bg-white { background-color: var(--color-gray-900) !important; }
-html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: none !important; }
+/* Glass-style translucent white surface for dark mode panels/cards */
+html.dark .bg-white {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+/* Glass shadows — subtle depth instead of flat removal */
+html.dark .shadow-sm, html.dark .shadow-md { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important; }
+html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important; }
 html.dark .rounded-xl.border { border-color: var(--color-gray-700) !important; }
-html.dark .bg-gray-50 { background-color: var(--color-gray-800) !important; }
-/* Body bg-gray-100 matches sidebar/header dark:bg-gray-900 */
-html.dark body.bg-gray-100 { background-color: var(--color-gray-900) !important; }
-html.dark .bg-gray-100:not(body) { background-color: var(--color-gray-800) !important; }
+/* Glass-transparent bg-gray-50 for dark mode surfaces */
+html.dark .bg-gray-50 {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+/* Dark body uses animated deep-blue gradient for immersive liquid glass feel */
+html.dark body.bg-gray-100 {
+  background: linear-gradient(135deg, #0f0f1a 0%, #141428 25%, #1a1a30 50%, #141428 75%, #0f0f1a 100%) !important;
+  background-size: 400% 400%;
+  animation: liquidShift 20s ease infinite;
+}
+/* Non-body bg-gray-100 elements get glass translucency in dark mode */
+html.dark .bg-gray-100:not(body) {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
 html.dark .border-gray-100, html.dark .border-gray-200 { border-color: var(--color-gray-700) !important; }
 html.dark .border-gray-300 { border-color: var(--color-gray-600) !important; }
 html.dark .divide-gray-200 > :not(:last-child) { border-color: var(--color-gray-700) !important; }
-html.dark .text-gray-900, html.dark .text-gray-800 { color: var(--color-gray-100) !important; }
-html.dark .text-gray-700 { color: var(--color-gray-200) !important; }
-html.dark .text-gray-600 { color: var(--color-gray-300) !important; }
-html.dark .text-gray-500 { color: var(--color-gray-400) !important; }
+html.dark .text-gray-900, html.dark .text-gray-800 { color: #f5f5fa !important; }
+html.dark .text-gray-700 { color: #e8e8f0 !important; }
+html.dark .text-gray-600 { color: #d0d0e0 !important; }
+html.dark .text-gray-500 { color: #b0b0c8 !important; }
+/* Dark mode form inputs — glass-transparent backgrounds with subtle borders */
 html.dark select, html.dark input[type="text"], html.dark input[type="search"], html.dark input[type="email"], html.dark input[type="password"], html.dark input[type="number"], html.dark input[type="date"], html.dark input[type="tel"], html.dark textarea {
-  background-color: var(--color-gray-800) !important;
-  border-color: var(--color-gray-600) !important;
-  color: var(--color-gray-200) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  color: #e8e8f0 !important;
 }
-html.dark ::placeholder { color: var(--color-gray-500) !important; }
-html.dark .bg-indigo-50 { background-color: rgba(49, 46, 129, 0.4) !important; }
-html.dark .bg-purple-50 { background-color: rgba(88, 28, 135, 0.4) !important; }
-html.dark .bg-red-50 { background-color: rgba(127, 29, 29, 0.3) !important; }
-html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.3) !important; }
-html.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.3) !important; }
-html.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.3) !important; }
-html.dark .bg-indigo-100 { background-color: rgba(49, 46, 129, 0.3) !important; }
-/* Global table dark mode: lighter background for contrast against page bg */
-html.dark table tbody.bg-white { background-color: #1e293b !important; } /* slate-800 */
-html.dark table thead.bg-gray-50 { background-color: #334155 !important; } /* slate-700 */
-html.dark .from-gray-50 { --tw-gradient-from: var(--color-gray-900) !important; }
-html.dark .to-gray-100 { --tw-gradient-to: var(--color-gray-800) !important; }
-html.dark .from-gray-100 { --tw-gradient-from: var(--color-gray-800) !important; }
-html.dark .bg-gradient-to-r.from-gray-50 { background: var(--color-gray-900) !important; }
-/* Search/filter bar container - lighter bg to differentiate from page background in dark mode */
-html.dark div.search-filter-container.bg-white { background-color: #283548 !important; border-color: #475569 !important; }
-html.dark form.search-filter-form.bg-gradient-to-r { background: linear-gradient(to right, #283548, #304060) !important; border-color: #475569 !important; }
-/* Check-in/Check-out modal headers - darker bg in dark mode for readability */
+/* Brighter placeholder text for glass readability */
+html.dark ::placeholder { color: #a0a0b8 !important; }
+/* Colored bg-*-50 overrides — lower opacity for glass-like translucency in dark mode */
+html.dark .bg-indigo-50 { background-color: rgba(49, 46, 129, 0.15) !important; }
+html.dark .bg-purple-50 { background-color: rgba(88, 28, 135, 0.15) !important; }
+html.dark .bg-red-50 { background-color: rgba(127, 29, 29, 0.12) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.12) !important; }
+html.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.12) !important; }
+html.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.12) !important; }
+html.dark .bg-indigo-100 { background-color: rgba(49, 46, 129, 0.12) !important; }
+/* Glass table backgrounds — translucent with blur for depth layering */
+html.dark table tbody.bg-white {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+html.dark table thead.bg-gray-50 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+/* Gradient overrides — near-transparent glass values for dark mode gradients */
+html.dark .from-gray-50 { --tw-gradient-from: rgba(255, 255, 255, 0.03) !important; }
+html.dark .to-gray-100 { --tw-gradient-to: rgba(255, 255, 255, 0.05) !important; }
+html.dark .from-gray-100 { --tw-gradient-from: rgba(255, 255, 255, 0.05) !important; }
+html.dark .bg-gradient-to-r.from-gray-50 { background: rgba(255, 255, 255, 0.03) !important; }
+/* Search/filter bar — glass surface with blur and subtle border in dark mode */
+html.dark div.search-filter-container.bg-white {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+html.dark form.search-filter-form.bg-gradient-to-r {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+/* Modal headers — glass blur effect for check-in/check-out modals in dark mode */
 html.dark .checkout-modal-header,
-html.dark .checkin-modal-header { background: linear-gradient(to right, #374151, #4b5563) !important; border-color: #4b5563 !important; }
+html.dark .checkin-modal-header {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
 html.dark .checkout-modal-header .text-gray-600,
-html.dark .checkin-modal-header .text-gray-600 { color: #d1d5db !important; }
+html.dark .checkin-modal-header .text-gray-600 { color: #d0d0e0 !important; }
 html.dark .checkout-modal-header .text-gray-800,
-html.dark .checkin-modal-header .text-gray-800 { color: #f3f4f6 !important; }
+html.dark .checkin-modal-header .text-gray-800 { color: #f5f5fa !important; }
+
+/* Light mode glass surfaces — translucent panels with blur for bordered cards */
+.rounded-xl.border, .rounded-lg.border {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border-subtle) !important;
+}
+
+/* Glass cards in light mode — stronger translucency for white rounded panels */
+.bg-white.rounded-xl, .bg-white.rounded-lg {
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+/* Dashboard banner glass — light blur for hero/banner sections */
+.dashboard-banner {
+  backdrop-filter: blur(8px);
+}
 
 /* Mobile Sidebar Optimizations */
 @layer components {

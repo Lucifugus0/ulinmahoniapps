@@ -16,11 +16,12 @@
             --transition: all 0.3s ease;
         }
 
+        /* Liquid glass gallery item — rounded corners and glass shadow tokens */
         .gallery-item {
             position: relative;
             overflow: hidden;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: var(--radius-lg, 1.75rem);
+            box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));
             transition: var(--transition);
             display: flex;
             justify-content: center;
@@ -29,7 +30,7 @@
 
         .gallery-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--glass-shadow-hover, 0 16px 48px rgba(0, 0, 0, 0.15));
         }
 
         .gallery-item img {
@@ -192,8 +193,8 @@
                 @endif
             </div>
 
-            <!-- Property Info Section -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-8">
+            <!-- Property Info Section — liquid glass content panel -->
+            <div class="p-6 mb-8" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                 <div class="flex flex-col lg:flex-row gap-8">
                     <!-- Left Column - Property Info -->
                     <div class="lg:w-1/2">
@@ -324,7 +325,8 @@
                     <!-- Location Map -->
                     <div class="mt-8">
                         <h3 class="text-xl font-bold text-gray-900 mb-4">Lokasi</h3>
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-8">
+                        <!-- Liquid glass location card -->
+                        <div class="p-8" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                             <div class="aspect-w-16 aspect-h-9">
                                 @php
                                     // Default Jakarta coordinates (Monas)
@@ -393,7 +395,8 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             @forelse($house['rooms'] as $room)
                                 <a href="{{ route('rooms.show', $room['slug']) }}" class="group">
-                                    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group-hover:ring-2 group-hover:ring-teal-500">
+                                    <!-- Liquid glass room card -->
+                                    <div class="overflow-hidden transition-shadow group-hover:ring-2 group-hover:ring-teal-500" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                                     <div class="relative pb-[56.25%] h-48">
                                         <div class="absolute inset-0">
                                             @php

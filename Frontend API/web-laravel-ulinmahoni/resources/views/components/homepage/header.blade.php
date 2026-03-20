@@ -3,8 +3,8 @@
      - Dark mode toggle (sun/moon icon) persisted in localStorage('dark-mode')
      - Language switcher dropdown with flag icons for each locale
 -->
-<!-- Header is 50% transparent, fixed position so it overlays on top of video/hero content -->
-<header class="site-header py-4 px-6 flex items-center justify-between bg-white/50 dark:bg-gray-900/50 backdrop-blur-md shadow-md fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+<!-- Header — floating liquid glass bar, fixed over hero content with strong backdrop blur -->
+<header class="site-header py-4 px-6 flex items-center justify-between fixed top-0 left-0 right-0 z-50 transition-all duration-500">
     <div class="flex items-center space-x-8">
         <!-- Mobile Menu Button (Hidden on desktop) -->
         <div x-data="{ mobileMenuOpen: false }" class="md:hidden">

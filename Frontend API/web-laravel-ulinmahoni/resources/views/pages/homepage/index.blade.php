@@ -7,23 +7,33 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
+  <!-- Inter font — Apple-like clean sans-serif for the liquid glass UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
   @include('components.homepage.styles')
   <script>
+    /* Initialize dark mode from localStorage before paint — prevents flash */
     if (localStorage.getItem('dark-mode') === 'true') {
       document.documentElement.classList.add('dark');
     }
   </script>
   <style>
-    /* Override placeholder color for date inputs — dark-mode-aware */
+    /* Inter font override — cleaner type for glass surfaces */
+    body, button, input, select, textarea {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Placeholder colors for date inputs */
     input[name="check_in"]::placeholder,
     input[name="check_out"]::placeholder {
-      color: #000000 !important;
+      color: var(--text-secondary, #4a4a68) !important;
       opacity: 1 !important;
     }
     html.dark input[name="check_in"]::placeholder,
     html.dark input[name="check_out"]::placeholder {
-      color: #e5e7eb !important;
+      color: var(--text-tertiary, #7878a0) !important;
       opacity: 1 !important;
     }
   </style>
@@ -55,10 +65,10 @@
         </div>
       @endif
 
-      <!-- Overlay with text -->
-      <div class="absolute inset-0 gradient-overlay flex flex-col justify-center md:justify-end p-8 md:p-12 lg:p-12  text-white">
-        <h1 class="text-2xl md:text-5xl lg:text-4xl font-light mb-3 max-w-4xl">{{ __('homepage.hero.subtitle') }}</h1>
-        <p class="text-xl md:text-xl font-light mb-24">{{ __('homepage.hero.subtitle') }}</p>
+      <!-- Overlay with text — frosted text area over hero image -->
+      <div class="absolute inset-0 gradient-overlay flex flex-col justify-center md:justify-end p-8 md:p-12 lg:p-16 text-white">
+        <h1 class="text-2xl md:text-5xl lg:text-5xl font-light mb-3 max-w-4xl tracking-tight" style="letter-spacing: -0.03em;">{{ __('homepage.hero.subtitle') }}</h1>
+        <p class="text-lg md:text-xl font-light mb-24 opacity-80">{{ __('homepage.hero.subtitle') }}</p>
     </div>
 
       <!-- Search Section -->

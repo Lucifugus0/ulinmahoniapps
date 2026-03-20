@@ -111,6 +111,38 @@
         html.dark .bg-teal-100 { background-color: rgba(13,148,136,0.2) !important; }
         html.dark .text-teal-800 { color: #5eead4 !important; }
         html.dark .border-teal-400 { border-color: #2dd4bf !important; }
+
+        /* Liquid glass — filter/search container panel */
+        .bg-white.rounded-xl.shadow-sm.border.border-gray-100 {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: var(--glass-shadow);
+        }
+        /* Liquid glass — active filters banner */
+        .bg-blue-50.border-l-4.border-blue-400 {
+            background: rgba(59, 130, 246, 0.12) !important;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+        }
+        /* Liquid glass — room cards rendered by JS */
+        .room-card {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: var(--glass-shadow);
+        }
+        .room-card:hover {
+            background: var(--glass-bg-hover) !important;
+            box-shadow: var(--glass-shadow-hover);
+        }
+        /* Light mode text brightening — darker grays for glass readability */
+        .text-gray-400 { color: #555570 !important; }
+        .text-gray-500 { color: #4a4a68 !important; }
+        input::placeholder { color: #555570 !important; opacity: 1 !important; }
+        html.dark input::placeholder { color: #a0a0b8 !important; }
     </style>
 </head>
 <body style="background-color: #f8f7f4;">

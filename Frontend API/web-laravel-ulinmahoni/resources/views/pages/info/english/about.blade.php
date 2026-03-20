@@ -10,14 +10,13 @@
     <!-- Dark mode: apply 'dark' class before render to prevent flash of light mode -->
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     <style>
-        /* Content containers — themed background for readability */
-        /* Content containers — 50% transparent, same as header */
+        /* Glass content card — translucent panel */
         .content-card {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             border-radius: 1rem;
-            border: 1px solid rgba(229, 231, 235, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.20);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             padding: 2rem;
         }
@@ -26,8 +25,10 @@
             background-color: #111827 !important;
         }
         html.dark .content-card {
-            background: rgba(17, 24, 39, 0.5) !important;
-            border-color: rgba(75, 85, 99, 0.5) !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.10) !important;
             color: #e5e7eb;
         }
         html.dark .content-card h1,

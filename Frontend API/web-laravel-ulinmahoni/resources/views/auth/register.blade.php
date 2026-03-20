@@ -41,12 +41,15 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
             z-index: 2;
         }
+        /* Glass login panel — highly transparent with strong blur */
         .login-box {
             position: relative;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(48px);
+            -webkit-backdrop-filter: blur(48px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 2rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             padding: 2.5rem;
             max-width: 28rem;
@@ -59,7 +62,7 @@
                 padding: 1.5rem;
             }
         }
-
+        /* Text colors handled by central .login-container .login-box rules in homepage/styles.blade.php */
     </style>
 </head>
 <body class="bg-gray-50">

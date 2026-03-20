@@ -170,6 +170,56 @@
     };
     </script>
     @include('components.homepage.styles')
+    <!-- Liquid glass overrides for booking page cards and containers -->
+    <style>
+        /* Main booking card — frosted glass panel */
+        section.py-12 > div > .bg-white.rounded-xl {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+        /* Booking section background — transparent instead of opaque gray */
+        section.py-12.bg-gray-50 {
+            background: transparent !important;
+        }
+        /* Table header — subtle glass tint */
+        section.py-12 thead.bg-gray-50 {
+            background: var(--glass-bg) !important;
+        }
+        /* Table body rows — glass transparency */
+        section.py-12 tbody.bg-white {
+            background: var(--glass-bg) !important;
+        }
+        /* Row hover — slightly more opaque glass */
+        section.py-12 tr.hover\:bg-gray-50:hover {
+            background: var(--glass-bg-hover) !important;
+        }
+        /* Modal dialogs — glass panels */
+        .bg-white.rounded-lg.shadow-xl {
+            background: var(--glass-bg-strong) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border);
+        }
+        /* Modal footer — glass instead of opaque gray */
+        .border-t.border-gray-200.bg-gray-50 {
+            background: var(--glass-bg) !important;
+        }
+        /* Payment reminder banner — glass tinted yellow */
+        .bg-yellow-50.border.border-yellow-300 {
+            background: rgba(253, 224, 71, 0.15) !important;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid rgba(253, 224, 71, 0.3) !important;
+        }
+        /* Light mode text brightening — darker grays for glass readability */
+        .text-gray-400 { color: #555570 !important; }
+        .text-gray-500 { color: #4a4a68 !important; }
+        input::placeholder { color: #555570 !important; opacity: 1 !important; }
+        html.dark input::placeholder { color: #a0a0b8 !important; }
+    </style>
 </head>
 <body>
     @include('components.homepage.header')
