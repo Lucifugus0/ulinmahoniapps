@@ -54,29 +54,33 @@
                 <x-jet-input-error for="photo" class="mt-2" />
             </div>
 
-        <!-- Name -->
-        <div class="col-span-6 sm:col-span-4">
-            <x-jet-label for="name" value="{{ __('Nama Lengkap') }}" />
-            <x-jet-input id="name" type="text" class="mt-1 block w-full" wire:model.defer="state.name" autocomplete="name" />
-            <x-jet-input-error for="name" class="mt-2" />
-        </div>
         <!-- First Name -->
         <div class="col-span-6 sm:col-span-4">
             <x-jet-label for="first_name" value="{{ __('Nama Depan') }}" />
-            <x-jet-input id="first_name" type="text" class="mt-1 block w-full" wire:model.defer="state.first_name" autocomplete="first_name" />
+            <x-jet-input id="first_name" type="text" class="mt-1 block w-full" wire:model.defer="state.first_name" autocomplete="given-name" />
             <x-jet-input-error for="first_name" class="mt-2" />
         </div>
         <!-- Last Name -->
         <div class="col-span-6 sm:col-span-4">
             <x-jet-label for="last_name" value="{{ __('Nama Belakang') }}" />
-            <x-jet-input id="last_name" type="text" class="mt-1 block w-full" wire:model.defer="state.last_name" autocomplete="last_name" />
+            <x-jet-input id="last_name" type="text" class="mt-1 block w-full" wire:model.defer="state.last_name" autocomplete="family-name" />
             <x-jet-input-error for="last_name" class="mt-2" />
         </div>
+        <!-- Gender -->
+        <div class="col-span-6 sm:col-span-4">
+            <x-jet-label for="gender" value="{{ __('Jenis Kelamin') }}" />
+            <select id="gender" wire:model.defer="state.gender" class="mt-1 block w-full border-gray-300 focus:border-teal-300 focus:ring focus:ring-teal-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                <option value="">{{ __('Pilih Jenis Kelamin') }}</option>
+                <option value="male">{{ __('Laki-laki') }}</option>
+                <option value="female">{{ __('Perempuan') }}</option>
+            </select>
+            <x-jet-input-error for="gender" class="mt-2" />
+        </div>
 
-        <!-- Email -->
+        <!-- Email — read-only, users cannot change their email -->
         <div class="col-span-6 sm:col-span-4">
             <x-jet-label for="email" value="{{ __('Alamat Email') }}" />
-            <x-jet-input id="email" type="email" class="mt-1 block w-full" wire:model.defer="state.email" />
+            <x-jet-input id="email" type="email" class="mt-1 block w-full bg-gray-100 cursor-not-allowed" wire:model.defer="state.email" disabled />
             <x-jet-input-error for="email" class="mt-2" />
         </div>
 
@@ -156,10 +160,38 @@
             <x-jet-input-error for="email_verified_at" class="mt-2" />
         </div>
 
-        <!-- Phone Number -->
+        <!-- Phone Number with Country Code -->
         <div class="col-span-6 sm:col-span-4">
-            <x-jet-label for="phone_number" value="{{ __('Nomor Telepon (+62)') }}" />
-            <x-jet-input id="phone_number" type="text" class="mt-1 block w-full" wire:model.defer="state.phone_number" autocomplete="phone_number" />
+            <x-jet-label for="phone_number" value="{{ __('Nomor Telepon') }}" />
+            <div class="mt-1 flex">
+                {{-- Country code dropdown --}}
+                <select wire:model.defer="state.country_code" class="border-gray-300 focus:border-teal-300 focus:ring focus:ring-teal-200 focus:ring-opacity-50 rounded-l-md shadow-sm text-sm w-28 flex-shrink-0">
+                    <option value="+62">🇮🇩 +62</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+65">🇸🇬 +65</option>
+                    <option value="+60">🇲🇾 +60</option>
+                    <option value="+61">🇦🇺 +61</option>
+                    <option value="+81">🇯🇵 +81</option>
+                    <option value="+82">🇰🇷 +82</option>
+                    <option value="+86">🇨🇳 +86</option>
+                    <option value="+91">🇮🇳 +91</option>
+                    <option value="+66">🇹🇭 +66</option>
+                    <option value="+63">🇵🇭 +63</option>
+                    <option value="+84">🇻🇳 +84</option>
+                    <option value="+971">🇦🇪 +971</option>
+                    <option value="+966">🇸🇦 +966</option>
+                    <option value="+49">🇩🇪 +49</option>
+                    <option value="+33">🇫🇷 +33</option>
+                    <option value="+31">🇳🇱 +31</option>
+                </select>
+                {{-- Phone number input — strips leading 0 automatically --}}
+                <input id="phone_number" type="tel" wire:model.defer="state.phone_number"
+                    class="border-gray-300 focus:border-teal-300 focus:ring focus:ring-teal-200 focus:ring-opacity-50 rounded-r-md shadow-sm block w-full"
+                    placeholder="8123456789"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '')"
+                    autocomplete="tel-national" />
+            </div>
             <x-jet-input-error for="phone_number" class="mt-2" />
         </div>
 

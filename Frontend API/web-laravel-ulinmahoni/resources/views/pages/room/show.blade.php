@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('properties.room_detail.room_details') }} - {{ $room['name'] }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker.min.css">
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
     <!-- Styles -->
@@ -47,6 +48,9 @@
         html.dark .text-gray-700 {
             color: #d1d5db !important;
         }
+        /* Hide scrollbar on thumbnail strip while keeping horizontal scroll */
+        .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
@@ -185,7 +189,7 @@
                                 <!-- Thumbnails (if multiple images) -->
                                 @if($totalImages > 1)
                                     <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent py-4 px-6">
-                                        <div class="flex space-x-3 overflow-x-auto">
+                                        <div class="flex space-x-3 overflow-x-auto no-scrollbar">
                                             @if($mainImage)
                                                 <div class="flex-shrink-0 w-32 h-20 rounded overflow-hidden border-2 border-white shadow-md mb-2 flex-none">
                                                     <img src="{{ env('ADMIN_URL') }}/storage/{{ $mainImage }}"
@@ -339,14 +343,14 @@
                                 <p class="text-gray-500">{{ __('properties.booking.fill_details') }}</p>
                             </div>
                             <div class="text-right">
-                                <!-- Room Status -->
+                                <!-- Room Status — green for available, gray for unavailable, with dark mode variants -->
                                 @if($room['rental_status'] == 1)
-                                    <span id="roomStatus" class="px-4 py-2 rounded-full text-sm font-medium bg-gray-400 text-white">
-                                        Tidak Tersedia
+                                    <span id="roomStatus" class="px-4 py-2 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+                                        {{ __('properties.status.unavailable') }}
                                     </span>
                                 @else
                                     <span id="roomStatus" class="px-4 py-2 rounded-full text-sm font-medium
-                                        {{ $room['status'] == 1 ? 'bg-green-100 text-green-800' : 'bg-gray-400 text-white' }}">
+                                        {{ $room['status'] == 1 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' }}">
                                         {{ $room['status'] == 1 ? __('properties.status.available') : __('properties.status.unavailable') }}
                                     </span>
                                 @endif
@@ -867,31 +871,33 @@
             return `Rp ${num.toLocaleString('id-ID')}`;
         }
         
+        /* Badge color map — dark mode aware via isDark flag */
         function showAvailabilityStatus(type, message) {
             if (!roomStatusSpan) return;
 
-            let className = 'px-4 py-2 rounded-full text-sm font-medium ';
+            const isDark = document.documentElement.classList.contains('dark');
+            let className = 'px-4 py-2 rounded-full text-sm font-medium border ';
             let statusText = '';
 
             switch (type) {
                 case 'loading':
-                    className += 'bg-blue-100 text-blue-800';
-                    statusText = '<i class="fas fa-spinner fa-spin mr-1"></i> Memeriksa...';
+                    className += isDark ? 'bg-blue-900/40 text-blue-300 border-blue-800' : 'bg-blue-100 text-blue-700 border-blue-200';
+                    statusText = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("properties.booking.checking_availability") }}';
                     break;
                 case 'available':
-                    className += 'bg-green-100 text-green-800';
+                    className += isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200';
                     statusText = '{{ __("properties.status.available") }}';
                     break;
                 case 'unavailable':
-                    className += 'bg-red-100 text-red-800';
+                    className += isDark ? 'bg-red-900/40 text-red-300 border-red-800' : 'bg-red-100 text-red-700 border-red-200';
                     statusText = '{{ __("properties.status.unavailable") }}';
                     break;
                 case 'error':
-                    className += 'bg-yellow-100 text-yellow-800';
+                    className += isDark ? 'bg-yellow-900/40 text-yellow-300 border-yellow-800' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
                     statusText = 'Error';
                     break;
                 default:
-                    className += 'bg-gray-100 text-gray-600';
+                    className += isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-gray-100 text-gray-600 border-gray-200';
                     statusText = '{{ __("properties.booking.waiting_date_selection") }}';
             }
 
@@ -901,13 +907,13 @@
 
         function resetAvailabilityStatus() {
             if (!roomStatusSpan) return;
-            // Reset to initial state based on room status
             const isAvailable = {{ $room['status'] == 1 && $room['rental_status'] != 1 ? 'true' : 'false' }};
+            const isDark = document.documentElement.classList.contains('dark');
             if (isAvailable) {
-                roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800';
+                roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200');
                 roomStatusSpan.innerHTML = '{{ __("properties.status.available") }}';
             } else {
-                roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium bg-gray-400 text-white';
+                roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-red-900/40 text-red-300 border-red-800' : 'bg-red-100 text-red-700 border-red-200');
                 roomStatusSpan.innerHTML = '{{ __("properties.status.unavailable") }}';
             }
         }
@@ -991,28 +997,29 @@
             function showAvailabilityStatus(type, message) {
                 if (!roomStatusSpan) return;
 
-                let className = 'px-4 py-2 rounded-full text-sm font-medium ';
+                const isDark = document.documentElement.classList.contains('dark');
+                let className = 'px-4 py-2 rounded-full text-sm font-medium border ';
                 let statusText = '';
 
                 switch (type) {
                     case 'loading':
-                        className += 'bg-blue-100 text-blue-800';
+                        className += isDark ? 'bg-blue-900/40 text-blue-300 border-blue-800' : 'bg-blue-100 text-blue-700 border-blue-200';
                         statusText = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("properties.booking.checking_availability") }}';
                         break;
                     case 'available':
-                        className += 'bg-green-100 text-green-800';
+                        className += isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200';
                         statusText = '{{ __("properties.status.available") }}';
                         break;
                     case 'unavailable':
-                        className += 'bg-gray-400 text-white';
+                        className += isDark ? 'bg-red-900/40 text-red-300 border-red-800' : 'bg-red-100 text-red-700 border-red-200';
                         statusText = '{{ __("properties.status.unavailable") }}';
                         break;
                     case 'error':
-                        className += 'bg-yellow-100 text-yellow-800';
+                        className += isDark ? 'bg-yellow-900/40 text-yellow-300 border-yellow-800' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
                         statusText = '{{ __("properties.booking.date_invalid") }}';
                         break;
                     default:
-                        className += 'bg-gray-100 text-gray-600';
+                        className += isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-gray-100 text-gray-600 border-gray-200';
                         statusText = '{{ __("properties.booking.waiting_date_selection") }}';
                 }
 
@@ -1022,13 +1029,13 @@
 
             function resetAvailabilityStatus() {
                 if (!roomStatusSpan) return;
-                // Reset to initial state based on room status
                 const isAvailable = {{ $room['status'] == 1 && $room['rental_status'] != 1 ? 'true' : 'false' }};
+                const isDark = document.documentElement.classList.contains('dark');
                 if (isAvailable) {
-                    roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800';
+                    roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200');
                     roomStatusSpan.innerHTML = '{{ __("properties.status.available") }}';
                 } else {
-                    roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium bg-gray-400 text-white';
+                    roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-red-900/40 text-red-300 border-red-800' : 'bg-red-100 text-red-700 border-red-200');
                     roomStatusSpan.innerHTML = '{{ __("properties.status.unavailable") }}';
                 }
             }

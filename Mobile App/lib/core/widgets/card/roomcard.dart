@@ -4,7 +4,10 @@ import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../constants/appcolor_constants.dart';
 import '../../constants/app_asset_constants.dart';
 import '../../utils/app_logger.dart';
+import '../../theme/glass_theme.dart';
 
+/// Room card with glass-style border and theme-aware styling.
+/// Rounded corners and shadow adapt to dark/light mode.
 class RoomCard extends StatefulWidget {
   final String? image;
   final String? title;
@@ -47,8 +50,9 @@ class _RoomCardState extends State<RoomCard> {
     final localizations = AppLocalizations.of(context)!;
     final Size screenSize = MediaQuery.of(context).size;
     final double cardWidth = widget.width ?? screenSize.width * 0.7;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    Color statusBgColor = Colors.black.withOpacity(0.7);
+    Color statusBgColor = Colors.black.withValues(alpha: 0.7);
     Color statusTextColor = Colors.white;
 
     IconData statusIcon = Icons.location_on;
@@ -125,7 +129,7 @@ class _RoomCardState extends State<RoomCard> {
               ImageChunkEvent? loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
-              color: Colors.grey[300],
+              color: isDark ? Colors.grey[800] : Colors.grey[300],
             );
           },
           errorBuilder: (context, error, stackTrace) {
@@ -166,24 +170,16 @@ class _RoomCardState extends State<RoomCard> {
         width: cardWidth,
         height: screenSize.height * 0.25,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              spreadRadius: 0,
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              spreadRadius: 0,
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          // Glass-style rounded corners with subtle border
+          borderRadius: BorderRadius.circular(GlassTheme.radiusMedium),
+          border: Border.all(
+            color: isDark ? GlassTheme.glassBorderDark : GlassTheme.glassBorderLight,
+            width: GlassTheme.borderWidth,
+          ),
+          boxShadow: isDark ? GlassTheme.glassShadowDark : GlassTheme.glassShadowLight,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(GlassTheme.radiusMedium),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -198,8 +194,8 @@ class _RoomCardState extends State<RoomCard> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.3),
-                      Colors.black.withOpacity(0.8),
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.8),
                     ],
                     stops: const [0.4, 0.7, 1.0],
                   ),

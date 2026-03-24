@@ -17,6 +17,7 @@ return [
     ],
 
     'property_types' => [
+        'All' => '全部',
         'Kos' => '公寓',
         'House' => '房屋',
         'Apartment' => '公寓楼',
@@ -44,12 +45,14 @@ return [
 
     'titles' => [
         'ongoing_promos' => '进行中的促销',
-        'available_areas' => '可用区域',
+        'available_areas' => '离你最近',
     ],
 
     'subtitles' => [
         'limited_offers' => '限时优惠',
-        'areas_around_you' => '您附近的可用区域',
+        'areas_around_you' => '离您最近的房产',
+        'enable_location' => '启用定位以查看距离',
+        'calculating_distance' => '正在计算距离...',
     ],
 
     'messages' => [

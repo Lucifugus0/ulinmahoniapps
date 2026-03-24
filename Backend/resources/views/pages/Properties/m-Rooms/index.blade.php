@@ -36,13 +36,13 @@
                     x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                     x-transition:leave-end="opacity-0 translate-y-4 scale-95" x-cloak>
 
-                    <div class="bg-white rounded-2xl shadow-lg overflow-auto w-3/4 max-h-full flex flex-col text-left"
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-auto w-3/4 max-h-full flex flex-col text-left"
                         @click.outside="modalOpen = true" @keydown.escape.window="modalOpen = false">
 
                         <!-- Modal header with step indicator -->
-                        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800">
                             <div class="flex justify-between items-center mb-4">
-                                <div class="font-bold text-xl text-gray-800">{{ __('ui.room_add_title') }}</div>
+                                <div class="font-bold text-xl text-gray-800 dark:text-gray-100">{{ __('ui.room_add_title') }}</div>
                                 <button type="button"
                                     class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
                                     @click="modalOpen = false">
@@ -152,7 +152,7 @@
                                         <!-- Property Selector -->
                                         <div>
                                             <label for="property_id"
-                                                class="block text-sm font-semibold text-gray-700 mb-2">
+                                                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_property_label') }} <span class="text-red-500">*</span>
                                             </label>
                                             <select id="property_id" name="property_id" required
@@ -168,36 +168,36 @@
                                         <div class="grid grid-cols-4 md:grid-cols-4 gap-4">
                                             <div>
                                                 <label for="room_no"
-                                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                     {{ __('ui.room_number_label') }} <span class="text-red-500">*</span>
                                                 </label>
                                                 <input type="text" id="room_no" name="room_no" required
-                                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4"
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4"
                                                     placeholder="{{ __('ui.room_number_placeholder') }}">
                                             </div>
 
                                             <div>
                                                 <label for="room_name"
-                                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                     {{ __('ui.room_name_type_label') }} <span class="text-red-500">*</span>
                                                 </label>
+                                                {{-- Room type dropdown — populated from m_room_name_types master table --}}
                                                 <select id="room_name" name="room_name" required
-                                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4">
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4">
                                                     <option value="" disabled selected>{{ __('ui.room_select_type') }}</option>
-                                                    <option value="Standar">Standar</option>
-                                                    <option value="Superior">Superior</option>
-                                                    <option value="Deluxe">Deluxe</option>
-                                                    <option value="Suite">Suite</option>
+                                                    @foreach($roomNameTypes as $type)
+                                                        <option value="{{ $type->name }}">{{ $type->name }}</option>
+                                                    @endforeach
                                                 </select>
                                             </div>
 
                                             <div>
                                                 <label for="room_bed"
-                                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                     {{ __('ui.room_bed_type_label') }} <span class="text-red-500">*</span>
                                                 </label>
                                                 <select id="room_bed" name="room_bed" required
-                                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4">
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4">
                                                     <option value="">{{ __('ui.room_select_bed_type') }}</option>
                                                     <option value="Single">Single</option>
                                                     <option value="Twin">Twin</option>
@@ -209,12 +209,12 @@
 
                                             <div>
                                                 <label for="room_capacity"
-                                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                     {{ __('ui.room_capacity_label') }} <span class="text-red-500">*</span>
                                                 </label>
                                                 <input type="number" id="room_capacity" name="room_capacity"
                                                     required
-                                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4"
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4"
                                                     placeholder="{{ __('ui.room_capacity_placeholder') }}">
                                             </div>
                                         </div>
@@ -222,18 +222,18 @@
                                         <!-- Hidden Room Size Input -->
                                         <div class="hidden">
                                             <label for="room_size"
-                                                class="block text-sm font-semibold text-gray-700 mb-2">
+                                                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_size_label') }}²) <span class="text-red-500">*</span>
                                             </label>
                                             <input type="number" id="room_size" name="room_size" value="0"
                                                 required
-                                                class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4"
+                                                class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4"
                                                 placeholder="Ukuran">
                                         </div>
 
                                         <div>
                                             <label for="description_id"
-                                                class="block text-sm font-semibold text-gray-700 mb-2">
+                                                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_description_label') }} <span class="text-red-500">*</span>
                                             </label>
                                             <textarea id="description_id" name="description_id" rows="4" required
@@ -277,7 +277,7 @@
                                         </div>
 
                                         <div x-show="priceType === 'daily'" x-transition>
-                                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_daily_price') }} <span class="text-red-500">*</span>
                                             </label>
                                             <div class="relative">
@@ -325,7 +325,7 @@
                                         </div>
 
                                         <div x-show="priceType === 'monthly'" x-transition class="mt-4">
-                                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_monthly_price') }} <span class="text-red-500">*</span>
                                             </label>
                                             <div class="relative">
@@ -347,7 +347,7 @@
 
                                         {{-- <!-- Multi-Tier Pricing: Annual price input --> --}}
                                         <div x-show="priceType === 'annual'" x-transition class="mt-4">
-                                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Harga Tahunan <span class="text-red-500">*</span>
                                             </label>
                                             <div class="relative">
@@ -660,8 +660,8 @@
             </div>
         </div>
 
-        <!-- Search and Filter Section -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <!-- Search and Filter Section — overflow-visible so fixed modals inside table rows are not clipped -->
+        <div class="bg-white rounded-lg shadow overflow-visible no-backdrop-filter">
             <!-- Search and Filter Section -->
             <div class="p-4 border-b border-gray-200">
                 <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">

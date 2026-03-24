@@ -71,9 +71,9 @@ class RoomController extends ApiController
                 $roomArray['price_weekend'] = $room->price_weekend;
                 $roomArray['price_original_annual'] = $room->price_original_annual;
                 $roomArray['periode_annual'] = $room->periode_annual;
-                $roomArray['has_seasonal_pricing'] = \DB::table('m_room_pricing_rules')
-                    ->where('room_id', $room->idrec)
-                    ->whereIn('rule_type', ['holiday', 'high_season', 'low_season'])
+                // Check global calendar for any active seasonal/holiday dates
+                $roomArray['has_seasonal_pricing'] = \DB::table('m_calendar_dates')
+                    ->whereIn('date_type', ['holiday', 'high_season', 'low_season'])
                     ->where('status', 1)
                     ->exists();
 
@@ -147,9 +147,9 @@ class RoomController extends ApiController
                 $roomArray['price_weekend'] = $room->price_weekend;
                 $roomArray['price_original_annual'] = $room->price_original_annual;
                 $roomArray['periode_annual'] = $room->periode_annual;
-                $roomArray['has_seasonal_pricing'] = \DB::table('m_room_pricing_rules')
-                    ->where('room_id', $room->idrec)
-                    ->whereIn('rule_type', ['holiday', 'high_season', 'low_season'])
+                // Check global calendar for any active seasonal/holiday dates
+                $roomArray['has_seasonal_pricing'] = \DB::table('m_calendar_dates')
+                    ->whereIn('date_type', ['holiday', 'high_season', 'low_season'])
                     ->where('status', 1)
                     ->exists();
 
@@ -364,24 +364,20 @@ class RoomController extends ApiController
             }
 
             /* Build per-date breakdown with day names and optional labels */
-            $pricingRuleLabels = \DB::table('m_room_pricing_rules')
-                ->where('room_id', $roomId)
+            // Use global calendar dates instead of per-room pricing rules for labels
+            $calendarLabels = \DB::table('m_calendar_dates')
                 ->where('status', 1)
-                ->whereIn('rule_type', ['holiday', 'high_season', 'low_season'])
-                ->get(['rule_type', 'date_start', 'date_end', 'label']);
+                ->whereIn('date_type', ['holiday', 'high_season', 'low_season'])
+                ->whereBetween('date', [$checkIn->toDateString(), $checkOut->toDateString()])
+                ->pluck('label', 'date')
+                ->toArray();
 
-            $breakdown = $datePrices->map(function ($p) use ($pricingRuleLabels) {
+            $breakdown = $datePrices->map(function ($p) use ($calendarLabels) {
                 $date = \Carbon\Carbon::parse($p->date);
                 $dateStr = $date->toDateString();
 
-                /* Find matching label if this date is in a holiday/season */
-                $label = null;
-                foreach ($pricingRuleLabels as $rule) {
-                    if ($dateStr >= $rule->date_start && $dateStr <= $rule->date_end) {
-                        $label = $rule->label;
-                        break;
-                    }
-                }
+                /* Find matching label from global calendar */
+                $label = $calendarLabels[$dateStr] ?? null;
 
                 return [
                     'date' => $dateStr,

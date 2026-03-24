@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @include('components.homepage.styles')
     <!-- Dark mode: apply 'dark' class before render to prevent flash of light mode -->
@@ -129,6 +130,24 @@
                         </div>
                     </div>
 
+                    <!-- Gender -->
+                    <div>
+                        <label for="gender" class="sr-only">{{ __('Jenis Kelamin') }}</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </div>
+                            <select id="gender" name="gender" required
+                                class="appearance-none rounded-lg block w-full px-3 py-3 pl-10 border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                <option value="" disabled {{ old('gender') ? '' : 'selected' }}>{{ __('Pilih Jenis Kelamin') }}</option>
+                                <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>{{ __('Laki-laki') }}</option>
+                                <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>{{ __('Perempuan') }}</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <!-- Hidden username field - auto-populated from email -->
                     <input id="username" name="username" type="hidden" value="{{ old('username') }}" />
 
@@ -144,15 +163,37 @@
                         </div>
                     </div>
 
+                    <!-- Phone Number with Country Code -->
                     <div>
-                        <label for="phone" class="sr-only">{{ __('Phone Number') }}</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                                </svg>
-                            </div>
-                            <input id="phone_number" name="phone_number" type="tel" class="appearance-none rounded-lg block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="{{ __('auth.phone_number') }}" value="{{ old('phone_number') }}" />
+                        <label for="phone_number" class="sr-only">{{ __('Phone Number') }}</label>
+                        <div class="flex">
+                            {{-- Country code dropdown --}}
+                            <select name="country_code"
+                                class="appearance-none rounded-l-lg px-3 py-3 border border-r-0 border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm w-28 flex-shrink-0">
+                                <option value="+62" {{ old('country_code', '+62') == '+62' ? 'selected' : '' }}>🇮🇩 +62</option>
+                                <option value="+1" {{ old('country_code') == '+1' ? 'selected' : '' }}>🇺🇸 +1</option>
+                                <option value="+44" {{ old('country_code') == '+44' ? 'selected' : '' }}>🇬🇧 +44</option>
+                                <option value="+65" {{ old('country_code') == '+65' ? 'selected' : '' }}>🇸🇬 +65</option>
+                                <option value="+60" {{ old('country_code') == '+60' ? 'selected' : '' }}>🇲🇾 +60</option>
+                                <option value="+61" {{ old('country_code') == '+61' ? 'selected' : '' }}>🇦🇺 +61</option>
+                                <option value="+81" {{ old('country_code') == '+81' ? 'selected' : '' }}>🇯🇵 +81</option>
+                                <option value="+82" {{ old('country_code') == '+82' ? 'selected' : '' }}>🇰🇷 +82</option>
+                                <option value="+86" {{ old('country_code') == '+86' ? 'selected' : '' }}>🇨🇳 +86</option>
+                                <option value="+91" {{ old('country_code') == '+91' ? 'selected' : '' }}>🇮🇳 +91</option>
+                                <option value="+66" {{ old('country_code') == '+66' ? 'selected' : '' }}>🇹🇭 +66</option>
+                                <option value="+63" {{ old('country_code') == '+63' ? 'selected' : '' }}>🇵🇭 +63</option>
+                                <option value="+84" {{ old('country_code') == '+84' ? 'selected' : '' }}>🇻🇳 +84</option>
+                                <option value="+971" {{ old('country_code') == '+971' ? 'selected' : '' }}>🇦🇪 +971</option>
+                                <option value="+966" {{ old('country_code') == '+966' ? 'selected' : '' }}>🇸🇦 +966</option>
+                                <option value="+49" {{ old('country_code') == '+49' ? 'selected' : '' }}>🇩🇪 +49</option>
+                                <option value="+33" {{ old('country_code') == '+33' ? 'selected' : '' }}>🇫🇷 +33</option>
+                                <option value="+31" {{ old('country_code') == '+31' ? 'selected' : '' }}>🇳🇱 +31</option>
+                            </select>
+                            {{-- Phone number input — strips leading 0 and non-digits --}}
+                            <input id="phone_number" name="phone_number" type="tel"
+                                class="appearance-none rounded-r-lg block w-full px-3 py-3 border border-gray-200 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                placeholder="8123456789" value="{{ old('phone_number') }}"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '')" />
                         </div>
                     </div>
 

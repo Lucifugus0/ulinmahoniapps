@@ -389,15 +389,20 @@
                                                         class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                 </div>
 
+                                                {{-- City dropdown populated from m_cities master table --}}
                                                 <div>
                                                     <label for="city"
                                                         class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                         {{ __('ui.city_regency') }} <span
                                                             class="text-red-500">*</span>
                                                     </label>
-                                                    <input type="text" id="city" name="city" required
-                                                        placeholder="{{ __('ui.enter_city_regency') }}"
-                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                    <select id="city" name="city" required
+                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <option value="">{{ __('ui.select_city') }}</option>
+                                                        @foreach($cities as $city)
+                                                            <option value="{{ $city->city_name }}">{{ $city->city_name }} ({{ $city->province }})</option>
+                                                        @endforeach
+                                                    </select>
                                                 </div>
                                             </div>
 
@@ -971,7 +976,8 @@
         </div>
 
         <!-- Property Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <!-- Property table container -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-visible no-backdrop-filter">
             <!-- Search and Filter Section -->
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                 <form id="searchForm">
@@ -1059,6 +1065,7 @@
             <div class="overflow-x-auto" id="propertyTableContainer">
                 @include('pages.Properties.m-Properties.partials.property_table', [
                     'properties' => $properties,
+                    'cities' => $cities,
                     'per_page' => request('per_page', 5),
                 ])
             </div>
@@ -1066,6 +1073,31 @@
             <!-- Pagination -->
             <div class="bg-gray-50 dark:bg-gray-700 rounded p-4" id="paginationContainer">
                 {{ $properties->appends(request()->input())->links() }}
+            </div>
+        </div>
+    </div>
+
+    {{-- Property View Modal — placed at page level to avoid backdrop-filter clipping --}}
+    <div x-data="modalView()" @open-property-view-modal.window="openModal($event.detail)" x-cloak>
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
+            x-show="modalOpenDetail" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-out duration-200"
+            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        </div>
+        <!-- Dialog -->
+        <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4"
+            x-show="modalOpenDetail"
+            x-transition:enter="transition ease-in-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in-out duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-y-auto w-full max-w-4xl max-h-[90vh] flex flex-col"
+                @click.outside="modalOpenDetail = false" @keydown.escape.window="modalOpenDetail = false">
+                @include('pages.Properties.m-Properties.partials.property_view_modal_content')
             </div>
         </div>
     </div>

@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ulin Mahoni for Business - Solusi Properti untuk Bisnis</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
@@ -39,6 +40,7 @@
         html.dark .content-card li {
             color: #d1d5db !important;
         }
+        /* Video background fixed below header (header ~72px tall) */
         .video-wrapper {
             position: fixed;
             top: 0;
@@ -68,19 +70,20 @@
             background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
             z-index: 2;
         }
+        /* Push page content below the fixed header */
+        main.relative {
+            padding-top: 72px;
+        }
     </style>
 </head>
-<body class="font-inter antialiased bg-white text-gray-900 tracking-tight video-page">
+<body class="font-inter antialiased text-gray-900 tracking-tight video-page">
     <!-- Header -->
     @include('components.homepage.header')
 
     <main class="relative">
-        <!-- Video Background -->
+        <!-- Image Background — fixed behind content -->
         <div class="video-wrapper">
-            <video class="video-background" autoplay loop muted playsinline>
-                <source src="{{ asset('images/assets/My_Movie.mp4') }}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+            <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" alt="Background" class="video-background">
             <div class="video-overlay"></div>
         </div>
         

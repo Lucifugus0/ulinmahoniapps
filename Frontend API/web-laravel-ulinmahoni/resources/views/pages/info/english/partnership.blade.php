@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Partnership - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     @include('components.homepage.styles')
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     <style>
@@ -39,33 +40,68 @@
         html.dark .content-card li {
             color: #d1d5db !important;
         }
+        /* Video background fixed below header (header ~72px tall) */
+        .video-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .video-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            
+            
+            object-fit: cover;
+            z-index: 1;
+        }
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
+            z-index: 2;
+        }
+        /* Push page content below the fixed header */
+        main.relative {
+            padding-top: 72px;
+        }
     </style>
 </head>
-<body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
+<body class="font-inter antialiased text-gray-900 tracking-tight video-page">
     <!-- Header -->
     @include('components.homepage.header')
-    <div class="header-spacer"></div>
 
-    <main class="flex-grow">
+    <main class="relative">
+        <!-- Image Background — fixed behind content -->
+        <div class="video-wrapper">
+            <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" alt="Background" class="video-background">
+            <div class="video-overlay"></div>
+        </div>
+
         <!-- Hero Section -->
-        <section class="relative pt-32 pb-12 md:pt-40 md:pb-20">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6">
-                <div class="text-center pb-12 md:pb-16">
-                    <h1 class="text-4xl md:text-5xl font-extrabold leading-tighter tracking-tighter mb-4">
+        <section class="py-16 md:py-24 px-4">
+            <div class="max-w-4xl mx-auto text-center content-card">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                         Ulin Mahoni Partnership
                     </h1>
-                    <div class="max-w-3xl mx-auto">
-                        <p class="text-xl text-gray-600 mb-8">
-                            Join us and grow your property business together
-                        </p>
-                    </div>
-                </div>
+                    <p class="text-xl text-gray-700 max-w-3xl mx-auto">
+                        Join us and grow your property business together
+                    </p>
             </div>
         </section>
 
         <!-- Content Sections -->
-        <section class="relative pb-20">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <section class="relative pb-20 px-4 sm:px-6">
+            <div class="max-w-6xl mx-auto content-card">
                 <!-- Partnership Types -->
                 <div class="grid md:grid-cols-3 gap-8 mb-16">
                     <!-- Property Owner — glass card styling -->

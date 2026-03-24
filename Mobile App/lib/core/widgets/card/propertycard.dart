@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../constants/appcolor_constants.dart';
 import '../../constants/app_asset_constants.dart';
+import '../../theme/glass_theme.dart';
 
+/// Property listing card with glass effect border and theme-aware styling.
+/// Rounded corners, subtle glass border, and shadow adapt to dark/light mode.
 class PropertyCard extends StatefulWidget {
   final String? image;
   final String? title;
@@ -52,10 +55,10 @@ class _PropertyCardState extends State<PropertyCard> {
     final Size screenSize = MediaQuery.of(context).size;
     final double cardWidth = widget.width ?? screenSize.width * 0.57;
     final double minCardHeight = screenSize.height * 0.22;
-    final double imageHeight = widget.imageHeight ?? 132.0;
-    final localizations = AppLocalizations.of(context)!; // Akses AppLocalizations
+    final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    Color statusBgColor = Colors.black.withOpacity(0.7);
+    Color statusBgColor = Colors.black.withValues(alpha: 0.7);
     Color statusTextColor = Colors.white;
 
     IconData statusIcon = Icons.location_on;
@@ -70,15 +73,15 @@ class _PropertyCardState extends State<PropertyCard> {
       if (widget.roomStatus == 1) {
         statusBgColor = AppColors.primaryColor;
         statusIcon = Icons.check_circle_outline;
-        displayTextForBadge = localizations.availableStatus; // ➡️ Dilokalisasi
+        displayTextForBadge = localizations.availableStatus;
         statusTextColor = Colors.white;
       } else if (widget.roomStatus == 0) {
         statusBgColor = AppColors.secondaryColor;
         statusIcon = Icons.cancel_outlined;
-        displayTextForBadge = localizations.unavailableStatus; // ➡️ Dilokalisasi
+        displayTextForBadge = localizations.unavailableStatus;
         statusTextColor = Colors.white;
       } else {
-        displayTextForBadge = localizations.unknownStatus; // ➡️ Dilokalisasi
+        displayTextForBadge = localizations.unknownStatus;
         statusBgColor = Colors.grey.shade700;
         statusIcon = Icons.help_outline;
         statusTextColor = Colors.white;
@@ -119,7 +122,7 @@ class _PropertyCardState extends State<PropertyCard> {
               ImageChunkEvent? loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
-              color: Colors.grey[300],
+              color: isDark ? Colors.grey[800] : Colors.grey[300],
             );
           },
           errorBuilder: (context, error, stackTrace) {
@@ -158,24 +161,16 @@ class _PropertyCardState extends State<PropertyCard> {
         width: cardWidth,
         height: minCardHeight,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              spreadRadius: 0,
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              spreadRadius: 0,
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          // Glass-style rounded corners with subtle border
+          borderRadius: BorderRadius.circular(GlassTheme.radiusMedium),
+          border: Border.all(
+            color: isDark ? GlassTheme.glassBorderDark : GlassTheme.glassBorderLight,
+            width: GlassTheme.borderWidth,
+          ),
+          boxShadow: isDark ? GlassTheme.glassShadowDark : GlassTheme.glassShadowLight,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(GlassTheme.radiusMedium),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -190,8 +185,8 @@ class _PropertyCardState extends State<PropertyCard> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.3),
-                      Colors.black.withOpacity(0.8),
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.8),
                     ],
                     stops: const [0.4, 0.7, 1.0],
                   ),

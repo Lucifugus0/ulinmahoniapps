@@ -17,6 +17,7 @@ return [
     ],
 
     'property_types' => [
+        'All' => 'Semua',
         'Kos' => 'Kos',
         'House' => 'Rumah',
         'Apartment' => 'Apartemen',
@@ -44,12 +45,14 @@ return [
 
     'titles' => [
         'ongoing_promos' => 'Promo Berlangsung',
-        'available_areas' => 'Area Tersedia',
+        'available_areas' => 'Terdekat dengan kamu',
     ],
 
     'subtitles' => [
         'limited_offers' => 'Penawaran Terbatas',
-        'areas_around_you' => 'Area tersedia di sekitar anda',
+        'areas_around_you' => 'Properti terdekat dari lokasi anda',
+        'enable_location' => 'Aktifkan lokasi untuk melihat jarak',
+        'calculating_distance' => 'Menghitung jarak...',
     ],
 
     'messages' => [

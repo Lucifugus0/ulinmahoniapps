@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,9 +6,12 @@ import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
 import '../../features/auth/login/provider/auth_provider.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../features/home/presentation/widgets/section/searchfilter.dart';
+import '../theme/glass_theme.dart';
 // OLD UM DIALOG - Commented out but preserved
 // import 'dialog/contactdialog.dart';
 
+/// Glass pill-shaped bottom navigation bar with backdrop blur.
+/// Theme-aware: adapts colors for dark and light modes.
 class BottomNavBar extends ConsumerWidget {
   final int currentIndex;
   final Map<String, dynamic>? extraData;
@@ -65,22 +69,18 @@ class BottomNavBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // --- 1. LOGIKA RESPONSIF ---
+    // --- Responsive sizing ---
     final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 360; // Deteksi HP layar kecil
-
-    // Margin kiri kanan dinamis (5% dari lebar layar)
+    final isSmallScreen = screenWidth < 360;
     final double horizontalMargin = screenWidth * 0.05;
-
-    // Font lebih kecil (9 untuk normal, 8 untuk hp kecil)
     final double fontSize = isSmallScreen ? 8.0 : 9.0;
-
-    // Ukuran icon sedikit menyesuaikan
     final double iconSize = isSmallScreen ? 20.0 : 24.0;
 
     final localizations = AppLocalizations.of(context)!;
     final authState = ref.watch(authProvider);
     final bool isLoggedIn = authState.isLoggedIn;
+    // Detect dark/light mode
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SafeArea(
       child: Container(
@@ -89,130 +89,154 @@ class BottomNavBar extends ConsumerWidget {
             right: horizontalMargin,
             bottom: 12,
         ),
-        height: 65,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(35),
-          border: Border.all(
-            color: Colors.grey.shade300,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        // Extra height to allow the search button to extend above the bar
+        height: 85,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.bottomCenter,
           children: [
-            // --- KIRI (2 Item) ---
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildNavItem(
-                      context,
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home,
-                      label: localizations.homeLabel,
-                      index: 0,
-                      currentIndex: currentIndex,
-                      activeColor: AppColors.primaryColor,
-                      fontSize: fontSize,
-                      iconSize: iconSize,
-                      onTap: () => _onTap(context, 0, isLoggedIn)
-                  ),
-                  _buildNavItem(
-                      context,
-                      icon: Icons.calendar_today_outlined,
-                      activeIcon: Icons.calendar_today,
-                      label: localizations.myBookingLabel,
-                      index: 1,
-                      currentIndex: currentIndex,
-                      activeColor: AppColors.primaryColor,
-                      fontSize: fontSize,
-                      iconSize: iconSize,
-                      onTap: () => _onTap(context, 1, isLoggedIn)
-                  ),
-                ],
-              ),
-            ),
-
-            // --- TENGAH (Search Button) ---
-            SizedBox(
-              width: 70,
-              height: 70,
-              child: Center(
-                child: Transform.translate(
-                  offset: const Offset(0, -20),
-                  child: GestureDetector(
-                    onTap: () => _onTap(context, 2, isLoggedIn),
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryColor.withOpacity(0.4),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+            // Glass pill bar background (65px tall, at the bottom)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 65,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(GlassTheme.radiusXLarge),
+                child: BackdropFilter(
+                  filter: GlassTheme.heavyBlur,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      // More transparent glass surface for liquid glass effect
+                      color: isDark
+                          ? const Color(0xFF1F2937).withValues(alpha: 0.35)
+                          : Colors.white.withValues(alpha: 0.40),
+                      borderRadius: BorderRadius.circular(GlassTheme.radiusXLarge),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.15)
+                            : Colors.white.withValues(alpha: 0.50),
+                        width: GlassTheme.borderWidth,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // --- LEFT (2 Items) ---
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildNavItem(
+                                  context,
+                                  icon: Icons.home_outlined,
+                                  activeIcon: Icons.home,
+                                  label: localizations.homeLabel,
+                                  index: 0,
+                                  currentIndex: currentIndex,
+                                  activeColor: AppColors.primaryColor,
+                                  fontSize: fontSize,
+                                  iconSize: iconSize,
+                                  isDark: isDark,
+                                  onTap: () => _onTap(context, 0, isLoggedIn)
+                              ),
+                              _buildNavItem(
+                                  context,
+                                  icon: Icons.calendar_today_outlined,
+                                  activeIcon: Icons.calendar_today,
+                                  label: localizations.myBookingLabel,
+                                  index: 1,
+                                  currentIndex: currentIndex,
+                                  activeColor: AppColors.primaryColor,
+                                  fontSize: fontSize,
+                                  iconSize: iconSize,
+                                  isDark: isDark,
+                                  onTap: () => _onTap(context, 1, isLoggedIn)
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.search,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                        ),
+
+                        // Spacer for center button
+                        const SizedBox(width: 70),
+
+                        // --- RIGHT (2 Items) ---
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // OLD: Phone icon for UM dialog (preserved but commented)
+                              // _buildNavItem(...)
+
+                              // NEW: Customer Service Chat
+                              _buildNavItem(
+                                  context,
+                                  icon: Icons.chat_bubble_outline,
+                                  activeIcon: Icons.chat_bubble,
+                                  label: localizations.csLabel,
+                                  index: 3,
+                                  currentIndex: currentIndex,
+                                  activeColor: AppColors.primaryColor,
+                                  fontSize: fontSize,
+                                  iconSize: iconSize,
+                                  isDark: isDark,
+                                  onTap: () => _onTap(context, 3, isLoggedIn)
+                              ),
+                              _buildNavItem(
+                                  context,
+                                  icon: Icons.person_outline,
+                                  activeIcon: Icons.person,
+                                  label: isLoggedIn ? localizations.profileLabel : localizations.loginButton,
+                                  index: 4,
+                                  currentIndex: currentIndex,
+                                  activeColor: AppColors.primaryColor,
+                                  fontSize: fontSize,
+                                  iconSize: iconSize,
+                                  isDark: isDark,
+                                  onTap: () => _onTap(context, 4, isLoggedIn)
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
 
-            // --- KANAN (2 Item) ---
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // OLD: Phone icon for UM dialog (preserved but commented)
-                  // _buildNavItem(
-                  //     context,
-                  //     icon: Icons.phone_outlined,
-                  //     activeIcon: Icons.phone,
-                  //     label: localizations.umLabel,
-                  //     index: 3,
-                  //     currentIndex: currentIndex,
-                  //     activeColor: AppColors.primaryColor,
-                  //     fontSize: fontSize,
-                  //     iconSize: iconSize,
-                  //     onTap: () => _onTap(context, 3, isLoggedIn)
-                  // ),
-
-                  // NEW: Customer Service Chat
-                  _buildNavItem(
-                      context,
-                      icon: Icons.chat_bubble_outline,
-                      activeIcon: Icons.chat_bubble,
-                      label: localizations.csLabel,
-                      index: 3,
-                      currentIndex: currentIndex,
-                      activeColor: AppColors.primaryColor,
-                      fontSize: fontSize,
-                      iconSize: iconSize,
-                      onTap: () => _onTap(context, 3, isLoggedIn)
+            // Center search button — sits ABOVE the glass bar, not clipped
+            Positioned(
+              top: 0,
+              child: GestureDetector(
+                onTap: () => _onTap(context, 2, isLoggedIn),
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryColor.withValues(alpha: isDark ? 0.5 : 0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  _buildNavItem(
-                      context,
-                      icon: Icons.person_outline,
-                      activeIcon: Icons.person,
-                      label: isLoggedIn ? localizations.profileLabel : localizations.loginButton,
-                      index: 4,
-                      currentIndex: currentIndex,
-                      activeColor: AppColors.primaryColor,
-                      fontSize: fontSize,
-                      iconSize: iconSize,
-                      onTap: () => _onTap(context, 4, isLoggedIn)
+                  child: const Icon(
+                    Icons.search,
+                    color: Colors.white,
+                    size: 28,
                   ),
-                ],
+                ),
               ),
             ),
           ],
@@ -221,6 +245,8 @@ class BottomNavBar extends ConsumerWidget {
     );
   }
 
+  /// Builds a single nav item with icon and label.
+  /// Theme-aware: inactive color changes based on dark/light mode.
   Widget _buildNavItem(
       BuildContext context, {
         required IconData icon,
@@ -229,11 +255,16 @@ class BottomNavBar extends ConsumerWidget {
         required int index,
         required int currentIndex,
         required Color activeColor,
-        required double fontSize, // Parameter baru
-        required double iconSize, // Parameter baru
+        required double fontSize,
+        required double iconSize,
+        required bool isDark,
         required VoidCallback onTap,
       }) {
     final bool isSelected = index == currentIndex;
+    // Inactive color adapts to dark/light mode
+    final Color inactiveColor = isDark
+        ? Colors.grey.shade400
+        : Colors.grey.shade500;
 
     return InkWell(
       onTap: onTap,
@@ -246,15 +277,15 @@ class BottomNavBar extends ConsumerWidget {
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color: isSelected ? activeColor : Colors.grey.shade500,
-              size: iconSize, // Pakai ukuran responsif
+              color: isSelected ? activeColor : inactiveColor,
+              size: iconSize,
             ),
             const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? activeColor : Colors.grey.shade500,
-                fontSize: fontSize, // Pakai font size responsif (9.0 atau 8.0)
+                color: isSelected ? activeColor : inactiveColor,
+                fontSize: fontSize,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 height: 1.0,
               ),

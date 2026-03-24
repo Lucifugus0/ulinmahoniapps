@@ -181,6 +181,13 @@ html.dark .bg-white {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
+/* Disable backdrop-filter on containers that have fixed-position modals inside */
+/* backdrop-filter creates a new containing block that traps position:fixed children */
+html.dark .no-backdrop-filter,
+html.dark .no-backdrop-filter.bg-white {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
 /* Glass shadows — subtle depth instead of flat removal */
 html.dark .shadow-sm, html.dark .shadow-md { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important; }
 html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important; }

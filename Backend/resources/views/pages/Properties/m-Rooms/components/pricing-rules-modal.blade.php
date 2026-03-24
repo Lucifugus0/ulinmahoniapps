@@ -1,6 +1,6 @@
-{{-- <!-- Multi-Tier Pricing: Modal for managing room pricing rules (weekday, weekend, holiday, seasons) -->
-     <!-- Uses Alpine.js for interactivity, fetches/saves rules via AJAX to RoomPricingRulesController -->
-     <!-- Sections: Base Prices (weekday/weekend), Seasons (high/low), Holidays, Calendar Preview --> --}}
+{{-- <!-- Multi-Tier Pricing: Modal for managing room pricing rules -->
+     <!-- Prices are per-room; date classifications (holiday, high_season, low_season) are global via Master Calendar -->
+     <!-- Uses Alpine.js for interactivity, fetches/saves rules via AJAX to RoomPricingRulesController --> --}}
 
 <div x-data="pricingRulesModal({{ $room->idrec }})" x-cloak>
     {{-- Trigger Button --}}
@@ -13,6 +13,7 @@
     </button>
 
     {{-- Modal --}}
+    <template x-teleport="body">
     <div x-show="isOpen" class="fixed inset-0 z-50 overflow-y-auto" @keydown.escape="closeModal()">
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
         <div class="flex min-h-screen items-center justify-center p-4">
@@ -20,7 +21,7 @@
                 x-transition:enter="ease-out duration-300"
                 x-transition:enter-start="opacity-0 scale-95"
                 x-transition:enter-end="opacity-100 scale-100"
-                class="relative w-full max-w-5xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 text-left shadow-xl">
+                class="relative w-full max-w-3xl transform rounded-2xl bg-white dark:bg-gray-800 text-left shadow-xl">
 
                 {{-- Header --}}
                 <div class="flex items-center justify-between p-6 border-b dark:border-gray-700">
@@ -35,7 +36,7 @@
                 </div>
 
                 {{-- Content --}}
-                <div class="p-6 max-h-[75vh] overflow-y-auto space-y-8">
+                <div class="p-6 max-h-[75vh] overflow-y-auto space-y-6">
 
                     {{-- Loading state --}}
                     <div x-show="loading" class="text-center py-8">
@@ -47,12 +48,12 @@
                         {{-- ===== SECTION 1: Base Prices (Weekday / Weekend) ===== --}}
                         <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-xl">
                             <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                                <i class="fas fa-calendar-week mr-2 text-teal-600"></i>Harga Dasar
+                                <i class="fas fa-calendar-week mr-2 text-teal-600"></i>{{ __('ui.room_price_base') ?? 'Harga Dasar' }}
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {{-- Weekday --}}
+                                {{-- Weekday price --}}
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Weekday (Sen-Jum)</label>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Weekday (Min-Kam)</label>
                                     <div class="relative">
                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
                                         <input type="number" x-model="weekdayPrice"
@@ -60,9 +61,9 @@
                                             placeholder="0">
                                     </div>
                                 </div>
-                                {{-- Weekend --}}
+                                {{-- Weekend price --}}
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Weekend (Sab-Min)</label>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Weekend (Jum-Sab)</label>
                                     <div class="relative">
                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
                                         <input type="number" x-model="weekendPrice"
@@ -76,154 +77,63 @@
                             </button>
                         </div>
 
-                        {{-- ===== SECTION 2: Seasons (High / Low) ===== --}}
+                        {{-- ===== SECTION 2: Season & Holiday Prices (price only — dates managed in Master Calendar) ===== --}}
                         <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-xl">
-                            <div class="flex items-center justify-between mb-4">
-                                <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                                    <i class="fas fa-sun mr-2 text-orange-500"></i>Musim (High / Low Season)
-                                </h4>
-                                <button @click="showSeasonForm = !showSeasonForm" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition">
-                                    <i class="fas fa-plus mr-1"></i> Tambah
-                                </button>
+                            <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                                <i class="fas fa-sun mr-2 text-orange-500"></i>Harga Musim & Hari Libur
+                            </h4>
+                            {{-- Info banner linking to Master Calendar --}}
+                            <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Klasifikasi tanggal (hari libur, musim ramai/sepi) dikelola di
+                                <a href="{{ route('calendar.index') }}" class="font-semibold underline hover:text-blue-900 dark:hover:text-blue-100">Master Calendar</a>.
+                                Di sini Anda hanya mengatur <strong>harga</strong> per kamar untuk setiap tipe.
                             </div>
 
-                            {{-- Add season form --}}
-                            <div x-show="showSeasonForm" x-transition class="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-600 mb-4">
-                                <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tipe</label>
-                                        <select x-model="newSeason.rule_type" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
-                                            <option value="high_season">High Season</option>
-                                            <option value="low_season">Low Season</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Label</label>
-                                        <input type="text" x-model="newSeason.label" placeholder="e.g. Lebaran 2026" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Mulai</label>
-                                        <input type="date" x-model="newSeason.date_start" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Selesai</label>
-                                        <input type="date" x-model="newSeason.date_end" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga/Malam</label>
-                                        <input type="number" x-model="newSeason.price" placeholder="Rp" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {{-- High Season price --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        <span class="inline-block w-3 h-3 rounded bg-red-400 mr-1"></span>High Season
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                        <input type="number" x-model="highSeasonPrice"
+                                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                            placeholder="Kosongkan = pakai harga dasar">
                                     </div>
                                 </div>
-                                <div class="flex gap-2 mt-3">
-                                    <button @click="addRule(newSeason)" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded-lg transition">Simpan</button>
-                                    <button @click="showSeasonForm = false; resetSeasonForm()" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition">Batal</button>
+                                {{-- Low Season price --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        <span class="inline-block w-3 h-3 rounded bg-green-400 mr-1"></span>Low Season
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                        <input type="number" x-model="lowSeasonPrice"
+                                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                            placeholder="Kosongkan = pakai harga dasar">
+                                    </div>
+                                </div>
+                                {{-- Holiday price --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        <span class="inline-block w-3 h-3 rounded bg-orange-400 mr-1"></span>Hari Libur
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                        <input type="number" x-model="holidayPrice"
+                                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                            placeholder="Kosongkan = pakai harga dasar">
+                                    </div>
                                 </div>
                             </div>
-
-                            {{-- Season rules table --}}
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm" x-show="seasonRules.length > 0">
-                                    <thead class="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-600">
-                                        <tr>
-                                            <th class="pb-2">Tipe</th>
-                                            <th class="pb-2">Label</th>
-                                            <th class="pb-2">Mulai</th>
-                                            <th class="pb-2">Selesai</th>
-                                            <th class="pb-2">Harga</th>
-                                            <th class="pb-2 text-right">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <template x-for="rule in seasonRules" :key="rule.idrec">
-                                            <tr class="border-b dark:border-gray-600">
-                                                <td class="py-2">
-                                                    <span x-text="rule.rule_type === 'high_season' ? 'High' : 'Low'"
-                                                        :class="rule.rule_type === 'high_season' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
-                                                        class="px-2 py-0.5 rounded-full text-xs font-medium"></span>
-                                                </td>
-                                                <td class="py-2 text-gray-700 dark:text-gray-300" x-text="rule.label || '-'"></td>
-                                                <td class="py-2 text-gray-600 dark:text-gray-400" x-text="rule.date_start"></td>
-                                                <td class="py-2 text-gray-600 dark:text-gray-400" x-text="rule.date_end"></td>
-                                                <td class="py-2 font-medium text-gray-800 dark:text-gray-200" x-text="'Rp ' + Number(rule.price).toLocaleString('id-ID')"></td>
-                                                <td class="py-2 text-right">
-                                                    <button @click="deleteRule(rule.idrec)" class="text-red-500 hover:text-red-700 text-xs"><i class="fas fa-trash"></i></button>
-                                                </td>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
-                                <p x-show="seasonRules.length === 0" class="text-gray-400 text-sm text-center py-4">Belum ada aturan musim</p>
-                            </div>
+                            <button @click="saveSeasonPrices()" class="mt-3 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition">
+                                <i class="fas fa-save mr-1"></i> Simpan Harga Musim & Libur
+                            </button>
                         </div>
 
-                        {{-- ===== SECTION 3: Holidays ===== --}}
-                        <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-xl">
-                            <div class="flex items-center justify-between mb-4">
-                                <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                                    <i class="fas fa-star mr-2 text-yellow-500"></i>Hari Libur Nasional
-                                </h4>
-                                <button @click="showHolidayForm = !showHolidayForm" class="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition">
-                                    <i class="fas fa-plus mr-1"></i> Tambah
-                                </button>
-                            </div>
-
-                            {{-- Add holiday form --}}
-                            <div x-show="showHolidayForm" x-transition class="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-600 mb-4">
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nama Hari Libur</label>
-                                        <input type="text" x-model="newHoliday.label" placeholder="e.g. Idul Fitri" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Mulai</label>
-                                        <input type="date" x-model="newHoliday.date_start" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Selesai</label>
-                                        <input type="date" x-model="newHoliday.date_end" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga/Malam</label>
-                                        <input type="number" x-model="newHoliday.price" placeholder="Rp" class="w-full py-2 px-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
-                                    </div>
-                                </div>
-                                <div class="flex gap-2 mt-3">
-                                    <button @click="addRule({...newHoliday, rule_type: 'holiday'})" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded-lg transition">Simpan</button>
-                                    <button @click="showHolidayForm = false; resetHolidayForm()" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition">Batal</button>
-                                </div>
-                            </div>
-
-                            {{-- Holiday rules table --}}
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm" x-show="holidayRules.length > 0">
-                                    <thead class="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-600">
-                                        <tr>
-                                            <th class="pb-2">Nama</th>
-                                            <th class="pb-2">Mulai</th>
-                                            <th class="pb-2">Selesai</th>
-                                            <th class="pb-2">Harga</th>
-                                            <th class="pb-2 text-right">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <template x-for="rule in holidayRules" :key="rule.idrec">
-                                            <tr class="border-b dark:border-gray-600">
-                                                <td class="py-2 text-gray-700 dark:text-gray-300" x-text="rule.label || '-'"></td>
-                                                <td class="py-2 text-gray-600 dark:text-gray-400" x-text="rule.date_start"></td>
-                                                <td class="py-2 text-gray-600 dark:text-gray-400" x-text="rule.date_end"></td>
-                                                <td class="py-2 font-medium text-gray-800 dark:text-gray-200" x-text="'Rp ' + Number(rule.price).toLocaleString('id-ID')"></td>
-                                                <td class="py-2 text-right">
-                                                    <button @click="deleteRule(rule.idrec)" class="text-red-500 hover:text-red-700 text-xs"><i class="fas fa-trash"></i></button>
-                                                </td>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
-                                <p x-show="holidayRules.length === 0" class="text-gray-400 text-sm text-center py-4">Belum ada hari libur</p>
-                            </div>
-                        </div>
-
-                        {{-- ===== SECTION 4: Color Legend ===== --}}
+                        {{-- ===== SECTION 3: Color Legend ===== --}}
                         <div class="flex flex-wrap gap-3 text-xs">
                             <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-blue-400"></span> Weekday</span>
                             <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-purple-400"></span> Weekend</span>
@@ -249,9 +159,10 @@
             </div>
         </div>
     </div>
+    </template>
 </div>
 
-{{-- <!-- Alpine.js component for pricing rules modal --> --}}
+{{-- <!-- Alpine.js component for pricing rules modal — prices only, no date management --> --}}
 <script>
 function pricingRulesModal(roomId) {
     return {
@@ -261,19 +172,9 @@ function pricingRulesModal(roomId) {
         loading: false,
         weekdayPrice: 0,
         weekendPrice: 0,
-        allRules: [],
-        showSeasonForm: false,
-        showHolidayForm: false,
-        newSeason: { rule_type: 'high_season', label: '', date_start: '', date_end: '', price: '' },
-        newHoliday: { label: '', date_start: '', date_end: '', price: '' },
-
-        /* Computed: filter season rules from all rules */
-        get seasonRules() {
-            return this.allRules.filter(r => r.rule_type === 'high_season' || r.rule_type === 'low_season');
-        },
-        get holidayRules() {
-            return this.allRules.filter(r => r.rule_type === 'holiday');
-        },
+        highSeasonPrice: '',
+        lowSeasonPrice: '',
+        holidayPrice: '',
 
         async openModal() {
             this.isOpen = true;
@@ -283,7 +184,7 @@ function pricingRulesModal(roomId) {
         },
         closeModal() { this.isOpen = false; },
 
-        /* Fetch all pricing rules from server */
+        /* Fetch pricing rules from server — extract prices per type */
         async loadRules() {
             try {
                 const res = await fetch(`/rooms/${this.roomId}/pricing-rules`);
@@ -292,7 +193,15 @@ function pricingRulesModal(roomId) {
                     this.roomName = json.data.room_name;
                     this.weekdayPrice = json.data.price_weekday || 0;
                     this.weekendPrice = json.data.price_weekend || 0;
-                    this.allRules = json.data.rules || [];
+
+                    /* Extract per-type prices from rules array */
+                    const rules = json.data.rules || [];
+                    const highSeason = rules.find(r => r.rule_type === 'high_season');
+                    const lowSeason = rules.find(r => r.rule_type === 'low_season');
+                    const holiday = rules.find(r => r.rule_type === 'holiday');
+                    this.highSeasonPrice = highSeason ? highSeason.price : '';
+                    this.lowSeasonPrice = lowSeason ? lowSeason.price : '';
+                    this.holidayPrice = holiday ? holiday.price : '';
                 }
             } catch (e) { console.error('Failed to load rules:', e); }
         },
@@ -300,13 +209,11 @@ function pricingRulesModal(roomId) {
         /* Save weekday + weekend base prices */
         async saveBasePrice() {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-            /* Save weekday */
             await fetch(`/rooms/${this.roomId}/pricing-rules`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 body: JSON.stringify({ rule_type: 'weekday', price: this.weekdayPrice })
             });
-            /* Save weekend */
             await fetch(`/rooms/${this.roomId}/pricing-rules`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
@@ -316,36 +223,24 @@ function pricingRulesModal(roomId) {
             await this.loadRules();
         },
 
-        /* Add a new rule (season or holiday) */
-        async addRule(ruleData) {
+        /* Save high season, low season, and holiday prices */
+        async saveSeasonPrices() {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-            try {
-                const res = await fetch(`/rooms/${this.roomId}/pricing-rules`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                    body: JSON.stringify(ruleData)
-                });
-                const json = await res.json();
-                if (json.status === 'success') {
-                    this.showSeasonForm = false;
-                    this.showHolidayForm = false;
-                    this.resetSeasonForm();
-                    this.resetHolidayForm();
-                    await this.loadRules();
-                } else {
-                    alert('Error: ' + (json.message || 'Gagal menyimpan'));
+            const types = [
+                { rule_type: 'high_season', price: this.highSeasonPrice },
+                { rule_type: 'low_season', price: this.lowSeasonPrice },
+                { rule_type: 'holiday', price: this.holidayPrice },
+            ];
+            for (const t of types) {
+                if (t.price !== '' && t.price !== null) {
+                    await fetch(`/rooms/${this.roomId}/pricing-rules`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        body: JSON.stringify(t)
+                    });
                 }
-            } catch (e) { alert('Network error'); }
-        },
-
-        /* Delete a rule */
-        async deleteRule(ruleId) {
-            if (!confirm('Hapus aturan harga ini?')) return;
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-            await fetch(`/rooms/${this.roomId}/pricing-rules/${ruleId}`, {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': csrfToken }
-            });
+            }
+            alert('Harga musim & libur berhasil disimpan & harga per-tanggal di-regenerate.');
             await this.loadRules();
         },
 
@@ -359,9 +254,6 @@ function pricingRulesModal(roomId) {
             const json = await res.json();
             alert(json.message || 'Selesai');
         },
-
-        resetSeasonForm() { this.newSeason = { rule_type: 'high_season', label: '', date_start: '', date_end: '', price: '' }; },
-        resetHolidayForm() { this.newHoliday = { label: '', date_start: '', date_end: '', price: '' }; },
     };
 }
 </script>

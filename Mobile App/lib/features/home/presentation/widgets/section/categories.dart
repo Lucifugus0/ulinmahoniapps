@@ -15,6 +15,8 @@ class CategoriesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    // Detect dark/light mode for theme-aware text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final List<Map<String, dynamic>> categories = [
       {
@@ -57,7 +59,7 @@ class CategoriesSection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ],
@@ -110,6 +112,8 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -117,8 +121,14 @@ class _PillButton extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.secondaryColor : Colors.grey.shade100,
+          // Glass-style pill: dark mode uses glass surface, light mode uses grey
+          color: isActive
+              ? AppColors.secondaryColor
+              : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(18),
+          border: isDark && !isActive
+              ? Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5)
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -133,7 +143,9 @@ class _PillButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: isActive ? Colors.white : Colors.black87,
+                color: isActive
+                    ? Colors.white
+                    : (isDark ? Colors.white70 : Colors.black87),
               ),
             ),
           ],

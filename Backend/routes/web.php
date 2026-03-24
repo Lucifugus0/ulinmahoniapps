@@ -14,6 +14,7 @@ use App\Http\Controllers\Bookings\Completed\CompletedController;
 use App\Http\Controllers\Bookings\NewReservation\NewReservController;
 use App\Http\Controllers\Bookings\Pending\PendingController;
 use App\Http\Controllers\Rooms\ChangeRoomController;
+use App\Http\Controllers\Properties\CalendarDateController;
 use App\Http\Controllers\Properties\ManajementPropertiesController;
 use App\Http\Controllers\Properties\ManajementRoomsController;
 use App\Http\Controllers\Payment\PaymentController;
@@ -200,6 +201,19 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::put('/m-properties/facility/update/{id}', [ManajementPropertiesController::class, 'updateFacility'])->name('facilityProperty.update');
         Route::post('/m-properties/facility/toggle-status', [ManajementPropertiesController::class, 'toggleFacilityStatus'])->name('facilityProperty.toggle-status');
 
+        // ------------------------- CITIES MANAGEMENT -------------------------
+        Route::get('/m-properties/cities', [ManajementPropertiesController::class, 'indexCity'])->name('cityProperty.index');
+        Route::post('/m-properties/cities/store', [ManajementPropertiesController::class, 'storeCity'])->name('cityProperty.store');
+        Route::put('/m-properties/cities/update/{id}', [ManajementPropertiesController::class, 'updateCity'])->name('cityProperty.update');
+        Route::post('/m-properties/cities/toggle-status', [ManajementPropertiesController::class, 'toggleCityStatus'])->name('cityProperty.toggle-status');
+
+        // ------------------------- GLOBAL CALENDAR MANAGEMENT -------------------------
+        Route::get('/calendar', [CalendarDateController::class, 'index'])->name('calendar.index');
+        Route::get('/calendar/entries', [CalendarDateController::class, 'getEntries'])->name('calendar.entries');
+        Route::post('/calendar/store', [CalendarDateController::class, 'storeRange'])->name('calendar.store');
+        Route::post('/calendar/toggle-status', [CalendarDateController::class, 'toggleStatus'])->name('calendar.toggle-status');
+        Route::post('/calendar/regenerate-all', [CalendarDateController::class, 'regenerateAll'])->name('calendar.regenerate-all');
+
         // ------------------------- ROOMS MANAGEMENT -------------------------
         Route::get('/m-rooms', [ManajementRoomsController::class, 'index'])->name('rooms.index');
         Route::post('/rooms/store', [ManajementRoomsController::class, 'store'])->name('rooms.store');
@@ -226,6 +240,12 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::post('/rooms/facilityRooms/store', [ManajementRoomsController::class, 'storeFacility'])->name('facilityRooms.store');
         Route::put('/rooms/facilityRooms/update/{id}', [ManajementRoomsController::class, 'updateFacility'])->name('facilityRooms.update');
         Route::post('/rooms/facilityRooms/toggle-status', [ManajementRoomsController::class, 'toggleFacilityStatus'])->name('facilityRooms.toggle-status');
+
+        // ------------------------- ROOM NAME TYPE MANAGEMENT -------------------------
+        Route::get('/rooms/room-name-types', [ManajementRoomsController::class, 'indexRoomNameType'])->name('roomNameTypes.index');
+        Route::post('/rooms/room-name-types/store', [ManajementRoomsController::class, 'storeRoomNameType'])->name('roomNameTypes.store');
+        Route::put('/rooms/room-name-types/update/{id}', [ManajementRoomsController::class, 'updateRoomNameType'])->name('roomNameTypes.update');
+        Route::post('/rooms/room-name-types/toggle-status', [ManajementRoomsController::class, 'toggleRoomNameTypeStatus'])->name('roomNameTypes.toggle-status');
 
         // ------------------------- DOOR LOCK MANAGEMENT -------------------------
         Route::get('/rooms/door-locks', [DoorLockController::class, 'index'])->name('door-locks.index');

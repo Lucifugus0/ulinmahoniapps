@@ -205,6 +205,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				41D3A382096B77FDD673CE6F /* [CP] Embed Pods Frameworks */,
 				8AE519DC5F186123AB7F13A0 /* [CP] Copy Pods Resources */,
+				A1B2C3D4E5F6789012345678 /* [Xcode 26 Fix] Strip Provenance */,
 			);
 			buildRules = (
 			);
@@ -314,7 +315,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+			shellScript = "# Fix Xcode 26: strip com.apple.provenance xattrs that break codesigning\nfind \"${BUILT_PRODUCTS_DIR}\" -name '*.framework' -exec xattr -cr {} \\; 2>/dev/null || true\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		A1B2C3D4E5F6789012345678 /* [Xcode 26 Fix] Strip Provenance */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[Xcode 26 Fix] Strip Provenance";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Strip com.apple.provenance xattrs that cause codesigning failures on Xcode 26\nfind \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\" -exec xattr -d com.apple.provenance {} \\; 2>/dev/null || true\n";
 		};
 		41D3A382096B77FDD673CE6F /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;

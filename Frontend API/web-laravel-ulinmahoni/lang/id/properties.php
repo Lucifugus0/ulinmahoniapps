@@ -46,6 +46,7 @@ return [
         'education' => 'Pendidikan',
         'worship' => 'Tempat Ibadah',
         'shopping' => 'Perbelanjaan',
+        'custom' => 'Lainnya',
     ],
 
     'navigation' => [
@@ -93,6 +94,7 @@ return [
 
     'room' => [
         'rooms_count' => 'kamar',
+        'available_count' => 'tersedia',
         'room_facilities' => 'Fasilitas Kamar:',
         'period_price' => 'Periode Sewa & Harga:',
         'no_facilities' => 'Fasilitas Tidak Tersedia',

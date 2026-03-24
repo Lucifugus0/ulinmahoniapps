@@ -17,6 +17,7 @@ return [
     ],
 
     'property_types' => [
+        'All' => 'All',
         'Kos' => 'Kos',
         'House' => 'House',
         'Apartment' => 'Apartment',
@@ -44,12 +45,14 @@ return [
 
     'titles' => [
         'ongoing_promos' => 'Ongoing Promotions',
-        'available_areas' => 'Available Areas',
+        'available_areas' => 'Nearest to You',
     ],
 
     'subtitles' => [
         'limited_offers' => 'Limited Offers',
-        'areas_around_you' => 'Available areas around you',
+        'areas_around_you' => 'Properties closest to your location',
+        'enable_location' => 'Enable location to see distances',
+        'calculating_distance' => 'Calculating distance...',
     ],
 
     'messages' => [

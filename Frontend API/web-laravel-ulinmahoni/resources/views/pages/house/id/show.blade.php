@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $house['name'] }} - Property Details</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
@@ -113,9 +114,9 @@
             transform: translateY(0);
         }
     </style>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js loaded via header component — no duplicate needed here -->
 </head>
-<body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
+<body class="font-inter antialiased bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 tracking-tight">
     <!-- Header -->
     @include('components.homepage.header')
     <div class="header-spacer"></div>
@@ -396,7 +397,8 @@
                             @forelse($house['rooms'] as $room)
                                 <a href="{{ route('rooms.show', $room['slug']) }}" class="group">
                                     <!-- Liquid glass room card -->
-                                    <div class="overflow-hidden transition-shadow group-hover:ring-2 group-hover:ring-teal-500" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
+                                    <!-- Room card: replaced inline liquid glass styles with Tailwind dark-mode-compatible classes -->
+                                    <div class="overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md transition-shadow group-hover:ring-2 group-hover:ring-teal-500">
                                     <div class="relative pb-[56.25%] h-48">
                                         <div class="absolute inset-0">
                                             @php
@@ -435,7 +437,8 @@
                                     </div>
 
                                     <div class="p-6">
-                                        <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $room['name'] }}</h3>
+                                        <!-- Room name: added dark mode text color -->
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{{ $room['name'] }}</h3>
                                         <p class="text-gray-600 text-sm mb-4">{{ $room['descriptions'] }}</p>
 
                                         <div class="mb-4">

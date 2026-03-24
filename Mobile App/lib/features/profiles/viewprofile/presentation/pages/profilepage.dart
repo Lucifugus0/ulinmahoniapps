@@ -23,6 +23,7 @@ import '../../../../../core/network/api_result.dart';
 import '../../../../../core/utils/app_logger.dart';
 import '../../../../../core/services/apple_multi_account_storage.dart';
 import '../../../../auth/presentation/pages/account_picker_page.dart';
+import '../../../../../core/theme/theme_provider.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -513,6 +514,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final authState = ref.watch(authProvider);
     final user = authState.user.value;
     final displayName = user?.firstName ?? localizations.profileDefaultUsername;
+    // Dark/light mode detection for theme-aware glass containers
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return MainLayout(
       showBottomNav: false,
@@ -535,15 +538,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Profile Card
+                      // Profile Card (glass-style container)
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? AppColors.glassBorderDark : Colors.transparent,
+                            width: 0.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -736,14 +743,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
                       const SizedBox(height: 12),
 
-                      // First Menu Group
+                      // First Menu Group (glass-style container)
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? AppColors.glassBorderDark : Colors.transparent,
+                            width: 0.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -776,6 +787,29 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                               onTap: _showLanguageDialog,
                             ),
+                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            // Dark/Light mode toggle
+                            Consumer(
+                              builder: (context, ref, _) {
+                                final themeMode = ref.watch(themeProvider);
+                                final isDarkMode = themeMode == ThemeMode.dark;
+                                return MenuItem(
+                                  icon: isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                                  text: isDarkMode ? 'Dark Mode' : 'Light Mode',
+                                  subText: isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                                  trailing: Switch(
+                                    value: isDarkMode,
+                                    activeTrackColor: AppColors.primaryColor,
+                                    onChanged: (value) {
+                                      ref.read(themeProvider.notifier).toggle();
+                                    },
+                                  ),
+                                  onTap: () {
+                                    ref.read(themeProvider.notifier).toggle();
+                                  },
+                                );
+                              },
+                            ),
                             // Show "Switch Apple Account" only on iOS and if user is signed in with Apple
                             if (Platform.isIOS && user?.appleUserId != null) ...[
                               Divider(height: 1, indent: 60, color: Colors.grey[200]),
@@ -793,14 +827,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
                       const SizedBox(height: 16),
 
-                      // Second Menu Group
+                      // Second Menu Group (glass-style container)
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? AppColors.glassBorderDark : Colors.transparent,
+                            width: 0.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),

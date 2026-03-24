@@ -10,7 +10,8 @@
         </svg>
     </button>
 
-    <!-- Modal -->
+    <!-- Modal — teleported to body so ancestor overflow/backdrop-filter cannot clip it -->
+    <template x-teleport="body">
     <div x-show="isOpen" x-cloak x-transition class="fixed inset-0 z-50 overflow-y-auto" @keydown.escape="closeModal()">
         <!-- Overlay -->
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" x-show="isOpen"
@@ -28,7 +29,7 @@
                 x-transition:leave="ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                class="relative w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all">
+                class="relative w-full max-w-4xl max-h-[90vh] transform rounded-2xl bg-white text-left shadow-xl transition-all overflow-y-auto">
 
                 <!-- Header -->
                 <div class="flex items-center justify-between p-6 border-b">
@@ -210,4 +211,5 @@
             </div>
         </div>
     </div>
+    </template>
 </div>

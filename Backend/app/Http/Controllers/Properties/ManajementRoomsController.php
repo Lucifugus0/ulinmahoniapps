@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\MRoomImage;
 use App\Models\RoomFacility;
+use App\Models\RoomNameType;
 use App\Services\RoomPriceGeneratorService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -109,11 +110,15 @@ class ManajementRoomsController extends Controller
             ]);
         }
 
+        // Fetch active room name types for the dropdown
+        $roomNameTypes = RoomNameType::active()->orderBy('name')->get();
+
         return view('pages.Properties.m-Rooms.index', [
             'facilities' => $facilities,
             'facilityData' => $facilityData,
             'rooms' => $rooms,
             'properties' => $properties,
+            'roomNameTypes' => $roomNameTypes,
             'per_page' => $perPage,
             'statusFilter' => $statusFilter,
         ]);
@@ -1103,6 +1108,85 @@ class ManajementRoomsController extends Controller
                 'success' => false,
                 'message' => 'Gagal mengubah status'
             ], 500);
+        }
+    }
+
+    // `````````````Room Name Type Management```````````````````````````
+
+    /**
+     * <!-- List room name types with search, status filter, and pagination -->
+     */
+    public function indexRoomNameType(Request $request)
+    {
+        $query = RoomNameType::query()
+            ->when($request->search, fn($q) => $q->where('name', 'like', '%' . $request->search . '%'))
+            ->when($request->status, fn($q) => $q->where('status', $request->status === 'active' ? 1 : 0))
+            ->orderBy('name', 'asc');
+
+        $roomNameTypes = $query->paginate(8)->withQueryString();
+
+        return view('pages.Properties.Room_name_types.index', compact('roomNameTypes'));
+    }
+
+    /**
+     * <!-- Store a new room name type -->
+     */
+    public function storeRoomNameType(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:m_room_name_types,name',
+            'status' => 'required|boolean',
+        ]);
+
+        try {
+            RoomNameType::create([
+                'name' => $validated['name'],
+                'status' => $validated['status'] ? 1 : 0,
+                'created_by' => Auth::id(),
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Room type created successfully'], 201);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * <!-- Update an existing room name type -->
+     */
+    public function updateRoomNameType(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:m_room_name_types,name,' . $id . ',idrec',
+            'status' => 'required|boolean',
+        ]);
+
+        try {
+            $type = RoomNameType::findOrFail($id);
+            $type->update([
+                'name' => $validated['name'],
+                'status' => $validated['status'] ? 1 : 0,
+                'updated_by' => Auth::id(),
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Room type updated successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * <!-- Toggle room name type status -->
+     */
+    public function toggleRoomNameTypeStatus(Request $request)
+    {
+        try {
+            $type = RoomNameType::findOrFail($request->id);
+            $type->update(['status' => $request->status, 'updated_by' => Auth::id()]);
+
+            return response()->json(['success' => true, 'message' => 'Status berhasil diubah']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal mengubah status'], 500);
         }
     }
 }

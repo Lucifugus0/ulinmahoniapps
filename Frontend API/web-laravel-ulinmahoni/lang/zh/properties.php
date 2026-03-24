@@ -46,6 +46,7 @@ return [
         'education' => '教育',
         'worship' => '宗教场所',
         'shopping' => '购物',
+        'custom' => '其他',
     ],
 
     'navigation' => [
@@ -93,6 +94,7 @@ return [
 
     'room' => [
         'rooms_count' => '间房',
+        'available_count' => '可用',
         'room_facilities' => '房间设施：',
         'period_price' => '租期与价格：',
         'no_facilities' => '暂无设施信息',

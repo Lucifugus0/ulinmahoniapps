@@ -4,18 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Bookings - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.homepage.styles')
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <style>
+        /* Dark mode overrides for completed bookings page */
+        html.dark body, html.dark main, html.dark section, html.dark .bg-gray-50 {
+            background-color: #111827 !important;
+        }
+        html.dark .bg-white { background-color: #1f2937 !important; }
+        html.dark .text-gray-900 { color: #f3f4f6 !important; }
+        html.dark .text-gray-700 { color: #d1d5db !important; }
+        html.dark .text-gray-500, html.dark .text-gray-600 { color: #9ca3af !important; }
+        html.dark .border-gray-200,
+        html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #374151 !important; }
+        html.dark .shadow, html.dark .shadow-lg { box-shadow: none !important; }
+        html.dark thead.bg-gray-50 { background-color: #1f2937 !important; }
+        html.dark tbody.bg-white { background-color: #1f2937 !important; }
+        html.dark tr.hover\:bg-gray-50:hover { background-color: #374151 !important; }
+        html.dark .bg-yellow-50 { background-color: rgba(253, 224, 71, 0.1) !important; }
+        html.dark .text-yellow-800 { color: #fbbf24 !important; }
+        html.dark .border-yellow-300 { border-color: rgba(253, 224, 71, 0.3) !important; }
+    </style>
 </head>
-<body>
+<body class="bg-gray-50 dark:bg-gray-900">
     @include('components.homepage.header')
-    <div class="header-spacer"></div>
 
     <main>
-        <!-- Hero Section -->
-        <div class="hero-section-booking h-72 relative">
+        <!-- Hero Section — starts at top of page, header overlays on top -->
+        <div class="hero-section relative" style="height: 22rem;">
             <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" 
                 alt="Bookings Hero" 
                 class="w-full h-full object-cover" >
@@ -25,9 +44,9 @@
         </div>
 
         <!-- Bookings Section -->
-        <section class="py-12 bg-gray-50">
+        <section class="py-12 bg-gray-50 dark:bg-gray-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-none overflow-hidden">
                     <div class="overflow-x-auto">
                         @php
                             $needsPaymentProof = $bookings->contains(function($booking) {

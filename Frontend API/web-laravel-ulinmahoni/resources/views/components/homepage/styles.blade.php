@@ -17,11 +17,11 @@
   --glass-blur: blur(24px);
   --glass-blur-strong: blur(48px);
 
-  /* Brand accent — shifted to a cooler, more "glass-friendly" teal */
-  --accent: #0ea5a0;
-  --accent-hover: #0d9488;
-  --accent-glass: rgba(14, 165, 160, 0.15);
-  --accent-glass-border: rgba(14, 165, 160, 0.3);
+  /* Brand accent — brighter teal in light mode for visibility on light glass */
+  --accent: #2dd4bf;
+  --accent-hover: #14b8a6;
+  --accent-glass: rgba(45, 212, 191, 0.15);
+  --accent-glass-border: rgba(45, 212, 191, 0.3);
 
   /* Typography — darker values for readability on translucent glass backgrounds */
   --text-primary: #0f0f1a;
@@ -40,7 +40,8 @@
 /* ========================================
    Base Styles — Fluid Background
    ======================================== */
-body {
+/* Scoped to .liquid-glass-page so non-homepage pages keep their own body styles */
+body.liquid-glass-page {
   /* Soft gradient that shifts subtly like a liquid surface */
   background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 25%, #f5f0eb 50%, #eef2f7 75%, #f0f4f8 100%);
   background-size: 400% 400%;
@@ -336,12 +337,30 @@ main > section:first-of-type {
    Header — Floating Glass Bar
    ======================================== */
 .site-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
   background: var(--glass-bg) !important;
   backdrop-filter: var(--glass-blur-strong) !important;
   -webkit-backdrop-filter: var(--glass-blur-strong) !important;
   border-bottom: 1px solid var(--glass-border-subtle);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  /* Force own compositing layer so fixed positioning is never broken by parent filters/transforms */
+  will-change: transform;
+  isolation: isolate;
+}
+/* Light mode header text — dark for readability on light glass */
+.site-header a,
+.site-header span,
+.site-header button {
+  color: #1f2937 !important;
+}
+.site-header a:hover,
+.site-header button:hover {
+  color: #000000 !important;
 }
 
 /* Spacer for non-hero pages */
@@ -383,14 +402,15 @@ footer::before {
 }
 
 /* Auth glass panels over dark video backgrounds — white text for contrast */
+/* Placeholder and icon text boosted for readability on glass */
 .login-container .login-box input::placeholder {
-  color: rgba(255, 255, 255, 0.65) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
   opacity: 1 !important;
 }
 .login-container .login-box .text-gray-400,
 .login-container .login-box .text-gray-500,
 .login-container .login-box .text-gray-600 {
-  color: rgba(255, 255, 255, 0.7) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 .login-container .login-box .text-gray-900,
 .login-container .login-box .text-gray-800,
@@ -400,16 +420,17 @@ footer::before {
 .login-container .login-box label {
   color: rgba(255, 255, 255, 0.85) !important;
 }
+/* Input fields: stronger glass background so text is readable */
 .login-container .login-box input,
 .login-container .login-box select {
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  background: rgba(255, 255, 255, 0.10) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
 }
 .login-container .login-box input:focus,
 .login-container .login-box select:focus {
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
 }
 .login-container .login-box h1,
 .login-container .login-box h2,
@@ -433,7 +454,18 @@ footer::before {
 /* ========================================
    Video/Info Pages — Transparent Glass Panels
    ======================================== */
-.video-page .bg-white {
+/* Video pages: disable body animation/gradient that breaks position:fixed */
+body.video-page {
+  background: transparent !important;
+  animation: none !important;
+}
+html.dark body.video-page {
+  background: transparent !important;
+  animation: none !important;
+}
+
+/* Glass effect only for card-level elements, not full-width layout containers */
+.video-page .bg-white:not(body):not(main):not(section):not(.min-h-screen):not(.flex-col) {
   background: var(--glass-bg) !important;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -446,9 +478,10 @@ footer::before {
   -webkit-backdrop-filter: var(--glass-blur);
 }
 
-/* Light mode text brightening — darker grays for glass readability */
-.text-gray-400 { color: #555570 !important; }
-.text-gray-500 { color: #4a4a68 !important; }
+/* Light mode text brightening — scoped to homepage glass sections only,
+   so property detail and other pages keep their default Tailwind text colors */
+.hero-section ~ section .text-gray-400 { color: #555570; }
+.hero-section ~ section .text-gray-500 { color: #4a4a68; }
 
 /* ========================================
    DARK MODE — Inverted Glass
@@ -461,21 +494,45 @@ html.dark {
   --glass-border-subtle: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --glass-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.5);
-  --accent: #2dd4bf;
-  --accent-hover: #14b8a6;
-  --accent-glass: rgba(45, 212, 191, 0.15);
-  --accent-glass-border: rgba(45, 212, 191, 0.3);
+  /* Brand accent — more subdued teal in dark mode to avoid being overly bright */
+  --accent: #0ea5a0;
+  --accent-hover: #0d9488;
+  --accent-glass: rgba(14, 165, 160, 0.15);
+  --accent-glass-border: rgba(14, 165, 160, 0.3);
   /* Typography — brighter values for readability on dark glass backgrounds */
   --text-primary: #f5f5fa;
   --text-secondary: #d0d0e0;
   --text-tertiary: #a0a0b8;
 }
 
-html.dark body {
+html.dark body.liquid-glass-page {
   background: linear-gradient(135deg, #0f0f1a 0%, #141428 25%, #1a1a30 50%, #141428 75%, #0f0f1a 100%) !important;
   background-size: 400% 400%;
   animation: liquidShift 20s ease infinite;
   color: var(--text-primary) !important;
+}
+
+/* Golden leaves background — fixed overlay on all frontend pages */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url('/images/assets/backgrounds/golden-leaves-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.08;
+  z-index: 0;
+  pointer-events: none;
+}
+/* Dark mode — stronger opacity for visibility against dark backgrounds */
+html.dark body::after {
+  opacity: 0.15;
+}
+/* Ensure all page content sits above the background overlay */
+body > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Dark header glass — very transparent */
@@ -486,6 +543,50 @@ html.dark .site-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2) !important;
 }
+/* Dark header text — brighter for readability against glass */
+html.dark .site-header a,
+html.dark .site-header span,
+html.dark .site-header button {
+  color: #f3f4f6 !important;
+}
+html.dark .site-header a:hover,
+html.dark .site-header button:hover {
+  color: #ffffff !important;
+}
+
+/* Header dropdown — frosted glass with high opacity for readability */
+.header-dropdown {
+  background: rgba(240, 240, 245, 0.85) !important;
+  backdrop-filter: var(--glass-blur-strong) !important;
+  -webkit-backdrop-filter: var(--glass-blur-strong) !important;
+  border: 1px solid rgba(255, 255, 255, 0.40) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+}
+html.dark .header-dropdown {
+  background: rgba(17, 24, 39, 0.85) !important;
+  backdrop-filter: var(--glass-blur-strong) !important;
+  -webkit-backdrop-filter: var(--glass-blur-strong) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+/* Dropdown text colors */
+.header-dropdown a,
+.header-dropdown p,
+.header-dropdown span {
+  color: #374151;
+}
+.header-dropdown .text-gray-500 { color: #6b7280; }
+.header-dropdown .text-red-600 { color: #dc2626; }
+html.dark .header-dropdown a,
+html.dark .header-dropdown p {
+  color: #f3f4f6 !important;
+}
+html.dark .header-dropdown span { color: #d1d5db !important; }
+html.dark .header-dropdown .text-gray-400,
+html.dark .header-dropdown .text-gray-500 { color: #9ca3af !important; }
+html.dark .header-dropdown .text-red-600,
+html.dark .header-dropdown .text-red-400,
+html.dark .header-dropdown button.text-red-600 { color: #f87171 !important; }
 
 /* Dark search box glass */
 html.dark .search-box {
@@ -530,9 +631,9 @@ html.dark .section-title .divider-line {
   background: linear-gradient(to right, transparent, #4b5563, transparent);
 }
 
-/* Dark property cards */
-html.dark .property-card,
-html.dark .bg-white {
+/* Dark property cards — scoped to card-level elements only, not body/main/section containers
+   to avoid adding glass borders and transparent backgrounds to full-page layouts */
+html.dark .property-card {
   background: var(--glass-bg) !important;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -597,7 +698,7 @@ html.dark .tab-trigger { color: var(--text-secondary); }
 html.dark .tab-trigger:hover { color: var(--text-primary); }
 
 /* Dark video pages */
-html.dark .video-page .bg-white {
+html.dark .video-page .bg-white:not(body):not(main):not(section):not(.min-h-screen):not(.flex-col) {
   background: var(--glass-bg) !important;
   border-color: var(--glass-border);
 }
@@ -646,17 +747,15 @@ html.dark .property-cards-empty-content {
 html.dark .property-cards-empty-content p { color: var(--text-tertiary) !important; }
 html.dark .property-cards-empty-icon { color: var(--text-tertiary) !important; }
 
-/* Dark tabs */
-html.dark .property-tabs-wrapper { border-bottom-color: var(--glass-border) !important; }
-html.dark .property-tabs-wrapper .property-tab-trigger { color: var(--text-tertiary) !important; }
-html.dark .property-tabs-wrapper .property-tab-trigger:hover { color: var(--text-primary) !important; }
-html.dark .property-tabs-wrapper .property-tab-trigger.active,
-html.dark .property-tabs-wrapper .property-tab-trigger.text-teal-600 { color: var(--accent) !important; }
+/* Dark tabs — targets the combined filter container rows */
+html.dark .property-tabs-row .property-tab-trigger { color: var(--text-tertiary) !important; }
+html.dark .property-tabs-row .property-tab-trigger:hover { color: var(--text-primary) !important; }
+html.dark .property-tabs-row .property-tab-trigger.active,
+html.dark .property-tabs-row .property-tab-trigger.text-teal-600 { color: var(--accent) !important; }
 
-html.dark .location-tabs-wrapper { border-bottom-color: var(--glass-border) !important; }
-html.dark .location-tabs-wrapper .location-tab-trigger { color: var(--text-tertiary) !important; }
-html.dark .location-tabs-wrapper .location-tab-trigger:hover { color: var(--text-primary) !important; }
-html.dark .location-tabs-wrapper .location-tab-trigger.active { color: var(--accent) !important; }
+html.dark .location-tabs-row .location-tab-trigger { color: var(--text-tertiary) !important; }
+html.dark .location-tabs-row .location-tab-trigger:hover { color: var(--text-primary) !important; }
+html.dark .location-tabs-row .location-tab-trigger.active { color: var(--accent) !important; }
 
 /* Dark promo/area cards */
 html.dark .promo-card,

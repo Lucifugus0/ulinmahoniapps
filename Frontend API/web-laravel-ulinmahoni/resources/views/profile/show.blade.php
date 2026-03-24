@@ -4,31 +4,112 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>My Profile - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>{{ __('My Profile') }} - Ulin Mahoni</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.homepage.styles')
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     @livewireStyles
+    <style>
+        /* Dark mode overrides for profile page and Jetstream Livewire forms */
+
+        /* Page-level backgrounds */
+        html.dark body,
+        html.dark main,
+        html.dark section,
+        html.dark .bg-gray-50 {
+            background-color: #111827 !important; /* gray-900 */
+        }
+
+        /* Card backgrounds — override Jetstream's hardcoded bg-white */
+        html.dark .bg-white {
+            background-color: #1f2937 !important; /* gray-800 */
+        }
+
+        /* Section headings (e.g. "Informasi Profil") */
+        html.dark .text-lg.font-medium.text-gray-900,
+        html.dark .text-xl.text-gray-900 {
+            color: #f3f4f6 !important; /* gray-100 */
+        }
+
+        /* Section descriptions */
+        html.dark .text-sm.text-gray-600,
+        html.dark .mt-1.text-sm.text-gray-600 {
+            color: #9ca3af !important; /* gray-400 */
+        }
+
+        /* Form labels */
+        html.dark label,
+        html.dark .block.font-medium.text-sm.text-gray-700 {
+            color: #d1d5db !important; /* gray-300 */
+        }
+
+        /* Text inputs and selects */
+        html.dark input[type="text"],
+        html.dark input[type="email"],
+        html.dark input[type="password"],
+        html.dark input[type="tel"],
+        html.dark input[type="number"],
+        html.dark select,
+        html.dark textarea {
+            background-color: #374151 !important; /* gray-700 */
+            border-color: #4b5563 !important; /* gray-600 */
+            color: #f3f4f6 !important; /* gray-100 */
+        }
+        html.dark input::placeholder,
+        html.dark textarea::placeholder {
+            color: #9ca3af !important; /* gray-400 */
+        }
+
+        /* Card dividers */
+        html.dark .border-gray-200,
+        html.dark .border-t {
+            border-color: #374151 !important; /* gray-700 */
+        }
+
+        /* Buttons in forms (secondary/outline) */
+        html.dark .bg-white.border.border-gray-300 {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #d1d5db !important;
+        }
+
+        /* Regular text inside cards */
+        html.dark .text-gray-900 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .text-gray-700 {
+            color: #d1d5db !important;
+        }
+        html.dark .text-gray-500 {
+            color: #9ca3af !important;
+        }
+
+        /* Shadow removal in dark mode */
+        html.dark .shadow,
+        html.dark .shadow-lg {
+            box-shadow: none !important;
+        }
+    </style>
 </head>
 
-<body>
+<body class="bg-gray-50 dark:bg-gray-900">
     @include('components.homepage.header')
-    <div class="header-spacer"></div>
 
     <main>
-        <!-- Hero Section -->
-        <div class="hero-section h-72 relative">
+        <!-- Hero Section — starts at top of page, header overlays on top -->
+        <div class="hero-section relative" style="height: 22rem;">
             <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" 
                 alt="Profile Hero" 
                 class="w-full h-full object-cover">
             <div class="absolute inset-0 gradient-overlay flex items-center justify-center">
-                <h1 class="text-2xl text-white font-medium">My Profile</h1>
+                <h1 class="text-2xl text-white font-medium">{{ __('My Profile') }}</h1>
             </div>
         </div>
 
-        <!-- Profile Section -->
-        <section class="py-12 bg-gray-50">
+        <!-- Profile Section — dark mode uses dark bg, light mode uses gray-50 -->
+        <section class="py-12 bg-gray-50 dark:bg-gray-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <!-- Google Calendar Integration -->
                 {{-- 
@@ -73,7 +154,7 @@
 
                 <!-- Jetstream Profile Information -->
                 @if (Laravel\Fortify\Features::canUpdateProfileInformation())
-                    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-none overflow-hidden mb-8">
                         <div class="p-8">
                             @livewire('profile.update-profile-information-form')
                         </div>
@@ -82,7 +163,7 @@
 
                 <!-- Password Update -->
                 @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::updatePasswords()))
-                    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-none overflow-hidden mb-8">
                         <div class="p-8">
                             @livewire('profile.update-password-form')
                         </div>
@@ -91,7 +172,7 @@
 
                 <!-- Two Factor Authentication -->
                 {{-- @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication())
-                    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-none overflow-hidden mb-8">
                         <div class="p-8">
                             @livewire('profile.two-factor-authentication-form')
                         </div>
@@ -100,7 +181,7 @@
 
                 <!-- Browser Sessions -->
                  {{-- 
-                 <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-none overflow-hidden mb-8">
                      <div class="p-8">
                          @livewire('profile.logout-other-browser-sessions-form')
                      </div>
@@ -109,7 +190,7 @@
 
                 <!-- Account Deletion -->
                 @if (Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures())
-                    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-none overflow-hidden">
                         <div class="p-8">
                             @livewire('profile.delete-user-form')
                         </div>

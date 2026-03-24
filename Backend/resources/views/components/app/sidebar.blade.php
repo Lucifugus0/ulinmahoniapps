@@ -242,14 +242,16 @@
                         @endcan
 
                         <!-- Properties Menu Item -->
-                        @canany(['view_properties', 'view_property_facilities', 'view_deposit_fees'])
+                        @canany(['view_properties', 'view_property_facilities', 'view_cities', 'view_deposit_fees'])
                             <li x-init="if (window.location.href.includes('m-properties') ||
                                 window.location.href.includes('facilityProperty') ||
+                                window.location.href.includes('cities') ||
+                                window.location.href.includes('calendar') ||
                                 window.location.href.includes('deposit-fees')) { activeMenu = 'properties' }">
 
                                 <!-- Main Menu Button -->
                                 <a @click="activeMenu = activeMenu === 'properties' ? '' : 'properties'"
-                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('properties.index', 'facilityProperty.index', 'deposit-fees.index')) bg-indigo-900/60 @endif">
+                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('properties.index', 'facilityProperty.index', 'cityProperty.index', 'calendar.index', 'deposit-fees.index')) bg-indigo-900/60 @endif">
 
                                     <div class="flex items-center gap-3 min-w-0">
                                         <!-- Building Icon -->
@@ -307,6 +309,17 @@
                                             </li>
                                         @endcan
 
+                                        <!-- Master Cities -->
+                                        @can('view_cities')
+                                            <li>
+                                                <a href="{{ route('cityProperty.index') }}"
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('cityProperty.index')) bg-indigo-900/60 @endif">
+                                                    <span
+                                                        class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_cities') }}</span>
+                                                </a>
+                                            </li>
+                                        @endcan
+
                                         <!-- Master Facilities -->
                                         @can('view_property_facilities')
                                             <li>
@@ -314,6 +327,17 @@
                                                     class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('facilityProperty.index')) bg-indigo-900/60 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_facilities') }}</span>
+                                                </a>
+                                            </li>
+                                        @endcan
+
+                                        <!-- Master Calendar -->
+                                        @can('view_properties')
+                                            <li>
+                                                <a href="{{ route('calendar.index') }}"
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('calendar.index')) bg-indigo-900/60 @endif">
+                                                    <span
+                                                        class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_calendar') }}</span>
                                                 </a>
                                             </li>
                                         @endcan
@@ -418,6 +442,7 @@
                         <!-- Rooms/Units Menu Item -->
                         @can('rooms')
                             <li x-init="if (window.location.href.includes('m-rooms') ||
+                                window.location.href.includes('room-name-types') ||
                                 window.location.href.includes('facilityRooms')) { activeMenu = 'rooms' }">
 
                                 <!-- Main Menu Button -->
@@ -476,6 +501,17 @@
                                                     class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('rooms.index')) bg-indigo-900/60 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_rooms') }}</span>
+                                                </a>
+                                            </li>
+                                        @endcan
+
+                                        <!-- Master Room Types -->
+                                        @can('view_rooms')
+                                            <li>
+                                                <a href="{{ route('roomNameTypes.index') }}"
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('roomNameTypes.index')) bg-indigo-900/60 @endif">
+                                                    <span
+                                                        class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_room_types') }}</span>
                                                 </a>
                                             </li>
                                         @endcan

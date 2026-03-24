@@ -46,6 +46,7 @@ return [
         'education' => 'Education',
         'worship' => 'Worship',
         'shopping' => 'Shopping',
+        'custom' => 'Other',
     ],
 
     'navigation' => [
@@ -93,6 +94,7 @@ return [
 
     'room' => [
         'rooms_count' => 'rooms',
+        'available_count' => 'available',
         'room_facilities' => 'Room Facilities:',
         'period_price' => 'Rental Period & Price:',
         'no_facilities' => 'No Facilities Available',

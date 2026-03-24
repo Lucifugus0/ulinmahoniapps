@@ -431,8 +431,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       },
     );
 
+    // Detect dark/light mode for theme-aware styling
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      // Use theme scaffold background (dark or light)
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Stack(
@@ -458,8 +462,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           padding: const EdgeInsets.all(12.0),
                           child: Text(
                             localizations.loginWelcomeTitle,
-                            style: const TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -487,14 +493,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   },
                                   activeColor: const Color(0xFF124624),
                                   side: BorderSide(
-                                    color: Colors.grey.shade400,
+                                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                                     width: 2.0,
                                   ),
                                 ),
                                 Text(
                                   localizations.rememberMe,
                                   style: TextStyle(
-                                      fontSize: 14, color: Colors.grey[600]),
+                                      fontSize: 14,
+                                      color: isDark ? Colors.grey[400] : Colors.grey[600]),
                                 ),
                               ],
                             ),
@@ -668,16 +675,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         const SizedBox(height: 20),
                         Row(
                           children: [
-                            Expanded(child: Divider(color: Colors.grey.shade400)),
+                            Expanded(child: Divider(color: isDark ? Colors.grey.shade700 : Colors.grey.shade400)),
                             Padding(
                               padding:
                               const EdgeInsets.symmetric(horizontal: 12.0),
                               child: Text(
                                 localizations.loginOrText,
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey),
                               ),
                             ),
-                            Expanded(child: Divider(color: Colors.grey.shade400)),
+                            Expanded(child: Divider(color: isDark ? Colors.grey.shade700 : Colors.grey.shade400)),
                           ],
                         ),
                         const SizedBox(height: 5),
@@ -716,19 +723,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       },
                       style: ButtonStyle(
                         backgroundColor:
-                        MaterialStateProperty.all(Colors.transparent),
+                        WidgetStateProperty.all(Colors.transparent),
                         foregroundColor:
-                        MaterialStateProperty.all(const Color(0xFF124624)),
+                        WidgetStateProperty.all(const Color(0xFF124624)),
                         overlayColor:
-                        MaterialStateProperty.all(Colors.transparent),
+                        WidgetStateProperty.all(Colors.transparent),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             localizations.loginNoAccountPrompt,
-                            style: const TextStyle(
-                                color: Colors.black,
+                            style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
                                 fontWeight: AppFontWeight.bold),
                           ),
                           const SizedBox(width: 5),
@@ -739,7 +746,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   Text(localizations.loginOrText,
                       style: TextStyle(
-                          color: Colors.black, fontWeight: AppFontWeight.bold)),
+                          color: isDark ? Colors.white : Colors.black,
+                          fontWeight: AppFontWeight.bold)),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2.0, top: 5),
                     child: TextButton(
@@ -751,11 +759,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       },
                       style: ButtonStyle(
                         backgroundColor:
-                        MaterialStateProperty.all(Colors.transparent),
+                        WidgetStateProperty.all(Colors.transparent),
                         foregroundColor:
-                        MaterialStateProperty.all(const Color(0xFF124624)),
+                        WidgetStateProperty.all(const Color(0xFF124624)),
                         overlayColor:
-                        MaterialStateProperty.all(Colors.transparent),
+                        WidgetStateProperty.all(Colors.transparent),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -768,17 +776,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ],
               ),
             ),
-            const Positioned(
+            Positioned(
               top: 16,
               left: 16,
-              child: CustomBackButton(iconColor: Colors.black),
+              child: CustomBackButton(iconColor: isDark ? Colors.white : Colors.black),
             ),
             Positioned(
               left: 20,
               bottom: -10,
               child: IconButton(
                 icon: const Icon(Icons.fingerprint, size: 25),
-                color: const Color(0xFF124624),
+                color: isDark ? Colors.white70 : const Color(0xFF124624),
                 onPressed: _onFingerprintPressed,
               ),
             ),

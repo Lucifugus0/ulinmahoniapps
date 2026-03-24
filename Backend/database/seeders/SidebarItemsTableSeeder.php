@@ -124,11 +124,19 @@ class SidebarItemsTableSeeder extends Seeder
         ]);
 
         SidebarItem::create([
+            'name' => 'Master Cities',
+            'route' => 'cityProperty.index',
+            'permission_id' => $permissions['view_cities'] ?? null,
+            'parent_id' => $properties->id,
+            'order' => 2
+        ]);
+
+        SidebarItem::create([
             'name' => 'Master Facilities',
             'route' => 'facilityProperty.index',
             'permission_id' => $permissions['view_property_facilities'] ?? null,
             'parent_id' => $properties->id,
-            'order' => 2
+            'order' => 3
         ]);
 
         SidebarItem::create([
@@ -136,7 +144,7 @@ class SidebarItemsTableSeeder extends Seeder
             'route' => 'deposit-fees.index',
             'permission_id' => $permissions['view_deposit_fees'] ?? null,
             'parent_id' => $properties->id,
-            'order' => 3
+            'order' => 4
         ]);
 
         // Parking

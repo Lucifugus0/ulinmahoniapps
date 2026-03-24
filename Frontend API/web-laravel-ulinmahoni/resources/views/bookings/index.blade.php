@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="" lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('booking.index.page_title') }} - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // API Key from .env
@@ -170,8 +171,88 @@
     };
     </script>
     @include('components.homepage.styles')
-    <!-- Liquid glass overrides for booking page cards and containers -->
+    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <!-- Dark mode + liquid glass overrides for booking page -->
     <style>
+        /* Dark mode overrides for booking page */
+        html.dark body,
+        html.dark main,
+        html.dark section,
+        html.dark .bg-gray-50 {
+            background-color: #111827 !important; /* gray-900 */
+        }
+        html.dark .bg-white {
+            background-color: #1f2937 !important; /* gray-800 */
+        }
+        html.dark .text-gray-900 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .text-gray-700 {
+            color: #d1d5db !important;
+        }
+        html.dark .text-gray-500 {
+            color: #9ca3af !important;
+        }
+        html.dark .text-gray-600 {
+            color: #9ca3af !important;
+        }
+        html.dark .text-gray-400 {
+            color: #6b7280 !important;
+        }
+        html.dark .border-gray-200,
+        html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #374151 !important;
+        }
+        html.dark .shadow,
+        html.dark .shadow-lg {
+            box-shadow: none !important;
+        }
+        html.dark thead.bg-gray-50 {
+            background-color: #1f2937 !important;
+        }
+        html.dark tbody.bg-white {
+            background-color: #1f2937 !important;
+        }
+        html.dark tr.hover\:bg-gray-50:hover {
+            background-color: #374151 !important;
+        }
+        html.dark .bg-yellow-50 {
+            background-color: rgba(253, 224, 71, 0.1) !important;
+        }
+        html.dark .text-yellow-800 {
+            color: #fbbf24 !important;
+        }
+        html.dark .border-yellow-300 {
+            border-color: rgba(253, 224, 71, 0.3) !important;
+        }
+
+        /* Dark mode status badge overrides — deeper tinted backgrounds for dark cards */
+        html.dark .bg-red-50 {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+        }
+        html.dark .text-red-700 {
+            color: #fca5a5 !important; /* red-300 */
+        }
+        html.dark .bg-yellow-50 {
+            background-color: rgba(234, 179, 8, 0.15) !important;
+        }
+        html.dark .text-yellow-700 {
+            color: #fde047 !important; /* yellow-300 */
+        }
+        html.dark .bg-green-50 {
+            background-color: rgba(34, 197, 94, 0.15) !important;
+        }
+        html.dark .text-green-700 {
+            color: #86efac !important; /* green-300 */
+        }
+        html.dark .bg-gray-100 {
+            background-color: rgba(107, 114, 128, 0.15) !important;
+        }
+        /* Badge border in dark mode */
+        html.dark span.border.border-gray-200 {
+            border-color: #374151 !important;
+        }
+
         /* Main booking card — frosted glass panel */
         section.py-12 > div > .bg-white.rounded-xl {
             background: var(--glass-bg) !important;
@@ -221,13 +302,12 @@
         html.dark input::placeholder { color: #a0a0b8 !important; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 dark:bg-gray-900">
     @include('components.homepage.header')
-    <div class="header-spacer"></div>
 
     <main>
-        <!-- Hero Section -->
-        <div class="hero-section-booking h-72 relative">
+        <!-- Hero Section — starts at top of page, header overlays on top -->
+        <div class="hero-section relative" style="height: 22rem;">
             <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" 
                 alt="Bookings Hero" 
                 class="w-full h-full object-cover" >
@@ -239,13 +319,13 @@
         <!-- Bookings Section -->
 
         
-    <section class="py-12 bg-gray-50">
+    <section class="py-12 bg-gray-50 dark:bg-gray-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="mb-4 flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded">
             <i class="fas fa-exclamation-triangle"></i>
             <span class="font-semibold">{{ __('booking.index.payment_reminder') }}</span>
         </div>
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-none overflow-hidden">
             <div class="overflow-x-auto">
                 <div x-data="{ tab: 'all' }">
                     <div class="flex border-b border-gray-200 mb-4">
@@ -407,6 +487,7 @@
                                         <!-- Transaction StatusS -->
                                         @php
                                             $status = strtolower($booking->transaction_status);
+                                            $originalStatus = $status;
                                             $currentTime = now();
                                             $expiresAt = $booking->expired_at ? \Carbon\Carbon::parse($booking->expired_at) : null;
                                             $remainingMinutes = $expiresAt ? $currentTime->diffInMinutes($expiresAt, false) : -1;
@@ -424,18 +505,19 @@
 
                                             [$badgeBg, $badgeText, $dot, $transactionText] = $statusMap[$status] ?? ['bg-gray-100', 'text-gray-700', 'bg-gray-400', __('booking.status_extended.failed')];
 
-                                            // Handle pending status
-                                            if ($status === 'pending') {
+                                            // Show expiry timer for pending and waiting statuses
+                                            if ($status === 'pending' || $status === 'waiting') {
                                                 $shouldShowTimer = true;
-                                                // if ($hoursDiff >= 1) {
-                                                //     [$badgeBg, $badgeText, $dot, $transactionText] = ['bg-gray-100', 'text-gray-500', 'bg-gray-400', __('booking.status_extended.expired')];
-                                                //     [$badgeBg, $badgeText, $dot, $transactionText] = ['bg-gray-100', 'text-gray-500', 'bg-gray-400', 'Expired'];
-                                                //     $status = 'expired';
-                                                //     $shouldShowTimer = false;
-                                                // }
+
+                                                // If expired_at has passed, show as expired
+                                                if ($expiresAt && $remainingMinutes <= 0) {
+                                                    [$badgeBg, $badgeText, $dot, $transactionText] = ['bg-gray-100', 'text-gray-500', 'bg-gray-400', __('booking.status_extended.expired')];
+                                                    $status = 'expired';
+                                                    $shouldShowTimer = false;
+                                                }
                                             }
 
-                                            // Add timer
+                                            // Add countdown timer text when time is still remaining
                                             if ($shouldShowTimer && $remainingMinutes > 0) {
                                                 $remainingTime = $expiresAt->diffForHumans($currentTime, [
                                                     'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE,
@@ -450,7 +532,7 @@
                                                 <span class="flex items-center gap-2 px-4 py-1 rounded-2xl shadow-sm font-semibold text-sm {{ $badgeBg }} {{ $badgeText }} border border-gray-200"
                                                       data-booking-id="{{ $booking->idrec }}"
                                                       data-expires-at="{{ $shouldShowTimer && $remainingMinutes > 0 ? $expiresAt->toIso8601String() : '' }}"
-                                                      data-initial-text="{{ __('booking.status_extended.pending') }}"
+                                                      data-initial-text="{{ $statusMap[$originalStatus][3] ?? __('booking.status_extended.pending') }}"
                                                       data-status="{{ $status }}">
                                                     <span class="w-2 h-2 rounded-full {{ $dot }} inline-block"></span>
                                                     <span class="tracking-wide capitalize text-center">{{ $transactionText }}</span>
@@ -1034,16 +1116,16 @@
                         }
                         
                         // Update styling to expired state
-                        element.classList.remove('bg-red-50', 'text-red-700');
+                        element.classList.remove('bg-red-50', 'text-red-700', 'bg-yellow-50', 'text-yellow-700');
                         element.classList.add('bg-gray-100', 'text-gray-500');
                         const dot = element.querySelector('span:first-child');
                         if (dot) {
-                            dot.classList.remove('bg-red-400');
+                            dot.classList.remove('bg-red-400', 'bg-yellow-400');
                             dot.classList.add('bg-gray-400');
                         }
-                        
-                        // Mark as expired in backend if not already done
-                        if (element.dataset.status === 'pending') {
+
+                        // Mark as expired in backend if not already done (pending or waiting)
+                        if (element.dataset.status === 'pending' || element.dataset.status === 'waiting') {
                             markBookingAsExpired(bookingId);
                             element.dataset.status = 'expired';
                         }

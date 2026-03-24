@@ -57,9 +57,6 @@ class RoomPricingRulesController extends Controller
         $validator = Validator::make($request->all(), [
             'rule_type' => 'required|string|in:weekday,weekend,holiday,high_season,low_season',
             'price' => 'required|numeric|min:0',
-            'date_start' => 'required_if:rule_type,holiday,high_season,low_season|nullable|date',
-            'date_end' => 'required_if:rule_type,holiday,high_season,low_season|nullable|date|after_or_equal:date_start',
-            'label' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -72,37 +69,24 @@ class RoomPricingRulesController extends Controller
 
         $data = $validator->validated();
 
-        /* For weekday/weekend: update existing rule or create new (only 1 per room per type) */
-        if (in_array($data['rule_type'], ['weekday', 'weekend'])) {
-            $rule = RoomPricingRule::updateOrCreate(
-                ['room_id' => $roomId, 'rule_type' => $data['rule_type']],
-                [
-                    'price' => $data['price'],
-                    'status' => 1,
-                    'updated_by' => Auth::id(),
-                ]
-            );
-
-            /* Also update the denormalized column on m_rooms */
-            $column = $data['rule_type'] === 'weekday' ? 'price_weekday' : 'price_weekend';
-            $room->update([$column => $data['price']]);
-
-            /* Keep price_original_daily in sync with weekday price for backward compat */
-            if ($data['rule_type'] === 'weekday') {
-                $room->update(['price_original_daily' => $data['price']]);
-            }
-        } else {
-            /* For holiday/season: create a new rule (multiple allowed per room) */
-            $rule = RoomPricingRule::create([
-                'room_id' => $roomId,
-                'rule_type' => $data['rule_type'],
+        /* All rule types now use updateOrCreate — one price per type per room */
+        /* Date classification for holiday/season comes from global m_calendar_dates */
+        $rule = RoomPricingRule::updateOrCreate(
+            ['room_id' => $roomId, 'rule_type' => $data['rule_type']],
+            [
                 'price' => $data['price'],
-                'date_start' => $data['date_start'],
-                'date_end' => $data['date_end'],
-                'label' => $data['label'] ?? null,
+                'date_start' => null, // Dates managed globally in Master Calendar
+                'date_end' => null,
                 'status' => 1,
-                'created_by' => Auth::id(),
-            ]);
+                'updated_by' => Auth::id(),
+            ]
+        );
+
+        /* Update denormalized columns on m_rooms for weekday/weekend */
+        if ($data['rule_type'] === 'weekday') {
+            $room->update(['price_weekday' => $data['price'], 'price_original_daily' => $data['price']]);
+        } elseif ($data['rule_type'] === 'weekend') {
+            $room->update(['price_weekend' => $data['price']]);
         }
 
         /* Regenerate per-date prices after rule change */

@@ -1,0 +1,24 @@
+.lingkaran1{
+	width: 5px;
+	height: 5x;
+	background: black;
+	border-radius: 100%;
+}
+.lingkaran2{
+	width: 5px;
+	height: 5x;
+	background: red;
+	border-radius: 100%;
+}
+.lingkaran3{
+	width: 5px;
+	height: 5x;
+	background: yellow;
+	border-radius: 100%;
+}
+.lingkaran4{
+	width: 5px;
+	height: 5x;
+	background: rgb(12, 251, 12);
+	border-radius: 100%;
+}

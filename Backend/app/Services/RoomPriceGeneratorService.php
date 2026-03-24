@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CalendarDate;
 use App\Models\Room;
 use App\Models\RoomPrices;
 use App\Models\RoomPricingRule;
@@ -31,7 +32,7 @@ class RoomPriceGeneratorService
         $from = $from ?? Carbon::today();
         $to = $to ?? Carbon::today()->addDays(365);
 
-        /* Load all active pricing rules for this room */
+        /* Load per-room pricing rules (prices only — date classification is global) */
         $rules = RoomPricingRule::where('room_id', $roomId)
             ->active()
             ->get()
@@ -39,9 +40,17 @@ class RoomPriceGeneratorService
 
         $weekdayRule = $rules->get('weekday', collect())->first();
         $weekendRule = $rules->get('weekend', collect())->first();
-        $highSeasonRules = $rules->get('high_season', collect());
-        $lowSeasonRules = $rules->get('low_season', collect());
-        $holidayRules = $rules->get('holiday', collect());
+        /* Per-room prices for global date types (price only, no date ranges) */
+        $highSeasonPrice = optional($rules->get('high_season', collect())->first())->price;
+        $lowSeasonPrice = optional($rules->get('low_season', collect())->first())->price;
+        $holidayPrice = optional($rules->get('holiday', collect())->first())->price;
+
+        /* Load global date classifications from m_calendar_dates */
+        $calendarDates = CalendarDate::active()
+            ->forDateRange($from->toDateString(), $to->toDateString())
+            ->pluck('date_type', 'date')
+            ->mapWithKeys(fn($type, $date) => [Carbon::parse($date)->toDateString() => $type])
+            ->toArray();
 
         /* If no weekday rule exists, fall back to room's price_original_daily */
         $room = Room::find($roomId);
@@ -75,14 +84,15 @@ class RoomPriceGeneratorService
                 continue;
             }
 
-            /* Resolve price using priority: high_season > low_season > holiday > weekend > weekday */
+            /* Resolve price using global calendar + per-room prices */
             $resolved = $this->resolvePrice(
                 $current,
                 $weekdayPrice,
                 $weekendPrice,
-                $highSeasonRules,
-                $lowSeasonRules,
-                $holidayRules
+                $calendarDates,
+                $highSeasonPrice ? (float) $highSeasonPrice : null,
+                $lowSeasonPrice ? (float) $lowSeasonPrice : null,
+                $holidayPrice ? (float) $holidayPrice : null
             );
 
             $upsertData[] = [
@@ -91,6 +101,7 @@ class RoomPriceGeneratorService
                 'price' => $resolved['price'],
                 'price_type' => $resolved['type'],
                 'status' => 1,
+                'created_by' => auth()->id(),
                 'updated_at' => now(),
                 'updated_by' => auth()->id(),
             ];
@@ -115,44 +126,47 @@ class RoomPriceGeneratorService
     }
 
     /**
-     * <!-- Resolve the price for a single date based on pricing rules priority -->
+     * <!-- Resolve the price for a single date using global calendar + per-room prices -->
      * <!-- Priority: 1. high_season  2. low_season  3. holiday  4. weekend (Sat/Sun)  5. weekday -->
+     * <!-- Date classification comes from global m_calendar_dates; prices come from per-room rules -->
      *
+     * @param array       $calendarDates    Map of dateString => date_type from global calendar
+     * @param float|null  $highSeasonPrice  Per-room high season price (null = no override, use weekday/weekend)
+     * @param float|null  $lowSeasonPrice   Per-room low season price
+     * @param float|null  $holidayPrice     Per-room holiday price
      * @return array{price: float, type: string}
      */
     private function resolvePrice(
         Carbon $date,
         float $weekdayPrice,
         float $weekendPrice,
-        $highSeasonRules,
-        $lowSeasonRules,
-        $holidayRules
+        array $calendarDates,
+        ?float $highSeasonPrice,
+        ?float $lowSeasonPrice,
+        ?float $holidayPrice
     ): array {
         $dateStr = $date->toDateString();
 
-        /* 1. Check high season — overrides all other prices for the date range */
-        foreach ($highSeasonRules as $rule) {
-            if ($dateStr >= $rule->date_start->toDateString() && $dateStr <= $rule->date_end->toDateString()) {
-                return ['price' => (float) $rule->price, 'type' => 'high_season'];
-            }
+        /* Check global calendar classification for this date */
+        $globalType = $calendarDates[$dateStr] ?? null;
+
+        /* 1. High season — use room's high season price if set, else fall through */
+        if ($globalType === 'high_season' && $highSeasonPrice !== null) {
+            return ['price' => $highSeasonPrice, 'type' => 'high_season'];
         }
 
-        /* 2. Check low season — overrides weekday/weekend/holiday prices */
-        foreach ($lowSeasonRules as $rule) {
-            if ($dateStr >= $rule->date_start->toDateString() && $dateStr <= $rule->date_end->toDateString()) {
-                return ['price' => (float) $rule->price, 'type' => 'low_season'];
-            }
+        /* 2. Low season — use room's low season price if set, else fall through */
+        if ($globalType === 'low_season' && $lowSeasonPrice !== null) {
+            return ['price' => $lowSeasonPrice, 'type' => 'low_season'];
         }
 
-        /* 3. Check public holiday — applies if not in a season */
-        foreach ($holidayRules as $rule) {
-            if ($dateStr >= $rule->date_start->toDateString() && $dateStr <= $rule->date_end->toDateString()) {
-                return ['price' => (float) $rule->price, 'type' => 'holiday'];
-            }
+        /* 3. Holiday — use room's holiday price if set, else fall through */
+        if ($globalType === 'holiday' && $holidayPrice !== null) {
+            return ['price' => $holidayPrice, 'type' => 'holiday'];
         }
 
-        /* 4. Weekend (Saturday = 6, Sunday = 0 in Carbon) */
-        if ($date->isWeekend()) {
+        /* 4. Weekend (Friday = 5, Saturday = 6 in Carbon) */
+        if ($date->dayOfWeek === Carbon::FRIDAY || $date->dayOfWeek === Carbon::SATURDAY) {
             return ['price' => $weekendPrice, 'type' => 'weekend'];
         }
 
@@ -175,6 +189,7 @@ class RoomPriceGeneratorService
                     'price' => $row['price'],
                     'price_type' => $row['price_type'],
                     'status' => $row['status'],
+                    'created_by' => $row['created_by'] ?? auth()->id(),
                     'updated_at' => $row['updated_at'],
                     'updated_by' => $row['updated_by'],
                 ]

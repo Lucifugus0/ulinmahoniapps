@@ -1,44 +1,64 @@
 <!-- Property Types Component -->
 <section class="section-light">
     <div class="property-types-container">
-        <!-- Property Type Tabs -->
-        <div class="property-tabs-wrapper">
-            <button class="property-tab-trigger active" data-tab="kos">
-                {{ __('homepage.property_types.Kos') }}
-            </button>
-            {{--
-            <button class="property-tab-trigger" data-tab="house">
-                {{ __('homepage.property_types.House') }}
-            </button>
-            --}}
-            <button class="property-tab-trigger" data-tab="apartment">
-                {{ __('homepage.property_types.Apartment') }}
-            </button>
-            <button class="property-tab-trigger" data-tab="villa">
-                {{ __('homepage.property_types.Villa') }}
-            </button>
-            <button class="property-tab-trigger" data-tab="hotel">
-                {{ __('homepage.property_types.Hotel') }}
-            </button>
-        </div>
+        <!-- Combined filter container — property type (row 1) + city (row 2) in one glass panel -->
+        <div class="filter-container">
+            <!-- Row 1: Property Type Tabs — "All" is selected by default -->
+            <div class="property-tabs-row">
+                <button class="property-tab-trigger active" data-tab="all">
+                    {{ __('homepage.property_types.All') }}
+                </button>
+                <button class="property-tab-trigger" data-tab="kos">
+                    {{ __('homepage.property_types.Kos') }}
+                </button>
+                {{--
+                <button class="property-tab-trigger" data-tab="house">
+                    {{ __('homepage.property_types.House') }}
+                </button>
+                --}}
+                <button class="property-tab-trigger" data-tab="apartment">
+                    {{ __('homepage.property_types.Apartment') }}
+                </button>
+                <button class="property-tab-trigger" data-tab="villa">
+                    {{ __('homepage.property_types.Villa') }}
+                </button>
+                <button class="property-tab-trigger" data-tab="hotel">
+                    {{ __('homepage.property_types.Hotel') }}
+                </button>
+            </div>
 
-        <!-- Location Tabs -->
-        <div class="location-tabs-wrapper">
-            <button class="location-tab-trigger active" data-location="all">
-                {{ __('homepage.cities.all') }}
-            </button>
-            <button class="location-tab-trigger" data-location="jakarta">
-                {{ __('homepage.cities.jakarta') }}
-            </button>
-            <button class="location-tab-trigger" data-location="bogor">
-                {{ __('homepage.cities.bogor') }}
-            </button>
+            <!-- Divider between rows -->
+            <div class="filter-divider"></div>
+
+            <!-- Row 2: City / Location Tabs -->
+            <div class="location-tabs-row">
+                <button class="location-tab-trigger active" data-location="all">
+                    {{ __('homepage.cities.all') }}
+                </button>
+                <button class="location-tab-trigger" data-location="jakarta">
+                    {{ __('homepage.cities.jakarta') }}
+                </button>
+                <button class="location-tab-trigger" data-location="bogor">
+                    {{ __('homepage.cities.bogor') }}
+                </button>
+            </div>
         </div>
 
         <!-- Property Type Content -->
         <div class="property-tab-contents">
+            <!-- All Properties Content — shows every property type combined, selected by default -->
+            <div class="property-tab-content active" data-tab="all" data-location="all">
+                @include('components.homepage.property-cards.kos', ['kos' => $allProperties ?? []])
+            </div>
+            <div class="property-tab-content" data-tab="all" data-location="jakarta">
+                @include('components.homepage.property-cards.kos', ['kos' => $allJakarta ?? []])
+            </div>
+            <div class="property-tab-content" data-tab="all" data-location="bogor">
+                @include('components.homepage.property-cards.kos', ['kos' => $allBogor ?? []])
+            </div>
+
             <!-- Kos Content -->
-            <div class="property-tab-content active" data-tab="kos" data-location="all">
+            <div class="property-tab-content" data-tab="kos" data-location="all">
                 @include('components.homepage.property-cards.kos', ['kos' => $kos ?? []])
             </div>
             <div class="property-tab-content" data-tab="kos" data-location="jakarta">
@@ -102,7 +122,7 @@
     </div>
 </section>
 
-<!-- Liquid glass tabs — frosted pill-style tab selectors with glass card containers -->
+<!-- Liquid glass tabs — single frosted panel with property type + city rows -->
 <style>
     .property-types-container {
         width: 100%;
@@ -112,12 +132,12 @@
         box-sizing: border-box;
     }
 
-    /* Glass tab bar — frosted container for tab buttons */
-    .property-tabs-wrapper {
+    /* Combined filter panel — single glass container for both tab rows */
+    .filter-container {
         display: flex;
-        gap: 0.25rem;
+        flex-direction: column;
         margin-bottom: 2rem;
-        padding: 0.25rem;
+        padding: 0.5rem;
         background: var(--glass-bg, rgba(255, 255, 255, 0.45));
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
@@ -126,7 +146,14 @@
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
     }
 
-    .property-tabs-wrapper .property-tab-trigger {
+    /* Row 1: Property type pills */
+    .property-tabs-row {
+        display: flex;
+        gap: 0.25rem;
+        padding: 0.125rem;
+    }
+
+    .property-tabs-row .property-tab-trigger {
         padding: 0.625rem 1.25rem;
         font-size: 0.9375rem;
         font-weight: 500;
@@ -139,35 +166,34 @@
         white-space: nowrap;
     }
 
-    .property-tabs-wrapper .property-tab-trigger:hover {
+    .property-tabs-row .property-tab-trigger:hover {
         color: var(--text-primary, #1a1a2e);
         background: rgba(255, 255, 255, 0.2);
     }
 
-    /* Active tab — frosted glass pill, noticeably translucent */
-    .property-tabs-wrapper .property-tab-trigger.active,
-    .property-tabs-wrapper .property-tab-trigger.text-teal-600 {
+    /* Active property tab — frosted glass pill */
+    .property-tabs-row .property-tab-trigger.active {
         color: var(--accent, #0ea5a0);
         background: rgba(255, 255, 255, 0.35);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.18));
     }
 
-    /* Location sub-tabs — thinner glass bar */
-    .location-tabs-wrapper {
-        display: flex;
-        gap: 0.25rem;
-        margin-bottom: 1.5rem;
-        padding: 0.2rem;
-        background: var(--glass-bg, rgba(255, 255, 255, 0.3));
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.2));
-        border-radius: var(--radius-md, 1.25rem);
-        width: fit-content;
+    /* Thin divider between the two rows */
+    .filter-divider {
+        height: 1px;
+        margin: 0.375rem 0.75rem;
+        background: linear-gradient(to right, transparent, var(--glass-border-subtle, rgba(255, 255, 255, 0.25)), transparent);
     }
 
-    .location-tabs-wrapper .location-tab-trigger {
+    /* Row 2: City / location pills */
+    .location-tabs-row {
+        display: flex;
+        gap: 0.25rem;
+        padding: 0.125rem;
+    }
+
+    .location-tabs-row .location-tab-trigger {
         padding: 0.5rem 1rem;
         font-size: 0.875rem;
         font-weight: 500;
@@ -180,11 +206,12 @@
         white-space: nowrap;
     }
 
-    .location-tabs-wrapper .location-tab-trigger:hover {
+    .location-tabs-row .location-tab-trigger:hover {
         color: var(--text-primary, #1a1a2e);
+        background: rgba(255, 255, 255, 0.15);
     }
 
-    .location-tabs-wrapper .location-tab-trigger.active {
+    .location-tabs-row .location-tab-trigger.active {
         color: var(--accent, #0ea5a0);
         background: rgba(255, 255, 255, 0.3);
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
@@ -225,28 +252,32 @@
 
     .browse-all-btn i { font-size: 0.75rem; }
 
-    /* Dark mode tab overrides */
-    html.dark .property-tabs-wrapper {
+    /* Dark mode overrides */
+    html.dark .filter-container {
         background: var(--glass-bg, rgba(30, 30, 50, 0.5));
         border-color: var(--glass-border, rgba(255, 255, 255, 0.1));
     }
 
-    html.dark .property-tabs-wrapper .property-tab-trigger:hover {
+    html.dark .filter-divider {
+        background: linear-gradient(to right, transparent, var(--glass-border, rgba(255, 255, 255, 0.1)), transparent);
+    }
+
+    html.dark .property-tabs-row .property-tab-trigger:hover {
         color: var(--text-primary);
         background: rgba(255, 255, 255, 0.04);
     }
 
-    html.dark .property-tabs-wrapper .property-tab-trigger.active {
+    html.dark .property-tabs-row .property-tab-trigger.active {
         background: rgba(255, 255, 255, 0.08);
         border-color: var(--glass-border);
     }
 
-    html.dark .location-tabs-wrapper {
-        background: var(--glass-bg, rgba(30, 30, 50, 0.4));
-        border-color: var(--glass-border);
+    html.dark .location-tabs-row .location-tab-trigger:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.04);
     }
 
-    html.dark .location-tabs-wrapper .location-tab-trigger.active {
+    html.dark .location-tabs-row .location-tab-trigger.active {
         background: rgba(255, 255, 255, 0.06);
     }
 
@@ -254,33 +285,38 @@
     @media (max-width: 48rem) {
         .property-types-container { padding: 0 0.75rem; }
 
-        .property-tabs-wrapper {
+        .filter-container {
             margin-bottom: 1.5rem;
+            padding: 0.375rem;
+        }
+
+        .property-tabs-row {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
-        .property-tabs-wrapper::-webkit-scrollbar { display: none; }
-        .property-tabs-wrapper .property-tab-trigger {
+        .property-tabs-row::-webkit-scrollbar { display: none; }
+        .property-tabs-row .property-tab-trigger {
             padding: 0.5rem 0.875rem;
             font-size: 0.875rem;
             flex-shrink: 0;
         }
 
-        .location-tabs-wrapper {
-            margin-bottom: 1rem;
+        .location-tabs-row {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
-        .location-tabs-wrapper::-webkit-scrollbar { display: none; }
-        .location-tabs-wrapper .location-tab-trigger {
+        .location-tabs-row::-webkit-scrollbar { display: none; }
+        .location-tabs-row .location-tab-trigger {
             padding: 0.4rem 0.75rem;
             font-size: 0.8125rem;
             flex-shrink: 0;
         }
+
+        .filter-divider { margin: 0.25rem 0.5rem; }
 
         .browse-all-wrapper { padding: 1.5rem 0; }
         .browse-all-btn {

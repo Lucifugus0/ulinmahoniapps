@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -76,12 +77,14 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
     final double bannerHeight = screenHeight * 0.5;
     final localizations = AppLocalizations.of(context)!;
     final greeting = getTimeBasedGreeting(localizations);
+    // Detect dark/light mode for theme-aware text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return _controller.value.isInitialized
         ? Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Greeting text
+        // Greeting text (adapts to dark/light mode)
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
           child: Column(
@@ -89,10 +92,10 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
             children: [
               Text(
                 '$greeting 👋',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 4),
@@ -100,7 +103,7 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                 localizations.homeSubtitle,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[600],
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
                 ),
               ),
             ],
@@ -190,55 +193,64 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                 ),
               ),
             ),
-            // Search bar at bottom
+            // Glass-style search bar at bottom
             Positioned(
               left: 24,
               right: 24,
               bottom: 16,
-              child: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _searchController,
-                          readOnly: true,
-                          onTap: _showFilterDialog,
-                          cursorColor: Colors.grey,
-                          textAlign: TextAlign.left,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.normal,
-                            color: Colors.black45,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: localizations.searchBannerTitle,
-                            hintStyle: TextStyle(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      // Semi-transparent glass surface
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: isDark ? 0.2 : 0.4),
+                        width: 0.5,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _searchController,
+                            readOnly: true,
+                            onTap: _showFilterDialog,
+                            cursorColor: Colors.grey,
+                            textAlign: TextAlign.left,
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.normal,
-                              color: Colors.black45,
+                              color: isDark ? Colors.white70 : Colors.black45,
                             ),
-                            border: InputBorder.none,
-                            isCollapsed: true,
-                            contentPadding:
-                            EdgeInsets.symmetric(vertical: 12),
+                            decoration: InputDecoration(
+                              hintText: localizations.searchBannerTitle,
+                              hintStyle: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.normal,
+                                color: isDark ? Colors.white54 : Colors.black45,
+                              ),
+                              border: InputBorder.none,
+                              isCollapsed: true,
+                              contentPadding:
+                              const EdgeInsets.symmetric(vertical: 12),
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.search,
-                            size: 28, color: Colors.black),
-                        onPressed: _showFilterDialog,
-                      ),
-                    ],
+                        IconButton(
+                          icon: Icon(Icons.search,
+                              size: 28, color: isDark ? Colors.white : Colors.black),
+                          onPressed: _showFilterDialog,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

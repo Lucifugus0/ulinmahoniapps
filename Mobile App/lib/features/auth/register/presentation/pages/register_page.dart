@@ -182,8 +182,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       decoration: TextDecoration.underline,
     );
 
+    // Detect dark/light mode for theme-aware styling
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Stack(

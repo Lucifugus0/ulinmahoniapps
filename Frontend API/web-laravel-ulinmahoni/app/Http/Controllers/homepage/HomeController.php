@@ -104,11 +104,44 @@ class HomeController extends Controller {
             // Prepare property data by city/area
             $propertyAreas = $this->getPropertiesByArea($properties);
 
+            // Prepare flat list of all properties with lat/lng for nearby sorting
+            $nearbyProperties = $properties->map(function ($property) {
+                return $this->formatPropertyForArea($property);
+            })->values()->toArray();
+
             // Prepare property data by type and location for property-types component
             $propertyTypesByLocation = $this->getPropertiesByTypeAndLocation($propertyTypes);
 
+            // Merge all property types into a single array for the "All" tab
+            $allProperties = array_merge(
+                $propertyTypes['Kos'],
+                $propertyTypes['House'],
+                $propertyTypes['Apartment'],
+                $propertyTypes['Villa'],
+                $propertyTypes['Hotel']
+            );
+
+            // Merge all properties by location for the "All" tab location filters
+            $allJakarta = array_merge(
+                $propertyTypesByLocation['kos']['jakarta'],
+                $propertyTypesByLocation['house']['jakarta'],
+                $propertyTypesByLocation['apartment']['jakarta'],
+                $propertyTypesByLocation['villa']['jakarta'],
+                $propertyTypesByLocation['hotel']['jakarta']
+            );
+            $allBogor = array_merge(
+                $propertyTypesByLocation['kos']['bogor'],
+                $propertyTypesByLocation['house']['bogor'],
+                $propertyTypesByLocation['apartment']['bogor'],
+                $propertyTypesByLocation['villa']['bogor'],
+                $propertyTypesByLocation['hotel']['bogor']
+            );
+
             // Use the same view for all locales - the view will detect locale via app()->getLocale()
             return view("pages.homepage.index", [
+                'allProperties' => $allProperties,
+                'allJakarta' => $allJakarta,
+                'allBogor' => $allBogor,
                 'kos' => $propertyTypes['Kos'],
                 'houses' => $propertyTypes['House'],
                 'apartments' => $propertyTypes['Apartment'],
@@ -117,6 +150,7 @@ class HomeController extends Controller {
                 'heroMedia' => $heroMedia,
                 'promos' => $promos,
                 'propertyAreas' => $propertyAreas,
+                'nearbyProperties' => $nearbyProperties,
                 // Property types by location
                 'kosJakarta' => $propertyTypesByLocation['kos']['jakarta'],
                 'kosBogor' => $propertyTypesByLocation['kos']['bogor'],
@@ -137,6 +171,9 @@ class HomeController extends Controller {
 
             // Use the same view for all locales - the view will detect locale via app()->getLocale()
             return view("pages.homepage.index", [
+                'allProperties' => [],
+                'allJakarta' => [],
+                'allBogor' => [],
                 'kos' => [],
                 'houses' => [],
                 'apartments' => [],
@@ -151,6 +188,7 @@ class HomeController extends Controller {
                     'depok' => [],
                     'bekasi' => []
                 ],
+                'nearbyProperties' => [],
                 // Property types by location
                 'kosJakarta' => [],
                 'kosBogor' => [],
@@ -345,7 +383,10 @@ class HomeController extends Controller {
             'subdistrict' => $property->subdistrict,
             'city' => $property->city,
             'thumbnail' => $thumbnail,
-            'room_count' => $roomCount
+            'room_count' => $roomCount,
+            // GPS coordinates for nearby sorting on the client side
+            'latitude' => $property->latitude,
+            'longitude' => $property->longitude,
         ];
     }
 
