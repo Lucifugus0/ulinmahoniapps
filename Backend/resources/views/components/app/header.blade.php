@@ -1,5 +1,6 @@
 <!-- Header — liquid glass bar with strong backdrop blur for frosted transparency -->
-<header class="sticky top-0 before:absolute before:inset-0 before:backdrop-blur-[48px] max-lg:before:bg-white/15 dark:max-lg:before:bg-gray-900/20 before:-z-10 z-30 {{ $variant === 'v2' || $variant === 'v3' ? 'before:bg-white/15 after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200/30 dark:after:bg-gray-700/20 after:-z-10' : 'max-lg:shadow-xs lg:before:bg-white/12 dark:lg:before:bg-gray-900/15' }} {{ $variant === 'v2' ? 'dark:before:bg-gray-800/20' : '' }} {{ $variant === 'v3' ? 'dark:before:bg-gray-900/20' : '' }}">
+<!-- Header — light mode uses solid white/90 for readability, dark mode uses glass blur -->
+<header class="sticky top-0 before:absolute before:inset-0 before:backdrop-blur-[48px] max-lg:before:bg-white/90 dark:max-lg:before:bg-gray-900/20 before:-z-10 z-30 {{ $variant === 'v2' || $variant === 'v3' ? 'before:bg-white/90 dark:before:bg-white/15 after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200/30 dark:after:bg-gray-700/20 after:-z-10' : 'max-lg:shadow-xs lg:before:bg-white/90 dark:lg:before:bg-gray-900/15' }} {{ $variant === 'v2' ? 'dark:before:bg-gray-800/20' : '' }} {{ $variant === 'v3' ? 'dark:before:bg-gray-900/20' : '' }}">
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 {{ $variant === 'v2' || $variant === 'v3' ? '' : 'lg:border-b border-gray-200 dark:border-gray-700/60' }}">
 

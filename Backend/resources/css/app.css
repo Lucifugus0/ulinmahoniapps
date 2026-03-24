@@ -169,9 +169,7 @@ body.bg-gray-100 {
   100% { background-position: 0% 50%; }
 }
 
-/* Light mode text darkening — ensure contrast on translucent glass surfaces */
-.text-gray-400 { color: #555570 !important; }
-.text-gray-500 { color: #4a4a68 !important; }
+/* Placeholder text — standard gray for readability */
 ::placeholder { color: #6b7280 !important; }
 
 /* Global Dark Mode Overrides - outside @layer for highest specificity */
