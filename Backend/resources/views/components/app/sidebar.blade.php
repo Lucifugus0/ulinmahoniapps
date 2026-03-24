@@ -21,7 +21,7 @@
 
         <!-- Sidebar -->
         <div id="sidebar"
-            class="flex lg:flex flex-col fixed lg:sticky z-50 lg:z-40 left-0 top-0 h-screen overflow-y-scroll lg:overflow-y-auto no-scrollbar shrink-0 bg-gray-800/80 dark:bg-gray-900/60 p-4 border-r border-gray-200 dark:border-gray-700/60 shadow-2xl lg:shadow-none"
+            class="flex lg:flex flex-col fixed lg:sticky z-50 lg:z-40 left-0 top-0 h-screen overflow-y-scroll lg:overflow-y-auto no-scrollbar shrink-0 bg-gray-800 dark:bg-gray-900/60 p-4 border-r border-gray-200 dark:border-gray-700/60 shadow-2xl lg:shadow-none"
             style="transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: width, transform; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
             :class="[
                 sidebarExpanded || window.innerWidth < 1024 ? 'w-64' : 'w-20',
