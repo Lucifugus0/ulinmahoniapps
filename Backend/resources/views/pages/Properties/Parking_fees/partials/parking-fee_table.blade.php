@@ -24,9 +24,9 @@
             </th>
         </tr>
     </thead>
-    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400">
         @forelse($parkingFees as $parking)
-            <tr class="{{ $parking->trashed() ? 'bg-red-50 dark:bg-red-900/10 opacity-70' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-colors duration-150">
+            <tr class="{{ $parking->trashed() ? 'bg-red-50 dark:bg-red-900/10 opacity-70' : 'hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer' }} transition-colors duration-200 border-b border-gray-300 property-table-row">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium {{ $parking->trashed() ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100' }}">
                         {{ $parking->property->name ?? '-' }}

@@ -481,7 +481,7 @@ return [
     // Properties
     'master_properties' => 'Master Properti',
     'add_property' => 'Tambah Properti',
-    'property_management' => 'Manajemen Properti',
+    'property_management' => 'Master Properti',
     'master_rooms' => 'Master Kamar',
     'property_facilities' => 'Fasilitas Properti',
     'room_facilities' => 'Fasilitas Kamar',

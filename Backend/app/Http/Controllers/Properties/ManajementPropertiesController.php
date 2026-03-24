@@ -136,14 +136,18 @@ class ManajementPropertiesController extends Controller
             ? $query->get()
             : $query->paginate((int) $perPage)->appends($request->all());
 
+        // Fetch active cities for the city dropdown in edit forms
+        $cities = City::active()->orderBy('city_name')->get();
+
         return response()->json([
             'html' => view('pages.Properties.m-Properties.partials.property_table', [
                 'properties' => $properties,
+                'cities' => $cities,
                 'per_page' => $perPage,
                 'generalFacilities' => $generalFacilities,
                 'securityFacilities' => $securityFacilities,
                 'amenitiesFacilities' => $amenitiesFacilities,
-                'facilities' => $facilities, // Tambahkan ini
+                'facilities' => $facilities,
             ])->render(),
             'pagination' => $perPage !== 'all'
                 ? $properties->links()->toHtml()

@@ -36,7 +36,7 @@
                 </th>
             </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400">
             @forelse ($customers as $customer)
                 @php
                     $colors = [
@@ -57,7 +57,7 @@
                         $initials = strtoupper(substr($nameParts[0], 0, 1) . substr(end($nameParts), 0, 1));
                     }
                 @endphp
-                <tr class="hover:bg-gray-50 transition-colors">
+                <tr class="hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer border-b border-gray-300 property-table-row">
                     <!-- Customer Name with Avatar -->
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">

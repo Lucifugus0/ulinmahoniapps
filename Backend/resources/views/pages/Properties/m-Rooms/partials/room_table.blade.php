@@ -28,9 +28,9 @@
                         {{ __('ui.room_col_action') }}</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200" id="rooms-table-body">
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400" id="rooms-table-body">
                 @forelse ($rooms as $room)
-                    <tr>
+                    <tr class="hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer border-b border-gray-300 property-table-row">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
                             <div class="text-sm font-medium text-gray-900">
                                 {{ $room->property->name ?? '-' }}

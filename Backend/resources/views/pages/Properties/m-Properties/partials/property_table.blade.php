@@ -30,9 +30,9 @@
                 {{ __('ui.action') }}
             </th>
         </tr>
-    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="propertyTableBody">
+    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400" id="propertyTableBody">
         @forelse ($properties as $property)
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+            <tr class="hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer border-b border-gray-300 property-table-row">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 h-10 w-10">
@@ -84,8 +84,9 @@
                             <input type="checkbox" class="sr-only peer property-status-toggle"
                                 data-id="{{ $property->idrec }}" {{ $property->status ? 'checked' : '' }}
                                 onchange="togglePropertyStatus(this)">
+                            {{-- Toggle switch — CSS in app.css preserves colors in dark mode --}}
                             <div
-                                class="w-11 h-6 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer-checked:bg-blue-600 transition-all duration-300">
+                                class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer-checked:bg-blue-600 transition-all duration-300">
                             </div>
                             <div
                                 class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 peer-checked:translate-x-5">

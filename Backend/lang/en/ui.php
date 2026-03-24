@@ -481,7 +481,7 @@ return [
     // Properties
     'master_properties' => 'Master Properties',
     'add_property' => 'Add Property',
-    'property_management' => 'Property Management',
+    'property_management' => 'Master Properties',
     'master_rooms' => 'Master Rooms',
     'property_facilities' => 'Property Facilities',
     'room_facilities' => 'Room Facilities',

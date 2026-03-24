@@ -172,6 +172,22 @@ body.bg-gray-100 {
 /* Placeholder text — standard gray for readability */
 ::placeholder { color: #6b7280 !important; }
 
+/* Toggle switch — preserve exact colors in dark mode (not affected by glass overrides) */
+html.dark label.cursor-pointer .bg-gray-300 {
+  background-color: #d1d5db !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.dark label.cursor-pointer .peer-checked\:bg-blue-600:is(.peer:checked ~ *) {
+  background-color: #2563eb !important;
+}
+html.dark label.cursor-pointer .bg-white,
+html.dark label.cursor-pointer div[style*="background-color: white"] {
+  background-color: white !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* Global Dark Mode Overrides - outside @layer for highest specificity */
 /* Glass-style translucent white surface for dark mode panels/cards */
 html.dark .bg-white {
@@ -209,6 +225,11 @@ html.dark .bg-gray-100:not(body) {
 html.dark .border-gray-100, html.dark .border-gray-200 { border-color: var(--color-gray-700) !important; }
 html.dark .border-gray-300 { border-color: var(--color-gray-600) !important; }
 html.dark .divide-gray-200 > :not(:last-child) { border-color: var(--color-gray-700) !important; }
+html.dark .divide-gray-300 > :not(:last-child),
+html.dark .divide-gray-400 > :not(:last-child),
+html.dark .divide-gray-500 > :not(:last-child) { border-color: #6b7280 !important; }
+html.dark tbody[class*="divide-y"] > tr { border-bottom: 1px solid #6b7280 !important; }
+html.dark tr.property-table-row { border-bottom-color: #9ca3af !important; }
 html.dark .text-gray-900, html.dark .text-gray-800 { color: #f5f5fa !important; }
 html.dark .text-gray-700 { color: #e8e8f0 !important; }
 html.dark .text-gray-600 { color: #d0d0e0 !important; }

@@ -75,7 +75,7 @@
                         @can('view_dashboard')
                             <li>
                                 <a href="{{ route('dashboard') }}"
-                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('dashboard')) bg-indigo-900/60 @endif">
+                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('dashboard')) bg-indigo-600 @endif">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -107,14 +107,14 @@
 
                                 <!-- Main Menu Button -->
                                 <a @click="activeMenu = activeMenu === 'bookings' ? '' : 'bookings'"
-                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors cursor-pointer group relative overflow-hidden @if (Route::is(
+                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors cursor-pointer group relative overflow-hidden @if (Route::is(
                                             'checkin.index',
                                             'checkout.index',
                                             'bookings.index',
                                             'pendings.index',
                                             'completed.index',
                                             'newReserv.index',
-                                            'changerooom.index')) bg-indigo-900/60 @endif">
+                                            'changerooom.index')) bg-indigo-600 @endif">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <!-- Calendar Icon -->
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
@@ -164,7 +164,7 @@
                                         @can('view_all_bookings')
                                             <li>
                                                 <a href="{{ route('bookings.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-colors @if (Route::is('bookings.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('bookings.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_all_bookings') }}</span>
                                                 </a>
@@ -175,7 +175,7 @@
                                         @can('view_pending_bookings')
                                             <li>
                                                 <a href="{{ route('pendings.index') }}"
-                                                    class="flex items-center justify-between px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-colors @if (Route::is('pendings.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center justify-between px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('pendings.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_pending') }}</span>
                                                 </a>
@@ -186,7 +186,7 @@
                                         @can('view_confirmed_bookings')
                                             <li>
                                                 <a href="{{ route('newReserv.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-colors @if (Route::is('newReserv.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('newReserv.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_confirmed_bookings') }}</span>
                                                 </a>
@@ -197,7 +197,7 @@
                                         @can('view_checkins')
                                             <li>
                                                 <a href="{{ route('checkin.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-colors @if (Route::is('checkin.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('checkin.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_checked_ins') }}</span>
                                                 </a>
@@ -208,7 +208,7 @@
                                         @can('view_checkouts')
                                             <li>
                                                 <a href="{{ route('checkout.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-colors @if (Route::is('checkout.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('checkout.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_checked_outs') }}</span>
                                                 </a>
@@ -219,7 +219,7 @@
                                         @can('view_completed_bookings')
                                             <li>
                                                 <a href="{{ route('completed.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-colors @if (Route::is('completed.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('completed.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_completed') }}</span>
                                                 </a>
@@ -230,7 +230,7 @@
                                         @can('view_change_room')
                                             <li>
                                                 <a href="{{ route('changerooom.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-colors @if (Route::is('changerooom.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('changerooom.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_change_room') }}</span>
                                                 </a>
@@ -251,7 +251,7 @@
 
                                 <!-- Main Menu Button -->
                                 <a @click="activeMenu = activeMenu === 'properties' ? '' : 'properties'"
-                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('properties.index', 'facilityProperty.index', 'cityProperty.index', 'calendar.index', 'deposit-fees.index')) bg-indigo-900/60 @endif">
+                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('properties.index', 'facilityProperty.index', 'cityProperty.index', 'calendar.index', 'deposit-fees.index')) bg-indigo-600 @endif">
 
                                     <div class="flex items-center gap-3 min-w-0">
                                         <!-- Building Icon -->
@@ -302,7 +302,7 @@
                                         @can('view_properties')
                                             <li>
                                                 <a href="{{ route('properties.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('properties.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('properties.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_properties') }}</span>
                                                 </a>
@@ -313,7 +313,7 @@
                                         @can('view_cities')
                                             <li>
                                                 <a href="{{ route('cityProperty.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('cityProperty.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('cityProperty.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_cities') }}</span>
                                                 </a>
@@ -324,7 +324,7 @@
                                         @can('view_property_facilities')
                                             <li>
                                                 <a href="{{ route('facilityProperty.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('facilityProperty.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('facilityProperty.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_facilities') }}</span>
                                                 </a>
@@ -335,7 +335,7 @@
                                         @can('view_properties')
                                             <li>
                                                 <a href="{{ route('calendar.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('calendar.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('calendar.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_calendar') }}</span>
                                                 </a>
@@ -346,7 +346,7 @@
                                         @can('view_deposit_fees')
                                             <li>
                                                 <a href="{{ route('deposit-fees.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('deposit-fees.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('deposit-fees.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_deposit_fees') }}</span>
                                                 </a>
@@ -365,7 +365,7 @@
 
                                 <!-- Main Menu Button -->
                                 <a @click="activeMenu = activeMenu === 'parking' ? '' : 'parking'"
-                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('parking-fees.index', 'parking.index')) bg-indigo-900/60 @endif">
+                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('parking-fees.index', 'parking.index')) bg-indigo-600 @endif">
 
                                     <div class="flex items-center gap-3 min-w-0">
                                         <!-- Parking Icon -->
@@ -417,7 +417,7 @@
                                         @can('view_parking_fees')
                                             <li>
                                                 <a href="{{ route('parking-fees.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('parking-fees.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('parking-fees.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_parking_fees') }}</span>
                                                 </a>
@@ -428,7 +428,7 @@
                                         @can('view_parking')
                                             <li>
                                                 <a href="{{ route('parking.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('parking.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('parking.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_parking') }}</span>
                                                 </a>
@@ -447,7 +447,7 @@
 
                                 <!-- Main Menu Button -->
                                 <a @click="activeMenu = activeMenu === 'rooms' ? '' : 'rooms'"
-                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('rooms.index', 'facilityRooms.index')) bg-indigo-900/60 @endif">
+                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('rooms.index', 'facilityRooms.index')) bg-indigo-600 @endif">
 
                                     <div class="flex items-center gap-3 min-w-0">
                                         <!-- Folder Icon -->
@@ -498,7 +498,7 @@
                                         @can('view_rooms')
                                             <li>
                                                 <a href="{{ route('rooms.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('rooms.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('rooms.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_rooms') }}</span>
                                                 </a>
@@ -509,7 +509,7 @@
                                         @can('view_rooms')
                                             <li>
                                                 <a href="{{ route('roomNameTypes.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('roomNameTypes.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('roomNameTypes.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_room_types') }}</span>
                                                 </a>
@@ -520,7 +520,7 @@
                                         @can('view_room_facilities')
                                             <li>
                                                 <a href="{{ route('facilityRooms.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('facilityRooms.index')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('facilityRooms.index')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_master_facilities') }}</span>
                                                 </a>
@@ -531,7 +531,7 @@
                                         @can('view_door_locks')
                                             <li>
                                                 <a href="{{ route('door-locks.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('door-locks.*')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('door-locks.*')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">Door Lock</span>
                                                 </a>
@@ -548,7 +548,7 @@
                         @can('view_customers')
                             <li>
                                 <a href="{{ route('customers.index') }}"
-                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('customers.*')) bg-indigo-900/60 @endif">
+                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('customers.*')) bg-indigo-600 @endif">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -572,7 +572,7 @@
                         @can('view_room_availability')
                             <li>
                                 <a href="{{ route('room-availability.index') }}"
-                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('room-availability.index')) bg-indigo-900/60 @endif">
+                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('room-availability.index')) bg-indigo-600 @endif">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -598,7 +598,7 @@
                         @can('view_vouchers')
                             <li>
                                 <a href="{{ route('vouchers.index') }}"
-                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('vouchers.*')) bg-indigo-900/60 @endif">
+                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('vouchers.*')) bg-indigo-600 @endif">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -622,7 +622,7 @@
                         @can('view_promo_banners')
                             <li>
                                 <a href="{{ route('promo-banners.index') }}"
-                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('promo-banners.*')) bg-indigo-900/60 @endif">
+                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('promo-banners.*')) bg-indigo-600 @endif">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -676,7 +676,7 @@
                                     .catch(error => console.error('Error fetching unread count:', error));
                             }, 30000);">
                                 <a href="{{ route('chat.index') }}"
-                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('chat.index')) bg-indigo-900/60 @endif">
+                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('chat.index')) bg-indigo-600 @endif">
                                     <!-- Chat Icon with Badge -->
                                     <div class="relative">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0"
@@ -734,7 +734,7 @@
 
                                 <!-- Main Menu Button -->
                                 <a @click="activeMenu = activeMenu === 'payments' ? '' : 'payments'"
-                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('admin.payments.*', 'admin.parking-payments.*', 'admin.deposit-payments.*')) bg-indigo-900/60 @endif">
+                                    class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('admin.payments.*', 'admin.parking-payments.*', 'admin.deposit-payments.*')) bg-indigo-600 @endif">
 
                                     <div class="flex items-center gap-3 min-w-0">
                                         <!-- Payment Icon -->
@@ -785,7 +785,7 @@
                                         @can('view_payments')
                                             <li>
                                                 <a href="{{ route('admin.payments.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('admin.payments.*')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('admin.payments.*')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">Transaction</span>
                                                 </a>
@@ -796,7 +796,7 @@
                                         @can('view_parking_payments')
                                             <li>
                                                 <a href="{{ route('admin.parking-payments.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('admin.parking-payments.*')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('admin.parking-payments.*')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">Parking</span>
                                                 </a>
@@ -807,7 +807,7 @@
                                         @can('view_deposit_payments')
                                             <li>
                                                 <a href="{{ route('admin.deposit-payments.index') }}"
-                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('admin.deposit-payments.*')) bg-indigo-900/60 @endif">
+                                                    class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('admin.deposit-payments.*')) bg-indigo-600 @endif">
                                                     <span
                                                         class="text-xs transition-all duration-300 hover:translate-x-1">Deposit</span>
                                                 </a>
@@ -820,7 +820,7 @@
                             <!-- Refunds -->
                             <li>
                                 <a href="{{ route('admin.refunds.index') }}"
-                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('admin.refunds.index')) bg-indigo-900/60 @endif">
+                                    class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('admin.refunds.index')) bg-indigo-600 @endif">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -851,12 +851,12 @@
 
                                     <!-- Main Menu Button -->
                                     <a @click="activeMenu = activeMenu === 'reports' ? '' : 'reports'"
-                                        class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-all duration-300 cursor-pointer group relative @if (Route::is(
+                                        class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is(
                                                 'reports.booking.*',
                                                 'reports.payment.*',
                                                 'reports.parking.*',
                                                 'reports.deposit.*',
-                                                'reports.rented-rooms.*')) bg-indigo-900/60 @endif">
+                                                'reports.rented-rooms.*')) bg-indigo-600 @endif">
 
                                         <div class="flex items-center gap-3 min-w-0">
                                             <!-- Chart/Report Icon -->
@@ -907,7 +907,7 @@
                                             @can('view_booking_report')
                                                 <li>
                                                     <a href="{{ route('reports.booking.index') }}"
-                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('reports.booking.*')) bg-indigo-900/60 @endif">
+                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('reports.booking.*')) bg-indigo-600 @endif">
                                                         <span
                                                             class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_booking_report') }}</span>
                                                     </a>
@@ -918,7 +918,7 @@
                                             @can('view_payment_report')
                                                 <li>
                                                     <a href="{{ route('reports.payment.index') }}"
-                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('reports.payment.*')) bg-indigo-900/60 @endif">
+                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('reports.payment.*')) bg-indigo-600 @endif">
                                                         <span
                                                             class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_payment_report') }}</span>
                                                     </a>
@@ -929,7 +929,7 @@
                                             @can('view_parking_report')
                                                 <li>
                                                     <a href="{{ route('reports.parking.index') }}"
-                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('reports.parking.*')) bg-indigo-900/60 @endif">
+                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('reports.parking.*')) bg-indigo-600 @endif">
                                                         <span
                                                             class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_parking_report') }}</span>
                                                     </a>
@@ -940,7 +940,7 @@
                                             @can('view_deposit_report')
                                                 <li>
                                                     <a href="{{ route('reports.deposit.index') }}"
-                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('reports.deposit.*')) bg-indigo-900/60 @endif">
+                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('reports.deposit.*')) bg-indigo-600 @endif">
                                                         <span
                                                             class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_deposit_report') }}</span>
                                                     </a>
@@ -951,7 +951,7 @@
                                             @can('view_rented_rooms_report')
                                                 <li>
                                                     <a href="{{ route('reports.rented-rooms.index') }}"
-                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700/50 transition-all duration-300 @if (Route::is('reports.rented-rooms.*')) bg-indigo-900/60 @endif">
+                                                        class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('reports.rented-rooms.*')) bg-indigo-600 @endif">
                                                         <span
                                                             class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_rented_rooms_report') }}</span>
                                                     </a>
@@ -981,7 +981,7 @@
                             @can('view_users')
                                 <li>
                                     <a href="{{ route('users-newManagement') }}"
-                                        class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('users-newManagement')) bg-indigo-900/60 @endif">
+                                        class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('users-newManagement')) bg-indigo-600 @endif">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1005,7 +1005,7 @@
                             @can('manage_roles')
                                 <li>
                                     <a href="{{ route('master-role-management') }}"
-                                        class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-all duration-300 group relative @if (Route::is('master-role-management')) bg-indigo-900/60 @endif">
+                                        class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 group relative @if (Route::is('master-role-management')) bg-indigo-600 @endif">
                                         <!-- Lock Icon -->
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1033,7 +1033,7 @@
                             @can('manage_settings')
                                 <li>
                                     <a href="{{ route('users.show') }}"
-                                        class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-700/50 transition-colors group relative overflow-hidden @if (Route::is('users.show')) bg-indigo-900/60 @endif">
+                                        class="flex items-center gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors group relative overflow-hidden @if (Route::is('users.show')) bg-indigo-600 @endif">
                                         <!-- Gear Icon -->
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
