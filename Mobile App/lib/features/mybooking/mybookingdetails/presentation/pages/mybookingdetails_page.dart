@@ -33,7 +33,7 @@ import '../../../../../core/utils/app_logger.dart';
 import '../widgets/renew_booking_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/utils/payment_cache_utils.dart';
@@ -263,28 +263,18 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
       }
 
       // Save to gallery
-      final result = await ImageGallerySaver.saveImage(
+      await Gal.putImageBytes(
         pngBytes,
-        quality: 100,
         name: 'ulinmahoni_qr_${DateTime.now().millisecondsSinceEpoch}',
       );
 
       if (mounted) {
-        if (result['isSuccess'] == true) {
-          showNotificationDialog(
-            context,
-            localizations.downloadQRSuccess ?? 'QR code saved to gallery',
-            defaultIcon: Icons.check_circle_outline,
-            iconColor: AppColors.primaryColor,
-          );
-        } else {
-          showNotificationDialog(
-            context,
-            localizations.downloadQRFailed ?? 'Failed to save QR code',
-            defaultIcon: Icons.error_outline,
-            iconColor: Colors.red,
-          );
-        }
+        showNotificationDialog(
+          context,
+          localizations.downloadQRSuccess,
+          defaultIcon: Icons.check_circle_outline,
+          iconColor: AppColors.primaryColor,
+        );
       }
     } catch (e) {
       AppLogger.e('Failed to download QR code', e, StackTrace.current, 'MYBOOKING-DETAILS');

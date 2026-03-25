@@ -39,7 +39,6 @@ dependencies:
   http: ^1.4.0
   image: ^4.5.4
   gal: ^2.3.0
-  image_gallery_saver: ^2.0.3
   image_picker: ^0.8.7+5
   cached_network_image: ^3.3.0
   internet_connection_checker_plus: ^2.9.1

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../../core/constants/appcolor_constants.dart';
 
 /// Bank item model
@@ -61,39 +59,26 @@ class BankSelectionWidget extends StatelessWidget {
                   color: isSelected ? AppColors.primaryColor : Colors.grey,
                 ),
                 const SizedBox(width: 8),
-                // Bank icon (60x60) - SVG from network with fallback
+                // Bank icon (60x60) - initial letter
                 Container(
                   width: 60,
                   height: 60,
-                  child: bank.iconUrl != null
-                      ? SvgPicture.network(
-                          bank.iconUrl!,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.contain,
-                          placeholderBuilder: (context) => Skeletonizer(
-                            enabled: true,
-                            child: Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                          // If SVG fails to load, show fallback icon
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.account_balance,
-                            size: 32,
-                            color: isSelected ? AppColors.primaryColor : Colors.grey.shade600,
-                          ),
-                        )
-                      : Icon(
-                          Icons.account_balance,
-                          size: 32,
-                          color: isSelected ? AppColors.primaryColor : Colors.grey.shade600,
-                        ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primaryColor.withValues(alpha: 0.1) : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primaryColor : Colors.grey.shade300,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    bank.code.length > 3 ? bank.code.substring(0, 3) : bank.code,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? AppColors.primaryColor : Colors.grey.shade700,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 // Bank name
