@@ -512,6 +512,121 @@ class NotificationController extends ApiController
      * @param string $currency
      * @return string
      */
+    /**
+     * Manually send a push notification via API.
+     * Supports predefined types (booking_created, check_in, etc.) with default
+     * templates, or a fully custom notification.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function sendPushNotification(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'type' => 'required|string|in:booking_created,check_in,booking_renewed,payment_received,booking_expired,custom',
+            'title' => 'nullable|string|max:255',
+            'body' => 'nullable|string|max:1000',
+            'data' => 'nullable|array',
+            'user_id' => 'nullable|integer|exists:users,id',
+            'to_admins' => 'nullable|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Default templates per notification type
+        $templates = [
+            'booking_created' => [
+                'title' => 'Booking Created',
+                'body' => 'Your booking has been created. Complete payment before it expires.',
+            ],
+            'check_in' => [
+                'title' => 'Check-In Successful',
+                'body' => 'Welcome! You have checked in successfully.',
+            ],
+            'booking_renewed' => [
+                'title' => 'Booking Renewed',
+                'body' => 'Your stay has been extended successfully.',
+            ],
+            'payment_received' => [
+                'title' => 'Payment Received',
+                'body' => 'Your payment has been received and confirmed.',
+            ],
+            'booking_expired' => [
+                'title' => 'Booking Expired',
+                'body' => 'Your booking has expired due to incomplete payment.',
+            ],
+        ];
+
+        $type = $request->type;
+
+        // For custom type, title and body are required
+        if ($type === 'custom' && (!$request->title || !$request->body)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Title and body are required for custom notification type',
+            ], 422);
+        }
+
+        // Use custom title/body or fall back to template defaults
+        $title = $request->title ?? ($templates[$type]['title'] ?? 'Notification');
+        $body = $request->body ?? ($templates[$type]['body'] ?? '');
+        $data = array_merge(['type' => $type], $request->data ?? []);
+        $toAdmins = $request->to_admins ?? false;
+
+        try {
+            $firebaseService = new FirebaseNotificationService();
+            $response = ['type' => $type, 'title' => $title, 'body' => $body];
+
+            // Determine target user
+            $targetUserId = $request->user_id ?? ($request->user() ? $request->user()->id : null);
+
+            if (!$targetUserId) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No target user specified and no authenticated user found',
+                ], 400);
+            }
+
+            $targetUser = User::find($targetUserId);
+            if (!$targetUser) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Target user not found',
+                ], 404);
+            }
+
+            // Send to target user
+            $userResult = $firebaseService->sendToUser($targetUser, $title, $body, $data);
+            $response['user_result'] = $userResult;
+
+            // Optionally send to admins
+            if ($toAdmins) {
+                $adminResult = $firebaseService->sendToAdmins($title, $body, $data);
+                $response['admin_result'] = $adminResult;
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Push notification sent',
+                'data' => $response
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Manual push notification failed', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send push notification',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function getPaymentMessage($status, $amount, $currency)
     {
         $formattedAmount = number_format($amount, 2) . ' ' . strtoupper($currency);
