@@ -228,6 +228,9 @@ Route::prefix('v1')->group(function () {
             Route::delete('/', [DeviceTokenController::class, 'destroy']);
         });
 
+        // PUSH NOTIFICATION API ROUTES (Manual send)
+        Route::post('/push-notification/send', [NotificationController::class, 'sendPushNotification']);
+
         // COMMENTED FOR REVIEW
         // NOTIFICATIONS API ROUTES
         // Route::prefix('notifications')->group(function () {
