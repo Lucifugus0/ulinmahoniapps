@@ -57,6 +57,13 @@ class AppColors {
   /// Glass surface for dark mode — based on Frontend gray-800
   static Color glassSurfaceDark = const Color(0xFF1F2937).withValues(alpha: 0.70);
 
+  // -- Brighter brand variants for UI text/icons --
+  /// Slightly brighter green — for "Mahoni" text and bottom nav selected state
+  static const Color primaryColorBright = Color(0xFF1F7A55);
+
+  /// Slightly brighter red — for "Ulin" text in navbar
+  static const Color secondaryColorBright = Color(0xFFB71C1C);
+
   // -- Accent colors --
   /// Bright green accent for glass UI highlights
   static const Color accentGreen = Color(0xFF34C759);

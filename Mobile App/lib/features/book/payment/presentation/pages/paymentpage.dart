@@ -350,6 +350,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     );
     final authState = ref.watch(authProvider);
     final textTheme = Theme.of(context).textTheme;
+    // Dark mode detection for payment page colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final isVoucherLoading = voucherValidationState.isLoading;
 
@@ -1186,20 +1188,20 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           showBottomNav: false,
           showNavBar: false,
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
             appBar: AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
               elevation: 2,
               shadowColor: Colors.black.withOpacity(0.1),
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               title: Text(
                 localizations.paymentPageTitle,
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
               titleSpacing: 0,
@@ -1219,7 +1221,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                               roomData['propertyName']?.toString() ?? 'Property Name Not Available',
                                               style: textTheme.headlineMedium?.copyWith(
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.black,
+                                                color: isDark ? Colors.white : Colors.black,
                                               ),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
@@ -1378,7 +1380,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                               borderRadius: BorderRadius.circular(8),
                                               color: _selectedParkingType == 'car'
                                                   ? AppColors.primaryColor.withValues(alpha: 0.05)
-                                                  : Colors.white,
+                                                  : (isDark ? const Color(0xFF374151) : Colors.white),
                                             ),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1475,7 +1477,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                               borderRadius: BorderRadius.circular(8),
                                               color: _selectedParkingType == 'motorcycle'
                                                   ? AppColors.primaryColor.withAlpha(13)
-                                                  : Colors.white,
+                                                  : (isDark ? const Color(0xFF374151) : Colors.white),
                                             ),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1543,9 +1545,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: Colors.grey[50],
+                                            color: isDark ? const Color(0xFF374151) : Colors.grey[50],
                                             borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: Colors.grey[300]!),
+                                            border: Border.all(color: isDark ? Colors.grey.shade600 : Colors.grey[300]!),
                                           ),
                                           child: Column(
                                             children: [
@@ -1642,7 +1644,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             ),
                                             enabledBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
-                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                              borderSide: BorderSide(color: isDark ? Colors.grey.shade600 : Colors.grey[300]!),
                                             ),
                                             focusedBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
@@ -2049,6 +2051,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                   text: TextSpan(
                                                     style: const TextStyle(
                                                       fontSize: 13,
+                                                      // Amber box always has a light background — keep black
                                                       color: Colors.black87,
                                                     ),
                                                     children: [
@@ -2710,7 +2713,10 @@ class _PaymentErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for error dialog text and background colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Dialog(
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -2731,10 +2737,10 @@ class _PaymentErrorDialog extends StatelessWidget {
             // Title/Header
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -2743,10 +2749,10 @@ class _PaymentErrorDialog extends StatelessWidget {
             // Main message
             Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: isDark ? Colors.white70 : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -2773,6 +2779,7 @@ class _PaymentErrorDialog extends StatelessWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
+                          // Error box always has a light red bg so black is fine here
                           color: Colors.black87,
                         ),
                       ),
@@ -2796,7 +2803,7 @@ class _PaymentErrorDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: isDark ? const Color(0xFF374151) : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -2808,7 +2815,7 @@ class _PaymentErrorDialog extends StatelessWidget {
                       note,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade700,
+                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                         height: 1.4,
                       ),
                     ),

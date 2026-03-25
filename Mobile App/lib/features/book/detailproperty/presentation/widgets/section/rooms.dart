@@ -35,12 +35,14 @@ class RoomTypeSection extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final selectedFilter = ref.watch(selectedRoomFilterProvider(propertyId));
     final selectedStatusFilter = ref.watch(selectedRoomStatusFilterProvider(propertyId));
+    // Dark mode: slightly lighter than page bg so the section is still distinct
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     AppLogger.d('RoomTypeSection building for propertyId: $propertyId, state: ${roomsAsyncValue.isLoading ? "loading" : roomsAsyncValue.hasError ? "error" : "data"}', 'ROOMS');
 
     return Container(
       width: double.infinity,
-      color: AppColors.secondaryBackgroundColor,
+      color: isDark ? const Color(0xFF1F2937) : AppColors.secondaryBackgroundColor,
       padding: const EdgeInsets.only(top: 16, bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,10 +266,12 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for dropdown container and text
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.primaryColor.withValues(alpha: 0.3),
@@ -293,11 +297,11 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
           isExpanded: true,
           style: TextStyle(
             fontSize: 13,
-            color: isEnabled ? Colors.black87 : Colors.grey[400],
+            color: isEnabled ? (isDark ? Colors.white : Colors.black87) : Colors.grey[400],
             fontWeight: FontWeight.w500,
           ),
           borderRadius: BorderRadius.circular(12),
-          dropdownColor: Colors.white,
+          dropdownColor: isDark ? const Color(0xFF374151) : Colors.white,
           items: [
             DropdownMenuItem<String?>(
               value: null,
@@ -306,14 +310,14 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
                   Icon(
                     Icons.all_inclusive,
                     size: 18,
-                    color: Colors.grey[600],
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       localizations.roomFilterAllStatus,
                       style: TextStyle(
-                        color: Colors.grey[800],
+                        color: isDark ? Colors.white : Colors.grey[800],
                         fontSize: 13,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -335,7 +339,7 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
                   Expanded(
                     child: Text(
                       localizations.roomFilterAvailable,
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white : null),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -355,7 +359,7 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
                   Expanded(
                     child: Text(
                       localizations.roomFilterOccupied,
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white : null),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -408,10 +412,12 @@ class _RoomFilterDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for dropdown container and text
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.primaryColor.withValues(alpha: 0.3),
@@ -437,11 +443,11 @@ class _RoomFilterDropdown extends StatelessWidget {
           isExpanded: true,
           style: TextStyle(
             fontSize: 13,
-            color: isEnabled ? Colors.black87 : Colors.grey[400],
+            color: isEnabled ? (isDark ? Colors.white : Colors.black87) : Colors.grey[400],
             fontWeight: FontWeight.w500,
           ),
           borderRadius: BorderRadius.circular(12),
-          dropdownColor: Colors.white,
+          dropdownColor: isDark ? const Color(0xFF374151) : Colors.white,
           items: [
             DropdownMenuItem<String?>(
               value: null,
@@ -450,14 +456,14 @@ class _RoomFilterDropdown extends StatelessWidget {
                   Icon(
                     Icons.clear_all,
                     size: 18,
-                    color: Colors.grey[600],
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       localizations.roomSortAllRooms,
                       style: TextStyle(
-                        color: Colors.grey[800],
+                        color: isDark ? Colors.white : Colors.grey[800],
                         fontSize: 13,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -480,7 +486,7 @@ class _RoomFilterDropdown extends StatelessWidget {
                     Expanded(
                       child: Text(
                         roomName,
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(fontSize: 13, color: isDark ? Colors.white : null),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

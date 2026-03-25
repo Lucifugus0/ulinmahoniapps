@@ -101,6 +101,8 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
     if (property.location == null || property.location!.isEmpty) {
       return const SizedBox.shrink();
     }
+    // Dark mode detection for map button
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Parse location string (format: "latitude,longitude")
     final locationParts = property.location!.split(',');
@@ -164,7 +166,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                 bottom: 8,
                 right: 8,
                 child: Material(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1F2937) : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   elevation: 2,
                   child: InkWell(
@@ -180,12 +182,13 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.open_in_new, size: 16, color: AppColors.primaryColor),
+                          // Bright green so it's legible on the map tile background
+                          const Icon(Icons.open_in_new, size: 16, color: Color(0xFF34C759)),
                           const SizedBox(width: 4),
                           Text(
                             'View Larger Map',
                             style: textTheme.labelSmall?.copyWith(
-                              color: AppColors.primaryColor,
+                              color: const Color(0xFF34C759),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -357,7 +360,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!; 
+    final localizations = AppLocalizations.of(context)!;
+    // Dark mode detection for scaffold and content backgrounds
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     _timer?.cancel();
     _startAutoSlide();
     final detailProperty = ref.watch(detailPropertyProvider(widget.id));
@@ -440,7 +445,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
           });
 
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
             appBar: CustomAppBar(
               title: localizations.detailPropertyPageTitle,
             ),
@@ -453,7 +458,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
           );
         },
         loading: () => Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
           appBar: CustomAppBar(
             title: localizations.detailPropertyPageTitle,
           ),
@@ -812,6 +817,8 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
     final textTheme = Theme.of(context).textTheme;
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    // Dark mode detection for content card colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final double contentMarginHorizontal = screenWidth * 0.04;
     final double contentPaddingAll = screenWidth * 0.04;
@@ -874,7 +881,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
               margin: EdgeInsets.symmetric(horizontal: contentMarginHorizontal),
               padding: EdgeInsets.all(contentPaddingAll),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF1F2937) : Colors.white,
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
@@ -892,19 +899,19 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                       property.name!,
                       style: textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                       softWrap: true,
                       overflow: TextOverflow.visible,
                     )
                   else
-                    Text(localizations.detailPropertyNameNotAvailable), 
+                    Text(localizations.detailPropertyNameNotAvailable),
 
                   if (property.tags != null && property.tags!.isNotEmpty)
                     Text(
                       property.tags!,
                       style: textTheme.titleMedium?.copyWith(
-                        color: Colors.black,
+                        color: isDark ? Colors.grey[300] : Colors.black,
                       ),
                       softWrap: true,
                       overflow: TextOverflow.visible,
@@ -1015,7 +1022,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                       localizations.propertyDetailLocation,
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1027,7 +1034,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                     localizations.detailPropertyFacilitiesTitle,
                     style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   // Use new format with icons if available, otherwise fallback to old format
@@ -1059,7 +1066,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                       localizations.propertyDetailNearbyLocations,
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 12),

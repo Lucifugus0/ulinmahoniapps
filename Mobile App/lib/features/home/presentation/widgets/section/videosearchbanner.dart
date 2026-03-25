@@ -205,15 +205,16 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                   child: Container(
                     height: 50,
                     decoration: BoxDecoration(
-                      // Semi-transparent glass surface
                       color: isDark
-                          ? Colors.white.withValues(alpha: 0.12)
+                          ? Colors.transparent
                           : Colors.white.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(25),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: isDark ? 0.2 : 0.4),
-                        width: 0.5,
-                      ),
+                      border: isDark
+                          ? null
+                          : Border.all(
+                              color: Colors.white.withValues(alpha: 0.4),
+                              width: 0.5,
+                            ),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
@@ -238,9 +239,11 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                                 color: isDark ? Colors.white54 : Colors.black45,
                               ),
                               border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              filled: false,
                               isCollapsed: true,
-                              contentPadding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),

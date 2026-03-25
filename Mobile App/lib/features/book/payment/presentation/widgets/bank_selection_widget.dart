@@ -43,6 +43,8 @@ class BankSelectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for bank name text color
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: availableBanks.map((bank) {
         final isSelected = selectedBank == bank.code;
@@ -102,7 +104,7 @@ class BankSelectionWidget extends StatelessWidget {
                     bank.name,
                     style: TextStyle(
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? AppColors.primaryColor : Colors.black87,
+                      color: isSelected ? AppColors.primaryColor : (isDark ? Colors.white : Colors.black87),
                       fontSize: 14,
                     ),
                     maxLines: 1,

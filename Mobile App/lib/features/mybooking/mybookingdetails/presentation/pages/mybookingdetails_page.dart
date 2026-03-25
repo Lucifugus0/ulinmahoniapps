@@ -199,6 +199,14 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
         _startCountdownTimer(ccData['expiredAt']!);
       }
     }
+
+    // For all other pending payment types (VA, Transfer Manual, etc.)
+    // that have no specific expiry stored, start a flat 15-minute countdown
+    if (mounted && _remainingTime == Duration.zero) {
+      _startCountdownTimer(
+        DateTime.now().add(const Duration(minutes: 15)).toIso8601String(),
+      );
+    }
   }
 
   /// Start countdown timer for QR/CC expiry
@@ -344,7 +352,8 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!; 
+    final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final int bookingIdrec = widget.bookingData['idrec'] as int;
     final AsyncValue<MyBookingModel?> bookingDataAsync = ref.watch(myBookingByIdProvider(bookingIdrec));
 
@@ -517,11 +526,11 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDark ? AppColors.surfaceDark : Colors.white,
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.12),
+                                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                                   blurRadius: 16,
                                   offset: const Offset(0, 4),
                                 ),
@@ -570,43 +579,75 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                       ],
                                     ),
                                   ),
-                                sectionTitle(localizations.myBookingDetailTitle),
-                                info(localizations.myBookingDetailOrderId, bookingData.orderId ?? "-"),
-                                info(localizations.myBookingDetailPhoneNumber, bookingData.userPhoneNumber ?? "-"),
+                                // 15-minute countdown — shown for all pending bookings, above Detail Pemesanan
+                                if (bookingData.transactionStatus?.toLowerCase().trim() == 'pending' && _remainingTime.inSeconds > 0)
+                                  Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 20),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.orange.shade200),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.timer, size: 18, color: Colors.orange.shade700),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '${localizations.expiresIn ?? 'Expires in'}: ${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.orange.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                sectionTitle(context, localizations.myBookingDetailTitle),
+                                info(context, localizations.myBookingDetailOrderId, bookingData.orderId ?? "-"),
+                                info(context, localizations.myBookingDetailPhoneNumber, bookingData.userPhoneNumber ?? "-"),
                                 info(
+                                  context,
                                   localizations.myBookingDetailBookingType,
                                   bookingData.bookingType == 'daily'
                                     ? localizations.dailyRentType
                                     : localizations.monthlyRentType,
                                 ),
                                 info(
+                                  context,
                                   localizations.myBookingDetailDuration,
                                   bookingData.bookingType == 'daily'
                                       ? '${bookingData.bookingDays?.toString() ?? "0"} ${localizations.dailyDurationUnit}'
                                       : '${bookingData.bookingMonths?.toString() ?? "0"} ${localizations.monthlyDurationUnit}',
                                 ),
                                 const Divider(height: 30),
-                                sectionTitle(localizations.myBookingDetailTimeTitle),
-                                info(localizations.myBookingDetailCheckIn, formatDate(bookingData.checkIn) ?? "-"),
-                                info(localizations.myBookingDetailCheckOut, formatDate(bookingData.checkOut) ?? "-"),
+                                sectionTitle(context, localizations.myBookingDetailTimeTitle),
+                                info(context, localizations.myBookingDetailCheckIn, formatDate(bookingData.checkIn) ?? "-"),
+                                info(context, localizations.myBookingDetailCheckOut, formatDate(bookingData.checkOut) ?? "-"),
                                 const Divider(height: 30),
-                                sectionTitle(localizations.myBookingDetailBookingPriceTitle),
+                                sectionTitle(context, localizations.myBookingDetailBookingPriceTitle),
                                 info(
+                                  context,
                                   bookingData.bookingType == 'daily' ? localizations.myBookingDetailPricePerDay : localizations.myBookingDetailPricePerMonth,
                                   bookingData.bookingType == 'daily'
                                       ? formatCurrency(bookingData.dailyPrice) ?? "0"
                                       : formatCurrency(bookingData.monthlyPrice) ?? "0",
                                 ),
-                                info(localizations.myBookingDetailSubtotal, formatCurrency(bookingData.roomPrice) ?? "-"),
+                                info(context, localizations.myBookingDetailSubtotal, formatCurrency(bookingData.roomPrice) ?? "-"),
 
                                 // Voucher Section (if voucher is applied)
                                 if (bookingData.voucherCode != null && bookingData.voucherCode!.isNotEmpty) ...[
                                   const Divider(height: 20, thickness: 0.5, color: Colors.grey),
                                   info(
+                                    context,
                                     'Subtotal Sebelum Diskon',
                                     formatCurrency(bookingData.subtotalBeforeDiscount),
                                   ),
                                   info(
+                                    context,
                                     'Voucher (${bookingData.voucherCode})',
                                     '- ${formatCurrency(bookingData.discountAmount)}',
                                     color: AppColors.primaryColor,
@@ -620,6 +661,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                 // Deposit Fee (if not 0)
                                 if (bookingData.depositFee != null && bookingData.depositFee! > 0)
                                   info(
+                                    context,
                                     'Deposit',
                                     formatCurrency(bookingData.depositFee) ?? "0",
                                   ),
@@ -627,6 +669,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                 // Parking Fee (if not 0)
                                 if (bookingData.parkingFee != null && bookingData.parkingFee! > 0)
                                   info(
+                                    context,
                                     () {
                                       final parkingType = bookingData.parkingType?.toLowerCase();
                                       final parkingLabel = parkingType == 'car'
@@ -643,13 +686,15 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                   ),
 
                                 info(
+                                  context,
                                   localizations.myBookingDetailServiceFee,
                                   formatCurrency(bookingData.serviceFees) ?? "30.000",
                                 ),
 
                                 const Divider(height: 30),
-                                sectionTitle(localizations.myBookingDetailTotalPriceTitle),
+                                sectionTitle(context, localizations.myBookingDetailTotalPriceTitle),
                                 info(
+                                  context,
                                   localizations.myBookingDetailGrandtotal,
                                   formatCurrency(bookingData.grandtotalPrice) ?? "0",
                                   isBold: true,
@@ -657,16 +702,16 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                 ),
 // Payment Method Section - Show for all transaction types
 const Divider(height: 30),
-sectionTitle(localizations.paymentMethodTitle),
+sectionTitle(context, localizations.paymentMethodTitle),
 const SizedBox(height: 8),
 
 // Sub Header: Transaction Type (always show)
 Text(
   bookingData.transactionType,
-  style: const TextStyle(
+  style: TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
-    color: Colors.black87,
+    color: isDark ? Colors.white : Colors.black87,
   ),
 ),
 const SizedBox(height: 12),
@@ -688,10 +733,10 @@ if (bookingData.virtualaccountnumber != null && bookingData.virtualaccountnumber
         children: [
           Text(
             bookingData.virtualaccountnumber!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(width: 8),
@@ -737,31 +782,6 @@ if (bookingData.virtualaccountnumber != null && bookingData.virtualaccountnumber
 // QR Code Display (QRIS only, status pending)
 if (_cachedQRData != null && _remainingTime.inSeconds > 0) ...[
   const SizedBox(height: 20),
-  // Timer
-  Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    decoration: BoxDecoration(
-      color: Colors.orange.shade50,
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.orange.shade200),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.timer, size: 18, color: Colors.orange.shade700),
-        const SizedBox(width: 8),
-        Text(
-          '${localizations.expiresIn ?? 'Expires in'}: ${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.orange.shade700,
-          ),
-        ),
-      ],
-    ),
-  ),
-  const SizedBox(height: 16),
   // QR Code
   Center(
     child: RepaintBoundary(
@@ -820,31 +840,6 @@ if (_cachedQRData != null && _remainingTime.inSeconds > 0) ...[
 // Credit Card Payment Link (CC only, status pending)
 if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
   const SizedBox(height: 20),
-  // Timer
-  Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    decoration: BoxDecoration(
-      color: Colors.orange.shade50,
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.orange.shade200),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.timer, size: 18, color: Colors.orange.shade700),
-        const SizedBox(width: 8),
-        Text(
-          '${localizations.expiresIn ?? 'Expires in'}: ${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.orange.shade700,
-          ),
-        ),
-      ],
-    ),
-  ),
-  const SizedBox(height: 16),
   // Continue Payment button
   Center(
     child: ElevatedButton.icon(
@@ -914,7 +909,7 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Divider(height: 30),
-                                        sectionTitle(localizations.myBookingDetailPaymentProofTitle),
+                                        sectionTitle(context, localizations.myBookingDetailPaymentProofTitle),
                                         ImageViewerWidget(
                                           decodedAttachmentImageBytes: _decodedAttachmentImageBytes,
                                           shouldShowUpdateButton: shouldShowUploadButton,
@@ -980,7 +975,7 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           const Divider(height: 30),
-                                          sectionTitle(localizations.checkInSectionTitle),
+                                          sectionTitle(context, localizations.checkInSectionTitle),
                                           Center(
                                             child: Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -1106,7 +1101,7 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           const Divider(height: 30),
-                                          sectionTitle(localizations.renewBookingButton),
+                                          sectionTitle(context, localizations.renewBookingButton),
                                           Center(
                                             child: Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

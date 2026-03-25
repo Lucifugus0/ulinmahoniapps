@@ -53,8 +53,10 @@ class _ConfirmationDialogState extends State<ConfirmationDialog> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
+    // Dark mode detection for dialog background
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AlertDialog(
-      backgroundColor: AppColors.white,
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       contentPadding: const EdgeInsets.all(24),
       title: Column(

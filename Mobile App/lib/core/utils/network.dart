@@ -162,6 +162,8 @@ class _NetworkConnectivityMonitorState extends ConsumerState<NetworkConnectivity
     final title = localizations?.noInternetTitle ?? "Koneksi Terputus";
     final message = localizations?.noInternetMessage ?? "Tidak ada koneksi internet.";
     final btnText = localizations?.retryButton ?? "OK";
+    // Dark mode detection for dialog colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Stack(
       children: [
@@ -189,7 +191,7 @@ class _NetworkConnectivityMonitorState extends ConsumerState<NetworkConnectivity
                       margin: const EdgeInsets.symmetric(horizontal: 40),
                       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: isDark ? const Color(0xFF1F2937) : Colors.white,
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: const [
                           BoxShadow(
@@ -204,10 +206,10 @@ class _NetworkConnectivityMonitorState extends ConsumerState<NetworkConnectivity
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
-                                color: Colors.black
+                                color: isDark ? Colors.white : Colors.black
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -226,9 +228,9 @@ class _NetworkConnectivityMonitorState extends ConsumerState<NetworkConnectivity
                           const SizedBox(height: 16),
                           Text(
                             message,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.black87
+                                color: isDark ? Colors.grey[300] : Colors.black87
                             ),
                             textAlign: TextAlign.center,
                           ),

@@ -6,6 +6,7 @@ import '../../provider/mybooking_provider.dart';
 import '../../../../../core/utils/imageconverter_utils.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/utils/app_logger.dart';
+import '../../../../../core/constants/appcolor_constants.dart';
 
 class BookingCard extends ConsumerStatefulWidget {
   final int id;
@@ -59,9 +60,10 @@ class _BookingCardState extends ConsumerState<BookingCard> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!; 
+    final localizations = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final propertyImagesAsync = ref.watch(propertyImagesProvider(widget.propertyId));
 
@@ -70,7 +72,7 @@ class _BookingCardState extends ConsumerState<BookingCard> {
         context.push('/mybookingdetails', extra: widget.dataDetail);
       },
       child: Card(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         margin: const EdgeInsets.symmetric(vertical: 8),
         child: Padding(
           padding: const EdgeInsets.all(10),
@@ -142,7 +144,7 @@ class _BookingCardState extends ConsumerState<BookingCard> {
                       widget.orderId,
                       style: TextStyle(
                         fontSize: isSmallScreen ? 10 : 11,
-                        color: Colors.grey[600],
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -154,7 +156,7 @@ class _BookingCardState extends ConsumerState<BookingCard> {
                           : widget.roomName,
                       style: TextStyle(
                         fontSize: isSmallScreen ? 11 : 12,
-                        color: Colors.grey[700],
+                        color: isDark ? Colors.grey[400] : Colors.grey[700],
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -177,12 +179,12 @@ class _BookingCardState extends ConsumerState<BookingCard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${localizations.checkInLabel}: ${formatDate(widget.checkIn) ?? widget.checkIn}', 
-                      style: const TextStyle(fontSize: 12),
+                      '${localizations.checkInLabel}: ${formatDate(widget.checkIn) ?? widget.checkIn}',
+                      style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[300] : Colors.black87),
                     ),
                     Text(
-                      '${localizations.checkOutLabel}: ${formatDate(widget.checkOut) ?? widget.checkOut}', 
-                      style: const TextStyle(fontSize: 12),
+                      '${localizations.checkOutLabel}: ${formatDate(widget.checkOut) ?? widget.checkOut}',
+                      style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[300] : Colors.black87),
                     ),
                   ],
                 ),

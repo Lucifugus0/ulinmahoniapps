@@ -26,6 +26,7 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
     final cheapestPropertiesAsyncValue = ref.watch(cheapestPropertiesProvider);
     final textTheme = Theme.of(context).textTheme;
     final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       color: widget.backgroundColor,
@@ -67,9 +68,9 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
                   },
                   child: Text(
                     localizations.showAll,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.primaryColor,
+                      color: isDark ? Colors.white : AppColors.primaryColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

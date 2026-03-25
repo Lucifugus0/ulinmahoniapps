@@ -19,33 +19,36 @@ class _PasswordFieldState extends State<PasswordField> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: TextField(
-          controller: widget.controller,
-          obscureText: _obscurePassword,
-          decoration: InputDecoration(
-            border: InputBorder.none,
-            hintText: widget.hint,
-            isCollapsed: true,
-            contentPadding: EdgeInsets.symmetric(vertical: 14),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                color: Colors.grey,
-              ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
-            ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Single rounded border used for all states — no visible border line
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide.none,
+    );
+    return TextField(
+      controller: widget.controller,
+      obscureText: _obscurePassword,
+      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+      decoration: InputDecoration(
+        // Single fill layer — no Container wrapper needed
+        filled: true,
+        fillColor: isDark ? const Color(0xFF374151) : Colors.grey[200],
+        border: border,
+        enabledBorder: border,
+        focusedBorder: border,
+        hintText: widget.hint,
+        hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[500]),
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+            color: isDark ? Colors.grey[400] : Colors.grey,
           ),
+          onPressed: () {
+            setState(() {
+              _obscurePassword = !_obscurePassword;
+            });
+          },
         ),
       ),
     );

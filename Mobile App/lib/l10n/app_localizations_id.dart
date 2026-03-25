@@ -2089,4 +2089,16 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get expiresIn => 'Berakhir dalam';
+
+  @override
+  String get darkModeLabel => 'Mode Gelap';
+
+  @override
+  String get lightModeLabel => 'Mode Terang';
+
+  @override
+  String get switchToLightMode => 'Beralih ke mode terang';
+
+  @override
+  String get switchToDarkMode => 'Beralih ke mode gelap';
 }

@@ -13,19 +13,21 @@ Future<ImageSourceOption?> showImageSourceDialog(
   String cancelButtonText = 'Cancel',
   bool barrierDismissible = true,
 }) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
   return showDialog<ImageSourceOption>(
     context: context,
     barrierDismissible: barrierDismissible,
     builder: (ctx) => AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       title: title != null
           ? Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             )
           : null,
@@ -50,9 +52,9 @@ Future<ImageSourceOption?> showImageSourceDialog(
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Colors.black87,
+                color: isDark ? Colors.white70 : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -107,8 +109,8 @@ Future<ImageSourceOption?> showImageSourceDialog(
           },
           child: Text(
             cancelButtonText,
-            style: const TextStyle(
-              color: Colors.black54,
+            style: TextStyle(
+              color: isDark ? Colors.grey[400] : Colors.black54,
               fontWeight: FontWeight.w500,
             ),
           ),

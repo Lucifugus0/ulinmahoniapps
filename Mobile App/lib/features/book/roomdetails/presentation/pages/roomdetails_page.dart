@@ -704,6 +704,9 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
         int? pageViewItemCount = sliderImageProviders.length > 1 ? null : 1;
         AppLogger.d('form validation???$_isFormValid', 'ROOM-DETAILS');
 
+        // Dark mode detection for scaffold and content card colors
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return MainLayout(
           currentIndex: 0,
           showNavBar: false,
@@ -776,7 +779,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
             }
           },
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
             appBar: CustomAppBar(
               title: localizations.roomDetailsPageTitle,
             ),
@@ -837,7 +840,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           padding: const EdgeInsets.all(16.0),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: isDark ? const Color(0xFF1F2937) : Colors.white,
                             borderRadius: BorderRadius.circular(15),
                             boxShadow: [
                               BoxShadow(
@@ -854,7 +857,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                 _roomData.name ?? '-',
                                 style: textTheme.headlineMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                                  color: isDark ? Colors.white : Colors.black,
                                 ),
                                 softWrap: true,
                                 overflow: TextOverflow.visible,
@@ -865,11 +868,11 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                   if (_isPriceValid(_roomData.priceOriginalMonthly) && widget.room.periode_monthly == 1) ...[
                                     Text(
                                       formatCurrency(_roomData.priceOriginalMonthly!).toString(),
-                                      style: const TextStyle(fontSize: 18, color: Colors.black),
+                                      style: TextStyle(fontSize: 18, color: isDark ? Colors.white : Colors.black),
                                     ),
                                     Text(
-                                      localizations.roomDetailsPerMonth, 
-                                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                                      localizations.roomDetailsPerMonth,
+                                      style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[300] : Colors.black),
                                     ),
                                   ],
                                   if (_isPriceValid(_roomData.priceOriginalMonthly) && _isPriceValid(_roomData.priceOriginalDaily))
@@ -877,11 +880,11 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                   if (_isPriceValid(_roomData.priceOriginalDaily) && widget.room.periode_daily == 1) ...[
                                     Text(
                                       formatCurrency(_roomData.priceOriginalDaily!).toString(),
-                                      style: const TextStyle(fontSize: 18, color: Colors.black),
+                                      style: TextStyle(fontSize: 18, color: isDark ? Colors.white : Colors.black),
                                     ),
                                     Text(
-                                      localizations.roomDetailsPerDay, 
-                                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                                      localizations.roomDetailsPerDay,
+                                      style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[300] : Colors.black),
                                     ),
                                   ],
                                 ],

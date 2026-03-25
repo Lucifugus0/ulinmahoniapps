@@ -237,6 +237,11 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
       displaySelectedCategory = categoryValueToDisplay[selectedCategory!];
     }
 
+    // Dark mode detection for the filter popup
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF1F2937) : Colors.white;
+    final dropdownBg = isDark ? const Color(0xFF374151) : Colors.white;
+
     return PopScope(
       canPop: true,
       onPopInvoked: (bool didPop) {
@@ -252,7 +257,7 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16), // Radius sudut untuk semua sisi
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: dialogBg,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -262,14 +267,15 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                 // Container abu-abu (handle) dihapus karena ini popup tengah
                 Text(
                   localizations.filtertitle, // Judul Opsional
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
-                  dropdownColor: Colors.white,
+                  dropdownColor: dropdownBg,
                   value: displaySelectedCategory,
                   items: categoryOptions
                       .map((item) =>
@@ -293,7 +299,7 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  dropdownColor: Colors.white,
+                  dropdownColor: dropdownBg,
                   value: displaySelectedRentType,
                   items: rentOptions
                       .map((item) =>
@@ -337,9 +343,9 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                           child: Text(
                             (durationRaw ?? 1).toString(),
                             textAlign: TextAlign.left,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                         ),

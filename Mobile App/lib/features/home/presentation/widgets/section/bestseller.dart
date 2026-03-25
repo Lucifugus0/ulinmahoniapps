@@ -26,6 +26,7 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
     final bestSellerPropertiesAsyncValue = ref.watch(bestSellerPropertiesProvider);
     final textTheme = Theme.of(context).textTheme;
     final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       color: widget.backgroundColor,
@@ -55,9 +56,9 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
                   },
                   child: Text(
                     localizations.showAll,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.primaryColor,
+                      color: isDark ? Colors.white : AppColors.primaryColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

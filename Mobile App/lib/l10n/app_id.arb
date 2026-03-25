@@ -808,5 +808,11 @@
     "creditCardPayment": "Pembayaran Kartu Kredit",
     "continuePayment": "Lanjutkan Pembayaran",
     "ccPaymentNote": "Klik tombol di atas untuk menyelesaikan pembayaran kartu kredit Anda",
-    "expiresIn": "Berakhir dalam"
+    "expiresIn": "Berakhir dalam",
+
+    "@@title": "Dark/Light Mode Toggle",
+    "darkModeLabel": "Mode Gelap",
+    "lightModeLabel": "Mode Terang",
+    "switchToLightMode": "Beralih ke mode terang",
+    "switchToDarkMode": "Beralih ke mode gelap"
 }
