@@ -19,6 +19,28 @@ class HealthCheckController extends Controller
 
     public function check()
     {
+        // <!-- Check if maintenance mode is enabled in global_title table -->
+        $maintenanceMode = false;
+        try {
+            $maintenance = DB::table('global_title')
+                ->whereRaw('`key` = ?', ['maintenance_mode'])
+                ->first();
+            $maintenanceMode = $maintenance && $maintenance->mark === '1';
+        } catch (\Exception $e) {
+            // <!-- DB check failed, assume not in maintenance -->
+        }
+
+        // <!-- If in maintenance mode, return 503 with maintenance flag for mobile app popup -->
+        if ($maintenanceMode) {
+            return response()->json([
+                'status' => 'maintenance',
+                'maintenance' => true,
+                'message' => 'The application is currently under maintenance. Please try again later.',
+                'uptime' => $this->getUptime(),
+                'timestamp' => now()->toIso8601String(),
+            ], 503);
+        }
+
         $status = 'ok';
         $services = [
             'database' => $this->checkDatabase(),
@@ -35,6 +57,7 @@ class HealthCheckController extends Controller
 
         return response()->json([
             'status' => $status,
+            'maintenance' => false,
             'uptime' => $this->getUptime(),
             'timestamp' => now()->toIso8601String(),
             'services' => $services,

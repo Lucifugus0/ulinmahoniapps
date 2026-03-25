@@ -19,6 +19,8 @@ class Kernel extends HttpKernel
         // \Fruitcake\Cors\HandleCors::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
+        // <!-- Check maintenance mode from global_title table — shows maintenance page when enabled -->
+        \App\Http\Middleware\CheckMaintenanceMode::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,

@@ -18,8 +18,8 @@
             </div>
         </div>
 
-        <!-- Role Assignment Card -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <!-- Role Assignment Card — uses search-filter-container class for dark mode support (same as All Bookings) -->
+        <div class="search-filter-container bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <!-- Search and Filter Section -->
             <div class="p-4 border-b border-gray-200">
                 <form id="searchForm" method="GET" action="{{ route('master-role-management') }}">

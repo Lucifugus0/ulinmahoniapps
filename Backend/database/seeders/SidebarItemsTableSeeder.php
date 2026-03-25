@@ -419,6 +419,15 @@ class SidebarItemsTableSeeder extends Seeder
             'order' => 2
         ]);
 
+        // <!-- Maintenance Mode: dedicated page under App Management for toggling site maintenance -->
+        SidebarItem::create([
+            'name' => 'Maintenance Mode',
+            'route' => 'maintenance.index',
+            'permission_id' => $permissions['manage_settings'] ?? null,
+            'parent_id' => $appManagement->id,
+            'order' => 3
+        ]);
+
         // <!-- Note: Users is now under Masters group (order 8, child 10) instead of Settings section.
         //      Users route (users-newManagement) is registered there with view_users permission.
         //      Also note: users-management route is kept as a parent mapping in CheckPermission middleware. -->

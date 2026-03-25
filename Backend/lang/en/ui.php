@@ -99,11 +99,22 @@ return [
     'sidebar_app_management' => 'App Management',
     'sidebar_access_management' => 'Access Management',
     'sidebar_door_lock' => 'Door Lock',
+    'sidebar_maintenance_mode' => 'Maintenance Mode',
 
     // <!-- Page title keys for finance pages -->
     'parking_entry_title' => 'Parking Entry',
     'deposit_entry_title' => 'Deposit Entry',
     'booking_payment_title' => 'Booking Payment',
+
+    // <!-- App Settings & Maintenance mode keys -->
+    'app_settings' => 'App Settings',
+    'maintenance_mode' => 'Maintenance Mode',
+    'maintenance_mode_desc' => 'When enabled, the public website and mobile app will be temporarily unavailable to users.',
+    'maintenance_mode_frontend' => 'Frontend website will show a maintenance landing page',
+    'maintenance_mode_mobile' => 'Mobile app will show a maintenance popup and close on dismiss',
+    'maintenance_mode_admin_note' => 'Admin dashboard remains accessible',
+    'maintenance_status_on' => 'Maintenance mode is ON — site is offline',
+    'maintenance_status_off' => 'System is online — all services running normally',
 
     // Dashboard
     'dashboard' => 'Dashboard',

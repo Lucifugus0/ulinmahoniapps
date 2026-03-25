@@ -150,6 +150,11 @@ Route::middleware(['auth'])->group(function () {
 // Homepage - serve directly at root URL for clean URLs
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+// <!-- Maintenance page route — shown when maintenance mode is enabled via admin dashboard -->
+Route::get('/maintenance', function () {
+    return view('maintenance');
+})->name('maintenance');
+
 // ========================================
 // Localized Routes Group
 // Note: SetLocale middleware is already applied globally in Kernel.php

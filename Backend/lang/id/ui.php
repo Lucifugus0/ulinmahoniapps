@@ -99,10 +99,21 @@ return [
     'sidebar_app_management' => 'Manajemen Aplikasi',
     'sidebar_access_management' => 'Manajemen Akses',
     'sidebar_door_lock' => 'Kunci Pintu',
+    'sidebar_maintenance_mode' => 'Mode Pemeliharaan',
     // <!-- Page title keys for finance pages -->
     'parking_entry_title' => 'Entri Parkir',
     'deposit_entry_title' => 'Entri Deposit',
     'booking_payment_title' => 'Pembayaran Pemesanan',
+
+    // <!-- App Settings & Maintenance mode keys -->
+    'app_settings' => 'Pengaturan Aplikasi',
+    'maintenance_mode' => 'Mode Pemeliharaan',
+    'maintenance_mode_desc' => 'Saat diaktifkan, situs web publik dan aplikasi seluler akan tidak tersedia sementara bagi pengguna.',
+    'maintenance_mode_frontend' => 'Situs web frontend akan menampilkan halaman pemeliharaan',
+    'maintenance_mode_mobile' => 'Aplikasi seluler akan menampilkan popup pemeliharaan dan menutup saat ditutup',
+    'maintenance_mode_admin_note' => 'Dashboard admin tetap dapat diakses',
+    'maintenance_status_on' => 'Mode pemeliharaan AKTIF — situs offline',
+    'maintenance_status_off' => 'Sistem online — semua layanan berjalan normal',
 
     // Dashboard
     'dashboard' => 'Dasbor',
