@@ -141,6 +141,8 @@ return [
         'monthly_rate' => 'Harga Bulanan',
         'room_total' => 'Total Harga Kamar:',
         'service_fees' => 'Biaya Layanan:',
+        /* Daily Multi Tier Pricing: per-date breakdown title */
+        'price_breakdown_title' => 'Rincian Harga per Tanggal',
         'total' => 'Total:',
         'duration_label' => 'Durasi:',
         'complete_profile' => 'Lengkapi Profil Anda',

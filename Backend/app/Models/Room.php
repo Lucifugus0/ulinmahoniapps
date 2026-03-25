@@ -69,6 +69,12 @@ class Room extends Model
         return $this->belongsTo(User::class, 'created_by', 'id');
     }
 
+    /* Relationship to the user who last updated this room */
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by', 'id');
+    }
+
     public function roomImages()
     {
         return $this->hasMany(MRoomImage::class, 'room_id', 'idrec');

@@ -4,7 +4,9 @@ import '../../detailproperty/model/detailproperty_model.dart';
 import '../../../searchresult/model/searchfilter_model.dart';
 import '../../../searchresult/provider/searchresult_provider.dart';
 import '../../../../core/utils/app_logger.dart';
-import 'package:intl/intl.dart'; 
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/constants/api_constants.dart';
+import 'package:intl/intl.dart';
 
 class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
   RoomDetailsNotifier(this.ref) : super(const AsyncValue.loading());
@@ -16,7 +18,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
       return null;
     }
     try {
-      
+
       final DateFormat formatter = DateFormat("dd-MM-yyyy HH:mm");
       return formatter.parseStrict(dateString);
     } catch (e) {
@@ -73,6 +75,9 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
       });
 
       AppLogger.i('Room details loaded with initial filter - RentType=$initialRentType, Duration=$initialDuration, CheckIn: ${initialCheckInDate?.toIso8601String()}, CheckOut: ${initialCheckOutDate?.toIso8601String()}', 'ROOM-DETAILS');
+
+      /* Daily Multi Tier Pricing: fetch per-date pricing if daily with dates */
+      _fetchAndApplyDailyPricing();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       AppLogger.e('Error loading room details', e, st, 'ROOM-DETAILS');
@@ -114,7 +119,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
-  
+
   void _calculateAndSetCheckOutDate() {
     if (state.value != null) {
       final rentType = state.value!['rentType'] as String?;
@@ -127,7 +132,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
         if (rentType == 'daily' || rentType == 'Daily') {
           calculatedCheckOutDate = checkInDate.add(Duration(days: duration));
         } else if (rentType == 'monthly' || rentType == 'Monthly') {
-          
+
           calculatedCheckOutDate = DateTime(
             checkInDate.year,
             checkInDate.month + duration,
@@ -148,19 +153,88 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
         });
         AppLogger.d('CheckOutDate recalculated to: ${calculatedCheckOutDate?.toIso8601String()}', 'ROOM-DETAILS');
       }
+
+      /* Daily Multi Tier Pricing: re-fetch per-date pricing when dates change */
+      _fetchAndApplyDailyPricing();
     }
   }
 
-  
+  /* Daily Multi Tier Pricing: call price-preview API for daily bookings */
+  /* Override room.priceOriginalDaily with effective average so payment calculates correct total */
+  Future<void> _fetchAndApplyDailyPricing() async {
+    if (state.value == null) return;
+
+    final rentType = state.value!['rentType'] as String?;
+    final checkInDate = state.value!['checkInDate'] as DateTime?;
+    final checkOutDate = state.value!['checkOutDate'] as DateTime?;
+    final room = state.value!['room'] as RoomModel?;
+
+    /* Only apply for daily bookings with valid dates */
+    if (rentType == null || !(rentType == 'daily' || rentType == 'Daily')) return;
+    if (checkInDate == null || checkOutDate == null || room == null) return;
+    if (room.id == null) return;
+
+    try {
+      final dioClient = DioClient();
+      final checkIn = DateFormat('yyyy-MM-dd').format(checkInDate);
+      final checkOut = DateFormat('yyyy-MM-dd').format(checkOutDate);
+      final url = ApiConfig.roomPricePreview(room.id.toString())
+          .replaceFirst(ApiConfig.baseUrl, '');
+
+      AppLogger.i('Fetching price-preview: roomId=${room.id}, $checkIn to $checkOut', 'ROOM-DETAILS');
+
+      final response = await dioClient.get(url, queryParameters: {
+        'check_in': checkIn,
+        'check_out': checkOut,
+      });
+
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final data = response.data['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          final totalPrice = (data['total_price'] as num?)?.toDouble() ?? 0;
+          final totalDays = (data['total_days'] as num?)?.toInt() ?? 0;
+          final isFlatRate = data['is_flat_rate'] as bool? ?? true;
+
+          if (totalPrice > 0 && totalDays > 0) {
+            /* Calculate effective average daily price */
+            final effectiveDailyPrice = totalPrice / totalDays;
+
+            /* Create room copy with overridden daily price */
+            final updatedRoom = room.copyWithDailyPrice(effectiveDailyPrice.toStringAsFixed(0));
+
+            /* Update state with modified room — payment will use this effective rate */
+            if (state.value != null) {
+              state = AsyncValue.data({
+                ...state.value!,
+                'room': updatedRoom,
+                'multiTierTotalPrice': totalPrice,
+                'multiTierIsFlatRate': isFlatRate,
+              });
+              AppLogger.i(
+                'Daily price override: total=$totalPrice, days=$totalDays, '
+                'effective=${effectiveDailyPrice.toStringAsFixed(0)}, flat=$isFlatRate',
+                'ROOM-DETAILS',
+              );
+            }
+          }
+        }
+      }
+    } catch (e) {
+      /* Non-fatal: payment will fall back to flat rate */
+      AppLogger.w('Price-preview fetch failed (using flat rate): $e', 'ROOM-DETAILS');
+    }
+  }
+
+
   Map<String, dynamic> getBookingData() {
-    
+
     if (state.hasValue) {
       return state.value!;
     }
-    return {}; 
+    return {};
   }
 
-  
+
   void resetState() {
     state = const AsyncValue.data({
       'room': null,

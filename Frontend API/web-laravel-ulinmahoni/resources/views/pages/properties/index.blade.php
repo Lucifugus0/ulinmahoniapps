@@ -682,7 +682,13 @@
                                         <i class="fas fa-door-open"></i>
                                         <span>${property.available_rooms.filter(r => r.status === 1 && r.rental_status !== 1).length} kamar tersedia</span>
                                     </span>
-                                    ${property.lowest_price ? `
+                                    <!-- Daily Multi Tier Pricing: show total price at property level when dates selected -->
+                                    ${property.lowest_total_price ? `
+                                        <span class="flex items-center gap-1">
+                                            <i class="fas fa-tag"></i>
+                                            <span>Mulai dari <strong class="text-teal-600">Rp ${formatRupiah(property.lowest_total_price)}</strong> / ${property.available_rooms[0]?.total_days || ''} malam</span>
+                                        </span>
+                                    ` : property.lowest_price ? `
                                         <span class="flex items-center gap-1">
                                             <i class="fas fa-tag"></i>
                                             <span>Mulai dari <strong class="text-teal-600">Rp ${formatRupiah(property.lowest_price)}</strong>/${periodLabel}</span>
@@ -756,7 +762,13 @@
                                             <i class="fas fa-door-open"></i>
                                             <span>${property.available_rooms.filter(r => r.status === 1 && r.rental_status !== 1).length} ${translations.rooms_available}</span>
                                         </span>
-                                        ${property.lowest_price ? `
+                                        <!-- Daily Multi Tier Pricing: show total price when dates selected -->
+                                        ${property.lowest_total_price ? `
+                                            <span class="flex items-center gap-1">
+                                                <i class="fas fa-tag"></i>
+                                                <span>${translations.start_from} <strong class="text-teal-600">Rp ${formatRupiah(property.lowest_total_price)}</strong> / ${property.available_rooms[0]?.total_days || ''} malam</span>
+                                            </span>
+                                        ` : property.lowest_price ? `
                                             <span class="flex items-center gap-1">
                                                 <i class="fas fa-tag"></i>
                                                 <span>${translations.start_from} <strong class="text-teal-600">Rp ${formatRupiah(property.lowest_price)}</strong>/${periodLabel}</span>
@@ -885,15 +897,24 @@
                                             ` : ''}
                                         </div>
 
-                                        <!-- Price and Action -->
+                                        <!-- Price and Action: Daily Multi Tier Pricing — show total when dates selected -->
                                         <div class="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
                                             <div>
-                                                <div class="text-2xl font-bold text-teal-600">
-                                                    Rp ${formatRupiah(room.current_price)}
-                                                </div>
-                                                <div class="text-sm text-gray-500">
-                                                    per ${periodLabel}
-                                                </div>
+                                                ${room.total_price && room.total_days ? `
+                                                    <div class="text-2xl font-bold text-teal-600">
+                                                        Rp ${formatRupiah(room.total_price)}
+                                                    </div>
+                                                    <div class="text-sm text-gray-500">
+                                                        / ${room.total_days} malam
+                                                    </div>
+                                                ` : `
+                                                    <div class="text-2xl font-bold text-teal-600">
+                                                        Rp ${formatRupiah(room.current_price)}
+                                                    </div>
+                                                    <div class="text-sm text-gray-500">
+                                                        per ${periodLabel}
+                                                    </div>
+                                                `}
                                             </div>
                                             <a href="${roomRoute}" class="room-link bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center">
                                                 ${translations.view_details}
@@ -967,15 +988,24 @@
                             ${room.room_size ? `<span><i class="fas fa-expand-arrows-alt mr-1"></i>${room.room_size}m²</span>` : ''}
                         </div>
 
-                        <!-- Price -->
+                        <!-- Price: Daily Multi Tier Pricing — show total when dates selected, else per-night rate -->
                         <div class="room-price flex items-center justify-between pt-2 border-t border-gray-100">
                             <div>
-                                <div class="text-lg font-bold text-teal-600">
-                                    Rp ${formatRupiah(room.current_price)}
-                                </div>
-                                <div class="text-xs text-gray-500">
-                                    /${periodLabel}
-                                </div>
+                                ${room.total_price && room.total_days ? `
+                                    <div class="text-lg font-bold text-teal-600">
+                                        Rp ${formatRupiah(room.total_price)}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        / ${room.total_days} malam
+                                    </div>
+                                ` : `
+                                    <div class="text-lg font-bold text-teal-600">
+                                        Rp ${formatRupiah(room.current_price)}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        /${periodLabel}
+                                    </div>
+                                `}
                             </div>
                             <a href="${roomRoute}" class="room-link text-teal-600 hover:text-teal-700 text-sm font-medium">
                                 ${translations.view_details} <i class="fas fa-arrow-right text-xs ml-1"></i>

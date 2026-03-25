@@ -933,16 +933,50 @@
                 if (monthlyRateDisplay) monthlyRateDisplay.classList.toggle('hidden', rentType !== 'monthly');
 
                 let duration = 0, rate = 0, roomTotal = 0;
-                
+
+                /* Helper to update total displays */
+                function updateTotals(roomTotal) {
+                    const adminFee = 0;
+                    const serviceFees = 30000;
+                    const taxFees = 0;
+                    const grandTotal = roomTotal + serviceFees + adminFee + taxFees;
+                    document.getElementById('roomTotal').textContent = formatRupiah(roomTotal);
+                    document.getElementById('serviceFeesDisplay').textContent = formatRupiah(serviceFees);
+                    document.getElementById('grandTotal').textContent = formatRupiah(grandTotal);
+                }
+
                 try {
                     if (rentType === 'daily') {
                         if (!checkInInput.value || !checkOutInput.value) return resetSummary();
                         const nights = getDaysBetweenDates(checkInInput.value, checkOutInput.value);
                         if (nights <= 0) return resetSummary();
-                        duration = nights;
-                        rate = parseFloat(priceDailyInput.value) || 0;
-                        roomTotal = duration * rate;
-                        if (durationDisplay) durationDisplay.textContent = `${duration} malam`;
+
+                        /* Daily Multi Tier Pricing: fetch per-date price breakdown */
+                        const roomId = document.querySelector('[name="room_id"]').value;
+                        fetch(`/api/v1/rooms/${roomId}/price-preview?check_in=${checkInInput.value}&check_out=${checkOutInput.value}`, {
+                            headers: { 'X-API-KEY': '{{ env('API_KEY') }}', 'Accept': 'application/json' }
+                        })
+                            .then(res => res.json())
+                            .then(json => {
+                                if (json.status === 'success' && json.data.breakdown && json.data.breakdown.length > 0) {
+                                    roomTotal = json.data.total_price;
+                                    duration = json.data.total_days;
+                                } else {
+                                    duration = nights;
+                                    rate = parseFloat(priceDailyInput.value) || 0;
+                                    roomTotal = duration * rate;
+                                }
+                                if (durationDisplay) durationDisplay.textContent = `${duration} night(s)`;
+                                updateTotals(roomTotal);
+                            })
+                            .catch(() => {
+                                duration = nights;
+                                rate = parseFloat(priceDailyInput.value) || 0;
+                                roomTotal = duration * rate;
+                                if (durationDisplay) durationDisplay.textContent = `${duration} night(s)`;
+                                updateTotals(roomTotal);
+                            });
+                        return; /* Handled in .then() */
                     } else {
                         duration = parseInt(monthsSelect.value || '1', 10);
                         rate = parseFloat(priceMonthlyInput.value) || 0;
@@ -953,16 +987,7 @@
                     console.error('Error updating price summary:', error);
                     return resetSummary();
                 }
-                // Get admin fee value from the hidden input or use the default
-                const adminFee = 0;
-                const serviceFees= 30000;
-                const taxFees = 0;
-                const grandTotal = roomTotal + serviceFees +adminFee + taxFees;
-                document.getElementById('roomTotal').textContent = formatRupiah(roomTotal);
-                document.getElementById('serviceFeesDisplay').textContent = formatRupiah(serviceFees);
-                // document.getElementById('taxDisplay').textContent = formatRupiah(taxFees);
-                // document.getElementById('adminFee').textContent = formatRupiah(adminFee);
-                document.getElementById('grandTotal').textContent = formatRupiah(grandTotal);
+                updateTotals(roomTotal);
             }
 
             // --- Rental type toggle logic ---

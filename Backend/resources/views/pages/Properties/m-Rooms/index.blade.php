@@ -16,7 +16,7 @@
                             d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
                             clip-rule="evenodd" />
                     </svg>
-                    Tambah Kamar
+                    {{ __('ui.room_add_title') }}
                 </button>
 
                 <!-- Modal -->
@@ -751,12 +751,12 @@
 
                     <!-- Per Page Dropdown -->
                     <div class="flex items-center gap-2">
-                        <label for="per-page-filter" class="text-sm text-gray-600">Tampilkan:</label>
+                        <label for="per-page-filter" class="text-sm text-gray-600">{{ __('ui.room_show_per_page') }}</label>
                         <select id="per-page-filter"
                             class="border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                            <option value="8" {{ request('per_page', 8) == 8 ? 'selected' : '' }}>8</option>
-                            <option value="25" {{ request('per_page', 8) == 25 ? 'selected' : '' }}>25</option>
-                            <option value="50" {{ request('per_page', 8) == 50 ? 'selected' : '' }}>50</option>
+                            <option value="8" {{ request('per_page', 25) == 8 ? 'selected' : '' }}>8</option>
+                            <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25</option>
+                            <option value="50" {{ request('per_page', 25) == 50 ? 'selected' : '' }}>50</option>
                         </select>
                     </div>
 
@@ -767,7 +767,7 @@
             <div class="overflow-x-auto" id="roomTableContainer">
                 @include('pages.Properties.m-Rooms.partials.room_table', [
                     'properties' => $properties,
-                    'per_page' => request('per_page', 8),
+                    'per_page' => request('per_page', 25),
                 ])
             </div>
 
@@ -3063,7 +3063,7 @@
             else params.delete('search');
 
             if (perPage) params.set('per_page', perPage);
-            else params.set('per_page', '8');
+            else params.set('per_page', '25');
 
             window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
 
@@ -3160,7 +3160,7 @@
 
                 // Set per_page value
                 if (perPage) params.set('per_page', perPage);
-                else params.set('per_page', '8');
+                else params.set('per_page', '25');
 
                 // Update URL tanpa reload halaman
                 window.history.replaceState({}, '', `${window.location.pathname}?${params}`);

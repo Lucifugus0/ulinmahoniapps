@@ -141,6 +141,8 @@ return [
         'monthly_rate' => 'Monthly Rate',
         'room_total' => 'Total Room Price:',
         'service_fees' => 'Service Fees:',
+        /* Daily Multi Tier Pricing: per-date breakdown title */
+        'price_breakdown_title' => 'Price Breakdown by Date',
         'total' => 'Total:',
         'duration_label' => 'Duration:',
         'complete_profile' => 'Complete Your Profile',

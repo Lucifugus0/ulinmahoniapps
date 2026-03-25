@@ -51,6 +51,62 @@
         /* Hide scrollbar on thumbnail strip while keeping horizontal scroll */
         .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* Dark mode: vanillajs-datepicker calendar popup */
+        html.dark .datepicker {
+            background-color: #1f2937 !important;
+            border-color: #4b5563 !important;
+        }
+        html.dark .datepicker .datepicker-header {
+            background-color: #1f2937 !important;
+        }
+        html.dark .datepicker .datepicker-controls .button {
+            color: #f3f4f6 !important;
+            background-color: transparent !important;
+        }
+        html.dark .datepicker .datepicker-controls .button:hover {
+            background-color: #374151 !important;
+        }
+        html.dark .datepicker .datepicker-grid {
+            color: #d1d5db !important;
+        }
+        html.dark .datepicker .datepicker-cell {
+            color: #d1d5db !important;
+        }
+        html.dark .datepicker .datepicker-cell:hover {
+            background-color: #374151 !important;
+        }
+        html.dark .datepicker .datepicker-cell.focused,
+        html.dark .datepicker .datepicker-cell.selected {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+        }
+        html.dark .datepicker .datepicker-cell.today:not(.selected) {
+            background-color: #374151 !important;
+            color: #60a5fa !important;
+        }
+        html.dark .datepicker .datepicker-cell.disabled,
+        html.dark .datepicker .datepicker-cell.prev,
+        html.dark .datepicker .datepicker-cell.next {
+            color: #6b7280 !important;
+        }
+        html.dark .datepicker .dow {
+            color: #9ca3af !important;
+        }
+        /* Price summary section dark mode */
+        html.dark .bg-gray-50 {
+            background-color: #1e293b !important;
+        }
+        html.dark .text-gray-900 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .text-gray-600 {
+            color: #9ca3af !important;
+        }
+        /* Dark mode: price breakdown row hover */
+        html.dark #priceBreakdownContainer .hover\:bg-gray-50:hover {
+            background-color: #374151 !important;
+        }
     </style>
 </head>
 <body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
@@ -1109,7 +1165,10 @@
 
                         /* Call price-preview API for per-date breakdown */
                         const roomId = document.getElementById('roomId').value;
-                        fetch(`/api/v1/rooms/${roomId}/price-preview?check_in=${checkInInput.value}&check_out=${checkOutInput.value}`)
+                        /* Daily Multi Tier Pricing: fetch per-date price breakdown with API key */
+                        fetch(`/api/v1/rooms/${roomId}/price-preview?check_in=${checkInInput.value}&check_out=${checkOutInput.value}`, {
+                            headers: { 'X-API-KEY': '{{ env('API_KEY') }}', 'Accept': 'application/json' }
+                        })
                             .then(res => res.json())
                             .then(json => {
                                 if (json.status === 'success' && json.data.breakdown.length > 0) {
@@ -1172,17 +1231,21 @@
             }
 
             /* Multi-Tier Pricing: Render per-date price breakdown table */
+            /* Inserted ABOVE the grand total line so user sees breakdown before final price */
             function renderPriceBreakdown(breakdown) {
                 let container = document.getElementById('priceBreakdownContainer');
                 if (!container) {
-                    /* Create container if it doesn't exist yet */
+                    /* Create container and insert ABOVE the Total Price summary box */
                     container = document.createElement('div');
                     container.id = 'priceBreakdownContainer';
-                    container.className = 'mt-4 border-t pt-4';
-                    const roomTotalEl = document.getElementById('roomTotal')?.closest('.space-y-3') || document.getElementById('roomTotal')?.parentElement?.parentElement;
-                    if (roomTotalEl) roomTotalEl.insertAdjacentElement('afterend', container);
+                    container.className = 'bg-gray-50 p-4 rounded-lg mb-4';
+                    const priceSummaryBox = document.getElementById('grandTotal')?.closest('.bg-gray-50');
+                    if (priceSummaryBox) {
+                        priceSummaryBox.parentElement.insertBefore(container, priceSummaryBox);
+                    }
                 }
 
+                /* Badge colors per price type — with dark mode support via inline styles */
                 const typeColors = {
                     weekday: 'bg-blue-100 text-blue-700',
                     weekend: 'bg-purple-100 text-purple-700',
@@ -1192,16 +1255,29 @@
                     manual: 'bg-yellow-100 text-yellow-700',
                 };
 
-                let html = '<p class="text-xs font-semibold text-gray-500 mb-2">Rincian Harga per Tanggal:</p>';
+                /* Dark mode badge colors */
+                const typeDarkColors = {
+                    weekday: 'background-color: rgba(30,58,138,0.3); color: #93c5fd;',
+                    weekend: 'background-color: rgba(88,28,135,0.3); color: #d8b4fe;',
+                    high_season: 'background-color: rgba(127,29,29,0.3); color: #fca5a5;',
+                    low_season: 'background-color: rgba(20,83,45,0.3); color: #86efac;',
+                    holiday: 'background-color: rgba(154,52,18,0.3); color: #fdba74;',
+                    manual: 'background-color: rgba(113,63,18,0.3); color: #fde047;',
+                };
+
+                const isDark = document.documentElement.classList.contains('dark');
+
+                let html = '<h4 class="font-medium text-gray-900 mb-3">{{ __("properties.booking.price_breakdown_title") }}</h4>';
                 html += '<div class="space-y-1 max-h-48 overflow-y-auto text-xs">';
                 breakdown.forEach(d => {
-                    const color = typeColors[d.type] || 'bg-gray-100 text-gray-700';
+                    const lightColor = typeColors[d.type] || 'bg-gray-100 text-gray-700';
+                    const darkStyle = isDark ? (typeDarkColors[d.type] || 'background-color: rgba(55,65,81,0.4); color: #d1d5db;') : '';
                     const label = d.label ? ` — ${d.label}` : '';
                     html += `<div class="flex justify-between items-center py-1 px-2 rounded hover:bg-gray-50">
                         <div class="flex items-center gap-2">
                             <span>${d.date}</span>
                             <span class="text-gray-400">${d.day_name}</span>
-                            <span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${color}">${d.type}${label}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${lightColor}" ${isDark ? `style="${darkStyle}"` : ''}>${d.type}${label}</span>
                         </div>
                         <span class="font-medium">${formatRupiah(d.price)}</span>
                     </div>`;

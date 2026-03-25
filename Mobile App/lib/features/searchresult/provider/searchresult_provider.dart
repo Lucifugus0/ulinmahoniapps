@@ -92,7 +92,19 @@ final searchResultsProvider = FutureProvider<List<PropertyModel>>((ref) async {
 
   ApiResult<List<PropertyModel>> result;
 
-  if (currentFilter.province != null && currentFilter.province!.isNotEmpty) {
+  /* Daily Multi Tier Pricing: use search/rooms API for daily rent type with dates */
+  /* This gives availability checking and per-date pricing from m_room_prices */
+  if (currentFilter.rentType?.toLowerCase() == 'daily' &&
+      currentFilter.checkInDate != null && currentFilter.checkInDate!.isNotEmpty &&
+      currentFilter.checkOutDate != null && currentFilter.checkOutDate!.isNotEmpty) {
+    AppLogger.i('Daily search with dates: ${currentFilter.checkInDate} to ${currentFilter.checkOutDate}', 'SEARCH-RESULT');
+    result = await repository.searchRoomsDaily(
+      type: currentFilter.category,
+      checkIn: currentFilter.checkInDate!,
+      checkOut: currentFilter.checkOutDate!,
+      province: currentFilter.province,
+    );
+  } else if (currentFilter.province != null && currentFilter.province!.isNotEmpty) {
     AppLogger.i('Searching by province: ${currentFilter.province}', 'SEARCH-RESULT');
     result = await repository.fetchPropertiesByProvince(currentFilter.province!);
   } else if (currentFilter.category != null && currentFilter.category!.isNotEmpty) {

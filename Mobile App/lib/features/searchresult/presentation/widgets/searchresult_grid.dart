@@ -44,11 +44,25 @@ class SearchResultGrid extends StatelessWidget {
             itemBuilder: (context, index) {
               final property = properties[index];
 
-              // Calculate cheapest price: monthly first, then daily
+              /* Daily Multi Tier Pricing: show total price when daily search with dates */
+              /* Otherwise fall back to existing logic: monthly first, then daily */
+              final bool hasTotalPrice = property.lowestTotalPrice != null && property.lowestTotalPrice! > 0;
               final monthlyPrice = double.tryParse(property.priceOriginalMonthly) ?? 0;
               final dailyPrice = double.tryParse(property.priceOriginalDaily) ?? 0;
-              final displayPrice = monthlyPrice > 0 ? monthlyPrice : dailyPrice;
-              final priceLabel = monthlyPrice > 0 ? '/bulan' : '/hari';
+
+              final double displayPrice;
+              final String priceLabel;
+
+              if (hasTotalPrice && property.totalDays != null) {
+                displayPrice = property.lowestTotalPrice!;
+                priceLabel = '/ ${property.totalDays} malam';
+              } else if (monthlyPrice > 0) {
+                displayPrice = monthlyPrice;
+                priceLabel = '/bulan';
+              } else {
+                displayPrice = dailyPrice;
+                priceLabel = '/hari';
+              }
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 20.0),

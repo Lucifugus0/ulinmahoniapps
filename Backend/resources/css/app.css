@@ -250,6 +250,13 @@ html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.12) !important; 
 html.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.12) !important; }
 html.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.12) !important; }
 html.dark .bg-indigo-100 { background-color: rgba(49, 46, 129, 0.12) !important; }
+
+/* Room table: period badge and date badge dark mode overrides */
+html.dark .bg-blue-100.text-blue-800 { background-color: rgba(30, 58, 138, 0.3) !important; color: #93c5fd !important; }
+html.dark .bg-green-100.text-green-800 { background-color: rgba(20, 83, 45, 0.3) !important; color: #86efac !important; }
+html.dark .bg-gray-100.text-gray-800 { background-color: rgba(55, 65, 81, 0.4) !important; color: #d1d5db !important; }
+html.dark .bg-gray-100.text-gray-600 { background-color: rgba(55, 65, 81, 0.4) !important; color: #d1d5db !important; }
+
 /* Glass table backgrounds — translucent with blur for depth layering */
 html.dark table tbody.bg-white {
   background-color: rgba(255, 255, 255, 0.05) !important;

@@ -141,6 +141,8 @@ return [
         'monthly_rate' => '月租金',
         'room_total' => '房间总价：',
         'service_fees' => '服务费：',
+        /* Daily Multi Tier Pricing: per-date breakdown title */
+        'price_breakdown_title' => '每日价格明细',
         'total' => '合计：',
         'duration_label' => '时长：',
         'complete_profile' => '完善您的资料',

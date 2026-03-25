@@ -85,6 +85,27 @@ class RoomModel {
     this.hasSeasonalPricing,
   });
 
+  /* Daily Multi Tier Pricing: create a copy with overridden daily price */
+  /* Used to pass effective average rate to payment so it calculates correct total */
+  RoomModel copyWithDailyPrice(String newDailyPrice) {
+    return RoomModel(
+      id: id, propertyId: propertyId, propertyName: propertyName, slug: slug,
+      name: name, descriptions: descriptions, periode: periode,
+      periode_daily: periode_daily, periode_monthly: periode_monthly,
+      type: type, level: level, facility: facility, facilities: facilities,
+      price: price, priceOriginalDaily: newDailyPrice,
+      priceOriginalMonthly: priceOriginalMonthly, adminfee: adminfee,
+      attachment: attachment, createdAt: createdAt, updatedAt: updatedAt,
+      createdBy: createdBy, updatedBy: updatedBy, status: status,
+      roomimages: roomimages, roomimageshow: roomimageshow, thumbnail: thumbnail,
+      capacity: capacity, bed_type: bed_type, size: size, no: no,
+      rentalStatus: rentalStatus, depositFee: depositFee, parkingFees: parkingFees,
+      priceWeekday: priceWeekday, priceWeekend: priceWeekend,
+      priceOriginalAnnual: priceOriginalAnnual, periodeAnnual: periodeAnnual,
+      hasSeasonalPricing: hasSeasonalPricing,
+    );
+  }
+
   factory RoomModel.fromJson(Map<String, dynamic> json) {
     final List<ImageModel>? parsedImages =
         (json['images'] as List<dynamic>?)

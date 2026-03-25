@@ -23,6 +23,8 @@ class ApiConfig {
   static String get checkavailabilityUrl =>'$baseUrl/booking/check-availability';
   // Multi-Tier Pricing: price preview endpoint for per-date breakdown
   static String roomPricePreview(String roomId) => '$baseUrl/rooms/$roomId/price-preview';
+  /* Daily Multi Tier Pricing: search rooms endpoint with availability and per-date pricing */
+  static String get searchRoomsUrl => '$baseUrl/search/rooms';
   static String get updateattachmentUrl =>'$baseUrl/booking/{idrec}/update-attachment';
   static String get mybookingidUrl => '$baseUrl/booking/{idrec}';
   static String get deactiveaccountUrl => '$baseUrl/users/{userId}/deactivate';

@@ -23,11 +23,13 @@ class ManajementRoomsController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $perPage = $request->input('per_page', 8);
+        /* Default 25 items per page */
+        $perPage = $request->input('per_page', 25);
         $statusFilter = $request->input('status', '1'); // Default menampilkan hanya yang aktif
 
+        /* Eager-load creator and updater for "Dibuat Oleh" / "Dirubah Oleh" columns */
         $query = Room::where('status', '!=', '2')
-            ->with(['property', 'creator'])
+            ->with(['property', 'creator', 'updater'])
             ->orderBy('created_at', 'desc');
 
         // Filter by property based on user_type
