@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\PromoBannerController;
 use App\Http\Controllers\Api\DepositFeeController;
 use App\Http\Controllers\Api\ParkingFeeController;
+use App\Http\Controllers\Api\DeviceTokenController;
 
 use App\Http\Middleware\VerifyApiKey;
 use Illuminate\Support\Facades\Auth;
@@ -219,6 +220,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [ParkingFeeController::class, 'store']);
             Route::put('/{id}', [ParkingFeeController::class, 'update']);
             Route::delete('/{id}', [ParkingFeeController::class, 'destroy']);
+        });
+
+        // DEVICE TOKEN API ROUTES (Push Notifications)
+        Route::prefix('device-token')->group(function () {
+            Route::post('/', [DeviceTokenController::class, 'store']);
+            Route::delete('/', [DeviceTokenController::class, 'destroy']);
         });
 
         // COMMENTED FOR REVIEW

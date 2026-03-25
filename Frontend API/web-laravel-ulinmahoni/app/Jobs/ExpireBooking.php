@@ -5,6 +5,8 @@ namespace App\Jobs;
 use App\Models\Transaction;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\User;
+use App\Services\FirebaseNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -112,6 +114,32 @@ class ExpireBooking implements ShouldQueue
             }
 
             DB::commit();
+
+            // Send push notifications for booking expiry
+            try {
+                $firebaseService = new FirebaseNotificationService();
+
+                // Notify guest
+                $guestUser = $transaction->user_id ? User::find($transaction->user_id) : null;
+                if ($guestUser) {
+                    $firebaseService->sendToUser(
+                        $guestUser,
+                        'Booking Expired',
+                        "Your booking {$this->orderId} has expired due to incomplete payment.",
+                        ['type' => 'booking_expired', 'order_id' => $this->orderId]
+                    );
+                }
+
+                // Notify admins
+                $userName = $booking ? $booking->user_name : 'Guest';
+                $firebaseService->sendToAdmins(
+                    'Booking Expired',
+                    "{$userName}'s booking {$this->orderId} has expired.",
+                    ['type' => 'booking_expired', 'order_id' => $this->orderId]
+                );
+            } catch (\Exception $e) {
+                Log::warning('Push notification failed for booking expiry', ['error' => $e->getMessage()]);
+            }
 
             Log::info("Successfully expired booking for order_id: {$this->orderId}");
 
