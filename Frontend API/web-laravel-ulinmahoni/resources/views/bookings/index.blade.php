@@ -253,6 +253,136 @@
             border-color: #374151 !important;
         }
 
+        /* --- Dark mode: blue tinted elements (VA box, info button, modal sections) --- */
+        html.dark .bg-blue-50 {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+        }
+        html.dark .text-blue-900 {
+            color: #93c5fd !important; /* blue-300 */
+        }
+        html.dark .text-blue-700 {
+            color: #93c5fd !important;
+        }
+        html.dark .text-blue-600 {
+            color: #60a5fa !important;
+        }
+        html.dark .border-blue-300 {
+            border-color: rgba(59, 130, 246, 0.3) !important;
+        }
+
+        /* --- Dark mode: teal tinted elements (view attachment, checked-in badge) --- */
+        html.dark .bg-teal-50 {
+            background-color: rgba(20, 184, 166, 0.15) !important;
+        }
+        html.dark .text-teal-700 {
+            color: #5eead4 !important; /* teal-300 */
+        }
+        html.dark .text-teal-600 {
+            color: #2dd4bf !important;
+        }
+
+        /* --- Dark mode: amber/orange elements (re-upload button) --- */
+        html.dark .bg-amber-50 {
+            background-color: rgba(245, 158, 11, 0.15) !important;
+        }
+        html.dark .text-amber-600 {
+            color: #fbbf24 !important;
+        }
+
+        /* --- Dark mode: purple elements (checked-out badge) --- */
+        html.dark .bg-purple-50 {
+            background-color: rgba(168, 85, 247, 0.15) !important;
+        }
+        html.dark .text-purple-700 {
+            color: #c4b5fd !important; /* purple-300 */
+        }
+
+        /* --- Dark mode: green tinted modal section --- */
+        html.dark .bg-green-50 {
+            background-color: rgba(34, 197, 94, 0.15) !important;
+        }
+
+        /* --- Dark mode: form inputs and borders --- */
+        html.dark input[type="date"],
+        html.dark input[type="text"],
+        html.dark input[type="number"] {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #f3f4f6 !important;
+        }
+        html.dark input[readonly],
+        html.dark input.bg-gray-100 {
+            background-color: #1f2937 !important;
+            border-color: #4b5563 !important;
+            color: #9ca3af !important;
+        }
+        html.dark .border-gray-300 {
+            border-color: #4b5563 !important;
+        }
+
+        /* --- Dark mode: modal footer and cancel buttons --- */
+        html.dark .bg-gray-200 {
+            background-color: #4b5563 !important;
+        }
+        html.dark button.bg-gray-200 {
+            background-color: #4b5563 !important;
+            color: #e5e7eb !important;
+        }
+        html.dark button.bg-gray-200:hover {
+            background-color: #6b7280 !important;
+        }
+
+        /* --- Dark mode: upload button --- */
+        html.dark label.border-gray-300.bg-white {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #d1d5db !important;
+        }
+        html.dark label.border-gray-300.bg-white:hover {
+            background-color: #4b5563 !important;
+        }
+
+        /* --- Dark mode: radio button labels --- */
+        html.dark .border-gray-300[type="radio"] {
+            border-color: #4b5563 !important;
+        }
+
+        /* --- Dark mode: modal status badge colors (JS-generated) --- */
+        html.dark .bg-red-100 {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+        html.dark .text-red-800 {
+            color: #fca5a5 !important;
+        }
+        html.dark .bg-yellow-100 {
+            background-color: rgba(234, 179, 8, 0.2) !important;
+        }
+        html.dark .text-yellow-800 {
+            color: #fde047 !important;
+        }
+        html.dark .bg-green-100 {
+            background-color: rgba(34, 197, 94, 0.2) !important;
+        }
+        html.dark .text-green-800 {
+            color: #86efac !important;
+        }
+        html.dark .text-gray-800 {
+            color: #e5e7eb !important;
+        }
+
+        /* --- Dark mode: disabled buttons --- */
+        html.dark button.bg-gray-400 {
+            background-color: #4b5563 !important;
+        }
+        html.dark button.bg-blue-400 {
+            background-color: rgba(59, 130, 246, 0.4) !important;
+        }
+
+        /* --- Dark mode: modal overlay backdrop --- */
+        html.dark .bg-black.bg-opacity-50 {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+        }
+
         /* Main booking card — frosted glass panel */
         section.py-12 > div > .bg-white.rounded-xl {
             background: var(--glass-bg) !important;
@@ -300,6 +430,13 @@
         .text-gray-500 { color: #4a4a68 !important; }
         input::placeholder { color: #555570 !important; opacity: 1 !important; }
         html.dark input::placeholder { color: #a0a0b8 !important; }
+
+        /* Fix SweetAlert2 positioning — body > * rule from homepage styles
+           sets position:relative which overrides Swal's position:fixed container */
+        .swal2-container {
+            position: fixed !important;
+            z-index: 10000 !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900">
