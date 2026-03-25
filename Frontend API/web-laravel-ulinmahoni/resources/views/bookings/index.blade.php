@@ -854,7 +854,7 @@
                                                     <span class="text-xs text-teal-600">{{ $booking->transaction_code }}</span>
                                                 </div>
                                             </div>
-                                            <div class="text-xs text-gray-500">{{ $booking->transaction_type }}</div>
+                                            <div class="text-xs text-gray-500">{{ strtoupper($booking->transaction_type) }}</div>
                                             <div class="text-xs text-gray-500 mt-1">
                                                 <div class="flex items-center">
                                                     <i class="fas fa-user mr-1"></i>
@@ -893,9 +893,9 @@
                                             <div class="text-xs text-gray-500 flex items-center">
                                                 <i class="far fa-clock mr-1"></i>
                                                 @if(!empty($booking->booking_days))
-                                                    {{ $booking->booking_days }} hari
+                                                    {{ $booking->booking_days }} {{ __('booking.js.days') }}
                                                 @elseif(!empty($booking->booking_months))
-                                                    {{ $booking->booking_months }} bulan
+                                                    {{ $booking->booking_months }} {{ __('booking.js.months') }}
                                                 @else
                                                     -
                                                 @endif
@@ -903,12 +903,12 @@
                                         </td>
                                         <td class="px-6 py-4">
                                             <div class="text-sm font-medium text-gray-900">
-                                                {{ $booking->formatted_price }}
+                                                {{ $booking->formatted_grandtotal_price }}
                                             </div>
                                             @if($booking->paid_at)
                                                 <div class="text-xs text-green-600 flex items-center">
                                                     <i class="fas fa-check-circle mr-1"></i>
-                                                    Paid: {{ \Carbon\Carbon::parse($booking->paid_at)->format('d M Y H:i') }}
+                                                    {{ __('booking.js.paid_label') }}: {{ \Carbon\Carbon::parse($booking->paid_at)->format('d M Y H:i') }}
                                                 </div>
                                             @endif
                                             {{-- <div class="text-xs text-gray-500">
@@ -919,13 +919,13 @@
                                             <div class="flex justify-center items-center h-full">
                                                 @if($booking->booking && $booking->booking->check_out_at)
                                                 {{-- Already checked out --}}
-                                                <span class="flex items-center gap-2 px-4 py-1 rounded-2xl shadow-sm font-semibold text-sm bg-purple-50 text-purple-700 border border-gray-200">
+                                                <span class="flex items-center gap-2 px-3 py-1 rounded-2xl shadow-sm font-semibold text-xs bg-purple-50 text-purple-700 border border-gray-200 whitespace-nowrap">
                                                     <span class="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
                                                     <span class="tracking-wide capitalize">Checked Out</span>
                                                 </span>
                                                 @elseif($booking->booking && $booking->booking->check_in_at)
                                                 {{-- Already checked in but not checked out --}}
-                                                <span class="flex items-center gap-2 px-4 py-1 rounded-2xl shadow-sm font-semibold text-sm bg-teal-50 text-teal-700 border border-gray-200">
+                                                <span class="flex items-center gap-2 px-3 py-1 rounded-2xl shadow-sm font-semibold text-xs bg-teal-50 text-teal-700 border border-gray-200 whitespace-nowrap">
                                                     <span class="w-2 h-2 rounded-full bg-teal-500 inline-block"></span>
                                                     <span class="tracking-wide capitalize">Checked In</span>
                                                 </span>
