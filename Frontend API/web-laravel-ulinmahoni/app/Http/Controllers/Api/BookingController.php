@@ -15,6 +15,7 @@ use App\Models\VoucherUsage;
 use App\Services\VoucherService;
 use App\Jobs\ExpireBooking;
 use App\Notifications\BookingConfirmationNotification;
+use App\Services\FirebaseNotificationService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -330,6 +331,32 @@ class BookingController extends ApiController
             //         'transaction_status' => 'checked_in',
             //         'updated_at' => Carbon::now()
             //     ]);
+
+            // Send push notification for check-in
+            try {
+                $fcm = new FirebaseNotificationService();
+                $transaction = Transaction::where('order_id', $orderId)->first();
+                $propertyName = $transaction->property_name ?? 'property';
+
+                // Notify guest
+                if ($transaction && $transaction->user_id) {
+                    $guest = \App\Models\User::find($transaction->user_id);
+                    if ($guest) {
+                        $fcm->sendToUser($guest, 'Check-In Successful', "Welcome to {$propertyName}!", [
+                            'type' => 'check_in',
+                            'order_id' => $orderId,
+                        ]);
+                    }
+                }
+
+                // Notify admins
+                $fcm->sendToAdmins('Guest Check-In', "{$transaction->user_name} checked in at {$propertyName}.", [
+                    'type' => 'check_in',
+                    'order_id' => $orderId,
+                ]);
+            } catch (\Exception $pushError) {
+                Log::warning('Push notification failed (check-in): ' . $pushError->getMessage());
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -813,6 +840,29 @@ class BookingController extends ApiController
 
             DB::commit();
 
+            // Send push notifications for new booking
+            try {
+                $fcm = new FirebaseNotificationService();
+                $propertyName = $request->property_name;
+
+                // Notify guest
+                $guest = \App\Models\User::find($request->user_id);
+                if ($guest) {
+                    $fcm->sendToUser($guest, 'Booking Created', "Your booking for {$propertyName} has been created. Complete payment before it expires.", [
+                        'type' => 'booking_created',
+                        'order_id' => $order_id,
+                    ]);
+                }
+
+                // Notify admins
+                $fcm->sendToAdmins('New Booking', "{$request->user_name} booked {$propertyName} ({$request->room_name}). Order: {$order_id}.", [
+                    'type' => 'booking_created',
+                    'order_id' => $order_id,
+                ]);
+            } catch (\Exception $pushError) {
+                \Log::warning('Push notification failed (booking created): ' . $pushError->getMessage());
+            }
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Booking created successfully',
@@ -1197,6 +1247,33 @@ class BookingController extends ApiController
             }
 
             DB::commit();
+
+            // Send push notifications for booking renewal
+            try {
+                $firebaseService = new FirebaseNotificationService();
+                $propertyName = $property ? $property->property_name : 'property';
+                $userName = $newBookingData['user_name'] ?? 'Guest';
+
+                // Notify guest
+                $guestUser = User::find($request->user_id);
+                if ($guestUser) {
+                    $firebaseService->sendToUser(
+                        $guestUser,
+                        'Booking Renewed',
+                        "Your stay at {$propertyName} has been extended. New order: {$newOrderId}.",
+                        ['type' => 'booking_renewed', 'order_id' => $newOrderId]
+                    );
+                }
+
+                // Notify admins
+                $firebaseService->sendToAdmins(
+                    'Booking Renewed',
+                    "{$userName} renewed booking at {$propertyName}. Order: {$newOrderId}.",
+                    ['type' => 'booking_renewed', 'order_id' => $newOrderId]
+                );
+            } catch (\Exception $e) {
+                Log::warning('Push notification failed for booking renewal', ['error' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'status' => 'success',

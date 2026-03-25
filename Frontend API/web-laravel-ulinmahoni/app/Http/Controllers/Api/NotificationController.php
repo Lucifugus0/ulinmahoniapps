@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\ApiController;
 use App\Models\User;
+use App\Services\FirebaseNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
@@ -326,6 +327,29 @@ class NotificationController extends ApiController
                 'currency' => $currency,
                 'transaction_id' => $trxId
             ]);
+
+            // Send push notifications for VA payment
+            try {
+                $firebaseService = new FirebaseNotificationService();
+                $formattedAmount = 'Rp ' . number_format((float)$paidValue, 0, ',', '.');
+
+                // Notify guest
+                $firebaseService->sendToUser(
+                    $user,
+                    'Payment Received',
+                    "Your payment of {$formattedAmount} for booking {$trxId} has been received.",
+                    ['type' => 'payment_received', 'order_id' => $trxId]
+                );
+
+                // Notify admins
+                $firebaseService->sendToAdmins(
+                    'Payment Received',
+                    "Payment of {$formattedAmount} received from {$virtualAccountName} for {$trxId}.",
+                    ['type' => 'payment_received', 'order_id' => $trxId]
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Push notification failed for VA payment', ['error' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'responseCode' => '2002500',

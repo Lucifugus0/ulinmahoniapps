@@ -221,4 +221,14 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(ChatMessage::class, 'sender_id', 'id');
     }
+
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    public function activeDeviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class)->where('is_active', true);
+    }
 }
