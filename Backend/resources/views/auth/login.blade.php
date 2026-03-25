@@ -1,5 +1,7 @@
 <x-authentication-layout>
-    <div class="w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-8 transition-all hover:shadow-2xl">
+    <!-- Liquid glass login card: translucent background with backdrop blur and subtle border -->
+    <div class="w-full rounded-2xl shadow-xl p-8 space-y-8 transition-all hover:shadow-2xl"
+        style="background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3);">
         <!-- Header -->
         <div class="text-center space-y-3">
             <div class="animate-bounce-slow">
@@ -7,10 +9,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
             </div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+            <!-- Liquid glass: white text for translucent card readability -->
+            <h1 class="text-3xl font-bold text-white tracking-tight" style="text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
                 {{ __('ui.login_welcome') }}
             </h1>
-            <p class="text-gray-500 dark:text-gray-300 font-light">
+            <p class="text-gray-200 font-light">
                 {{ __('ui.login_subtitle') }}
             </p>
         </div>
@@ -31,13 +34,15 @@
                 <!-- Email Input -->
                 <div>
                     <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-amber-500 transition-colors">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-300 group-focus-within:text-amber-400 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
                         </div>
+                        <!-- Liquid glass: translucent input with white text -->
                         <x-input id="email" type="email" name="email" value="" required autofocus
-                            class="pl-10 w-full rounded-lg border-gray-300 focus:border-amber-300 focus:ring-2 focus:ring-amber-200 transition-all"
+                            class="pl-10 w-full rounded-lg border-white/30 focus:border-amber-300 focus:ring-2 focus:ring-amber-200 transition-all text-white placeholder-gray-300"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"
                             placeholder="{{ __('ui.login_email_placeholder') }}" />
                     </div>
                 </div>
@@ -45,13 +50,15 @@
                 <!-- Password Input -->
                 <div>
                     <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-amber-500 transition-colors">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-300 group-focus-within:text-amber-400 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                             </svg>
                         </div>
+                        <!-- Liquid glass: translucent input with white text -->
                         <x-input id="password" type="password" name="password" required autocomplete="current-password"
-                            class="pl-10 w-full pr-10 rounded-lg border-gray-300 focus:border-amber-300 focus:ring-2 focus:ring-amber-200 transition-all"
+                            class="pl-10 w-full pr-10 rounded-lg border-white/30 focus:border-amber-300 focus:ring-2 focus:ring-amber-200 transition-all text-white placeholder-gray-300"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"
                             placeholder="••••••••" />
                         <button type="button"
                             class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-amber-500 transition-colors"
@@ -73,7 +80,7 @@
                 <label class="flex items-center space-x-2 cursor-pointer">
                     <input id="remember" name="remember" type="checkbox"
                         class="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded transition">
-                    <span class="text-sm text-gray-600 dark:text-gray-300">{{ __('ui.login_remember_me') }}</span>
+                    <span class="text-sm text-gray-200">{{ __('ui.login_remember_me') }}</span>
                 </label>
             </div>
 

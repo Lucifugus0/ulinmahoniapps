@@ -2568,6 +2568,13 @@
                 roomId: roomId,
                 basePrice: basePrice,
                 cleaveInstance: null,
+                /* Pricing rule values (raw numbers) and formatted strings for all 5 categories */
+                rulePrices: { weekday: '', weekend: '', holiday: '', high_season: '', low_season: '' },
+                weekdayPriceFormatted: '',
+                weekendPriceFormatted: '',
+                holidayPriceFormatted: '',
+                highSeasonPriceFormatted: '',
+                lowSeasonPriceFormatted: '',
 
                 // Computed properties
                 get calendarTitle() {
@@ -2602,53 +2609,75 @@
                     return this.formatCurrency(price);
                 },
 
-                get calendarWeeks() {
-                    const weeks = [];
+                /* Flat array of 35 or 42 day objects for the calendar grid (avoids nested x-for issues) */
+                get calendarDays() {
+                    const days = [];
                     const firstDay = new Date(this.currentYear, this.currentMonth, 1);
                     const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
 
-                    // Start from Sunday (0)
+                    /* Start from Sunday before (or on) the 1st */
                     let startDate = new Date(firstDay);
                     startDate.setDate(startDate.getDate() - startDate.getDay());
 
-                    for (let week = 0; week < 6; week++) {
-                        const days = [];
-                        for (let day = 0; day < 7; day++) {
-                            const currentDate = new Date(startDate);
-                            const dateKey = this.formatDateKey(currentDate);
-                            /* Multi-Tier Pricing: priceMap now returns {price, type} objects */
-                            const priceData = this.priceMap[dateKey];
-                            const price = priceData ? (priceData.price ?? priceData) : undefined;
-                            const priceType = priceData ? (priceData.type ?? 'weekday') : null;
-                            const isCurrentMonth = currentDate.getMonth() === this.currentMonth;
-                            const isToday = this.isToday(currentDate);
-                            const isPast = this.isPastDate(currentDate);
-                            const isSelected = this.selectedDate && this.isSameDate(currentDate, this.selectedDate);
+                    /* Calculate how many weeks needed: 5 weeks if fits, otherwise 6 */
+                    const totalDaysNeeded = firstDay.getDay() + lastDay.getDate();
+                    const totalWeeks = totalDaysNeeded > 35 ? 6 : 5;
+                    const totalCells = totalWeeks * 7;
 
-                            days.push({
-                                date: currentDate,
-                                isCurrentMonth,
-                                isToday,
-                                isPast,
-                                isSelected,
-                                price: price,
-                                priceType: priceType,
-                            });
+                    for (let i = 0; i < totalCells; i++) {
+                        const currentDate = new Date(startDate);
+                        const dateKey = this.formatDateKey(currentDate);
+                        const priceData = this.priceMap[dateKey];
+                        /* Parse price as number; handle both {price,type} objects and raw numbers */
+                        const rawPrice = priceData ? (typeof priceData === 'object' ? priceData.price : priceData) : undefined;
+                        const price = (rawPrice !== undefined && rawPrice !== null) ? parseFloat(rawPrice) : undefined;
+                        const priceType = priceData ? (typeof priceData === 'object' ? priceData.type : 'weekday') : null;
 
-                            startDate.setDate(startDate.getDate() + 1);
-                        }
-                        weeks.push(days);
+                        days.push({
+                            date: currentDate,
+                            index: i,
+                            isCurrentMonth: currentDate.getMonth() === this.currentMonth,
+                            isToday: this.isToday(currentDate),
+                            isPast: this.isPastDate(currentDate),
+                            isSelected: this.selectedDate && this.isSameDate(currentDate, this.selectedDate),
+                            price: price,
+                            priceType: priceType,
+                        });
+
+                        startDate.setDate(startDate.getDate() + 1);
                     }
-                    return weeks;
+                    return days;
                 },
 
                 // Methods
                 openModal() {
                     this.isOpen = true;
                     document.body.classList.add('overflow-hidden');
-                    this.$nextTick(() => {
-                        this.fetchMonthPrices();
-                    });
+                    /* Chain: regenerate → fetch prices → fetch rules (avoids $nextTick async issues) */
+                    this.regenerateAndFetch();
+                },
+
+                /* Regenerate prices on server, THEN fetch updated calendar + pricing rules */
+                async regenerateAndFetch() {
+                    await this.regeneratePrices();
+                    await this.fetchMonthPrices();
+                    this.fetchPricingRules();
+                },
+
+                /* Validate all 5 prices are filled before allowing modal close */
+                validateAndClose() {
+                    const ruleTypes = ['weekday', 'weekend', 'holiday', 'high_season', 'low_season'];
+                    const labels = {
+                        weekday: 'Weekday', weekend: 'Weekend',
+                        holiday: 'Holiday', high_season: 'High Season', low_season: 'Low Season'
+                    };
+                    const missing = ruleTypes.filter(t => !this.rulePrices[t] || this.rulePrices[t] <= 0);
+                    if (missing.length > 0) {
+                        const names = missing.map(t => labels[t]).join(', ');
+                        this.showAlert('warning', `Semua harga harus diisi sebelum menutup: ${names}`);
+                        return;
+                    }
+                    this.closeModal();
                 },
 
                 closeModal() {
@@ -2708,13 +2737,6 @@
                 selectDate(day) {
                     if (!day.isCurrentMonth || day.isPast) return;
                     this.selectedDate = day.date;
-
-                    // Set current price in the input field if available
-                    if (day.price !== undefined && day.price !== null && this.cleaveInstance) {
-                        this.cleaveInstance.setRawValue(day.price.toString());
-                    } else if (this.cleaveInstance) {
-                        this.cleaveInstance.setRawValue('');
-                    }
                 },
 
                 previousMonth() {
@@ -2769,46 +2791,100 @@
                     return colorMap[day.priceType] || 'bg-blue-200';
                 },
 
-                async updatePrice() {
-                    if (!this.selectedDate) {
-                        this.showAlert('warning', 'Silakan pilih tanggal terlebih dahulu');
-                        return;
-                    }
-
-                    this.isLoading = true;
-
+                /* Trigger server-side price regeneration so calendar reflects current rules + master calendar */
+                async regeneratePrices() {
                     try {
-                        const priceValue = this.cleaveInstance.getRawValue() ?
-                            parseFloat(this.cleaveInstance.getRawValue()) : null;
-
-                        const res = await fetch(`/properties/rooms/${this.roomId}/update-price`, {
+                        const res = await fetch(`/properties/rooms/${this.roomId}/regenerate-prices`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                                 'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                start_date: this.formatDateKey(this.selectedDate),
-                                end_date: this.formatDateKey(this.selectedDate),
-                                price: priceValue
-                            })
+                            }
                         });
+                        if (!res.ok) console.warn('Price regeneration failed');
+                    } catch (error) {
+                        console.warn('Price regeneration error:', error);
+                    }
+                },
 
+                /* Format a pricing rule input value and store the raw number */
+                formatRulePrice(ruleType, value) {
+                    const numericValue = value.replace(/[^\d]/g, '');
+                    const parsed = numericValue ? parseInt(numericValue, 10) : '';
+                    this.rulePrices[ruleType] = parsed;
+                    const formatted = parsed ? new Intl.NumberFormat('id-ID').format(parsed) : '';
+                    /* Update the corresponding formatted property */
+                    const formattedMap = {
+                        weekday: 'weekdayPriceFormatted',
+                        weekend: 'weekendPriceFormatted',
+                        holiday: 'holidayPriceFormatted',
+                        high_season: 'highSeasonPriceFormatted',
+                        low_season: 'lowSeasonPriceFormatted',
+                    };
+                    this[formattedMap[ruleType]] = formatted;
+                },
+
+                /* Fetch existing pricing rules for this room and populate the textboxes */
+                async fetchPricingRules() {
+                    try {
+                        const res = await fetch(`/properties/rooms/${this.roomId}/pricing-rules`);
+                        if (!res.ok) throw new Error('Failed to fetch pricing rules');
                         const data = await res.json();
+                        const rules = data.data?.rules || [];
+                        /* Map each rule into the rulePrices object and formatted displays */
+                        rules.forEach(rule => {
+                            if (this.rulePrices.hasOwnProperty(rule.rule_type)) {
+                                const price = parseFloat(rule.price);
+                                this.rulePrices[rule.rule_type] = price;
+                                const formattedMap = {
+                                    weekday: 'weekdayPriceFormatted',
+                                    weekend: 'weekendPriceFormatted',
+                                    holiday: 'holidayPriceFormatted',
+                                    high_season: 'highSeasonPriceFormatted',
+                                    low_season: 'lowSeasonPriceFormatted',
+                                };
+                                this[formattedMap[rule.rule_type]] = new Intl.NumberFormat('id-ID').format(price);
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error fetching pricing rules:', error);
+                    }
+                },
 
-                        if (!res.ok) {
-                            throw new Error(data.message || 'Gagal memperbarui harga');
+                /* Save all 5 pricing rules via the pricing-rules API, then regenerate daily prices */
+                async saveAllRules() {
+                    this.isLoading = true;
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+
+                    try {
+                        /* Save each rule type that has a value */
+                        const ruleTypes = ['weekday', 'weekend', 'holiday', 'high_season', 'low_season'];
+                        for (const ruleType of ruleTypes) {
+                            const price = this.rulePrices[ruleType];
+                            if (price === '' || price === null || price === undefined) continue;
+                            const res = await fetch(`/properties/rooms/${this.roomId}/pricing-rules`, {
+                                method: 'POST',
+                                headers,
+                                body: JSON.stringify({ rule_type: ruleType, price: parseFloat(price) })
+                            });
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                throw new Error(errData.message || `Gagal menyimpan harga ${ruleType}`);
+                            }
                         }
 
-                        this.showAlert('success', 'Harga berhasil diperbarui!');
+                        this.showAlert('success', 'Semua harga berhasil diperbarui!');
+                        /* Refresh calendar to reflect new prices */
                         await this.fetchMonthPrices();
-
-                        // Reset form
-                        this.cleaveInstance.setRawValue('');
                     } catch (error) {
-                        console.error('Update error:', error);
-                        this.showAlert('error', error.message || 'Terjadi kesalahan saat memperbarui harga');
+                        console.error('Save rules error:', error);
+                        this.showAlert('error', error.message || 'Terjadi kesalahan saat menyimpan harga');
                     } finally {
                         this.isLoading = false;
                     }
@@ -2827,20 +2903,7 @@
                 },
 
                 init() {
-                    // Initialize price input formatter
-                    this.$nextTick(() => {
-                        if (this.$refs.setPrice) {
-                            this.cleaveInstance = new Cleave(this.$refs.setPrice, {
-                                numeral: true,
-                                numeralDecimalMark: ',',
-                                delimiter: '.',
-                                numeralThousandsGroupStyle: 'thousand',
-                                onValueChanged: (e) => {
-                                    // Value is handled by getRawValue()
-                                }
-                            });
-                        }
-                    });
+                    /* No Cleave needed — pricing inputs use inline formatting via formatRulePrice() */
                 }
             }));
         });

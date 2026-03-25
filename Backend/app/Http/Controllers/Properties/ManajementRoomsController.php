@@ -858,8 +858,9 @@ class ManajementRoomsController extends Controller
         $year = $request->get('year');
         $month = $request->get('month');
 
-        $start = Carbon::createFromDate($year, $month, 1);
-        $end = $start->copy()->endOfMonth();
+        /* startOfDay() ensures the 1st of the month is included in whereBetween query */
+        $start = Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $end = $start->copy()->endOfMonth()->endOfDay();
         // dd($start, $end);
 
         /* Multi-Tier Pricing: return both price and price_type for calendar color coding */

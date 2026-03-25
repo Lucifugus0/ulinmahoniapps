@@ -10,6 +10,9 @@ class SidebarItemsTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * <!-- Restructured sidebar: flat top-level groups (no section headers),
+     *      collapsible groups for Bookings, Finance, Promo, Reports, Masters, App Management.
+     *      Route names unchanged — only display names and hierarchy changed. -->
      *
      * @return void
      */
@@ -22,32 +25,46 @@ class SidebarItemsTableSeeder extends Seeder
         $permissions = Permission::all()->pluck('id', 'name')->toArray();
 
         // =====================
-        // Management Section
+        // Standalone Items
         // =====================
-        $managementSection = SidebarItem::create([
-            'name' => 'Management',
-            'route' => null,
-            'permission_id' => $permissions['Management'] ?? null,
-            'parent_id' => null,
-            'order' => 1,
-        ]);
 
-        // Dashboard
+        // <!-- Dashboard: standalone top-level item -->
         SidebarItem::create([
             'name' => 'Dashboard',
             'route' => 'dashboard',
             'permission_id' => $permissions['view_dashboard'] ?? null,
-            'parent_id' => $managementSection->id,
+            'parent_id' => null,
             'order' => 1
         ]);
 
-        // Bookings
+        // <!-- Room Availability: standalone top-level item -->
+        SidebarItem::create([
+            'name' => 'Room Availability',
+            'route' => 'room-availability.index',
+            'permission_id' => $permissions['view_room_availability'] ?? null,
+            'parent_id' => null,
+            'order' => 2
+        ]);
+
+        // <!-- Chat: standalone top-level item with unread badge -->
+        SidebarItem::create([
+            'name' => 'Chat',
+            'route' => 'chat.index',
+            'permission_id' => $permissions['manage_chat'] ?? null,
+            'parent_id' => null,
+            'order' => 3
+        ]);
+
+        // =====================
+        // Bookings Group (order 4)
+        // =====================
+        // <!-- Bookings: collapsible group containing all booking-related pages -->
         $bookings = SidebarItem::create([
             'name' => 'Bookings',
             'route' => null,
             'permission_id' => $permissions['view_bookings'] ?? null,
-            'parent_id' => $managementSection->id,
-            'order' => 2,
+            'parent_id' => null,
+            'order' => 4,
         ]);
 
         SidebarItem::create([
@@ -67,7 +84,7 @@ class SidebarItemsTableSeeder extends Seeder
         ]);
 
         SidebarItem::create([
-            'name' => 'Confirm Bookings',
+            'name' => 'Confirmed Bookings',
             'route' => 'newReserv.index',
             'permission_id' => $permissions['view_confirmed_bookings'] ?? null,
             'parent_id' => $bookings->id,
@@ -75,7 +92,7 @@ class SidebarItemsTableSeeder extends Seeder
         ]);
 
         SidebarItem::create([
-            'name' => 'Checked-ins',
+            'name' => 'Checked In',
             'route' => 'checkin.index',
             'permission_id' => $permissions['view_checkins'] ?? null,
             'parent_id' => $bookings->id,
@@ -83,7 +100,7 @@ class SidebarItemsTableSeeder extends Seeder
         ]);
 
         SidebarItem::create([
-            'name' => 'Checked-outs',
+            'name' => "Today's Check Out",
             'route' => 'checkout.index',
             'permission_id' => $permissions['view_checkouts'] ?? null,
             'parent_id' => $bookings->id,
@@ -98,218 +115,120 @@ class SidebarItemsTableSeeder extends Seeder
             'order' => 6
         ]);
 
+        // <!-- Renamed from "Change Room" to "Change Booking" -->
         SidebarItem::create([
-            'name' => 'Change Room',
+            'name' => 'Change Booking',
             'route' => 'changerooom.index',
             'permission_id' => $permissions['view_change_room'] ?? null,
             'parent_id' => $bookings->id,
             'order' => 7
         ]);
 
-        // Properties
-        $properties = SidebarItem::create([
-            'name' => 'Properties',
-            'route' => null,
-            'permission_id' => $permissions['properties'] ?? null,
-            'parent_id' => $managementSection->id,
-            'order' => 3,
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Master Properties',
-            'route' => 'properties.index',
-            'permission_id' => $permissions['view_properties'] ?? null,
-            'parent_id' => $properties->id,
-            'order' => 1
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Master Cities',
-            'route' => 'cityProperty.index',
-            'permission_id' => $permissions['view_cities'] ?? null,
-            'parent_id' => $properties->id,
-            'order' => 2
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Master Facilities',
-            'route' => 'facilityProperty.index',
-            'permission_id' => $permissions['view_property_facilities'] ?? null,
-            'parent_id' => $properties->id,
-            'order' => 3
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Deposit Fee Management',
-            'route' => 'deposit-fees.index',
-            'permission_id' => $permissions['view_deposit_fees'] ?? null,
-            'parent_id' => $properties->id,
-            'order' => 4
-        ]);
-
-        // Parking
-        $parking = SidebarItem::create([
-            'name' => 'Parking',
-            'route' => null,
-            'permission_id' => $permissions['parking'] ?? null,
-            'parent_id' => $managementSection->id,
-            'order' => 4,
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Parking Fees',
-            'route' => 'parking-fees.index',
-            'permission_id' => $permissions['view_parking_fees'] ?? null,
-            'parent_id' => $parking->id,
-            'order' => 1
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Parking',
-            'route' => 'parking.index',
-            'permission_id' => $permissions['view_parking'] ?? null,
-            'parent_id' => $parking->id,
-            'order' => 2
-        ]);
-
-        // Rooms/Units
-        $rooms = SidebarItem::create([
-            'name' => 'Rooms/Units',
-            'route' => null,
-            'permission_id' => $permissions['rooms'] ?? null,
-            'parent_id' => $managementSection->id,
-            'order' => 5,
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Master Rooms',
-            'route' => 'rooms.index',
-            'permission_id' => $permissions['view_rooms'] ?? null,
-            'parent_id' => $rooms->id,
-            'order' => 1
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Master Facilities',
-            'route' => 'facilityRooms.index',
-            'permission_id' => $permissions['view_room_facilities'] ?? null,
-            'parent_id' => $rooms->id,
-            'order' => 2
-        ]);
-
+        // <!-- Door Lock: moved from Rooms/Units to Bookings group -->
         SidebarItem::create([
             'name' => 'Door Lock',
             'route' => 'door-locks.index',
             'permission_id' => $permissions['view_door_locks'] ?? null,
-            'parent_id' => $rooms->id,
-            'order' => 3
-        ]);
-
-        // Customers
-        SidebarItem::create([
-            'name' => 'Customers',
-            'route' => 'customers.index',
-            'permission_id' => $permissions['view_customers'] ?? null,
-            'parent_id' => $managementSection->id,
-            'order' => 6
-        ]);
-
-        // Room Availability
-        SidebarItem::create([
-            'name' => 'Room Availability',
-            'route' => 'room-availability.index',
-            'permission_id' => $permissions['view_room_availability'] ?? null,
-            'parent_id' => $managementSection->id,
-            'order' => 7
-        ]);
-
-        // Vouchers
-        SidebarItem::create([
-            'name' => 'Vouchers',
-            'route' => 'vouchers.index',
-            'permission_id' => $permissions['view_vouchers'] ?? null,
-            'parent_id' => $managementSection->id,
+            'parent_id' => $bookings->id,
             'order' => 8
         ]);
 
-        // Promo Banners
+        // <!-- Parking Management: moved from standalone to Bookings group -->
         SidebarItem::create([
-            'name' => 'Promo Banners',
-            'route' => 'promo-banners.index',
-            'permission_id' => $permissions['view_promo_banners'] ?? null,
-            'parent_id' => $managementSection->id,
+            'name' => 'Parking Management',
+            'route' => 'parking.index',
+            'permission_id' => $permissions['view_parking'] ?? null,
+            'parent_id' => $bookings->id,
             'order' => 9
         ]);
 
-        // Chat
-        SidebarItem::create([
-            'name' => 'Chat',
-            'route' => 'chat.index',
-            'permission_id' => $permissions['manage_chat'] ?? null,
-            'parent_id' => $managementSection->id,
-            'order' => 10
-        ]);
-
         // =====================
-        // Financial Section
+        // Finance Group (order 5)
         // =====================
-        $financialSection = SidebarItem::create([
-            'name' => 'Financial',
+        // <!-- Finance: collapsible group for all payment-related pages (renamed from Financial/Payments) -->
+        $finance = SidebarItem::create([
+            'name' => 'Finance',
             'route' => null,
-            'permission_id' => $permissions['financial'] ?? null,
+            'permission_id' => null,
             'parent_id' => null,
-            'order' => 2,
+            'order' => 5,
         ]);
 
-        // Payments
-        $payments = SidebarItem::create([
-            'name' => 'Payments',
-            'route' => null,
-            'permission_id' => $permissions['view_payments'] ?? null,
-            'parent_id' => $financialSection->id,
-            'order' => 1
-        ]);
-
+        // <!-- Renamed from "Parking" to "Parking Entry" -->
         SidebarItem::create([
-            'name' => 'Transaction',
-            'route' => 'admin.payments.index',
-            'permission_id' => $permissions['view_payments'] ?? null,
-            'parent_id' => $payments->id,
-            'order' => 1
-        ]);
-
-        SidebarItem::create([
-            'name' => 'Parking',
+            'name' => 'Parking Entry',
             'route' => 'admin.parking-payments.index',
             'permission_id' => $permissions['view_parking_payments'] ?? null,
-            'parent_id' => $payments->id,
+            'parent_id' => $finance->id,
+            'order' => 1
+        ]);
+
+        // <!-- Renamed from "Deposit" to "Deposit Entry" -->
+        SidebarItem::create([
+            'name' => 'Deposit Entry',
+            'route' => 'admin.deposit-payments.index',
+            'permission_id' => $permissions['view_deposit_payments'] ?? null,
+            'parent_id' => $finance->id,
             'order' => 2
         ]);
 
+        // <!-- Renamed from "Transaction" to "Booking Payment" -->
         SidebarItem::create([
-            'name' => 'Deposit',
-            'route' => 'admin.deposit-payments.index',
-            'permission_id' => $permissions['view_deposit_payments'] ?? null,
-            'parent_id' => $payments->id,
+            'name' => 'Booking Payment',
+            'route' => 'admin.payments.index',
+            'permission_id' => $permissions['view_payments'] ?? null,
+            'parent_id' => $finance->id,
             'order' => 3
         ]);
 
-        // Refunds
         SidebarItem::create([
             'name' => 'Refunds',
             'route' => 'admin.refunds.index',
             'permission_id' => $permissions['view_refunds'] ?? null,
-            'parent_id' => $financialSection->id,
+            'parent_id' => $finance->id,
+            'order' => 4
+        ]);
+
+        // =====================
+        // Promo Group (order 6)
+        // =====================
+        // <!-- Promo: collapsible group for vouchers and banners -->
+        $promo = SidebarItem::create([
+            'name' => 'Promo',
+            'route' => null,
+            'permission_id' => null,
+            'parent_id' => null,
+            'order' => 6,
+        ]);
+
+        // <!-- Renamed from "Vouchers" to "Voucher Management" -->
+        SidebarItem::create([
+            'name' => 'Voucher Management',
+            'route' => 'vouchers.index',
+            'permission_id' => $permissions['view_vouchers'] ?? null,
+            'parent_id' => $promo->id,
+            'order' => 1
+        ]);
+
+        // <!-- Renamed from "Promo Banners" to "Banner Management" -->
+        SidebarItem::create([
+            'name' => 'Banner Management',
+            'route' => 'promo-banners.index',
+            'permission_id' => $permissions['view_promo_banners'] ?? null,
+            'parent_id' => $promo->id,
             'order' => 2
         ]);
 
-        // Reports
+        // =====================
+        // Reports Group (order 7)
+        // =====================
+        // <!-- Reports: collapsible group, moved from Financial section to top-level -->
         $reports = SidebarItem::create([
             'name' => 'Reports',
             'route' => null,
             'permission_id' => $permissions['view_reports'] ?? null,
-            'parent_id' => $financialSection->id,
-            'order' => 3
+            'parent_id' => null,
+            'order' => 7
         ]);
 
         SidebarItem::create([
@@ -353,39 +272,133 @@ class SidebarItemsTableSeeder extends Seeder
         ]);
 
         // =====================
-        // Settings Section
+        // Masters Group (order 8)
         // =====================
-        $settingsSection = SidebarItem::create([
-            'name' => 'Settings',
+        // <!-- Masters: collapsible group consolidating Properties, Rooms/Units, and other master data -->
+        $masters = SidebarItem::create([
+            'name' => 'Masters',
             'route' => null,
-            'permission_id' => $permissions['Settings'] ?? null,
+            'permission_id' => null,
             'parent_id' => null,
-            'order' => 3,
+            'order' => 8,
         ]);
 
-        // Users
+        // <!-- Cities: was "Master Cities" under Properties -->
+        SidebarItem::create([
+            'name' => 'Cities',
+            'route' => 'cityProperty.index',
+            'permission_id' => $permissions['view_cities'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 1
+        ]);
+
+        // <!-- Properties: renamed from "Master Properties" -->
+        SidebarItem::create([
+            'name' => 'Properties',
+            'route' => 'properties.index',
+            'permission_id' => $permissions['view_properties'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 2
+        ]);
+
+        // <!-- Property's Facilities: renamed from "Master Facilities" under Properties -->
+        SidebarItem::create([
+            'name' => "Property's Facilities",
+            'route' => 'facilityProperty.index',
+            'permission_id' => $permissions['view_property_facilities'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 3
+        ]);
+
+        // <!-- Property's Deposit & Parking: renamed from "Deposit Fee Management" + "Parking Fees" -->
+        SidebarItem::create([
+            'name' => "Property's Deposit & Parking",
+            'route' => 'property-fees.index',
+            'permission_id' => $permissions['view_deposit_fees'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 4
+        ]);
+
+        // <!-- Property's Rooms: renamed from "Master Rooms" -->
+        SidebarItem::create([
+            'name' => "Property's Rooms",
+            'route' => 'rooms.index',
+            'permission_id' => $permissions['view_rooms'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 5
+        ]);
+
+        // <!-- Room Types: renamed from "Master Room Types" -->
+        SidebarItem::create([
+            'name' => 'Room Types',
+            'route' => 'roomNameTypes.index',
+            'permission_id' => $permissions['view_rooms'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 6
+        ]);
+
+        // <!-- Room's Facilities: renamed from "Master Facilities" under Rooms/Units -->
+        SidebarItem::create([
+            'name' => "Room's Facilities",
+            'route' => 'facilityRooms.index',
+            'permission_id' => $permissions['view_room_facilities'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 7
+        ]);
+
+        // <!-- Daily Pricing Management: renamed from "Master Calendar" -->
+        SidebarItem::create([
+            'name' => 'Daily Pricing Management',
+            'route' => 'calendar.index',
+            'permission_id' => $permissions['view_properties'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 8
+        ]);
+
+        // <!-- Customers: moved from standalone under Management to Masters group -->
+        SidebarItem::create([
+            'name' => 'Customers',
+            'route' => 'customers.index',
+            'permission_id' => $permissions['view_customers'] ?? null,
+            'parent_id' => $masters->id,
+            'order' => 9
+        ]);
+
+        // <!-- Users: moved from Settings section to Masters group -->
         SidebarItem::create([
             'name' => 'Users',
             'route' => 'users-newManagement',
             'permission_id' => $permissions['view_users'] ?? null,
-            'parent_id' => $settingsSection->id,
-            'order' => 1
+            'parent_id' => $masters->id,
+            'order' => 10
         ]);
 
-        // Role & Permission (parent with sub-items)
-        $rolePermission = SidebarItem::create([
-            'name' => 'Role & Permission',
+        // =====================
+        // App Management Group (order 9)
+        // =====================
+        // <!-- App Management: collapsible group replacing Settings section -->
+        $appManagement = SidebarItem::create([
+            'name' => 'App Management',
+            'route' => null,
+            'permission_id' => null,
+            'parent_id' => null,
+            'order' => 9,
+        ]);
+
+        // <!-- Access Management: collapsible sub-group replacing "Role & Permission" -->
+        $accessManagement = SidebarItem::create([
+            'name' => 'Access Management',
             'route' => null,
             'permission_id' => $permissions['manage_roles'] ?? null,
-            'parent_id' => $settingsSection->id,
-            'order' => 2
+            'parent_id' => $appManagement->id,
+            'order' => 1
         ]);
 
         SidebarItem::create([
             'name' => 'Master Role',
             'route' => 'master-role-management',
             'permission_id' => $permissions['manage_roles'] ?? null,
-            'parent_id' => $rolePermission->id,
+            'parent_id' => $accessManagement->id,
             'order' => 1
         ]);
 
@@ -393,17 +406,21 @@ class SidebarItemsTableSeeder extends Seeder
             'name' => 'User Access',
             'route' => 'user-access.edit',
             'permission_id' => $permissions['view_users'] ?? null,
-            'parent_id' => $rolePermission->id,
+            'parent_id' => $accessManagement->id,
             'order' => 2
         ]);
 
-        // Account / Settings
+        // <!-- Settings: moved from section header to sub-item of App Management -->
         SidebarItem::create([
             'name' => 'Settings',
             'route' => 'users.show',
             'permission_id' => $permissions['manage_settings'] ?? null,
-            'parent_id' => $settingsSection->id,
-            'order' => 3
+            'parent_id' => $appManagement->id,
+            'order' => 2
         ]);
+
+        // <!-- Note: Users is now under Masters group (order 8, child 10) instead of Settings section.
+        //      Users route (users-newManagement) is registered there with view_users permission.
+        //      Also note: users-management route is kept as a parent mapping in CheckPermission middleware. -->
     }
 }

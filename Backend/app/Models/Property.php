@@ -104,6 +104,18 @@ class Property extends Model
         return PropertyFacility::whereIn('idrec', $this->amenities ?? [])->get();
     }
 
+    /* Relationship: one deposit fee per property */
+    public function depositFee()
+    {
+        return $this->hasOne(DepositFee::class, 'property_id', 'idrec');
+    }
+
+    /* Relationship: parking fees (car + motorcycle) for this property */
+    public function parkingFees()
+    {
+        return $this->hasMany(ParkingFee::class, 'property_id', 'idrec');
+    }
+
     public function getImageUrlAttribute()
     {
         if (!empty($this->image)) {

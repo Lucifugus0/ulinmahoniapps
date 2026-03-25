@@ -55,17 +55,17 @@ return [
     'sidebar_checked_ins' => 'Checked-In',
     'sidebar_checked_outs' => 'Today\'s Check-Out',
     'sidebar_completed' => 'Completed',
-    'sidebar_change_room' => 'Change Room',
+    'sidebar_change_room' => 'Change Booking',
     'sidebar_properties' => 'Properties',
-    'sidebar_master_properties' => 'Master Properties',
-    'sidebar_master_cities' => 'Master Cities',
+    'sidebar_master_properties' => 'Properties',
+    'sidebar_master_cities' => 'Cities',
     'sidebar_master_facilities' => 'Master Facilities',
     'sidebar_rooms_units' => 'Rooms/Units',
-    'sidebar_master_rooms' => 'Master Rooms',
+    'sidebar_master_rooms' => 'Property\'s Rooms',
     'sidebar_customers' => 'Customers',
     'sidebar_room_availability' => 'Room Availability',
-    'sidebar_vouchers' => 'Vouchers',
-    'sidebar_promo_banners' => 'Promo Banners',
+    'sidebar_vouchers' => 'Voucher Management',
+    'sidebar_promo_banners' => 'Banner Management',
     'sidebar_chat' => 'Chat',
     'sidebar_financial' => 'Financial',
     'sidebar_payments' => 'Payments',
@@ -78,9 +78,32 @@ return [
     'sidebar_rented_rooms_report' => 'Rented Rooms Report',
     'sidebar_settings' => 'Settings',
     'sidebar_users' => 'Users',
-    'sidebar_role_permission' => 'Role & Permission',
+    'sidebar_role_permission' => 'Access Management',
     'sidebar_master_role' => 'Master Role',
     'sidebar_user_access' => 'User Access',
+
+    // <!-- New sidebar keys for restructured menu -->
+    'sidebar_finance' => 'Finance',
+    'sidebar_parking_entry' => 'Parking Entry',
+    'sidebar_deposit_entry' => 'Deposit Entry',
+    'sidebar_booking_payment' => 'Booking Payment',
+    'sidebar_promo' => 'Promo',
+    'sidebar_masters' => 'Masters',
+    'sidebar_properties_item' => 'Properties',
+    'sidebar_property_facilities' => 'Property\'s Facilities',
+    'sidebar_property_deposit_parking' => 'Property\'s Deposit & Parking',
+    'sidebar_property_rooms' => 'Property\'s Rooms',
+    'sidebar_room_types' => 'Room Types',
+    'sidebar_room_facilities' => 'Room\'s Facilities',
+    'sidebar_daily_pricing' => 'Daily Pricing Management',
+    'sidebar_app_management' => 'App Management',
+    'sidebar_access_management' => 'Access Management',
+    'sidebar_door_lock' => 'Door Lock',
+
+    // <!-- Page title keys for finance pages -->
+    'parking_entry_title' => 'Parking Entry',
+    'deposit_entry_title' => 'Deposit Entry',
+    'booking_payment_title' => 'Booking Payment',
 
     // Dashboard
     'dashboard' => 'Dashboard',
@@ -197,7 +220,7 @@ return [
     'months' => 'month(s)',
     'no_bookings_found' => 'No bookings found',
     'no_bookings_yet' => 'This customer hasn\'t made any bookings yet.',
-    'change_room' => 'Change Room',
+    'change_room' => 'Change Booking',
     'confirmed_bookings' => 'Confirmed Bookings',
     'confirm_reservations' => 'Confirm Reservations',
     'checkin_success' => 'Check-in successful!',
@@ -419,7 +442,7 @@ return [
     'account_created' => 'Account has been created successfully!',
 
     // Vouchers
-    'master_vouchers' => 'Master Vouchers',
+    'master_vouchers' => 'Voucher Management',
     'add_voucher' => 'Add Voucher',
     'edit_voucher' => 'Edit Voucher',
     'voucher_already_used' => 'Cannot edit: voucher has already been used',
@@ -622,7 +645,12 @@ return [
     'sidebar_deposit_fees' => 'Master Deposit Fee',
     'sidebar_parking_menu' => 'Parking',
     'sidebar_parking_fees' => 'Master Parking Fee',
-    'sidebar_parking' => 'Master Parking',
+    'sidebar_property_fees' => 'Property\'s Deposit & Parking',
+    'property_fees_management' => 'Property\'s Deposit & Parking',
+    'add_property_fees' => 'Add Property Fees',
+    'edit_property_fees' => 'Edit Property Fees',
+    'not_set' => 'Not Set',
+    'sidebar_parking' => 'Parking Management',
     'sidebar_parking_payments' => 'Master Parking Payments',
     'sidebar_deposit_payments' => 'Master Deposit Payments',
 
@@ -744,7 +772,7 @@ return [
     'updated_by' => 'Updated By',
 
     // Role Management
-    'master_role_management' => 'Master Role Management',
+    'master_role_management' => 'Access Management',
     'manage_roles_desc' => 'Manage roles for each admin user',
     'new_role' => 'New Role',
     'create_new_role' => 'Create New Role',
@@ -1113,7 +1141,7 @@ return [
     'category_custom' => 'Other',
 
     // Promo Banners (New)
-    'promo_banner_master_title' => 'Master Promo Banners',
+    'promo_banner_master_title' => 'Banner Management',
     'promo_banner_add' => 'Add Banner',
     'promo_banner_image_size_hint' => 'Recommended banner image size: <strong>1911px x 372px</strong>',
     'promo_banner_search' => 'Search Banner',
@@ -1160,8 +1188,8 @@ return [
     'promo_banner_col_date' => 'Date',
 
     // Facility Management (New)
-    'facility_room_management' => 'Room Facility Management',
-    'facility_property_management' => 'Property Facility Management',
+    'facility_room_management' => 'Room\'s Facilities',
+    'facility_property_management' => 'Property\'s Facilities',
     'facility_add' => 'Add Facility',
     'facility_edit' => 'Edit Facility',
     'facility_name_label' => 'Facility Name',
@@ -1194,7 +1222,7 @@ return [
     'facility_category_filter' => 'Category:',
 
     // Room Management (New)
-    'room_management' => 'Room Management',
+    'room_management' => 'Property\'s Rooms',
     'room_add' => 'Add Room',
     'room_add_title' => 'Add Room',
     'room_edit_title' => 'Edit Room',
@@ -1286,6 +1314,7 @@ return [
     'room_detail_last_updated' => 'Last Updated',
     'room_detail_press_esc' => 'Press ESC or click outside to close',
     'room_price_daily_management' => 'Daily Price Management',
+    'room_price_categories' => 'Pricing by Category',
     'room_price_edit_title' => 'Edit Price',
     'room_price_previous_month' => 'Previous month',
     'room_price_next_month' => 'Next month',
@@ -1560,8 +1589,8 @@ return [
     'select_city' => 'Select city',
 
     /* Master Calendar — global date classification management */
-    'sidebar_master_calendar' => 'Master Calendar',
-    'calendar_title' => 'Master Calendar',
+    'sidebar_master_calendar' => 'Daily Pricing Management',
+    'calendar_title' => 'Daily Pricing Management',
     'calendar_holiday' => 'Holiday',
     'calendar_high_season' => 'High Season',
     'calendar_low_season' => 'Low Season',
@@ -1582,8 +1611,8 @@ return [
     'calendar_regenerate_all' => 'Regenerate All Room Prices',
 
     /* Room Name Types — master CRUD */
-    'sidebar_master_room_types' => 'Master Room Types',
-    'room_name_type_management' => 'Room Type Management',
+    'sidebar_master_room_types' => 'Room Types',
+    'room_name_type_management' => 'Room Types',
     'room_name_type_add' => 'Add Room Type',
     'room_name_type_edit' => 'Edit Room Type',
     'room_name_type_name_label' => 'Type Name',

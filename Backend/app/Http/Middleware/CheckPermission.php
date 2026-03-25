@@ -97,6 +97,8 @@ class CheckPermission
             '/\.find-by-order$/',     // e.g., chat.find-by-order
             '/\.get-details$/',       // e.g., door-locks.get-details
             '/\.passcode$/',          // e.g., door-locks.passcode
+            // **store-or-update pattern**: allows combined create/update API endpoints (e.g., property-fees)
+            '/\.store-or-update$/',   // e.g., property-fees.store-or-update
         ];
 
         // Check if current route matches any API pattern
@@ -217,6 +219,20 @@ class CheckPermission
             'role.' => 'master-role-management',
             'dashboard-widgets.' => 'dashboard',
             'chat.' => 'chat.index',
+            // **Additional route mappings**: property fees, parking/deposit payments, promo banners,
+            // parking/deposit reports, calendar, city properties, room name types, parking, and fee management routes
+            'property-fees.' => 'property-fees.index',
+            'admin.parking-payments.' => 'admin.parking-payments.index',
+            'admin.deposit-payments.' => 'admin.deposit-payments.index',
+            'promo-banners.' => 'promo-banners.index',
+            'reports.parking.' => 'reports.parking.index',
+            'reports.deposit.' => 'reports.deposit.index',
+            'calendar.' => 'calendar.index',
+            'cityProperty.' => 'cityProperty.index',
+            'roomNameTypes.' => 'roomNameTypes.index',
+            'parking.' => 'parking.index',
+            'deposit-fees.' => 'deposit-fees.index',
+            'parking-fees.' => 'parking-fees.index',
         ];
 
         // Check each prefix

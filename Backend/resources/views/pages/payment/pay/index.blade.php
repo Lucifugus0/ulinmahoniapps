@@ -4,9 +4,10 @@
         <!-- Bagian Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
+                {{-- Changed page title from payment_proof to booking_payment_title --}}
                 <h1
                     class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                    {{ __('ui.payment_proof') }}
+                    {{ __('ui.booking_payment_title') }}
                 </h1>
             </div>
         </div>

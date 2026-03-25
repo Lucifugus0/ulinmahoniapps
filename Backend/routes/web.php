@@ -23,6 +23,7 @@ use App\Http\Controllers\Payment\DepositPaymentController;
 use App\Http\Controllers\Payment\RefundController;
 use App\Http\Controllers\Properties\DepositFeeController;
 use App\Http\Controllers\Properties\ParkingFeeController;
+use App\Http\Controllers\Properties\PropertyFeesController;
 use App\Http\Controllers\Properties\ParkingController;
 use App\Http\Controllers\Properties\DoorLockController;
 use App\Http\Controllers\RoomAvailability\RoomAvailabilityController;
@@ -253,6 +254,11 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::post('/rooms/door-locks/store', [DoorLockController::class, 'store'])->name('door-locks.store');
         Route::post('/rooms/door-locks/{id}/passcode', [DoorLockController::class, 'addPasscode'])->name('door-locks.passcode');
         Route::delete('/rooms/door-locks/{id}', [DoorLockController::class, 'destroy'])->name('door-locks.destroy');
+
+        // ------------------------- UNIFIED DEPOSIT & PARKING FEE PAGE -------------------------
+        Route::get('/property-fees', [PropertyFeesController::class, 'index'])->name('property-fees.index');
+        Route::post('/property-fees/filter', [PropertyFeesController::class, 'filter'])->name('property-fees.filter');
+        Route::post('/property-fees/store-or-update', [PropertyFeesController::class, 'storeOrUpdate'])->name('property-fees.store-or-update');
 
         // ------------------------- DEPOSIT FEE MANAGEMENT -------------------------
         Route::get('/deposit-fees', [DepositFeeController::class, 'index'])->name('deposit-fees.index');

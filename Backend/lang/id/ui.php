@@ -55,17 +55,17 @@ return [
     'sidebar_checked_ins' => 'Sudah Check-in',
     'sidebar_checked_outs' => 'Check-out Hari Ini',
     'sidebar_completed' => 'Selesai',
-    'sidebar_change_room' => 'Pindah Kamar',
+    'sidebar_change_room' => 'Pindah Pemesanan',
     'sidebar_properties' => 'Properti',
-    'sidebar_master_properties' => 'Master Properti',
-    'sidebar_master_cities' => 'Master Kota',
+    'sidebar_master_properties' => 'Properti',
+    'sidebar_master_cities' => 'Kota',
     'sidebar_master_facilities' => 'Master Fasilitas',
     'sidebar_rooms_units' => 'Kamar/Unit',
-    'sidebar_master_rooms' => 'Master Kamar',
+    'sidebar_master_rooms' => 'Kamar Properti',
     'sidebar_customers' => 'Pelanggan',
     'sidebar_room_availability' => 'Ketersediaan Kamar',
-    'sidebar_vouchers' => 'Voucher',
-    'sidebar_promo_banners' => 'Banner Promosi',
+    'sidebar_vouchers' => 'Manajemen Voucher',
+    'sidebar_promo_banners' => 'Manajemen Banner',
     'sidebar_chat' => 'Obrolan',
     'sidebar_financial' => 'Keuangan',
     'sidebar_payments' => 'Pembayaran',
@@ -78,9 +78,31 @@ return [
     'sidebar_rented_rooms_report' => 'Laporan Kamar Tersewa',
     'sidebar_settings' => 'Pengaturan',
     'sidebar_users' => 'Pengguna',
-    'sidebar_role_permission' => 'Peran & Izin',
+    'sidebar_role_permission' => 'Manajemen Akses',
     'sidebar_master_role' => 'Master Role',
     'sidebar_user_access' => 'Akses Pengguna',
+
+    // <!-- New sidebar keys for restructured menu -->
+    'sidebar_finance' => 'Keuangan',
+    'sidebar_parking_entry' => 'Entri Parkir',
+    'sidebar_deposit_entry' => 'Entri Deposit',
+    'sidebar_booking_payment' => 'Pembayaran Pemesanan',
+    'sidebar_promo' => 'Promo',
+    'sidebar_masters' => 'Master',
+    'sidebar_properties_item' => 'Properti',
+    'sidebar_property_facilities' => 'Fasilitas Properti',
+    'sidebar_property_deposit_parking' => 'Deposit & Parkir Properti',
+    'sidebar_property_rooms' => 'Kamar Properti',
+    'sidebar_room_types' => 'Tipe Kamar',
+    'sidebar_room_facilities' => 'Fasilitas Kamar',
+    'sidebar_daily_pricing' => 'Manajemen Harga Harian',
+    'sidebar_app_management' => 'Manajemen Aplikasi',
+    'sidebar_access_management' => 'Manajemen Akses',
+    'sidebar_door_lock' => 'Kunci Pintu',
+    // <!-- Page title keys for finance pages -->
+    'parking_entry_title' => 'Entri Parkir',
+    'deposit_entry_title' => 'Entri Deposit',
+    'booking_payment_title' => 'Pembayaran Pemesanan',
 
     // Dashboard
     'dashboard' => 'Dasbor',
@@ -197,7 +219,7 @@ return [
     'months' => 'bulan',
     'no_bookings_found' => 'Pemesanan tidak ditemukan',
     'no_bookings_yet' => 'Pelanggan ini belum melakukan pemesanan.',
-    'change_room' => 'Pindah Kamar',
+    'change_room' => 'Pindah Pemesanan',
     'confirmed_bookings' => 'Pemesanan Terkonfirmasi',
     'confirm_reservations' => 'Konfirmasi Reservasi',
     'checkin_success' => 'Check-in berhasil!',
@@ -419,7 +441,7 @@ return [
     'account_created' => 'Akun berhasil dibuat!',
 
     // Vouchers
-    'master_vouchers' => 'Master Voucher',
+    'master_vouchers' => 'Manajemen Voucher',
     'add_voucher' => 'Tambah Voucher',
     'edit_voucher' => 'Ubah Voucher',
     'voucher_already_used' => 'Tidak dapat diedit: voucher sudah pernah digunakan',
@@ -622,7 +644,12 @@ return [
     'sidebar_deposit_fees' => 'Master Biaya Deposit',
     'sidebar_parking_menu' => 'Parkir',
     'sidebar_parking_fees' => 'Master Biaya Parkir',
-    'sidebar_parking' => 'Master Parkir',
+    'sidebar_property_fees' => 'Deposit & Parkir Properti',
+    'property_fees_management' => 'Deposit & Parkir Properti',
+    'add_property_fees' => 'Tambah Biaya Properti',
+    'edit_property_fees' => 'Edit Biaya Properti',
+    'not_set' => 'Belum Diatur',
+    'sidebar_parking' => 'Manajemen Parkir',
     'sidebar_parking_payments' => 'Pembayaran Parkir',
     'sidebar_deposit_payments' => 'Pembayaran Deposit',
 
@@ -744,7 +771,7 @@ return [
     'updated_by' => 'Diperbarui Oleh',
 
     // Role Management
-    'master_role_management' => 'Manajemen Peran Master',
+    'master_role_management' => 'Manajemen Akses',
     'manage_roles_desc' => 'Kelola peran untuk setiap pengguna admin',
     'new_role' => 'Peran Baru',
     'create_new_role' => 'Buat Peran Baru',
@@ -1113,7 +1140,7 @@ return [
     'category_custom' => 'Lainnya',
 
     // Promo Banners (New)
-    'promo_banner_master_title' => 'Master Promo Banner',
+    'promo_banner_master_title' => 'Manajemen Banner',
     'promo_banner_add' => 'Tambah Banner',
     'promo_banner_image_size_hint' => 'Ukuran gambar banner yang disarankan: <strong>1911px x 372px</strong>',
     'promo_banner_search' => 'Cari Banner',
@@ -1160,8 +1187,8 @@ return [
     'promo_banner_col_date' => 'Tanggal',
 
     // Facility Management (New)
-    'facility_room_management' => 'Manajemen Fasilitas Ruangan',
-    'facility_property_management' => 'Manajemen Fasilitas Properti',
+    'facility_room_management' => 'Fasilitas Kamar',
+    'facility_property_management' => 'Fasilitas Properti',
     'facility_add' => 'Tambah Fasilitas',
     'facility_edit' => 'Edit Fasilitas',
     'facility_name_label' => 'Nama Fasilitas',
@@ -1194,7 +1221,7 @@ return [
     'facility_category_filter' => 'Kategori:',
 
     // Room Management (New)
-    'room_management' => 'Manajemen Kamar',
+    'room_management' => 'Kamar Properti',
     'room_add' => 'Tambah Kamar',
     'room_add_title' => 'Tambahkan Kamar',
     'room_edit_title' => 'Edit Kamar',
@@ -1286,6 +1313,7 @@ return [
     'room_detail_last_updated' => 'Terakhir Diperbarui',
     'room_detail_press_esc' => 'Tekan ESC atau klik di luar untuk menutup',
     'room_price_daily_management' => 'Manajemen Harga Harian',
+    'room_price_categories' => 'Harga per Kategori',
     'room_price_edit_title' => 'Edit Harga',
     'room_price_previous_month' => 'Bulan sebelumnya',
     'room_price_next_month' => 'Bulan berikutnya',
@@ -1560,8 +1588,8 @@ return [
     'select_city' => 'Pilih kota',
 
     /* Master Calendar — manajemen klasifikasi tanggal global */
-    'sidebar_master_calendar' => 'Master Kalender',
-    'calendar_title' => 'Master Kalender',
+    'sidebar_master_calendar' => 'Manajemen Harga Harian',
+    'calendar_title' => 'Manajemen Harga Harian',
     'calendar_holiday' => 'Hari Libur',
     'calendar_high_season' => 'Musim Ramai',
     'calendar_low_season' => 'Musim Sepi',
@@ -1582,8 +1610,8 @@ return [
     'calendar_regenerate_all' => 'Generate Ulang Semua Harga Kamar',
 
     /* Room Name Types — master CRUD */
-    'sidebar_master_room_types' => 'Master Tipe Kamar',
-    'room_name_type_management' => 'Manajemen Tipe Kamar',
+    'sidebar_master_room_types' => 'Tipe Kamar',
+    'room_name_type_management' => 'Tipe Kamar',
     'room_name_type_add' => 'Tambah Tipe Kamar',
     'room_name_type_edit' => 'Edit Tipe Kamar',
     'room_name_type_name_label' => 'Nama Tipe',
