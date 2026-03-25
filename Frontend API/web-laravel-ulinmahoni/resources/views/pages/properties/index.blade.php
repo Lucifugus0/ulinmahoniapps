@@ -113,6 +113,23 @@
         html.dark .text-teal-800 { color: #5eead4 !important; }
         html.dark .border-teal-400 { border-color: #2dd4bf !important; }
 
+        /* Gender badge — dark mode override */
+        .gender-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            border: 1.5px solid #d1d5db;
+            border-radius: 6px;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #374151;
+        }
+        html.dark .gender-badge {
+            color: #e5e7eb !important;
+            border-color: #4b5563 !important;
+        }
+
         /* Liquid glass — filter/search container panel */
         .bg-white.rounded-xl.shadow-sm.border.border-gray-100 {
             background: var(--glass-bg) !important;
@@ -1166,7 +1183,7 @@
             };
             const label = labels[key] || gender;
             const icon  = icons[key]  || '';
-            return `<div style="display:inline-flex;align-items:center;gap:0.3rem;border:1.5px solid #d1d5db;border-radius:6px;padding:0.1rem 0.4rem;font-size:0.875rem;font-weight:700;color:#374151;">${icon}<span>${label}</span></div>`;
+            return `<div class="gender-badge">${icon}<span>${label}</span></div>`;
         }
 
         // Helper functions
