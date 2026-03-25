@@ -61,6 +61,7 @@
                         </svg>
                         {{ __('ui.history') }}
                     </button>
+
                 </div>
             </div>
         </div>
@@ -1038,6 +1039,7 @@
                     </div>
 
                 </div>
+
             </div>
         </div>
     </div>

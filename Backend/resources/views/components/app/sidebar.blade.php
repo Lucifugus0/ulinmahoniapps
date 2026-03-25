@@ -770,12 +770,13 @@
                     <ul class="space-y-1 mt-2">
                         <li x-init="if (window.location.href.includes('master-role-management') ||
                             window.location.href.includes('user-access') ||
-                            window.location.href.includes('users/show')) { activeMenu = 'appManagement' }
-                        @if (Route::is('master-role-management', 'user-access.*', 'users.show')) activeMenu = 'appManagement' @endif">
+                            window.location.href.includes('users/show') ||
+                            window.location.href.includes('maintenance')) { activeMenu = 'appManagement' }
+                        @if (Route::is('master-role-management', 'user-access.*', 'users.show', 'maintenance.index')) activeMenu = 'appManagement' @endif">
 
                             <!-- Main Menu Button -->
                             <a @click="activeMenu = activeMenu === 'appManagement' ? '' : 'appManagement'"
-                                class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('master-role-management', 'user-access.*', 'users.show')) bg-indigo-600 @endif">
+                                class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('master-role-management', 'user-access.*', 'users.show', 'maintenance.index')) bg-indigo-600 @endif">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <!-- Gear/Cog Icon -->
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
@@ -831,6 +832,15 @@
                                             <a href="{{ route('users.show') }}"
                                                 class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('users.show')) bg-indigo-600 @endif">
                                                 <span class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_settings') }}</span>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                    {{-- Maintenance Mode: only visible to super admins --}}
+                                    @can('manage_settings')
+                                        <li>
+                                            <a href="{{ route('maintenance.index') }}"
+                                                class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('maintenance.index')) bg-indigo-600 @endif">
+                                                <span class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_maintenance_mode') }}</span>
                                             </a>
                                         </li>
                                     @endcan

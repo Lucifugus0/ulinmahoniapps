@@ -586,9 +586,10 @@ class UserController extends Controller
         $perPage = $request->input('per_page', 8);
         $search = $request->input('search');
 
-        // Get only users with is_admin = 1 and status = 1
+        // <!-- Only show users where is_admin = 1 (admin users) and status = 1 (active) -->
         if ($perPage === 'all') {
-            $adminUsers = User::with('role') 
+            $adminUsers = User::with('role')
+                ->where('is_admin', 1)
                 ->where('status', 1)
                 ->when($search, function ($query, $search) {
                     return $query->where(function ($q) use ($search) {
@@ -606,6 +607,7 @@ class UserController extends Controller
                 ->get();
         } else {
             $adminUsers = User::with('role')
+                ->where('is_admin', 1)
                 ->where('status', 1)
                 ->when($search, function ($query, $search) {
                     return $query->where(function ($q) use ($search) {
@@ -653,9 +655,10 @@ class UserController extends Controller
             $perPage = $request->input('per_page', 8);
             $search = $request->input('search');
 
-            // Get only users with status = 1
+            // <!-- Only show admin users (is_admin = 1) with active status -->
             if ($perPage === 'all') {
                 $adminUsers = User::with('role')
+                    ->where('is_admin', 1)
                     ->where('status', 1)
                     ->when($search, function ($query, $search) {
                         return $query->where(function ($q) use ($search) {
@@ -681,6 +684,7 @@ class UserController extends Controller
                 ]);
             } else {
                 $adminUsers = User::with('role')
+                    ->where('is_admin', 1)
                     ->where('status', 1)
                     ->when($search, function ($query, $search) {
                         return $query->where(function ($q) use ($search) {

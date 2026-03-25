@@ -38,6 +38,10 @@ class CheckPermission
             'progress',
             'user.locale.update',
             'room.updateStatus',
+            // <!-- Maintenance mode routes: page, status check, and toggle (super admin only) -->
+            'maintenance.index',
+            'maintenance.status',
+            'maintenance.toggle',
         ];
 
         if (in_array($currentRoute, $allowedRoutes)) {

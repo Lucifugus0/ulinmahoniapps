@@ -102,6 +102,11 @@ Route::middleware(['auth', 'permission'])->group(function () {
     Route::get('/settings/users-management', [UserController::class, 'index'])->name('users-management');
     Route::get('/settings/users-management/show', [UserController::class, 'show'])->name('users.show');
 
+    // <!-- Maintenance mode routes: dedicated page + toggle/status API endpoints -->
+    Route::get('/settings/maintenance', [\App\Http\Controllers\MaintenanceModeController::class, 'index'])->name('maintenance.index');
+    Route::get('/settings/maintenance/status', [\App\Http\Controllers\MaintenanceModeController::class, 'status'])->name('maintenance.status');
+    Route::post('/settings/maintenance/toggle', [\App\Http\Controllers\MaintenanceModeController::class, 'toggle'])->name('maintenance.toggle');
+
     Route::get('/settings/users-management/new', [UserController::class, 'indexNew'])->name('users-newManagement');
     Route::post('/settings/users-management/search', [UserController::class, 'searchUsers'])->name('users.search');
     Route::post('/check-email', [UserController::class, 'checkEmail'])->name('check.email');
