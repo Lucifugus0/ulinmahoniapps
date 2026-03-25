@@ -6,6 +6,9 @@ class AppImage {
       'https://uxwing.com/wp-content/themes/uxwing/download/flags-landmarks/indonesia-flag-icon.png';
   static const String usaFlagurl =
       'https://uxwing.com/wp-content/themes/uxwing/download/flags-landmarks/united-states-flag-icon.png';
+  // China flag for Simplified Chinese language option
+  static const String chinaFlagurl =
+      'https://uxwing.com/wp-content/themes/uxwing/download/flags-landmarks/china-flag-icon.png';
   static const String whatsappIconUrl =
       "https://cdn-icons-png.freepik.com/128/3536/3536445.png";
   static const String emailIconUrl =

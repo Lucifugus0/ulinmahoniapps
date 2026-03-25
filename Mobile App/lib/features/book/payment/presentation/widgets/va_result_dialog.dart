@@ -131,8 +131,11 @@ class _VAResultDialogState extends State<VAResultDialog> {
     final localizations = AppLocalizations.of(context)!;
     final amount = double.tryParse(widget.vaData.totalAmount) ?? 0.0;
 
+    // Dark mode detection for dialog colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -160,10 +163,10 @@ class _VAResultDialogState extends State<VAResultDialog> {
             // Title
             Text(
               localizations.vaResultDialogTitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -173,9 +176,9 @@ class _VAResultDialogState extends State<VAResultDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: isDark ? const Color(0xFF374151) : Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: isDark ? Colors.grey.shade600 : Colors.grey.shade200),
               ),
               child: Column(
                 children: [
@@ -203,10 +206,10 @@ class _VAResultDialogState extends State<VAResultDialog> {
                                 Expanded(
                                   child: Text(
                                     widget.vaData.virtualAccountNo,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: isDark ? Colors.white : Colors.black87,
                                     ),
                                   ),
                                 ),
@@ -346,6 +349,7 @@ class _VAResultDialogState extends State<VAResultDialog> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -353,15 +357,15 @@ class _VAResultDialogState extends State<VAResultDialog> {
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey.shade600,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
       ],

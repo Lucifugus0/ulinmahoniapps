@@ -88,8 +88,11 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
+    // Dark mode detection for dialog colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -123,7 +126,7 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
             // Tab Bar
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: isDark ? const Color(0xFF374151) : Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: TabBar(
@@ -133,7 +136,7 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
                   borderRadius: BorderRadius.circular(8),
                 ),
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.black54,
+                unselectedLabelColor: isDark ? Colors.grey[400] : Colors.black54,
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                 tabs: [
                   Tab(text: localizations.paymentVoucherMyVouchers),
@@ -193,12 +196,13 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
     AppLocalizations localizations,
     TextTheme textTheme,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
+        color: isDark ? const Color(0xFF374151) : Colors.white,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

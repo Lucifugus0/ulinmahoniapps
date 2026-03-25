@@ -96,19 +96,13 @@ class _NavbarState extends ConsumerState<Navbar> {
                           children: [
                             TextSpan(
                               text: 'Ulin ',
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.accentTeal
-                                    : AppColors.secondaryColor,
-                              ),
+                              // Dark mode: brighter red; Light mode: original dark red
+                              style: TextStyle(color: isDark ? AppColors.secondaryColorBright : AppColors.secondaryColor),
                             ),
                             TextSpan(
                               text: 'Mahoni',
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.accentGreen
-                                    : AppColors.primaryColor,
-                              ),
+                              // Dark mode: brighter green; Light mode: original dark green
+                              style: TextStyle(color: isDark ? AppColors.primaryColorBright : AppColors.primaryColor),
                             ),
                           ],
                         ),
@@ -140,7 +134,12 @@ class _NavbarState extends ConsumerState<Navbar> {
                         value: currentLocale.languageCode.toUpperCase(),
                         onChanged: (String? newValue) {
                           if (newValue != null) {
-                            final newLocale = newValue == 'ID' ? const Locale('id') : const Locale('en');
+                            // Map language code to Locale — supports ID, EN, ZH
+                            final newLocale = newValue == 'ID'
+                                ? const Locale('id')
+                                : newValue == 'ZH'
+                                    ? const Locale('zh')
+                                    : const Locale('en');
                             ref.read(localeProvider.notifier).state = newLocale;
                             setState(() {
                               isDropdownOpen = false;
@@ -202,6 +201,35 @@ class _NavbarState extends ConsumerState<Navbar> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text('EN', style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark ? AppColors.fontColorDark : Colors.black,
+                                )),
+                              ],
+                            ),
+                          ),
+                          // Simplified Chinese language option with China flag
+                          DropdownMenuItem(
+                            value: 'ZH',
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.network(
+                                  AppImage.chinaFlagurl,
+                                  width: 24,
+                                  height: 24,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.flag, size: 24),
+                                ),
+                                const SizedBox(width: 6),
+                                Text('ZH', style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                   color: isDark ? AppColors.fontColorDark : Colors.black,

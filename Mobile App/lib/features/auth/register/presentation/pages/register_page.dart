@@ -15,6 +15,7 @@ import '../../../../../core/constants/appfontweight_constants.dart';
 import '../../../../../core/constants/app_asset_constants.dart';
 import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/core/widgets/languagedropdown.dart';
+import '../../../../../core/theme/theme_provider.dart';
 import '../../../../../core/widgets/dialog/notificationdialog.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -168,22 +169,22 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       }
     });
 
-    // Style text abu-abu (untuk bagian "Saya menyetujui")
+    // Detect dark/light mode for theme-aware styling
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Style text abu-abu (untuk bagian "Saya menyetujui") — dark mode aware
     final TextStyle greyTextStyle = TextStyle(
       fontSize: 14,
-      color: Colors.grey[700],
+      color: isDark ? Colors.grey[400] : Colors.grey[700],
     );
 
-    // Style link (Bold, Underline, Warna agak gelap agar terlihat clickable)
+    // Style link (Bold, Underline) — dark mode aware
     final TextStyle linkStyle = TextStyle(
       fontSize: 14,
-      color: Colors.grey[800],
+      color: isDark ? Colors.grey[300] : Colors.grey[800],
       fontWeight: FontWeight.bold,
       decoration: TextDecoration.underline,
     );
-
-    // Detect dark/light mode for theme-aware styling
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -197,11 +198,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Language dropdown + dark/light mode toggle aligned to the right
                   Align(
                     alignment: Alignment.centerRight,
                     child: Padding(
                       padding: const EdgeInsets.only(top: 16.0, bottom: 10.0),
-                      child: const LanguageDropdown(),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const LanguageDropdown(),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            onPressed: () => ref.read(themeProvider.notifier).toggle(),
+                            icon: Icon(
+                              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                              color: isDark ? Colors.white70 : Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -223,6 +238,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         ? localizations.fullNameLabel
                         : localizations.firstNameLabel,
                     _firstNameController,
+                    context: context,
                   ),
                   const SizedBox(height: 16),
 
@@ -234,33 +250,39 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         inputField(
                           localizations.lastNameLabel,
                           _lastNameController,
+                          context: context,
                         ),
                         const SizedBox(height: 16),
                       ],
                     ),
                   ),
 
-                  inputField(localizations.emailLabel, _emailController),
+                  inputField(localizations.emailLabel, _emailController, context: context),
                   const SizedBox(height: 16),
 
-                  // Phone Field
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: IntlPhoneField(
+                  // Phone Field — single-layer fill via decoration (no Container wrapper)
+                  IntlPhoneField(
                       key: ValueKey(_currentCountryCode),
                       controller: _phoneNumberController,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         labelText: localizations.phoneNumberLabel,
                         hintText: localizations.phoneNumberHint,
+                        // Single fill layer matching other input fields
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF374151) : Colors.grey[200],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide.none,
                         ),
-                        filled: false,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 14.0,
                           horizontal: 16.0,
@@ -271,9 +293,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       languageCode: "id",
                       dropdownIcon: const Icon(Icons.arrow_drop_down),
                       dropdownIconPosition: IconPosition.trailing,
-                      dropdownTextStyle: const TextStyle(
+                      dropdownTextStyle: TextStyle(
                         fontSize: 16,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                       cursorColor: const Color(0xFF124624),
                       onChanged: (phone) {
@@ -295,7 +317,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         }
                         return null;
                       },
-                    ),
                   ),
                   Align(
                     alignment: Alignment.centerRight,
@@ -315,6 +336,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         _obscurePassword = !_obscurePassword;
                       });
                     },
+                    context: context,
                   ),
                   const SizedBox(height: 4),
                   const Text(
@@ -332,6 +354,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         _obscureConfirmPassword = !_obscureConfirmPassword;
                       });
                     },
+                    context: context,
                   ),
                   const SizedBox(height: 16),
 
@@ -660,8 +683,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF124624),
-                      disabledBackgroundColor: Colors.grey[300],
+                      // Disabled: dark-mode aware so it doesn't look too bright
+                      disabledBackgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
                       foregroundColor: Colors.white,
+                      disabledForegroundColor: isDark ? Colors.grey[500] : Colors.grey[600],
+                      // Prevent Material 3 from applying surface tint in dark mode
+                      surfaceTintColor: Colors.transparent,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       textStyle: const TextStyle(fontSize: 18),
                       shape: RoundedRectangleBorder(
@@ -704,10 +732,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ],
               ),
             ),
-            const Positioned(
+            Positioned(
               top: 16,
               left: 16,
-              child: CustomBackButton(iconColor: Colors.black),
+              child: CustomBackButton(iconColor: isDark ? Colors.white : Colors.black),
             ),
           ],
         ),

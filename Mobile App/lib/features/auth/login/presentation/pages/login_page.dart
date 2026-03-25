@@ -18,6 +18,7 @@ import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../provider/googlesignin_provider.dart';
 import '../../provider/applesignin_provider.dart';
 import 'package:ulinmahoniapps/core/widgets/languagedropdown.dart';
+import '../../../../../core/theme/theme_provider.dart';
 import '../../../../../core/network/api_result.dart';
 import '../../../../../core/services/apple_multi_account_storage.dart';
 import '../../../../../core/utils/app_logger.dart';
@@ -449,11 +450,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     padding: const EdgeInsets.all(12.0),
                     child: Column(
                       children: [
+                        // Language dropdown + dark/light mode toggle aligned to the right
                         Align(
                           alignment: Alignment.centerRight,
                           child: Padding(
                             padding: const EdgeInsets.only(top: 16.0, bottom: 10.0),
-                            child: const LanguageDropdown(),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const LanguageDropdown(),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  onPressed: () => ref.read(themeProvider.notifier).toggle(),
+                                  icon: Icon(
+                                    isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                                    color: isDark ? Colors.white70 : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -473,6 +488,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         inputField(
                           localizations.loginEmailHint,
                           controller: _emailController,
+                          context: context,
                         ),
                         const SizedBox(height: 15),
                         PasswordField(
@@ -647,10 +663,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             style: ButtonStyle(
                               backgroundColor: _isLoginProcessing
                                   ? MaterialStateProperty.all(Colors.grey)
-                                  : MaterialStateProperty.all(
-                                  const Color(0xFF124624)),
-                              foregroundColor:
-                              MaterialStateProperty.all(Colors.white),
+                                  : MaterialStateProperty.all(const Color(0xFF124624)),
+                              foregroundColor: MaterialStateProperty.all(Colors.white),
+                              // Prevent Material 3 theme from tinting/changing button color in dark mode
+                              surfaceTintColor: MaterialStateProperty.all(Colors.transparent),
+                              overlayColor: MaterialStateProperty.all(Colors.white10),
                               shape: MaterialStateProperty.all(
                                 RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),

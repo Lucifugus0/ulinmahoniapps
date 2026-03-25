@@ -85,7 +85,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             return AlertDialog(
           backgroundColor: Colors.white,
           title: Text(
-            currentLocale.languageCode == 'id' ? 'Pilih Bahasa' : 'Select Language',
+            // Dialog title in each language
+            currentLocale.languageCode == 'id'
+                ? 'Pilih Bahasa'
+                : currentLocale.languageCode == 'zh'
+                    ? '选择语言'
+                    : 'Select Language',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 18,
@@ -183,6 +188,46 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       const SizedBox(width: 12),
                       const Text('English'),
                       if (currentLocale.languageCode == 'en') ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.check_circle, size: 20),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Simplified Chinese Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(localeProvider.notifier).state = const Locale('zh');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: currentLocale.languageCode == 'zh'
+                        ? AppColors.primaryColor
+                        : Colors.white,
+                    foregroundColor: currentLocale.languageCode == 'zh'
+                        ? Colors.white
+                        : Colors.black87,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: currentLocale.languageCode == 'zh'
+                            ? AppColors.primaryColor
+                            : Colors.grey[300]!,
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('🇨🇳', style: TextStyle(fontSize: 20)),
+                      const SizedBox(width: 12),
+                      const Text('简体中文'),
+                      if (currentLocale.languageCode == 'zh') ...[
                         const SizedBox(width: 8),
                         const Icon(Icons.check_circle, size: 20),
                       ],
@@ -575,10 +620,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 children: [
                                   Text(
                                     displayName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: isDark ? Colors.white : Colors.black87,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -586,7 +631,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     user?.email ?? localizations.profileDefaultEmail,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.grey[600],
+                                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                                     ),
                                   ),
                                 ],
@@ -600,7 +645,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icon(
                                 Icons.edit_outlined,
                                 size: 24,
-                                color: Colors.grey[700],
+                                color: isDark ? Colors.grey[300] : Colors.grey[700],
                               ),
                             ),
                           ],
@@ -771,7 +816,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 context.push('/mybooking');
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.badge_outlined,
                               text: localizations.profileUploadIdTitle,
@@ -779,7 +824,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                               onTap: _uploadIdDocument,
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.language_outlined,
                               text: localizations.profileLanguageTitle,
@@ -787,7 +832,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                               onTap: _showLanguageDialog,
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             // Dark/Light mode toggle
                             Consumer(
                               builder: (context, ref, _) {
@@ -795,8 +840,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 final isDarkMode = themeMode == ThemeMode.dark;
                                 return MenuItem(
                                   icon: isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                                  text: isDarkMode ? 'Dark Mode' : 'Light Mode',
-                                  subText: isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                                  text: isDarkMode ? localizations.darkModeLabel : localizations.lightModeLabel,
+                                  subText: isDarkMode ? localizations.switchToLightMode : localizations.switchToDarkMode,
                                   trailing: Switch(
                                     value: isDarkMode,
                                     activeTrackColor: AppColors.primaryColor,
@@ -812,7 +857,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             ),
                             // Show "Switch Apple Account" only on iOS and if user is signed in with Apple
                             if (Platform.isIOS && user?.appleUserId != null) ...[
-                              Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                              Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                               MenuItem(
                                 icon: Icons.swap_horiz_outlined,
                                 text: 'Switch Apple Account',
@@ -854,7 +899,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 showContactDialog(context);
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.shield_outlined,
                               text: localizations.profilePrivacyPolicyTitle,
@@ -863,7 +908,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 _launchURL('https://web.ulinmahoni.com/privacy-policy');
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.description_outlined,
                               text: localizations.profileTermsConditionsTitle,
@@ -872,7 +917,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 _launchURL('https://web.ulinmahoni.com/terms-of-services');
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.lock_outline,
                               text: localizations.changePasswordTitle,
@@ -882,7 +927,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 context.push('/updatepassword');
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.person_remove_outlined,
                               text: localizations.profileDeactivateAccountTitle,
@@ -890,7 +935,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                               onTap: _deactivateAccount,
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.logout_outlined,
                               text: localizations.logoutTitle,

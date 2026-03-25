@@ -68,6 +68,8 @@ class _PaymentMethodItemState extends State<PaymentMethodItem> {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for payment method text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
@@ -102,7 +104,7 @@ class _PaymentMethodItemState extends State<PaymentMethodItem> {
                       widget.isSelected ? FontWeight.bold : FontWeight.normal,
                       color: widget.isSelected
                           ? AppColors.primaryColor
-                          : Colors.black87,
+                          : (isDark ? Colors.white : Colors.black87),
                       fontSize: 14,
                     ),
                     maxLines: 1,
@@ -115,7 +117,7 @@ class _PaymentMethodItemState extends State<PaymentMethodItem> {
                         widget.subtitle!,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Colors.black54,
+                          color: isDark ? Colors.grey[300] : Colors.black54,
                           fontSize: 15,
                         ),
 

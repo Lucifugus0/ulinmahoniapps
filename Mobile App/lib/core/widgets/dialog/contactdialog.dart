@@ -12,6 +12,8 @@ Future<void> showContactDialog(BuildContext context) async {
   const String targetPhone = Contact.phone;
   final String emailSubject = localizations.contactUsTitle;
   const darkGreen = Color(0xFF134E3A);
+  // Dark mode detection for dialog background
+  final isDark = Theme.of(context).brightness == Brightness.dark;
 
   Widget buildNetworkIcon(String url, IconData fallbackIcon) {
     return SvgPicture.network(
@@ -31,8 +33,12 @@ Future<void> showContactDialog(BuildContext context) async {
     context: context,
     builder: (BuildContext dialogContext) {
       return AlertDialog(
-        backgroundColor: Colors.white,
-        title: Text(localizations.contactUsTitle, textAlign: TextAlign.center),
+        backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
+        title: Text(
+          localizations.contactUsTitle,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        ),
         contentPadding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -67,8 +73,8 @@ Future<void> showContactDialog(BuildContext context) async {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(
               localizations.cancelButtonLabel,
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: isDark ? Colors.grey[300] : Colors.black,
                 fontWeight: FontWeight.w500,
               ),
             ),

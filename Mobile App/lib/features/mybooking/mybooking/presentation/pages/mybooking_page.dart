@@ -74,22 +74,27 @@ class _MyBookingPageState extends ConsumerState<MyBookingPage>
       child: Column(
         children: [
           CustomAppBar(title: localizations.myBookingTitle, showBackButton: false), 
-          Material(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              indicator: const UnderlineTabIndicator(
-                borderSide: BorderSide(color: Colors.black, width: 2.0),
-                insets: EdgeInsets.symmetric(horizontal: 50.0),
-              ),
-              labelColor: Colors.black,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w500),
-              tabs: [
-                Tab(text: localizations.upcomingTab), 
-                Tab(text: localizations.completedTab), 
-              ],
-            ),
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              return Material(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: UnderlineTabIndicator(
+                    borderSide: BorderSide(color: isDark ? Colors.white : Colors.black, width: 2.0),
+                    insets: const EdgeInsets.symmetric(horizontal: 50.0),
+                  ),
+                  labelColor: isDark ? Colors.white : Colors.black,
+                  unselectedLabelColor: Colors.grey,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.w500),
+                  tabs: [
+                    Tab(text: localizations.upcomingTab),
+                    Tab(text: localizations.completedTab),
+                  ],
+                ),
+              );
+            },
           ),
           Expanded(
             child: RefreshIndicator(

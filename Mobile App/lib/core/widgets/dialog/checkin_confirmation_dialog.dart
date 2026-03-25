@@ -108,9 +108,11 @@ class _CheckInConfirmationDialogState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    // Dark mode detection for dialog colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: SingleChildScrollView(
         child: Padding(
@@ -149,10 +151,10 @@ class _CheckInConfirmationDialogState
               Text(
                 localizations.checkInDialogTitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 24),
@@ -162,10 +164,10 @@ class _CheckInConfirmationDialogState
                 alignment: Alignment.centerLeft,
                 child: Text(
                   localizations.checkInDialogIdCardSection,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
@@ -176,7 +178,7 @@ class _CheckInConfirmationDialogState
                   width: double.infinity,
                   height: 180,
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: isDark ? const Color(0xFF374151) : Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _idCardImage == null
@@ -247,10 +249,10 @@ class _CheckInConfirmationDialogState
                 alignment: Alignment.centerLeft,
                 child: Text(
                   localizations.checkInDialogBookingDetails,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
@@ -258,9 +260,9 @@ class _CheckInConfirmationDialogState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: isDark ? const Color(0xFF374151) : Colors.grey[50],
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
+                  border: Border.all(color: isDark ? Colors.grey[600]! : Colors.grey[300]!),
                 ),
                 child: Column(
                   children: [
@@ -367,8 +369,8 @@ class _CheckInConfirmationDialogState
                       ),
                       child: Text(
                         localizations.confirmationDialogCancelButton,
-                        style: const TextStyle(
-                          color: Colors.black87,
+                        style: TextStyle(
+                          color: isDark ? Colors.grey[300] : Colors.black87,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -435,6 +437,7 @@ class _CheckInConfirmationDialogState
     bool isBold = false,
     Color? valueColor,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -442,9 +445,9 @@ class _CheckInConfirmationDialogState
           flex: 2,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Colors.black54,
+              color: isDark ? Colors.grey[400] : Colors.black54,
             ),
           ),
         ),
@@ -455,7 +458,7 @@ class _CheckInConfirmationDialogState
             style: TextStyle(
               fontSize: 13,
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: valueColor ?? Colors.black87,
+              color: valueColor ?? (isDark ? Colors.grey[200] : Colors.black87),
             ),
             textAlign: TextAlign.right,
           ),

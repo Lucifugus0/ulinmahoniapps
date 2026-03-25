@@ -2076,4 +2076,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get expiresIn => 'Expires in';
+
+  @override
+  String get darkModeLabel => 'Dark Mode';
+
+  @override
+  String get lightModeLabel => 'Light Mode';
+
+  @override
+  String get switchToLightMode => 'Switch to light mode';
+
+  @override
+  String get switchToDarkMode => 'Switch to dark mode';
 }

@@ -816,5 +816,11 @@
     "creditCardPayment": "Credit Card Payment",
     "continuePayment": "Continue Payment",
     "ccPaymentNote": "Click the button above to complete your credit card payment",
-    "expiresIn": "Expires in"
+    "expiresIn": "Expires in",
+
+    "@@title": "Dark/Light Mode Toggle",
+    "darkModeLabel": "Dark Mode",
+    "lightModeLabel": "Light Mode",
+    "switchToLightMode": "Switch to light mode",
+    "switchToDarkMode": "Switch to dark mode"
 }

@@ -23,14 +23,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection — fallback defaults respect the current theme
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppBar(
-      backgroundColor: backgroundColor ?? Colors.white,
+      backgroundColor: backgroundColor ?? (isDark ? const Color(0xFF1F2937) : Colors.white),
       elevation: elevation ?? 2,
       shadowColor: Colors.black.withValues(alpha: 0.1),
       leading: IconButton(
         icon: Icon(
           Icons.arrow_back,
-          color: iconColor ?? Colors.black,
+          color: iconColor ?? (isDark ? Colors.white : Colors.black),
         ),
         onPressed: onBackPressed ?? () {
           // Use GoRouter's pop if available, fallback to Navigator.pop
@@ -45,7 +47,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: titleColor ?? Colors.black,
+              color: titleColor ?? (isDark ? Colors.white : Colors.black),
             ),
       ),
       titleSpacing: 0,

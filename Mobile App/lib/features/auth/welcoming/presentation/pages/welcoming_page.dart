@@ -222,13 +222,16 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // Language switcher pill (ID / EN)
+                        // Language switcher pill — cycles through ID → EN → ZH
                         GestureDetector(
                           onTap: () {
-                            // Toggle between ID and EN
-                            final newLocale = currentLocale.languageCode == 'id'
+                            // Cycle: id → en → zh → id
+                            final code = currentLocale.languageCode;
+                            final newLocale = code == 'id'
                                 ? const Locale('en')
-                                : const Locale('id');
+                                : code == 'en'
+                                    ? const Locale('zh')
+                                    : const Locale('id');
                             ref.read(localeProvider.notifier).state = newLocale;
                           },
                           child: Container(
