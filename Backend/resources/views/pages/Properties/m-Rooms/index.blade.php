@@ -295,31 +295,83 @@
                                             <p x-show="dailyPriceError" class="text-red-500 text-xs mt-1"
                                                 x-text="dailyPriceError"></p>
 
-                                            {{-- <!-- Multi-Tier Pricing: Weekday/Weekend price fields for daily rooms --> --}}
+                                            {{-- <!-- Multi-Tier Pricing: All 5 pricing category fields for daily rooms --> --}}
+                                            {{-- <!-- Required fields: weekday, weekend, holiday, high_season, low_season --> --}}
                                             <div class="grid grid-cols-2 gap-4 mt-4">
+                                                {{-- <!-- Weekday price (Sun-Thu) with blue indicator --> --}}
                                                 <div>
-                                                    <label class="block text-sm font-medium text-gray-600 mb-1">Harga Weekday (Sen-Jum)</label>
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-blue-500 mr-1"></span>
+                                                        {{ __('ui.room_weekday_price') }} <span class="text-red-500">*</span>
+                                                    </label>
                                                     <div class="relative">
                                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
                                                         <input type="text" x-model="weekdayPriceFormatted"
                                                             @input="updateWeekdayPrice($event.target.value)"
                                                             class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-blue-500 text-sm"
-                                                            placeholder="Sama dengan harga harian">
+                                                            placeholder="{{ __('ui.room_weekday_price_placeholder') }}" required>
                                                         <input type="hidden" name="weekday_price" x-model="weekdayPrice">
                                                     </div>
-                                                    <p class="text-xs text-gray-400 mt-1">Kosongkan = sama dengan harga harian</p>
                                                 </div>
+                                                {{-- <!-- Weekend price (Fri-Sat) with purple indicator --> --}}
                                                 <div>
-                                                    <label class="block text-sm font-medium text-gray-600 mb-1">Harga Weekend (Sab-Min)</label>
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-purple-500 mr-1"></span>
+                                                        {{ __('ui.room_weekend_price') }} <span class="text-red-500">*</span>
+                                                    </label>
                                                     <div class="relative">
                                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
                                                         <input type="text" x-model="weekendPriceFormatted"
                                                             @input="updateWeekendPrice($event.target.value)"
-                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-blue-500 text-sm"
-                                                            placeholder="Sama dengan harga harian">
+                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-purple-500 text-sm"
+                                                            placeholder="{{ __('ui.room_weekend_price_placeholder') }}" required>
                                                         <input type="hidden" name="weekend_price" x-model="weekendPrice">
                                                     </div>
-                                                    <p class="text-xs text-gray-400 mt-1">Kosongkan = sama dengan harga harian</p>
+                                                </div>
+                                                {{-- <!-- Holiday price with orange indicator --> --}}
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-orange-500 mr-1"></span>
+                                                        {{ __('ui.room_holiday_price') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                                        <input type="text" x-model="holidayPriceFormatted"
+                                                            @input="updateHolidayPrice($event.target.value)"
+                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-orange-500 text-sm"
+                                                            placeholder="{{ __('ui.room_holiday_price_placeholder') }}" required>
+                                                        <input type="hidden" name="holiday_price" x-model="holidayPrice">
+                                                    </div>
+                                                </div>
+                                                {{-- <!-- High season price with red indicator --> --}}
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span>
+                                                        {{ __('ui.room_high_season_price') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                                        <input type="text" x-model="highSeasonPriceFormatted"
+                                                            @input="updateHighSeasonPrice($event.target.value)"
+                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-red-500 text-sm"
+                                                            placeholder="{{ __('ui.room_high_season_price_placeholder') }}" required>
+                                                        <input type="hidden" name="high_season_price" x-model="highSeasonPrice">
+                                                    </div>
+                                                </div>
+                                                {{-- <!-- Low season price with green indicator --> --}}
+                                                <div class="col-span-2 sm:col-span-1">
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
+                                                        {{ __('ui.room_low_season_price') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                                        <input type="text" x-model="lowSeasonPriceFormatted"
+                                                            @input="updateLowSeasonPrice($event.target.value)"
+                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-green-500 text-sm"
+                                                            placeholder="{{ __('ui.room_low_season_price_placeholder') }}" required>
+                                                        <input type="hidden" name="low_season_price" x-model="lowSeasonPrice">
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -746,6 +798,13 @@
                 weekdayPriceFormatted: '',
                 weekendPrice: '',
                 weekendPriceFormatted: '',
+                /* Multi-Tier Pricing: holiday, high season, low season price state */
+                holidayPrice: '',
+                holidayPriceFormatted: '',
+                highSeasonPrice: '',
+                highSeasonPriceFormatted: '',
+                lowSeasonPrice: '',
+                lowSeasonPriceFormatted: '',
                 isCheckingRoomNo: false,
                 roomNoError: '',
                 thumbnailIndex: null,
@@ -820,6 +879,17 @@
                     this.monthlyPrice = 0;
                     this.dailyPriceError = '';
                     this.monthlyPriceError = '';
+                    /* Multi-Tier Pricing: reset all pricing category fields */
+                    this.weekdayPrice = '';
+                    this.weekdayPriceFormatted = '';
+                    this.weekendPrice = '';
+                    this.weekendPriceFormatted = '';
+                    this.holidayPrice = '';
+                    this.holidayPriceFormatted = '';
+                    this.highSeasonPrice = '';
+                    this.highSeasonPriceFormatted = '';
+                    this.lowSeasonPrice = '';
+                    this.lowSeasonPriceFormatted = '';
                     this.formErrors = {};
                     this.isLoading = false;
 
@@ -1182,6 +1252,22 @@
                     this.weekendPrice = numericValue ? parseInt(numericValue, 10) : '';
                     this.weekendPriceFormatted = this.weekendPrice ? new Intl.NumberFormat('id-ID').format(this.weekendPrice) : '';
                 },
+                /* Multi-Tier Pricing: format functions for holiday, high season, low season price inputs */
+                updateHolidayPrice(value) {
+                    const numericValue = value.replace(/[^\d]/g, '');
+                    this.holidayPrice = numericValue ? parseInt(numericValue, 10) : '';
+                    this.holidayPriceFormatted = this.holidayPrice ? new Intl.NumberFormat('id-ID').format(this.holidayPrice) : '';
+                },
+                updateHighSeasonPrice(value) {
+                    const numericValue = value.replace(/[^\d]/g, '');
+                    this.highSeasonPrice = numericValue ? parseInt(numericValue, 10) : '';
+                    this.highSeasonPriceFormatted = this.highSeasonPrice ? new Intl.NumberFormat('id-ID').format(this.highSeasonPrice) : '';
+                },
+                updateLowSeasonPrice(value) {
+                    const numericValue = value.replace(/[^\d]/g, '');
+                    this.lowSeasonPrice = numericValue ? parseInt(numericValue, 10) : '';
+                    this.lowSeasonPriceFormatted = this.lowSeasonPrice ? new Intl.NumberFormat('id-ID').format(this.lowSeasonPrice) : '';
+                },
 
                 // Perbaiki validateStep2()
                 validateStep2() {
@@ -1199,6 +1285,27 @@
                             if (!this.dailyPrice || this.dailyPrice <= 0) {
                                 this.showErrorAlert('Harga harian harus diisi dengan nilai yang valid',
                                     'Harga Tidak Valid');
+                                return false;
+                            }
+                            /* Multi-Tier Pricing: validate all 5 pricing categories are filled for daily rooms */
+                            if (!this.weekdayPrice || this.weekdayPrice <= 0) {
+                                this.showErrorAlert('Harga weekday harus diisi', 'Harga Tidak Valid');
+                                return false;
+                            }
+                            if (!this.weekendPrice || this.weekendPrice <= 0) {
+                                this.showErrorAlert('Harga weekend harus diisi', 'Harga Tidak Valid');
+                                return false;
+                            }
+                            if (!this.holidayPrice || this.holidayPrice <= 0) {
+                                this.showErrorAlert('Harga hari libur harus diisi', 'Harga Tidak Valid');
+                                return false;
+                            }
+                            if (!this.highSeasonPrice || this.highSeasonPrice <= 0) {
+                                this.showErrorAlert('Harga musim ramai harus diisi', 'Harga Tidak Valid');
+                                return false;
+                            }
+                            if (!this.lowSeasonPrice || this.lowSeasonPrice <= 0) {
+                                this.showErrorAlert('Harga musim sepi harus diisi', 'Harga Tidak Valid');
                                 return false;
                             }
                         } else if (this.priceType === 'monthly') {
@@ -1515,9 +1622,12 @@
                             formData.append('monthly_price', '0');
                             formData.append('annual_price', '0');
                             formData.append('price_type', 'daily');
-                            /* Multi-Tier Pricing: send weekday/weekend prices (fall back to daily price if empty) */
-                            formData.append('weekday_price', (this.weekdayPrice || this.dailyPrice).toString());
-                            formData.append('weekend_price', (this.weekendPrice || this.dailyPrice).toString());
+                            /* Multi-Tier Pricing: send all 5 pricing categories for daily rooms */
+                            formData.append('weekday_price', this.weekdayPrice.toString());
+                            formData.append('weekend_price', this.weekendPrice.toString());
+                            formData.append('holiday_price', this.holidayPrice.toString());
+                            formData.append('high_season_price', this.highSeasonPrice.toString());
+                            formData.append('low_season_price', this.lowSeasonPrice.toString());
                         } else if (this.priceType === 'monthly') {
                             // Untuk harga bulanan
                             formData.append('monthly_price', this.monthlyPrice.toString());

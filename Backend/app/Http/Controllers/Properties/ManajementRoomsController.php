@@ -153,8 +153,12 @@ class ManajementRoomsController extends Controller
                 'daily_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
                 'monthly_price' => 'required_if:price_type,monthly|nullable|numeric|min:0',
                 'annual_price' => 'required_if:price_type,annual|nullable|numeric|min:0',
-                'weekday_price' => 'nullable|numeric|min:0',
-                'weekend_price' => 'nullable|numeric|min:0',
+                /* Multi-Tier Pricing: all 5 pricing categories required for daily rooms */
+                'weekday_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
+                'weekend_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
+                'holiday_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
+                'high_season_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
+                'low_season_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
                 'general_facilities' => 'nullable|array',
                 'general_facilities.*' => 'numeric', // Ubah dari string ke numeric karena value adalah idrec
                 'room_images' => 'required|array|min:3|max:5',
@@ -290,9 +294,12 @@ class ManajementRoomsController extends Controller
             $monthlyPrice = $priceType === 'monthly' ? ($validated['monthly_price'] ?? 0) : 0;
             $annualPrice = $priceType === 'annual' ? ($validated['annual_price'] ?? 0) : 0; /* Multi-Tier Pricing */
 
-            /* Multi-Tier Pricing: weekday/weekend prices for daily rooms */
+            /* Multi-Tier Pricing: all 5 pricing categories for daily rooms */
             $weekdayPrice = ($priceType === 'daily') ? ($validated['weekday_price'] ?? $dailyPrice) : null;
             $weekendPrice = ($priceType === 'daily') ? ($validated['weekend_price'] ?? $dailyPrice) : null;
+            $holidayPrice = ($priceType === 'daily') ? ($validated['holiday_price'] ?? null) : null;
+            $highSeasonPrice = ($priceType === 'daily') ? ($validated['high_season_price'] ?? null) : null;
+            $lowSeasonPrice = ($priceType === 'daily') ? ($validated['low_season_price'] ?? null) : null;
 
             // Harga utama untuk field price
             $mainPrice = $priceType === 'daily' ? $dailyPrice : $monthlyPrice;
@@ -360,11 +367,14 @@ class ManajementRoomsController extends Controller
             if ($priceType === 'daily' && $dailyPrice > 0) {
                 $priceGeneratorService = app(RoomPriceGeneratorService::class);
 
-                /* Create weekday + weekend pricing rules */
+                /* Create all 5 pricing rules (weekday, weekend, holiday, high_season, low_season) */
                 $priceGeneratorService->createDefaultRules(
                     $idrec,
                     $weekdayPrice ?? $dailyPrice,
                     $weekendPrice ?? $dailyPrice,
+                    $holidayPrice,
+                    $highSeasonPrice,
+                    $lowSeasonPrice,
                     Auth::id()
                 );
 
@@ -451,10 +461,13 @@ class ManajementRoomsController extends Controller
             'description' => 'required|string',
             'daily_price' => 'nullable|numeric|min:0',
             'monthly_price' => 'nullable|numeric|min:0',
-            /* Multi-Tier Pricing: annual + weekday/weekend price validation for update */
+            /* Multi-Tier Pricing: annual + all 5 pricing categories for update */
             'annual_price' => 'nullable|numeric|min:0',
             'weekday_price' => 'nullable|numeric|min:0',
             'weekend_price' => 'nullable|numeric|min:0',
+            'holiday_price' => 'nullable|numeric|min:0',
+            'high_season_price' => 'nullable|numeric|min:0',
+            'low_season_price' => 'nullable|numeric|min:0',
             'general_facilities' => 'nullable|array',
             'general_facilities.*' => 'numeric',
             'periode' => 'nullable|string',
@@ -577,6 +590,10 @@ class ManajementRoomsController extends Controller
             $annualPrice = $validated['annual_price'] ?? 0; /* Multi-Tier Pricing */
             $weekdayPrice = $validated['weekday_price'] ?? ($hasDailyPrice ? $dailyPrice : null);
             $weekendPrice = $validated['weekend_price'] ?? ($hasDailyPrice ? $dailyPrice : null);
+            /* Multi-Tier Pricing: extract holiday, high season, low season prices for update */
+            $holidayPrice = $validated['holiday_price'] ?? null;
+            $highSeasonPrice = $validated['high_season_price'] ?? null;
+            $lowSeasonPrice = $validated['low_season_price'] ?? null;
 
             // Determine main price
             $mainPrice = $dailyPrice > 0 ? $dailyPrice : ($monthlyPrice > 0 ? $monthlyPrice : $annualPrice);
@@ -706,11 +723,14 @@ class ManajementRoomsController extends Controller
             if ($periodeDaily && $dailyPrice > 0) {
                 $priceGeneratorService = app(RoomPriceGeneratorService::class);
 
-                /* Update weekday + weekend pricing rules */
+                /* Update all 5 pricing rules (weekday, weekend, holiday, high_season, low_season) */
                 $priceGeneratorService->createDefaultRules(
                     $idrec,
                     $weekdayPrice ?? $dailyPrice,
                     $weekendPrice ?? $dailyPrice,
+                    $holidayPrice,
+                    $highSeasonPrice,
+                    $lowSeasonPrice,
                     Auth::id()
                 );
 

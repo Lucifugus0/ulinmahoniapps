@@ -198,11 +198,18 @@ class RoomPriceGeneratorService
     }
 
     /**
-     * <!-- Create default weekday + weekend pricing rules for a room -->
-     * <!-- Called when a daily room is created to initialize its pricing rules -->
+     * <!-- Create default pricing rules for all 5 categories (weekday, weekend, holiday, high_season, low_season) -->
+     * <!-- Called when a daily room is created/updated to initialize its pricing rules -->
      */
-    public function createDefaultRules(int $roomId, float $weekdayPrice, float $weekendPrice, ?int $userId = null): void
-    {
+    public function createDefaultRules(
+        int $roomId,
+        float $weekdayPrice,
+        float $weekendPrice,
+        ?float $holidayPrice = null,
+        ?float $highSeasonPrice = null,
+        ?float $lowSeasonPrice = null,
+        ?int $userId = null
+    ): void {
         /* Create weekday rule */
         RoomPricingRule::updateOrCreate(
             ['room_id' => $roomId, 'rule_type' => 'weekday'],
@@ -224,5 +231,44 @@ class RoomPriceGeneratorService
                 'updated_by' => $userId,
             ]
         );
+
+        /* Create holiday rule if price provided */
+        if ($holidayPrice !== null) {
+            RoomPricingRule::updateOrCreate(
+                ['room_id' => $roomId, 'rule_type' => 'holiday'],
+                [
+                    'price' => $holidayPrice,
+                    'status' => 1,
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ]
+            );
+        }
+
+        /* Create high season rule if price provided */
+        if ($highSeasonPrice !== null) {
+            RoomPricingRule::updateOrCreate(
+                ['room_id' => $roomId, 'rule_type' => 'high_season'],
+                [
+                    'price' => $highSeasonPrice,
+                    'status' => 1,
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ]
+            );
+        }
+
+        /* Create low season rule if price provided */
+        if ($lowSeasonPrice !== null) {
+            RoomPricingRule::updateOrCreate(
+                ['room_id' => $roomId, 'rule_type' => 'low_season'],
+                [
+                    'price' => $lowSeasonPrice,
+                    'status' => 1,
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ]
+            );
+        }
     }
 }
