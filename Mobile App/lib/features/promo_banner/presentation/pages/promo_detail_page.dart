@@ -179,7 +179,8 @@ class PromoDetailPage extends ConsumerWidget {
               icon: const Icon(Icons.refresh),
               label: const Text('Coba Lagi'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                // Use primaryAdaptive for dark/light mode compatibility
+                backgroundColor: AppColors.primaryAdaptive(context),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

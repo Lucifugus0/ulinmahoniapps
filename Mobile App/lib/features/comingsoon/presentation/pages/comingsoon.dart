@@ -58,7 +58,8 @@ class ComingSoonPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 45,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primaryColor,
+                          // Use primaryAdaptive for dark/light mode compatibility
+                          color: AppColors.primaryAdaptive(context),
                         ),
                       ),
 

@@ -60,7 +60,8 @@ class _RoomCardState extends State<RoomCard> {
 
     if (widget.isRoomDetail && widget.roomStatus != null) {
       if (widget.roomStatus == 1) {
-        statusBgColor = AppColors.primaryColor;
+        // Available: use adaptive primary color for the status badge
+        statusBgColor = AppColors.primaryAdaptive(context);
         statusIcon = Icons.check_circle_outline;
         displayTextForBadge = localizations.roomCardAvailable;
         statusTextColor = Colors.white;

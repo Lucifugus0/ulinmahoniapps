@@ -148,9 +148,10 @@ Widget _buildPriceContent({
             
             Text(
               discount,
-              style: const TextStyle(
+              // Remove const: color is adaptive (runtime context)
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.primaryColor,
+                color: AppColors.primaryAdaptive(context),
                 fontWeight: FontWeight.w500,
               ),
             ),

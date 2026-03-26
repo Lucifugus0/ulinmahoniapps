@@ -136,6 +136,65 @@ class LocalNotificationService {
     }
   }
 
+  /// Show a booking-related push notification (foreground display).
+  ///
+  /// Used for booking_created, check_in, booking_renewed,
+  /// payment_received, and booking_expired notification types.
+  ///
+  /// [type]    - notification type string (e.g. "booking_created")
+  /// [title]   - notification title from FCM payload
+  /// [body]    - notification body text from FCM payload
+  /// [orderId] - booking order ID for identification (used as notification ID)
+  Future<void> showBookingNotification({
+    required String type,
+    required String title,
+    required String body,
+    String? orderId,
+  }) async {
+    if (!_initialized) {
+      AppLogger.w('LocalNotificationService not initialized', 'NOTIFICATION-SERVICE');
+      return;
+    }
+
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'booking_channel',
+        'Booking Updates',
+        channelDescription: 'Notifications for booking status updates, payments, and check-in',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      // Use hashCode of type+orderId as a stable notification ID
+      final notifId = (type + (orderId ?? '')).hashCode.abs();
+
+      await _notificationsPlugin.show(
+        notifId,
+        title,
+        body,
+        notificationDetails,
+        payload: 'booking:$type:${orderId ?? ''}',
+      );
+
+      AppLogger.d('Booking notification shown — type: $type, order: $orderId', 'NOTIFICATION-SERVICE');
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to show booking notification', e, stackTrace, 'NOTIFICATION-SERVICE');
+    }
+  }
+
   /// Cancel a specific notification by conversation ID
   Future<void> cancelNotification(int conversationId) async {
     try {

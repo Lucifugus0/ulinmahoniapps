@@ -23,7 +23,8 @@ class BrowseAllButton extends StatelessWidget {
             context.push('/browse-all');
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryColor,
+            // Use adaptive primary color to support light/dark theming
+            backgroundColor: AppColors.primaryAdaptive(context),
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),

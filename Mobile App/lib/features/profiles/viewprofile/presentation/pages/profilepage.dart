@@ -108,9 +108,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 width: 80,
                 height: 80,
                 errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
+                  // Remove const: color is adaptive (runtime context)
+                  return Icon(
                     Icons.language,
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryAdaptive(context),
                     size: 80,
                   );
                 },
@@ -124,8 +125,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ref.read(localeProvider.notifier).state = const Locale('id');
                   },
                   style: ElevatedButton.styleFrom(
+                    // Use primaryAdaptive for dark/light mode compatibility
                     backgroundColor: currentLocale.languageCode == 'id'
-                        ? AppColors.primaryColor
+                        ? AppColors.primaryAdaptive(context)
                         : Colors.white,
                     foregroundColor: currentLocale.languageCode == 'id'
                         ? Colors.white
@@ -135,7 +137,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
                         color: currentLocale.languageCode == 'id'
-                            ? AppColors.primaryColor
+                            ? AppColors.primaryAdaptive(context)
                             : Colors.grey[300]!,
                         width: 1,
                       ),
@@ -164,8 +166,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ref.read(localeProvider.notifier).state = const Locale('en');
                   },
                   style: ElevatedButton.styleFrom(
+                    // Use primaryAdaptive for dark/light mode compatibility
                     backgroundColor: currentLocale.languageCode == 'en'
-                        ? AppColors.primaryColor
+                        ? AppColors.primaryAdaptive(context)
                         : Colors.white,
                     foregroundColor: currentLocale.languageCode == 'en'
                         ? Colors.white
@@ -175,7 +178,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
                         color: currentLocale.languageCode == 'en'
-                            ? AppColors.primaryColor
+                            ? AppColors.primaryAdaptive(context)
                             : Colors.grey[300]!,
                         width: 1,
                       ),
@@ -204,8 +207,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ref.read(localeProvider.notifier).state = const Locale('zh');
                   },
                   style: ElevatedButton.styleFrom(
+                    // Use primaryAdaptive for dark/light mode compatibility
                     backgroundColor: currentLocale.languageCode == 'zh'
-                        ? AppColors.primaryColor
+                        ? AppColors.primaryAdaptive(context)
                         : Colors.white,
                     foregroundColor: currentLocale.languageCode == 'zh'
                         ? Colors.white
@@ -215,7 +219,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
                         color: currentLocale.languageCode == 'zh'
-                            ? AppColors.primaryColor
+                            ? AppColors.primaryAdaptive(context)
                             : Colors.grey[300]!,
                         width: 1,
                       ),
@@ -315,8 +319,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+              // Remove const: valueColor is adaptive (runtime context)
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAdaptive(context)),
               ),
               const SizedBox(height: 16),
               Text(
@@ -480,8 +485,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+              // Remove const: valueColor is adaptive (runtime context)
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAdaptive(context)),
               ),
               const SizedBox(height: 16),
               Text(
@@ -575,7 +581,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _onRefresh,
-              color: AppColors.primaryColor,
+              // Use primaryAdaptive for dark/light mode compatibility
+              color: AppColors.primaryAdaptive(context),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
@@ -606,11 +613,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             // CircleAvatar with default profile icon
                             CircleAvatar(
                               radius: 32,
-                              backgroundColor: AppColors.primaryColor.withValues(alpha: 0.1),
+                              // Use primaryAdaptive for dark/light mode compatibility
+                              backgroundColor: AppColors.primaryAdaptive(context).withValues(alpha: 0.1),
                               child: Icon(
                                 Icons.person,
                                 size: 32,
-                                color: AppColors.primaryColor,
+                                color: AppColors.primaryAdaptive(context),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -844,7 +852,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                   subText: isDarkMode ? localizations.switchToLightMode : localizations.switchToDarkMode,
                                   trailing: Switch(
                                     value: isDarkMode,
-                                    activeTrackColor: AppColors.primaryColor,
+                                    // Use primaryAdaptive for dark/light mode compatibility
+                                    activeTrackColor: AppColors.primaryAdaptive(context),
                                     onChanged: (value) {
                                       ref.read(themeProvider.notifier).toggle();
                                     },

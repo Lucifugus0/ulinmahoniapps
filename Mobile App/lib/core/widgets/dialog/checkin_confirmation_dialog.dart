@@ -138,9 +138,10 @@ class _CheckInConfirmationDialogState
                 width: 80,
                 height: 80,
                 errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
+                  // Use primaryAdaptive for the fallback icon color
+                  return Icon(
                     Icons.login,
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryAdaptive(context),
                     size: 80,
                   );
                 },
@@ -181,9 +182,10 @@ class _CheckInConfirmationDialogState
                     color: isDark ? const Color(0xFF374151) : Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
+                      // Use primaryAdaptive for the ID card upload border when image is selected
                       color: _idCardImage == null
                           ? Colors.grey[400]!
-                          : AppColors.primaryColor,
+                          : AppColors.primaryAdaptive(context),
                       width: 2,
                     ),
                   ),
@@ -310,7 +312,8 @@ class _CheckInConfirmationDialogState
                       localizations.confirmationDialogTotalPrice,
                       formatCurrency(widget.grandTotal) ?? '0',
                       isBold: true,
-                      valueColor: AppColors.primaryColor,
+                      // Use primaryAdaptive for the total price value color
+                      valueColor: AppColors.primaryAdaptive(context),
                     ),
                   ],
                 ),
@@ -321,9 +324,11 @@ class _CheckInConfirmationDialogState
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.amber[50],
+                  color: isDark ? AppColors.surfaceDarkElevated : Colors.amber[50],
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber[200]!),
+                  border: Border.all(
+                    color: isDark ? Colors.white24 : Colors.amber[200]!,
+                  ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,16 +340,20 @@ class _CheckInConfirmationDialogState
                           _agreedToTerms = value ?? false;
                         });
                       },
-                      activeColor: AppColors.primaryColor,
+                      activeColor: AppColors.primaryAdaptive(context),
+                      // Dark mode: border checkbox putih supaya keliatan
+                      side: isDark
+                          ? const BorderSide(color: Colors.white70, width: 2)
+                          : null,
                     ),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(top: 12),
                         child: Text(
                           localizations.checkInDialogTermsAgreement,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Colors.black87,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
                       ),
@@ -406,13 +415,14 @@ class _CheckInConfirmationDialogState
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
+                        // Use primaryAdaptive for confirm button background
+                        backgroundColor: AppColors.primaryAdaptive(context),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        disabledBackgroundColor: Colors.grey[300],
+                        disabledBackgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
                       ),
                       child: Text(
                         localizations.checkInDialogConfirmButton,

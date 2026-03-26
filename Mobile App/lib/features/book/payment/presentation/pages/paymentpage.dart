@@ -367,7 +367,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   context,
                   localizations.paymentVoucherApplied,
                   defaultIcon: Icons.check_circle_outline,
-                  iconColor: AppColors.primaryColor,
+                  iconColor: AppColors.primaryAdaptive(context),
                 );
               }
             }
@@ -463,7 +463,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   context,
                   '${localizations.paymentBookingSuccess}: $message',
                   defaultIcon: Icons.check_circle_outline,
-                  iconColor: AppColors.primaryColor,
+                  iconColor: AppColors.primaryAdaptive(context),
                 );
               }
 
@@ -1131,7 +1131,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         showBottomNav: false,
         showNavBar: false,
         child: Scaffold(
-          backgroundColor: AppColors.primaryColor.withOpacity(0.9), 
+          backgroundColor: AppColors.primaryAdaptive(context).withOpacity(0.9), 
           body: const Center(child: CircularProgressIndicator(color: Colors.white)),
         ),
       ),
@@ -1140,7 +1140,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         showBottomNav: false,
         showNavBar: false,
         child: Scaffold(
-          backgroundColor: AppColors.primaryColor.withOpacity(0.9), 
+          backgroundColor: AppColors.primaryAdaptive(context).withOpacity(0.9), 
           body: Center(
             child: Text('${localizations.paymentError}: ${err.toString()}', style: const TextStyle(color: Colors.white)), 
           ),
@@ -1290,13 +1290,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                           Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+                                            border: Border.all(color: AppColors.primaryAdaptive(context).withOpacity(0.3)),
                                             borderRadius: BorderRadius.circular(8),
-                                            color: AppColors.primaryColor.withOpacity(0.05),
+                                            color: AppColors.primaryAdaptive(context).withOpacity(0.05),
                                           ),
                                           child: Row(
                                             children: [
-                                              Icon(Icons.money, color: AppColors.primaryColor, size: 24),
+                                              Icon(Icons.money, color: AppColors.primaryAdaptive(context), size: 24),
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: Column(
@@ -1321,7 +1321,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                 formatCurrency(_depositFee),
                                                 style: textTheme.bodyLarge?.copyWith(
                                                   fontWeight: FontWeight.bold,
-                                                  color: AppColors.primaryColor,
+                                                  color: AppColors.primaryAdaptive(context),
                                                 ),
                                               ),
                                             ],
@@ -1373,13 +1373,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             decoration: BoxDecoration(
                                               border: Border.all(
                                                 color: _selectedParkingType == 'car'
-                                                    ? AppColors.primaryColor
+                                                    ? AppColors.primaryAdaptive(context)
                                                     : Colors.grey.withValues(alpha: 0.3),
                                                 width: _selectedParkingType == 'car' ? 2 : 1,
                                               ),
                                               borderRadius: BorderRadius.circular(8),
                                               color: _selectedParkingType == 'car'
-                                                  ? AppColors.primaryColor.withValues(alpha: 0.05)
+                                                  ? AppColors.primaryAdaptive(context).withValues(alpha: 0.05)
                                                   : (isDark ? const Color(0xFF374151) : Colors.white),
                                             ),
                                           child: Column(
@@ -1392,11 +1392,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                         ? Icons.radio_button_checked
                                                         : Icons.radio_button_unchecked,
                                                     color: _selectedParkingType == 'car'
-                                                        ? AppColors.primaryColor
+                                                        ? AppColors.primaryAdaptive(context)
                                                         : Colors.grey,
                                                   ),
                                                   const SizedBox(width: 12),
-                                                  Icon(Icons.directions_car, color: AppColors.primaryColor, size: 20),
+                                                  Icon(Icons.directions_car, color: AppColors.primaryAdaptive(context), size: 20),
                                                   const SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
@@ -1424,7 +1424,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                         ? localizations.paymentParkingFull(0, _carParkingCapacity)
                                                         : localizations.paymentParkingAvailable(availableSlots, _carParkingCapacity),
                                                       style: textTheme.bodySmall?.copyWith(
-                                                        color: isFull ? Colors.red : AppColors.primaryColor,
+                                                        color: isFull ? Colors.red : AppColors.primaryAdaptive(context),
                                                         fontWeight: FontWeight.w600,
                                                       ),
                                                     );
@@ -1470,13 +1470,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             decoration: BoxDecoration(
                                               border: Border.all(
                                                 color: _selectedParkingType == 'motorcycle'
-                                                    ? AppColors.primaryColor
+                                                    ? AppColors.primaryAdaptive(context)
                                                     : Colors.grey[300]!,
                                                 width: _selectedParkingType == 'motorcycle' ? 2 : 1,
                                               ),
                                               borderRadius: BorderRadius.circular(8),
                                               color: _selectedParkingType == 'motorcycle'
-                                                  ? AppColors.primaryColor.withAlpha(13)
+                                                  ? AppColors.primaryAdaptive(context).withAlpha(13)
                                                   : (isDark ? const Color(0xFF374151) : Colors.white),
                                             ),
                                           child: Column(
@@ -1489,11 +1489,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                         ? Icons.radio_button_checked
                                                         : Icons.radio_button_unchecked,
                                                     color: _selectedParkingType == 'motorcycle'
-                                                        ? AppColors.primaryColor
+                                                        ? AppColors.primaryAdaptive(context)
                                                         : Colors.grey,
                                                   ),
                                                   const SizedBox(width: 12),
-                                                  Icon(Icons.two_wheeler, color: AppColors.primaryColor, size: 20),
+                                                  Icon(Icons.two_wheeler, color: AppColors.primaryAdaptive(context), size: 20),
                                                   const SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
@@ -1521,7 +1521,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                         ? localizations.paymentParkingFull(0, _motorcycleParkingCapacity)
                                                         : localizations.paymentParkingAvailable(availableSlots, _motorcycleParkingCapacity),
                                                       style: textTheme.bodySmall?.copyWith(
-                                                        color: isFull ? Colors.red : AppColors.primaryColor,
+                                                        color: isFull ? Colors.red : AppColors.primaryAdaptive(context),
                                                         fontWeight: FontWeight.w600,
                                                       ),
                                                     );
@@ -1563,7 +1563,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                             });
                                                           }
                                                         : null,
-                                                    color: AppColors.primaryColor,
+                                                    color: AppColors.primaryAdaptive(context),
                                                   ),
                                                   Expanded(
                                                     child: Center(
@@ -1583,7 +1583,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                             });
                                                           }
                                                         : null,
-                                                    color: AppColors.primaryColor,
+                                                    color: AppColors.primaryAdaptive(context),
                                                   ),
                                                 ],
                                               ),
@@ -1608,7 +1608,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                     formatCurrency(_parkingFee),
                                                     style: textTheme.bodyLarge?.copyWith(
                                                       fontWeight: FontWeight.bold,
-                                                      color: AppColors.primaryColor,
+                                                      color: AppColors.primaryAdaptive(context),
                                                     ),
                                                   ),
                                                 ],
@@ -1648,7 +1648,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             ),
                                             focusedBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
-                                              borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
+                                              // Remove const — primaryAdaptive(context) is not const
+                                              borderSide: BorderSide(color: AppColors.primaryAdaptive(context), width: 2),
                                             ),
                                             errorBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
@@ -1656,7 +1657,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             ),
                                             prefixIcon: Icon(
                                               _selectedParkingType == 'car' ? Icons.directions_car : Icons.two_wheeler,
-                                              color: AppColors.primaryColor,
+                                              color: AppColors.primaryAdaptive(context),
                                             ),
                                           ),
                                           textCapitalization: TextCapitalization.characters,
@@ -1741,22 +1742,22 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                         Container(
                                           padding: const EdgeInsets.all(16),
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+                                            border: Border.all(color: AppColors.primaryAdaptive(context).withOpacity(0.3)),
                                             borderRadius: BorderRadius.circular(8),
-                                            color: AppColors.primaryColor.withOpacity(0.05),
+                                            color: AppColors.primaryAdaptive(context).withOpacity(0.05),
                                           ),
                                           child: Row(
                                             children: [
                                               Icon(
                                                 Icons.check_circle,
-                                                color: AppColors.primaryColor,
+                                                color: AppColors.primaryAdaptive(context),
                                               ),
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: Text(
                                                   '${localizations.paymentVoucherApplied} - ${voucherNotifier.appliedVoucherCode}',
                                                   style: textTheme.bodyMedium?.copyWith(
-                                                    color: AppColors.primaryColor,
+                                                    color: AppColors.primaryAdaptive(context),
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
@@ -1787,9 +1788,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                   ),
                                                   focusedBorder: OutlineInputBorder(
                                                     borderRadius: BorderRadius.circular(8),
-                                                    borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+                                                    borderSide: BorderSide(color: AppColors.primaryAdaptive(context), width: 2),
                                                   ),
-                                                  prefixIcon: Icon(Icons.local_offer, color: AppColors.primaryColor),
+                                                  prefixIcon: Icon(Icons.local_offer, color: AppColors.primaryAdaptive(context)),
                                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                                 ),
                                                 textCapitalization: TextCapitalization.characters,
@@ -1805,7 +1806,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                       basePrice: afterOriginalTotalFees ?? 0,
                                                     ),
                                               style: ElevatedButton.styleFrom(
-                                                backgroundColor: AppColors.primaryColor,
+                                                backgroundColor: AppColors.primaryAdaptive(context),
                                                 foregroundColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                                                 shape: RoundedRectangleBorder(
@@ -1919,14 +1920,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                               Text(
                                                 '${localizations.paymentVoucherTitle} (${voucherNotifier.appliedVoucherCode})',
                                                 style: textTheme.bodyLarge?.copyWith(
-                                                  color: AppColors.primaryColor,
+                                                  color: AppColors.primaryAdaptive(context),
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                               Text(
                                                 '- ${formatCurrency(voucherNotifier.currentDiscount)}',
                                                 style: textTheme.bodyLarge?.copyWith(
-                                                  color: AppColors.primaryColor,
+                                                  color: AppColors.primaryAdaptive(context),
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -2028,9 +2029,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                       Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: Colors.amber[50],
+                                          // Dark mode: gunakan surface gelap, light mode: amber[50]
+                                          color: isDark ? AppColors.surfaceDarkElevated : Colors.amber[50],
                                           borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: Colors.amber[200]!),
+                                          border: Border.all(
+                                            color: isDark ? Colors.white24 : Colors.amber[200]!,
+                                          ),
                                         ),
                                         child: Row(
                                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2042,17 +2046,20 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                   _agreedToTerms = newValue ?? false;
                                                 });
                                               },
-                                              activeColor: AppColors.primaryColor,
+                                              activeColor: AppColors.primaryAdaptive(context),
+                                              // Dark mode: border checkbox putih supaya keliatan
+                                              side: isDark
+                                                  ? const BorderSide(color: Colors.white70, width: 2)
+                                                  : null,
                                             ),
                                             Expanded(
                                               child: Padding(
                                                 padding: const EdgeInsets.only(top: 12, right: 8),
                                                 child: RichText(
                                                   text: TextSpan(
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 13,
-                                                      // Amber box always has a light background — keep black
-                                                      color: Colors.black87,
+                                                      color: isDark ? Colors.white : Colors.black87,
                                                     ),
                                                     children: [
                                                       WidgetSpan(
@@ -2060,9 +2067,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                           onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
                                                           child: Text(
                                                             localizations.paymentTermsAgreePrefix,
-                                                            style: const TextStyle(
+                                                            style: TextStyle(
                                                               fontSize: 13,
-                                                              color: Colors.black87,
+                                                              color: isDark ? Colors.white : Colors.black87,
                                                             ),
                                                           ),
                                                         ),
@@ -2079,12 +2086,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                           },
                                                           child: Text(
                                                             localizations.paymentTermsConditions,
-                                                            style: const TextStyle(
+                                                            style: TextStyle(
                                                               fontSize: 13,
-                                                              color: AppColors.primaryColor,
+                                                              color: AppColors.primaryAdaptive(context),
                                                               fontWeight: FontWeight.bold,
                                                               decoration: TextDecoration.underline,
-                                                              decorationColor: AppColors.primaryColor,
+                                                              decorationColor: AppColors.primaryAdaptive(context),
                                                             ),
                                                           ),
                                                         ),
@@ -2102,12 +2109,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                           },
                                                           child: Text(
                                                             localizations.paymentPrivacyPolicy,
-                                                            style: const TextStyle(
+                                                            style: TextStyle(
                                                               fontSize: 13,
-                                                              color: AppColors.primaryColor,
+                                                              color: AppColors.primaryAdaptive(context),
                                                               fontWeight: FontWeight.bold,
                                                               decoration: TextDecoration.underline,
-                                                              decorationColor: AppColors.primaryColor,
+                                                              decorationColor: AppColors.primaryAdaptive(context),
                                                             ),
                                                           ),
                                                         ),
@@ -2636,7 +2643,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                   );
                                                 } : null,
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: (isButtonEnabled && user != null) ? AppColors.primaryColor : Colors.grey,
+                                                  backgroundColor: (isButtonEnabled && user != null) ? AppColors.primaryAdaptive(context) : Colors.grey,
                                                   foregroundColor: Colors.white,
                                                   padding: const EdgeInsets.symmetric(vertical: 20),
                                                   textStyle: textTheme.titleMedium?.copyWith(color: Colors.white),
@@ -2831,7 +2838,7 @@ class _PaymentErrorDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onClose,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
+                  backgroundColor: AppColors.primaryAdaptive(context),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

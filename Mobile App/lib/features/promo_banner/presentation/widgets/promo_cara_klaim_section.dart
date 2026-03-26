@@ -69,7 +69,8 @@ class PromoCaraKlaimSection extends StatelessWidget {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryColor,
+                      // Use primaryAdaptive for dark/light mode compatibility
+                      color: AppColors.primaryAdaptive(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(

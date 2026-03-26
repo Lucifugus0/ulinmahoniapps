@@ -36,9 +36,10 @@ class ImagePreviewWidget extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(
+              // Remove const — adaptive color requires context, not a compile-time constant
+              Icon(
                 Icons.image,
-                color: AppColors.primaryColor,
+                color: AppColors.primaryAdaptive(context),
                 size: 20,
               ),
               const SizedBox(width: 8),

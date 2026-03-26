@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -8,12 +10,12 @@ import 'local_notification_service.dart';
 import '../data/repositories/fcm_repository.dart';
 import '../../router/router.dart';
 
-/// Top-level function for background message handler
-/// MUST be top-level or static - cannot be inside class
+/// Top-level function for background message handler.
+/// MUST be top-level or static — cannot be inside a class.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    // Initialize Firebase in background isolate
+    // Initialize Firebase in the background isolate
     await Firebase.initializeApp();
 
     // Initialize LocalNotificationService in background context
@@ -22,12 +24,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
     AppLogger.i('Background message received: ${message.messageId}', 'FCM-BG');
 
-    // Handle the message — show local notification for chat messages
-    if (message.data.containsKey('conversation_id')) {
-      final conversationId = int.tryParse(message.data['conversation_id'] ?? '');
-      final title = message.notification?.title ?? message.data['title'] ?? 'New Message';
-      final body = message.notification?.body ?? message.data['body'] ?? '';
+    final data = message.data;
+    final title = message.notification?.title ?? data['title'] ?? 'Ulin Mahoni';
+    final body = message.notification?.body ?? data['body'] ?? '';
 
+    // Handle chat notifications
+    if (data.containsKey('conversation_id')) {
+      final conversationId = int.tryParse(data['conversation_id'] ?? '');
       if (conversationId != null) {
         await notificationService.showChatNotification(
           conversationId: conversationId,
@@ -35,36 +38,63 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           body: body,
         );
       }
+      return;
+    }
+
+    // Handle booking-related notifications
+    final type = data['type'] as String?;
+    if (_isBookingType(type)) {
+      await notificationService.showBookingNotification(
+        type: type!,
+        title: title,
+        body: body,
+        orderId: data['order_id'] as String?,
+      );
     }
   } catch (e, stackTrace) {
     AppLogger.e('Error in background handler', e, stackTrace, 'FCM-BG');
-    // Don't crash - log error and continue
+    // Never crash in background handler
   }
 }
 
-/// Firebase Cloud Messaging Service — singleton that manages FCM token
-/// lifecycle, message handling, and backend token synchronization.
+/// Returns true if [type] is one of the known booking notification types.
+bool _isBookingType(String? type) {
+  const bookingTypes = {
+    'booking_created',
+    'check_in',
+    'booking_renewed',
+    'payment_received',
+    'booking_expired',
+  };
+  return type != null && bookingTypes.contains(type);
+}
+
+/// Firebase Cloud Messaging Service
+///
+/// Lifecycle:
+///   1. [initialize] — called on app startup/login, requests permission,
+///      gets FCM token, registers it with backend, sets up listeners.
+///   2. Token refresh — [onTokenRefresh] sends new token to backend automatically.
+///   3. Foreground messages — shows local notification via [LocalNotificationService].
+///   4. Notification tap — navigates to the correct page via [appRouter].
+///   5. [deleteToken] — called on logout, removes token from Firebase and backend.
 class FCMService {
   static final FCMService _instance = FCMService._internal();
   factory FCMService() => _instance;
   FCMService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  /// Repository for syncing device tokens with the backend API
-  late final FCMRepository _fcmRepository;
+  final FCMRepository _fcmRepository = FCMRepository();
   StreamSubscription<String>? _tokenRefreshSubscription;
   StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
 
-  /// Initialize FCM service — requests permissions, obtains token,
-  /// sets up message listeners, and syncs token to backend if user is logged in.
+  /// Initialize FCM service.
+  /// Should be called after login or on app startup when user is authenticated.
   Future<void> initialize() async {
     try {
       AppLogger.i('Initializing FCM Service', 'FCM');
 
-      // Initialize repository — uses DioClient with auto-auth headers
-      _fcmRepository = FCMRepository();
-
-      // Request notification permissions (iOS)
+      // Request notification permissions (prompts on iOS, no-op on Android 12-)
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
@@ -81,23 +111,19 @@ class FCMService {
         return;
       }
 
-      // Get initial FCM token
+      // Get initial FCM token and register with backend
       final token = await getToken();
       if (token != null) {
         AppLogger.s('FCM Token obtained: ${token.substring(0, 20)}...', 'FCM');
         await _saveTokenLocally(token);
-
-        // Send token to backend if user is logged in
         await _sendTokenToBackend(token);
       }
 
-      // Listen for token refresh — re-sync with backend when token changes
+      // Listen for token refresh — Firebase may rotate the token periodically
       _tokenRefreshSubscription = _firebaseMessaging.onTokenRefresh.listen(
         (newToken) async {
           AppLogger.i('FCM Token refreshed', 'FCM');
           await _saveTokenLocally(newToken);
-
-          // Send refreshed token to backend
           await _sendTokenToBackend(newToken);
         },
         onError: (error) {
@@ -105,7 +131,7 @@ class FCMService {
         },
       );
 
-      // Handle foreground messages — show local notification for chat
+      // Show local notification when a message arrives while app is in foreground
       _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen(
         _handleForegroundMessage,
         onError: (error) {
@@ -113,14 +139,14 @@ class FCMService {
         },
       );
 
-      // Handle message opened app (from terminated state)
+      // Navigate when user taps a notification that opened the app from terminated state
       FirebaseMessaging.instance.getInitialMessage().then((message) {
         if (message != null) {
           _handleMessageOpenedApp(message);
         }
       });
 
-      // Handle message opened app (from background state)
+      // Navigate when user taps a notification that opened the app from background state
       FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
 
       AppLogger.s('FCM Service initialized successfully', 'FCM');
@@ -129,7 +155,7 @@ class FCMService {
     }
   }
 
-  /// Get FCM token from Firebase
+  /// Get FCM token from Firebase SDK.
   Future<String?> getToken() async {
     try {
       final token = await _firebaseMessaging.getToken();
@@ -143,7 +169,7 @@ class FCMService {
     }
   }
 
-  /// Get locally saved token from SharedPreferences
+  /// Get the locally saved FCM token from SharedPreferences.
   Future<String?> getSavedToken() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -154,7 +180,7 @@ class FCMService {
     }
   }
 
-  /// Save token locally to SharedPreferences with timestamp
+  /// Save token and timestamp to SharedPreferences.
   Future<void> _saveTokenLocally(String token) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -166,26 +192,50 @@ class FCMService {
     }
   }
 
-  /// Send FCM token to backend — skips if user is not logged in (no user_id).
-  /// The backend identifies the user from the Bearer token (Sanctum auth).
+  /// Send FCM token to backend.
+  ///
+  /// Detects device type (android/ios) and device name using [device_info_plus],
+  /// then calls [FCMRepository.registerToken].
+  /// Failures are logged but never propagated — FCM registration should not
+  /// block the main app flow.
   Future<void> _sendTokenToBackend(String token) async {
     try {
-      // Check if user is logged in by looking for user_id in SharedPreferences
+      // Only send to backend when user is authenticated (token must be present)
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('user_id');
-
-      if (userId == null) {
-        AppLogger.w('User ID not found, cannot send FCM token to backend', 'FCM');
+      final authToken = prefs.getString('auth_token');
+      if (authToken == null || authToken.isEmpty) {
+        AppLogger.w('No auth token — skipping FCM backend registration', 'FCM');
         return;
       }
 
-      // Send token to backend — auth header is auto-attached by DioClient
-      final success = await _fcmRepository.sendFCMToken(
-        fcmToken: token,
+      // Determine platform and device name
+      final deviceType = Platform.isAndroid ? 'android' : 'ios';
+      String? deviceName;
+
+      try {
+        final deviceInfo = DeviceInfoPlugin();
+        if (Platform.isAndroid) {
+          final androidInfo = await deviceInfo.androidInfo;
+          // e.g. "Samsung Galaxy S24" or "Pixel 8"
+          deviceName = androidInfo.model;
+        } else if (Platform.isIOS) {
+          final iosInfo = await deviceInfo.iosInfo;
+          // e.g. "iPhone 15 Pro" or "iPad Air (5th generation)"
+          deviceName = iosInfo.name;
+        }
+      } catch (e) {
+        AppLogger.w('Could not read device info: $e', 'FCM');
+        // device_name is optional — proceed without it
+      }
+
+      final success = await _fcmRepository.registerToken(
+        token: token,
+        deviceType: deviceType,
+        deviceName: deviceName,
       );
 
       if (success) {
-        AppLogger.s('FCM token registered with backend for user $userId', 'FCM');
+        AppLogger.s('FCM token registered with backend ($deviceType / $deviceName)', 'FCM');
       } else {
         AppLogger.w('Failed to register FCM token with backend', 'FCM');
       }
@@ -194,30 +244,21 @@ class FCMService {
     }
   }
 
-  /// Public method to sync saved FCM token to backend — called after login
-  /// when the user becomes authenticated and the token can be sent.
-  Future<void> syncTokenToBackend() async {
-    final token = await getSavedToken();
-    if (token != null) {
-      await _sendTokenToBackend(token);
-    } else {
-      AppLogger.w('No saved FCM token to sync', 'FCM');
-    }
-  }
-
-  /// Handle foreground messages (app is open) — display local notification for chat
+  /// Handle foreground messages (app is open and visible).
+  ///
+  /// FCM does not show a system notification when the app is in foreground,
+  /// so we display one manually via [LocalNotificationService].
   void _handleForegroundMessage(RemoteMessage message) {
     AppLogger.i('Foreground message: ${message.messageId}', 'FCM');
 
-    final notification = message.notification;
     final data = message.data;
+    final notification = message.notification;
+    final title = notification?.title ?? data['title'] ?? 'Ulin Mahoni';
+    final body = notification?.body ?? data['body'] ?? '';
 
-    // Show notification even when app is in foreground
+    // Chat notification
     if (data.containsKey('conversation_id')) {
       final conversationId = int.tryParse(data['conversation_id'] ?? '');
-      final title = notification?.title ?? data['title'] ?? 'New Message';
-      final body = notification?.body ?? data['body'] ?? '';
-
       if (conversationId != null) {
         LocalNotificationService().showChatNotification(
           conversationId: conversationId,
@@ -225,51 +266,73 @@ class FCMService {
           body: body,
         );
       }
+      return;
+    }
+
+    // Booking notification types
+    final type = data['type'] as String?;
+    if (_isBookingType(type)) {
+      LocalNotificationService().showBookingNotification(
+        type: type!,
+        title: title,
+        body: body,
+        orderId: data['order_id'] as String?,
+      );
     }
   }
 
-  /// Handle message that opened the app — navigate to chat room via GoRouter
+  /// Handle notification tap that opened the app (from background or terminated).
+  ///
+  /// Navigation:
+  ///   - Chat → /cs/chat/{conversationId}
+  ///   - Booking types → /mybooking (full detail requires object; list is the
+  ///     practical landing page from a cold notification tap)
   void _handleMessageOpenedApp(RemoteMessage message) {
     AppLogger.i('Message opened app: ${message.messageId}', 'FCM');
 
     final data = message.data;
 
-    // Navigate to chat room if conversation_id is present
+    // Navigate to chat room
     if (data.containsKey('conversation_id')) {
       final conversationId = int.tryParse(data['conversation_id'] ?? '');
-
       if (conversationId != null) {
         AppLogger.d('Navigate to conversation: $conversationId', 'FCM');
-
-        // Navigate using GoRouter
         appRouter.go('/cs/chat/$conversationId');
       }
+      return;
+    }
+
+    // Navigate to My Booking for all booking-related notification types
+    final type = data['type'] as String?;
+    if (_isBookingType(type)) {
+      AppLogger.d('Navigate to My Booking — type: $type, order: ${data['order_id']}', 'FCM');
+      appRouter.go('/mybooking');
     }
   }
 
-  /// Delete FCM token (on logout) — removes from backend, Firebase, and local storage
+  /// Delete FCM token on logout.
+  ///
+  /// Removes the token from Firebase SDK, local storage, and backend.
+  /// After this call the device will no longer receive push notifications
+  /// until [initialize] is called again after the next login.
   Future<void> deleteToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      // Read saved token before deleting from Firebase
+      final savedToken = await getSavedToken();
 
-      // Save token before deleting from Firebase so we can tell backend to remove it
-      final savedToken = prefs.getString('fcm_token');
-
-      // Delete from Firebase
+      // Remove from Firebase SDK
       await _firebaseMessaging.deleteToken();
 
-      // Delete local storage
+      // Remove from local storage
+      final prefs = await SharedPreferences.getInstance();
       await prefs.remove('fcm_token');
       await prefs.remove('fcm_token_timestamp');
 
-      // Delete from backend if we had a token
-      if (savedToken != null) {
-        try {
-          await _fcmRepository.deleteFCMToken(fcmToken: savedToken);
-        } catch (e) {
-          AppLogger.w('Failed to delete FCM token from backend: $e', 'FCM');
-          // Continue with logout even if backend deletion fails
-        }
+      // Remove from backend so no more notifications reach this device
+      if (savedToken != null && savedToken.isNotEmpty) {
+        await _fcmRepository.deleteToken(token: savedToken);
+      } else {
+        AppLogger.w('No saved FCM token to delete from backend', 'FCM');
       }
 
       AppLogger.s('FCM token deleted', 'FCM');
@@ -278,7 +341,7 @@ class FCMService {
     }
   }
 
-  /// Subscribe to topic (optional - for broadcast messages)
+  /// Subscribe to a Firebase topic (optional — for broadcast messages).
   Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
@@ -288,7 +351,7 @@ class FCMService {
     }
   }
 
-  /// Unsubscribe from topic
+  /// Unsubscribe from a Firebase topic.
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
@@ -298,7 +361,7 @@ class FCMService {
     }
   }
 
-  /// Dispose subscriptions
+  /// Dispose stream subscriptions when service is torn down.
   void dispose() {
     _tokenRefreshSubscription?.cancel();
     _foregroundMessageSubscription?.cancel();

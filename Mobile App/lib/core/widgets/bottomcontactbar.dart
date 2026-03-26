@@ -113,9 +113,10 @@ class BottomContactBar extends ConsumerWidget {
                     Container(
                       margin: const EdgeInsets.only(top: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryColor.withValues(alpha: isDark ? 0.3 : 0.2),
+                        // Use primaryAdaptive so border and fill adapt to dark/light mode
+                        color: AppColors.primaryAdaptive(context).withValues(alpha: isDark ? 0.3 : 0.2),
                         borderRadius: BorderRadius.circular(5),
-                        border: Border.all(color: AppColors.primaryColor, width: 1),
+                        border: Border.all(color: AppColors.primaryAdaptive(context), width: 1),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Row(
@@ -123,7 +124,7 @@ class BottomContactBar extends ConsumerWidget {
                         children: [
                           Icon(
                             Icons.local_offer,
-                            color: isDark ? AppColors.accentGreen : AppColors.primaryColor,
+                            color: isDark ? AppColors.accentGreen : AppColors.primaryAdaptive(context),
                             size: Theme.of(context).iconTheme.size ?? 16,
                           ),
                           const SizedBox(width: 2),
@@ -131,7 +132,7 @@ class BottomContactBar extends ConsumerWidget {
                             child: Text(
                               localizations.contactBarSafetyLabel,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: isDark ? AppColors.accentGreen : AppColors.primaryColor,
+                                color: isDark ? AppColors.accentGreen : AppColors.primaryAdaptive(context),
                                 fontSize: 10,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -237,9 +238,10 @@ class BottomContactBar extends ConsumerWidget {
                         }
                       },
                       style: ElevatedButton.styleFrom(
+                        // Use primaryAdaptive for the booking/browse button background
                         backgroundColor: showBookingButton
-                            ? (isButtonEnabled ? AppColors.primaryColor : Colors.grey)
-                            : AppColors.primaryColor,
+                            ? (isButtonEnabled ? AppColors.primaryAdaptive(context) : Colors.grey)
+                            : AppColors.primaryAdaptive(context),
                         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),

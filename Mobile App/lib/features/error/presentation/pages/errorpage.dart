@@ -99,7 +99,8 @@ class ErrorPage extends StatelessWidget {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
+                        // Use primaryAdaptive for dark/light mode compatibility
+                        backgroundColor: AppColors.primaryAdaptive(context),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(

@@ -41,9 +41,10 @@ Future<ImageSourceOption?> showImageSourceDialog(
             width: 80,
             height: 80,
             errorBuilder: (context, error, stackTrace) {
-              return const Icon(
+              // Use primaryAdaptive for the fallback icon color
+              return Icon(
                 Icons.image_outlined,
-                color: AppColors.primaryColor,
+                color: AppColors.primaryAdaptive(context),
                 size: 80,
               );
             },
@@ -70,7 +71,8 @@ Future<ImageSourceOption?> showImageSourceDialog(
               icon: const Icon(Icons.camera_alt, color: Colors.white),
               label: Text(cameraButtonText),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                // Use primaryAdaptive for the camera button background
+                backgroundColor: AppColors.primaryAdaptive(context),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

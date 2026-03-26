@@ -183,7 +183,8 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                     ),
                     TextSpan(
                       text: localizations.homeBannerPart2,
-                      style: const TextStyle(color: AppColors.primaryColor),
+                      // Remove const to allow non-const adaptive color based on context
+                      style: TextStyle(color: AppColors.primaryAdaptive(context)),
                     ),
                     TextSpan(
                       text: localizations.homeBannerPart3,

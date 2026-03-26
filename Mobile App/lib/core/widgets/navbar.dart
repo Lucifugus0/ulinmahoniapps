@@ -287,7 +287,8 @@ class _NavbarState extends ConsumerState<Navbar> {
                               context.push('/register');
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryColor,
+                              // Use primaryAdaptive for the register button background
+                              backgroundColor: AppColors.primaryAdaptive(context),
                               textStyle: const TextStyle(
                                 fontWeight: FontWeight.w400,
                                 color: Colors.white,

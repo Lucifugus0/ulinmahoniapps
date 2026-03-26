@@ -50,10 +50,10 @@ class PromoSyaratKetentuanSection extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Checkmark icon
-                  const Icon(
+                  // Checkmark icon — remove const: color is adaptive (runtime context)
+                  Icon(
                     Icons.check,
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryAdaptive(context),
                     size: 20,
                   ),
                   const SizedBox(width: 12),

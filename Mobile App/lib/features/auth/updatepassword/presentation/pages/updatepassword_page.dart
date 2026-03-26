@@ -198,7 +198,8 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
+                      // Use primaryAdaptive for the update password button background
+                      backgroundColor: AppColors.primaryAdaptive(context),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       textStyle: const TextStyle(fontSize: 18),

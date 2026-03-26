@@ -41,7 +41,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           showNotificationDialog(
             context,
             localizations.passwordResetSuccess,
-            iconColor: AppColors.primaryColor,
+            // Use primaryAdaptive for the success notification icon color
+            iconColor: AppColors.primaryAdaptive(context),
             defaultIcon: Icons.check_circle_outline,
           );
           context.go('/login');

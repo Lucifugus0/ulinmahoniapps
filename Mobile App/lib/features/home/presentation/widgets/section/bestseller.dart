@@ -58,7 +58,8 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
                     localizations.showAll,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDark ? Colors.white : AppColors.primaryColor,
+                      // Use adaptive primary color for light mode; white for dark mode
+                      color: isDark ? Colors.white : AppColors.primaryAdaptive(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),

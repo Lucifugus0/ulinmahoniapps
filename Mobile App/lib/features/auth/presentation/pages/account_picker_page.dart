@@ -114,7 +114,8 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Switch Account'),
-        backgroundColor: AppColors.primaryColor,
+        // Use primaryAdaptive so the AppBar background adapts to dark/light mode
+        backgroundColor: AppColors.primaryAdaptive(context),
         foregroundColor: Colors.white,
       ),
       body: _isLoading
@@ -161,7 +162,8 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
               icon: const Icon(Icons.add),
               label: const Text('Add Account'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                // Use primaryAdaptive for the add account button background
+                backgroundColor: AppColors.primaryAdaptive(context),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
@@ -183,17 +185,19 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: AppColors.primaryColor.withValues(alpha: 0.1),
+                // Use primaryAdaptive for the add-account avatar background and icon
+                backgroundColor: AppColors.primaryAdaptive(context).withValues(alpha: 0.1),
                 child: Icon(
                   Icons.add,
-                  color: AppColors.primaryColor,
+                  color: AppColors.primaryAdaptive(context),
                 ),
               ),
-              title: const Text(
+              title: Text(
                 'Add Another Account',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  color: AppColors.primaryColor,
+                  // Use primaryAdaptive for the add account label color
+                  color: AppColors.primaryAdaptive(context),
                 ),
               ),
               onTap: () => Navigator.pop(context, 'add_new'),
@@ -207,11 +211,13 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           elevation: isActive ? 2 : 0,
-          color: isActive ? AppColors.primaryColor.withValues(alpha: 0.05) : null,
+          // Use primaryAdaptive for the active account card tint
+          color: isActive ? AppColors.primaryAdaptive(context).withValues(alpha: 0.05) : null,
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor: AppColors.primaryColor,
+              // Use primaryAdaptive for the account avatar background
+              backgroundColor: AppColors.primaryAdaptive(context),
               child: Text(
                 account.fullName[0].toUpperCase(),
                 style: const TextStyle(

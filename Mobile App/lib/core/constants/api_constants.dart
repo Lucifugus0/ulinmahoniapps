@@ -68,9 +68,10 @@ class ApiConfig {
   static String get broadcasts => "$baseUrl/broadcasts";
   static String broadcastById(int id) => "$baseUrl/broadcasts/$id";
 
-  /// FCM device token registration — matches Frontend API POST /api/v1/device-token
+  // FCM (Firebase Cloud Messaging) endpoints
+  // POST /device-token  → register/update device token (upsert by backend)
+  // DELETE /device-token → remove device token on logout
   static String get fcmToken => "$baseUrl/device-token";
-  /// FCM device token deletion — matches Frontend API DELETE /api/v1/device-token
   static String get fcmTokenDelete => "$baseUrl/device-token";
 
   static const dokuUrl = "https://api-sandbox.doku.com";

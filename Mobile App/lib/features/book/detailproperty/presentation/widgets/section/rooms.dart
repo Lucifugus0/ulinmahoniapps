@@ -274,7 +274,8 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primaryColor.withValues(alpha: 0.3),
+          // Use primaryAdaptive for the status filter dropdown border
+          color: AppColors.primaryAdaptive(context).withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
@@ -291,7 +292,7 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
           icon: Icon(
             Icons.filter_alt_rounded,
             size: 20,
-            color: isEnabled ? AppColors.primaryColor : Colors.grey[400],
+            color: isEnabled ? AppColors.primaryAdaptive(context) : Colors.grey[400],
           ),
           isDense: true,
           isExpanded: true,
@@ -420,7 +421,8 @@ class _RoomFilterDropdown extends StatelessWidget {
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primaryColor.withValues(alpha: 0.3),
+          // Use primaryAdaptive for the room name filter dropdown border
+          color: AppColors.primaryAdaptive(context).withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
@@ -437,7 +439,7 @@ class _RoomFilterDropdown extends StatelessWidget {
           icon: Icon(
             Icons.filter_list_rounded,
             size: 20,
-            color: isEnabled ? AppColors.primaryColor : Colors.grey[400],
+            color: isEnabled ? AppColors.primaryAdaptive(context) : Colors.grey[400],
           ),
           isDense: true,
           isExpanded: true,
@@ -477,10 +479,11 @@ class _RoomFilterDropdown extends StatelessWidget {
                 value: roomName,
                 child: Row(
                   children: [
+                    // Use primaryAdaptive for the room name dropdown item icon
                     Icon(
                       Icons.meeting_room_outlined,
                       size: 18,
-                      color: AppColors.primaryColor,
+                      color: AppColors.primaryAdaptive(context),
                     ),
                     const SizedBox(width: 8),
                     Expanded(

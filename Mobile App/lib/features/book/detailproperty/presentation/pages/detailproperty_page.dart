@@ -153,7 +153,8 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                         height: 40,
                         child: Icon(
                           Icons.location_on,
-                          color: AppColors.primaryColor,
+                          // Use primaryAdaptive for the map marker icon color
+                          color: AppColors.primaryAdaptive(context),
                           size: 40,
                         ),
                       ),
@@ -317,12 +318,13 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
           children: [
             Row(
               children: [
-                Icon(info['icon'] as IconData, size: 20, color: AppColors.primaryColor),
+                // Use primaryAdaptive for the info section icon and label color
+                Icon(info['icon'] as IconData, size: 20, color: AppColors.primaryAdaptive(context)),
                 const SizedBox(width: 8),
                 Text(
                   info['label'] as String,
                   style: textTheme.labelMedium?.copyWith(
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryAdaptive(context),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -383,11 +385,11 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
         double? cheapestDaily;
 
         for (var room in rooms) {
-          // Check monthly price
+          // Check monthly price — skip 0 so daily-only properties fall back correctly
           if (room.priceOriginalMonthly != null && room.priceOriginalMonthly!.isNotEmpty) {
             try {
               final monthlyPrice = double.parse(room.priceOriginalMonthly!);
-              if (cheapestMonthly == null || monthlyPrice < cheapestMonthly) {
+              if (monthlyPrice > 0 && (cheapestMonthly == null || monthlyPrice < cheapestMonthly)) {
                 cheapestMonthly = monthlyPrice;
               }
             } catch (e) {
@@ -395,11 +397,11 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
             }
           }
 
-          // Check daily price
+          // Check daily price — skip 0 as well
           if (room.priceOriginalDaily != null && room.priceOriginalDaily!.isNotEmpty) {
             try {
               final dailyPrice = double.parse(room.priceOriginalDaily!);
-              if (cheapestDaily == null || dailyPrice < cheapestDaily) {
+              if (dailyPrice > 0 && (cheapestDaily == null || dailyPrice < cheapestDaily)) {
                 cheapestDaily = dailyPrice;
               }
             } catch (e) {
@@ -628,8 +630,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                     margin: const EdgeInsets.symmetric(horizontal: 4.0),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      // Use primaryAdaptive for the active page indicator dot
                       color: currentPage == index
-                          ? AppColors.primaryColor
+                          ? AppColors.primaryAdaptive(context)
                           : Colors.grey.withOpacity(0.7),
                     ),
                   ),
@@ -976,8 +979,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Use primaryAdaptive for the walking distance icon color
                         Icon(Icons.directions_walk,
-                            color: AppColors.primaryColor,
+                            color: AppColors.primaryAdaptive(context),
                             size: (textTheme.bodyLarge?.fontSize ?? 28) * 1.5),
                         const SizedBox(width: 4),
                         Expanded(
@@ -998,8 +1002,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Use primaryAdaptive for the floor count icon color
                         Icon(Icons.layers,
-                            color: AppColors.primaryColor,
+                            color: AppColors.primaryAdaptive(context),
                             size: (textTheme.bodyLarge?.fontSize ?? 28) * 1.5),
                         const SizedBox(width: 4),
                         Expanded(
