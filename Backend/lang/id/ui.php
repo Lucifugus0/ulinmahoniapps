@@ -1674,4 +1674,7 @@ return [
     'sent_by' => 'Dikirim Oleh',
     'sent_at' => 'Dikirim Pada',
     'recipients' => 'Penerima',
+
+    // Pembatalan Booking
+    'enter_valid_refund_amount' => 'Masukkan jumlah refund yang valid (0 untuk tanpa refund).',
 ];

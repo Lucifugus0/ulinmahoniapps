@@ -1675,4 +1675,7 @@ return [
     'sent_by' => 'Sent By',
     'sent_at' => 'Sent At',
     'recipients' => 'Recipients',
+
+    // Booking Cancellation
+    'enter_valid_refund_amount' => 'Please enter a valid refund amount (0 for no refund).',
 ];

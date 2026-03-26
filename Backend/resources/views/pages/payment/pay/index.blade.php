@@ -565,9 +565,10 @@
                 return false;
             }
 
-            // Validasi jumlah refund
+            /* Validate refund amount — allow 0 for no-refund cancellations.
+               Only reject if the field is empty or has a negative value. */
             const refundValue = refundAmount.value.replace(/[^\d]/g, '');
-            if (!refundValue || parseInt(refundValue) <= 0) {
+            if (refundValue === '' || refundValue === null || parseInt(refundValue) < 0) {
                 Swal.fire({
                     title: '{{ __('ui.warning') }}',
                     text: '{{ __('ui.enter_valid_refund_amount') }}',
