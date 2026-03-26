@@ -179,7 +179,7 @@
                                             <div
                                                 class="checkin-modal-header px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
                                                 <div class="flex justify-between items-center">
-                                                    <div class="font-bold text-xl text-gray-800">{{ __('ui.process_checkin') }}</div>
+                                                    <div class="font-bold text-xl text-gray-800 dark:text-white">{{ __('ui.process_checkin') }}</div>
                                                     <button type="button"
                                                         class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
                                                         @click="closeModal">
@@ -190,8 +190,8 @@
                                                         </svg>
                                                     </button>
                                                 </div>
-                                                <p class="text-sm text-gray-600 mt-1">{{ __('ui.review_complete_checkin') }}</p>
-                                                <p class="text-lg font-bold text-gray-800 mt-1"
+                                                <p class="text-sm text-gray-600 dark:text-gray-200 mt-1">{{ __('ui.review_complete_checkin') }}</p>
+                                                <p class="text-lg font-bold text-gray-800 dark:text-green-300 mt-1"
                                                     x-text="currentDateTime">
                                                 </p>
                                             </div>

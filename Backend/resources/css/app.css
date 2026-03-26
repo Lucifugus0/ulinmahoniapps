@@ -282,18 +282,20 @@ html.dark form.search-filter-form.bg-gradient-to-r {
   background: rgba(255, 255, 255, 0.04) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
-/* Modal headers — glass blur effect for check-in/check-out modals in dark mode */
-html.dark .checkout-modal-header,
+/* Modal headers — solid opaque backgrounds in dark mode for readability.
+   Check-in header uses dark green, check-out header uses dark yellow/amber. */
 html.dark .checkin-modal-header {
-  background: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-color: rgba(255, 255, 255, 0.10) !important;
+  background: rgb(6, 78, 59) !important;  /* dark green — matches check-in theme */
+  border-color: rgb(16, 120, 86) !important;
+}
+html.dark .checkout-modal-header {
+  background: rgb(120, 53, 15) !important;  /* dark amber — matches check-out theme */
+  border-color: rgb(161, 98, 7) !important;
 }
 html.dark .checkout-modal-header .text-gray-600,
-html.dark .checkin-modal-header .text-gray-600 { color: #d0d0e0 !important; }
+html.dark .checkin-modal-header .text-gray-600 { color: #e5e7eb !important; }
 html.dark .checkout-modal-header .text-gray-800,
-html.dark .checkin-modal-header .text-gray-800 { color: #f5f5fa !important; }
+html.dark .checkin-modal-header .text-gray-800 { color: #ffffff !important; }
 
 /* Light mode glass surfaces — translucent panels with blur for bordered cards */
 .rounded-xl.border, .rounded-lg.border {
