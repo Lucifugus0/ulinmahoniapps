@@ -38,6 +38,7 @@
 | 2026-03-26 | Check-in Modal Detail Pemesanan | Removed time from check-in/check-out. Added Total Booking, Deposit, Service Fee. Reorganized into 3-column layout: Booking (Order ID, Guest, Property, Room) · Stay (Check-in, Check-out, Duration) · Payment (Booking, Deposit, Service Fee, Total). |
 | 2026-03-26 | Check-out Modal Detail Pemesanan | Added Total Booking, Deposit, Service Fee between Duration and Total Payment. Added `room_price`, `deposit_fee`, `service_fees` to checkout API response. Total Payment now bold green with separator line. |
 | 2026-03-26 | Booking Cancellation (`/payment/pay`) | Allow cancellation with Rp 0 refund (no refund). Changed JS validation from `<= 0` to `< 0`. Added missing i18n key `enter_valid_refund_amount` in EN and ID. |
+| 2026-03-26 | Daily Pricing Management (`/properties/calendar`) | Added activate/deactivate button to each entry in the "Entri Aktif" list. The `toggleEntryStatus()` JS method existed but had no UI button. Active entries show red "Nonaktifkan", inactive show green "Aktifkan". |
 
 ---
 
