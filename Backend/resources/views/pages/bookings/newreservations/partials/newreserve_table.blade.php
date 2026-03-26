@@ -214,67 +214,65 @@
                                                             {{ __('ui.booking_details') }}
                                                         </h3>
 
-                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.order_id') }}:</span>
-                                                                <span class="text-sm text-gray-800 font-mono"
-                                                                    x-text="bookingDetails.order_id"></span>
+                                                        {{-- 3-column layout grouped by relevancy: Booking | Stay | Payment --}}
+                                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            {{-- Column 1: Booking Info --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Booking</h4>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.order_id') }}</span>
+                                                                    <p class="text-sm font-mono font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.order_id"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.guest_name') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.guest_name"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.property') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.property_name"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.room') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.room_name"></p>
+                                                                </div>
                                                             </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.check_in_date') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.check_in"></span>
+
+                                                            {{-- Column 2: Stay Details --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Stay</h4>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.check_in_date') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.check_in"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.check_out_date') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.check_out"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.duration') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.duration"></p>
+                                                                </div>
                                                             </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.check_out_date') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.check_out"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.guest_name') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.guest_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.property') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.property_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.room') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.room_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.duration') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.duration"></span>
-                                                            </div>
-                                                            {{-- Total Booking (room price before fees) --}}
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">Total Booking:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.total_booking"></span>
-                                                            </div>
-                                                            {{-- Deposit fee --}}
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">Deposit:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.deposit"></span>
-                                                            </div>
-                                                            {{-- Service fee --}}
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">Service Fee:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.service_fee"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.total_payment') }}:</span>
-                                                                <span class="text-sm text-gray-800 font-bold"
-                                                                    x-text="bookingDetails.total_payment"></span>
+
+                                                            {{-- Column 3: Payment --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Payment</h4>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Total Booking</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.total_booking"></span>
+                                                                </div>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Deposit</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.deposit"></span>
+                                                                </div>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Service Fee</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.service_fee"></span>
+                                                                </div>
+                                                                <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                                                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('ui.total_payment') }}</span>
+                                                                    <span class="text-sm font-bold text-green-600 dark:text-green-400" x-text="bookingDetails.total_payment"></span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
