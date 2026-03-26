@@ -523,10 +523,10 @@ main::after {
   position: absolute;
   inset: 0;
   background-image: url('/images/assets/backgrounds/golden-leaves-bg.jpg');
-  /* Tile the image at natural size instead of stretching to cover — prevents zoom */
-  background-size: 800px auto;
-  background-position: top center;
-  background-repeat: repeat;
+  /* Single image filling the content area — contain keeps full image visible without cropping */
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
   opacity: 0.06;
   z-index: 1;
   pointer-events: none;
