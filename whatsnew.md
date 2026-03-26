@@ -25,6 +25,7 @@
 | 2026-03-26 | Add Property (`/properties` modal) | City dropdown: changed from `<select>` to text input with `<datalist>` — now auto-fills from map pin and accepts new city names. New cities auto-saved to `m_cities` master on property save. |
 | 2026-03-26 | Add Property (`/properties` modal) | Facilities: selected items now use solid colored backgrounds (blue/green/purple) with white text instead of subtle tint that was invisible in dark mode. |
 | 2026-03-26 | Chat (ChatController, ChatApiController) | Added FCM push notifications when admin sends chat messages to customers. |
+| 2026-03-26 | Voucher Management (`/vouchers`) | Fixed pagination showing raw JSON when clicking page 2+. Filter route now redirects non-AJAX requests to index. Added JS handler to intercept pagination clicks and load via AJAX. |
 
 ---
 
