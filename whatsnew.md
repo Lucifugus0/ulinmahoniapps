@@ -26,6 +26,7 @@
 | 2026-03-26 | Add Property (`/properties` modal) | Facilities: selected items now use solid colored backgrounds (blue/green/purple) with white text instead of subtle tint that was invisible in dark mode. |
 | 2026-03-26 | Chat (ChatController, ChatApiController) | Added FCM push notifications when admin sends chat messages to customers. |
 | 2026-03-26 | Voucher Management (`/vouchers`) | Fixed pagination showing raw JSON when clicking page 2+. Filter route now redirects non-AJAX requests to index. Added JS handler to intercept pagination clicks and load via AJAX. |
+| 2026-03-26 | Voucher Management (`/vouchers`) | Removed delete button from action column. Replaced status badge button with toggle switch (checkbox slider) matching Property master page pattern — blue when active, gray when inactive, with text label. |
 
 ---
 
