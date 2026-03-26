@@ -235,6 +235,7 @@ class CheckOutController extends Controller
 
         $transaction = Transaction::where('order_id', $orderId)->firstOrFail();
 
+        /* Return booking details including price breakdown for checkout modal */
         return response()->json([
             'order_id' => $booking->order_id,
             'user_name' => $transaction->user_name,
@@ -242,10 +243,12 @@ class CheckOutController extends Controller
             'room_name' => $transaction->room_name,
             'check_in' => $transaction->check_in,
             'check_out' => $transaction->check_out,
+            'room_price' => $transaction->room_price,
+            'deposit_fee' => $transaction->deposit_fee,
+            'service_fees' => $transaction->service_fees,
             'grandtotal_price' => $transaction->grandtotal_price,
-            // Add any other fields you need from either model
-            'actual_check_in' => $booking->check_in_at, // From booking model
-            'actual_check_out' => $booking->check_out_at // Will be null until checked out
+            'actual_check_in' => $booking->check_in_at,
+            'actual_check_out' => $booking->check_out_at,
         ]);
     }
 
