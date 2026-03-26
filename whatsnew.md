@@ -40,6 +40,8 @@
 | 2026-03-26 | Booking Cancellation (`/payment/pay`) | Allow cancellation with Rp 0 refund (no refund). Changed JS validation from `<= 0` to `< 0`. Added missing i18n key `enter_valid_refund_amount` in EN and ID. |
 | 2026-03-26 | Daily Pricing Management (`/properties/calendar`) | Added activate/deactivate button to each entry in the "Entri Aktif" list. The `toggleEntryStatus()` JS method existed but had no UI button. Active entries show red "Nonaktifkan", inactive show green "Aktifkan". |
 | 2026-03-26 | Room Type Management (`/properties/rooms/room-name-types`) | Fixed "route not found" error on store, update, and toggle-status. Fetch URLs were missing `/properties` prefix (used `/rooms/room-name-types/` instead of `/properties/rooms/room-name-types/`). |
+| 2026-03-26 | All Bookings filter (`/bookings/bookings`) | Fixed filter search — `t_booking` used `latin1_swedish_ci` while `t_transactions` used `utf8mb4_general_ci`, causing collation mismatch on LEFT JOIN. Converted to `utf8mb4_general_ci`. Added non-AJAX redirect guard. |
+| 2026-03-26 | Today's Check-Out filter (`/bookings/checkout`) | Same collation fix. Added non-AJAX redirect guard to filter method. |
 
 ---
 
