@@ -101,10 +101,20 @@
                                 'cal-holiday': entry.isActive && entry.date_type === 'holiday',
                                 'bg-gray-600/40': !entry.isActive,
                             }">
-                            <div class="flex items-center gap-2">
-                                <span class="font-semibold text-white" x-text="entry.label || entry.date_type.replace('_', ' ')"></span>
-                                <span class="text-xs text-white/80" x-text="entry.dateRange"></span>
-                                <span x-show="!entry.isActive" class="text-xs bg-red-500/80 text-white px-1.5 py-0.5 rounded">({{ __('ui.calendar_inactive') }})</span>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-white" x-text="entry.label || entry.date_type.replace('_', ' ')"></span>
+                                    <span class="text-xs text-white/80" x-text="entry.dateRange"></span>
+                                    <span x-show="!entry.isActive" class="text-xs bg-red-500/80 text-white px-1.5 py-0.5 rounded">({{ __('ui.calendar_inactive') }})</span>
+                                </div>
+                                {{-- Toggle active/inactive button for each entry --}}
+                                <button @click.stop="toggleEntryStatus(entry)"
+                                    class="text-xs px-2.5 py-1 rounded-md font-medium transition-colors"
+                                    :class="entry.isActive
+                                        ? 'bg-red-500/30 text-red-200 hover:bg-red-500/50'
+                                        : 'bg-green-500/30 text-green-200 hover:bg-green-500/50'"
+                                    x-text="entry.isActive ? '{{ __('ui.deactivate') ?? 'Nonaktifkan' }}' : '{{ __('ui.activate') ?? 'Aktifkan' }}'">
+                                </button>
                             </div>
                             {{-- Created by + date --}}
                             <div class="text-xs text-white/70 mt-1">
