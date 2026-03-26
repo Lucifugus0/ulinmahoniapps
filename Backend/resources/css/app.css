@@ -362,3 +362,14 @@ html.dark .checkin-modal-header .text-gray-800 { color: #f5f5fa !important; }
     }
   }
 }
+
+/* Chat dropdown and modal — solid opaque backgrounds in dark mode
+   to prevent glassmorphism/backdrop-filter transparency bleed from header */
+html.dark #checkedInUsersModal > div {
+  background-color: rgb(31, 41, 55) !important;
+  border-color: rgb(75, 85, 99) !important;
+}
+
+html.dark #checkedInUsersModal {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
