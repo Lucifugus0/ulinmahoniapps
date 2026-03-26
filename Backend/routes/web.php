@@ -304,7 +304,8 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
         // ------------------------- PARKING PAYMENTS -------------------------
         Route::get('/parking', [ParkingPaymentController::class, 'index'])->name('admin.parking-payments.index');
-        Route::post('/parking/filter', [ParkingPaymentController::class, 'filter'])->name('admin.parking-payments.filter');
+        /* Accept both GET (pagination links) and POST (AJAX filter) */
+        Route::match(['get', 'post'], '/parking/filter', [ParkingPaymentController::class, 'filter'])->name('admin.parking-payments.filter');
         Route::get('/parking/checked-in-orders', [ParkingPaymentController::class, 'getCheckedInOrders'])->name('admin.parking-payments.checked-in-orders');
         Route::post('/parking/store', [ParkingPaymentController::class, 'store'])->name('admin.parking-payments.store');
         Route::post('/parking/approve/{id}', [ParkingPaymentController::class, 'approve'])->name('admin.parking-payments.approve');

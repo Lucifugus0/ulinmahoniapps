@@ -701,6 +701,32 @@
             });
             document.getElementById('parkingTypeFilter')?.addEventListener('change', applyFilters);
             document.getElementById('perPageSelect')?.addEventListener('change', applyFilters);
+
+            /* Intercept pagination link clicks to load via AJAX instead of
+               direct browser navigation, which would hit the filter route as GET
+               and return raw JSON or a method-not-allowed error. */
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('#tableContainer .pagination a, #paginationContainer a');
+                if (!link) return;
+                e.preventDefault();
+                const url = link.getAttribute('href');
+                if (!url) return;
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('tableContainer').innerHTML = data.html;
+                    const pag = document.getElementById('paginationContainer');
+                    if (pag) pag.innerHTML = data.pagination || '';
+                })
+                .catch(err => console.error('Pagination error:', err));
+            });
         });
 
         // ESC key handler

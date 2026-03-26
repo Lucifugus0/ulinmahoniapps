@@ -61,8 +61,18 @@ class ParkingPaymentController extends Controller
         return view('pages.payment.parking.index', compact('parkingTransactions'));
     }
 
+    /**
+     * Filter parking entries via AJAX — returns JSON with rendered HTML partial.
+     * Redirects non-AJAX GET requests to the index page to prevent raw JSON display
+     * when pagination links are clicked directly.
+     */
     public function filter(Request $request)
     {
+        /* Redirect non-AJAX requests to index to prevent raw JSON on pagination click */
+        if (!$request->ajax() && !$request->wantsJson() && $request->isMethod('get')) {
+            return redirect()->route('admin.parking-payments.index', $request->query());
+        }
+
         $perPage = $request->input('per_page', 8);
 
         $query = ParkingFeeTransaction::with(['property', 'parking', 'images', 'verifiedBy', 'createdBy', 'transaction'])
