@@ -224,7 +224,8 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
           showNotificationDialog(
             context,
             localizations.updateProfileSuccessMessage,
-            iconColor: AppColors.primaryColor,
+            // Use primaryAdaptive for dark/light mode compatibility
+            iconColor: AppColors.primaryAdaptive(context),
             defaultIcon: Icons.check_circle_outline,
           );
           _initializeControllers();
@@ -245,7 +246,8 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
-                color: AppColors.primaryColor,
+                // Use primaryAdaptive for dark/light mode compatibility
+                color: AppColors.primaryAdaptive(context),
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
@@ -353,7 +355,8 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                                   dropdownIcon: Icon(Icons.arrow_drop_down, color: isDark ? Colors.white : Colors.black87),
                                   dropdownIconPosition: IconPosition.trailing,
                                   dropdownTextStyle: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black),
-                                  cursorColor: AppColors.primaryColor,
+                                  // Use primaryAdaptive for dark/light mode compatibility
+                                  cursorColor: AppColors.primaryAdaptive(context),
                                   onChanged: (phone) {
                                     _fullPhoneNumber = phone.completeNumber;
                                     _updatePhoneNumberLength();
@@ -400,7 +403,8 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryColor,
+                                    // Use primaryAdaptive for dark/light mode compatibility
+                                    backgroundColor: AppColors.primaryAdaptive(context),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),

@@ -91,7 +91,8 @@ class _VAResultDialogState extends State<VAResultDialog> {
         context,
         localizations.vaResultDialogCopySuccess,
         defaultIcon: Icons.check_circle_outline,
-        iconColor: AppColors.primaryColor,
+        // Use primaryAdaptive for the copy success notification icon color
+        iconColor: AppColors.primaryAdaptive(context),
       );
     }
   }
@@ -151,10 +152,11 @@ class _VAResultDialogState extends State<VAResultDialog> {
               height: 75,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                return const Icon(
+                // Use primaryAdaptive for the fallback icon color
+                return Icon(
                   Icons.check_circle,
                   size: 75,
-                  color: AppColors.primaryColor,
+                  color: AppColors.primaryAdaptive(context),
                 );
               },
             ),
@@ -197,7 +199,8 @@ class _VAResultDialogState extends State<VAResultDialog> {
                               localizations.vaResultDialogVANumber,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade600,
+                                // Use dark-aware label text color
+                                color: isDark ? Colors.grey[400] : Colors.grey.shade600,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -216,7 +219,8 @@ class _VAResultDialogState extends State<VAResultDialog> {
                                 IconButton(
                                   onPressed: () => _copyToClipboard(widget.vaData.virtualAccountNo),
                                   icon: const Icon(Icons.copy, size: 20),
-                                  color: AppColors.primaryColor,
+                                  // Use primaryAdaptive for the copy icon button color
+                                  color: AppColors.primaryAdaptive(context),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                 ),
@@ -240,9 +244,10 @@ class _VAResultDialogState extends State<VAResultDialog> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
+                // Use dark-aware amber/warning box background and border
+                color: isDark ? AppColors.surfaceDarkElevated : Colors.orange.shade50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
+                border: Border.all(color: isDark ? Colors.white24 : Colors.orange.shade200),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -271,7 +276,8 @@ class _VAResultDialogState extends State<VAResultDialog> {
                   child: ElevatedButton(
                     onPressed: _openHowToPay,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
+                      // Use primaryAdaptive for the how-to-pay button background
+                      backgroundColor: AppColors.primaryAdaptive(context),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -324,8 +330,9 @@ class _VAResultDialogState extends State<VAResultDialog> {
                   child: OutlinedButton(
                     onPressed: widget.onClose,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryColor,
-                      side: const BorderSide(color: AppColors.primaryColor),
+                      // Use primaryAdaptive for the close button foreground and border
+                      foregroundColor: AppColors.primaryAdaptive(context),
+                      side: BorderSide(color: AppColors.primaryAdaptive(context)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),

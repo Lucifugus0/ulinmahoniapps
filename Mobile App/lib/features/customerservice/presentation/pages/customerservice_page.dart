@@ -213,7 +213,8 @@ class _CustomerServicePageState extends ConsumerState<CustomerServicePage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _onRefresh,
-              color: AppColors.primaryColor,
+              // Use adaptive primary color for refresh indicator spinner
+              color: AppColors.primaryAdaptive(context),
               child: bookingsAsync.when(
                 data: (bookings) {
                   // Filter only active bookings
@@ -367,7 +368,8 @@ class _CustomerServicePageState extends ConsumerState<CustomerServicePage> {
               icon: const Icon(Icons.search),
               label: Text(localizations.browseProperties),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                // Use adaptive primary color for browse button background
+                backgroundColor: AppColors.primaryAdaptive(context),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -418,7 +420,8 @@ class _CustomerServicePageState extends ConsumerState<CustomerServicePage> {
               icon: const Icon(Icons.search),
               label: Text(localizations.browseProperties),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                // Use adaptive primary color for browse button background
+                backgroundColor: AppColors.primaryAdaptive(context),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(

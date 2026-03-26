@@ -66,7 +66,7 @@ class MessageBubble extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isFromCurrentUser
                       ? AppColors.secondaryColor // Customer: hijau terang
-                      : AppColors.primaryColor, // HO/FO: primary color
+                      : AppColors.primaryAdaptive(context), // HO/FO: primary color (adaptive dark/light)
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),

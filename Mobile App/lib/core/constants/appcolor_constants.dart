@@ -64,6 +64,11 @@ class AppColors {
   /// Slightly brighter red — for "Ulin" text in navbar
   static const Color secondaryColorBright = Color(0xFFB71C1C);
 
+  // -- Adaptive primary: returns bright variant in dark mode, normal in light mode --
+  /// Use this instead of [primaryColor] in widget builds where [BuildContext] is available.
+  static Color primaryAdaptive(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? primaryColorBright : primaryColor;
+
   // -- Accent colors --
   /// Bright green accent for glass UI highlights
   static const Color accentGreen = Color(0xFF34C759);

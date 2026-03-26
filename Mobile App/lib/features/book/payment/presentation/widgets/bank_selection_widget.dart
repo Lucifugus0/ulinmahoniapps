@@ -58,9 +58,10 @@ class BankSelectionWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Radio button icon (MOVED TO LEFT)
+                // Use primaryAdaptive for the radio button icon color when selected
                 Icon(
                   isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: isSelected ? AppColors.primaryColor : Colors.grey,
+                  color: isSelected ? AppColors.primaryAdaptive(context) : Colors.grey,
                 ),
                 const SizedBox(width: 8),
                 // Bank icon (60x60) - SVG from network with fallback
@@ -88,13 +89,14 @@ class BankSelectionWidget extends StatelessWidget {
                           errorBuilder: (context, error, stackTrace) => Icon(
                             Icons.account_balance,
                             size: 32,
-                            color: isSelected ? AppColors.primaryColor : Colors.grey.shade600,
+                            // Use primaryAdaptive for the bank icon color when selected
+                          color: isSelected ? AppColors.primaryAdaptive(context) : Colors.grey.shade600,
                           ),
                         )
                       : Icon(
                           Icons.account_balance,
                           size: 32,
-                          color: isSelected ? AppColors.primaryColor : Colors.grey.shade600,
+                          color: isSelected ? AppColors.primaryAdaptive(context) : Colors.grey.shade600,
                         ),
                 ),
                 const SizedBox(width: 12),
@@ -104,7 +106,8 @@ class BankSelectionWidget extends StatelessWidget {
                     bank.name,
                     style: TextStyle(
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? AppColors.primaryColor : (isDark ? Colors.white : Colors.black87),
+                      // Use primaryAdaptive for the bank name text color when selected
+                      color: isSelected ? AppColors.primaryAdaptive(context) : (isDark ? Colors.white : Colors.black87),
                       fontSize: 14,
                     ),
                     maxLines: 1,

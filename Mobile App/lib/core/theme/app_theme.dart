@@ -150,13 +150,14 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       fontFamily: 'Inter',
-      primaryColor: AppColors.primaryColor,
+      // Use brighter primary so green is legible on dark backgrounds
+      primaryColor: AppColors.primaryColorBright,
       scaffoldBackgroundColor: AppColors.backgroundDark,
       canvasColor: Colors.transparent,
 
       // -- Color scheme --
       colorScheme: ColorScheme.dark(
-        primary: AppColors.primaryColor,
+        primary: AppColors.primaryColorBright,
         secondary: AppColors.secondaryColor,
         surface: AppColors.surfaceDark,
         onPrimary: Colors.white,
@@ -196,7 +197,7 @@ class AppTheme {
       // -- ElevatedButton --
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryColor,
+          backgroundColor: AppColors.primaryColorBright,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -214,7 +215,7 @@ class AppTheme {
       // -- TextButton --
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.accentGreen,
+          foregroundColor: AppColors.primaryColorBright,
           textStyle: const TextStyle(
             fontFamily: 'Inter',
             fontWeight: FontWeight.w600,
@@ -240,7 +241,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: AppColors.primaryColor.withValues(alpha: 0.7),
+            color: AppColors.primaryColorBright.withValues(alpha: 0.7),
             width: 1.0,
           ),
         ),

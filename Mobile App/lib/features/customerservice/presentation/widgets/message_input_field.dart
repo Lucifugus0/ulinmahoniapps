@@ -66,9 +66,10 @@ class _MessageInputFieldState extends State<MessageInputField> {
               onPressed: widget.isLoading ? null : widget.onImagePicker,
               icon: Icon(
                 Icons.image,
+                // Use primaryAdaptive for dark/light mode compatibility
                 color: widget.isLoading
                     ? Colors.grey.shade400
-                    : AppColors.primaryColor,
+                    : AppColors.primaryAdaptive(context),
               ),
             ),
             const SizedBox(width: 8),

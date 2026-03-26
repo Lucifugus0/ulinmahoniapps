@@ -161,7 +161,8 @@ class _CameraPopupWidgetState extends State<CameraPopupWidget> {
             actions: [
               if (_capturedImage == null)
                 IconButton(
-                  icon: const Icon(Icons.photo_library, color: AppColors.primaryColor),
+                  // Remove const: color is adaptive (runtime context)
+                  icon: Icon(Icons.photo_library, color: AppColors.primaryAdaptive(context)),
                   onPressed: _pickImageFromGallery,
                   tooltip: localizations.cameraGalleryTooltip, 
                 ),
@@ -232,7 +233,8 @@ class _CameraPopupWidgetState extends State<CameraPopupWidget> {
               Positioned(
                 bottom: 20,
                 child: FloatingActionButton(
-                  backgroundColor: AppColors.primaryColor,
+                  // Use primaryAdaptive for dark/light mode compatibility
+                  backgroundColor: AppColors.primaryAdaptive(context),
                   onPressed: _takePicture,
                   child: const Icon(Icons.camera),
                 ),
@@ -275,7 +277,8 @@ class _CameraPopupWidgetState extends State<CameraPopupWidget> {
                   icon: const Icon(Icons.refresh),
                   label: Text(localizations.cameraRetake), 
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
+                    // Use primaryAdaptive for dark/light mode compatibility
+                  backgroundColor: AppColors.primaryAdaptive(context),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -294,7 +297,8 @@ class _CameraPopupWidgetState extends State<CameraPopupWidget> {
                     icon: const Icon(Icons.check),
                     label: Text(localizations.cameraUseThisImage), 
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
+                      // Use primaryAdaptive for dark/light mode compatibility
+                  backgroundColor: AppColors.primaryAdaptive(context),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

@@ -113,7 +113,8 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
             context,
             localizations.myBookingDetailUploadSuccess,
             defaultIcon: Icons.check_circle_outline,
-            iconColor: AppColors.primaryColor,
+            // Use primaryAdaptive for dark/light mode compatibility
+            iconColor: AppColors.primaryAdaptive(context),
           );
 
           ref.invalidate(myBookingByIdProvider(bookingIdrec));
@@ -150,7 +151,8 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
         context,
         localizations.vaResultDialogCopySuccess,
         defaultIcon: Icons.check_circle_outline,
-        iconColor: AppColors.primaryColor,
+        // Use primaryAdaptive for dark/light mode compatibility
+        iconColor: AppColors.primaryAdaptive(context),
       );
     }
   }
@@ -283,7 +285,8 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
           context,
           localizations.downloadQRSuccess ?? 'QR code saved to gallery',
           defaultIcon: Icons.check_circle_outline,
-          iconColor: AppColors.primaryColor,
+          // Use primaryAdaptive for dark/light mode compatibility
+          iconColor: AppColors.primaryAdaptive(context),
         );
       }
     } catch (e) {
@@ -650,7 +653,8 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                     context,
                                     'Voucher (${bookingData.voucherCode})',
                                     '- ${formatCurrency(bookingData.discountAmount)}',
-                                    color: AppColors.primaryColor,
+                                    // Use primaryAdaptive for dark/light mode compatibility
+                                    color: AppColors.primaryAdaptive(context),
                                     isBold: true,
                                   ),
                                   const Divider(height: 20, thickness: 0.5, color: Colors.grey),
@@ -698,7 +702,8 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                   localizations.myBookingDetailGrandtotal,
                                   formatCurrency(bookingData.grandtotalPrice) ?? "0",
                                   isBold: true,
-                                  color: AppColors.primaryColor,
+                                  // Use primaryAdaptive for dark/light mode compatibility
+                                  color: AppColors.primaryAdaptive(context),
                                 ),
 // Payment Method Section - Show for all transaction types
 const Divider(height: 30),
@@ -743,7 +748,8 @@ if (bookingData.virtualaccountnumber != null && bookingData.virtualaccountnumber
           IconButton(
             onPressed: () => _copyToClipboard(bookingData.virtualaccountnumber!),
             icon: const Icon(Icons.copy, size: 20),
-            color: AppColors.primaryColor,
+            // Use primaryAdaptive for dark/light mode compatibility
+            color: AppColors.primaryAdaptive(context),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -768,10 +774,10 @@ if (bookingData.virtualaccountnumber != null && bookingData.virtualaccountnumber
         ),
         Text(
           bookingData.virtualaccountbank!,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
       ],
@@ -816,7 +822,8 @@ if (_cachedQRData != null && _remainingTime.inSeconds > 0) ...[
       icon: const Icon(Icons.download, size: 20),
       label: Text(localizations.downloadQR ?? 'Download QR Code'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryColor,
+        // Use primaryAdaptive for dark/light mode compatibility
+        backgroundColor: AppColors.primaryAdaptive(context),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
@@ -862,7 +869,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
       icon: const Icon(Icons.credit_card, size: 20),
       label: Text(localizations.continuePayment ?? 'Continue Payment'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryColor,
+        // Use primaryAdaptive for dark/light mode compatibility
+        backgroundColor: AppColors.primaryAdaptive(context),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
@@ -1019,7 +1027,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                           context,
                                                           'Check-in berhasil! Selamat menikmati penginapan Anda.',
                                                           defaultIcon: Icons.check_circle_outline,
-                                                          iconColor: AppColors.primaryColor,
+                                                          // Use primaryAdaptive for dark/light mode compatibility
+                                                          iconColor: AppColors.primaryAdaptive(context),
                                                         );
                                                       }
                                                     } catch (e) {
@@ -1037,7 +1046,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 },
                                                 icon: Icons.login,
                                                 text: localizations.checkInSectionTitle,
-                                                buttonColor: AppColors.primaryColor,
+                                                // Use primaryAdaptive for dark/light mode compatibility
+                                                buttonColor: AppColors.primaryAdaptive(context),
                                                 textColor: Colors.white,
                                                 iconColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1147,7 +1157,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 },
                                                 icon: Icons.refresh,
                                                 text: localizations.renewBookingButton,
-                                                buttonColor: AppColors.primaryColor,
+                                                // Use primaryAdaptive for dark/light mode compatibility
+                                                buttonColor: AppColors.primaryAdaptive(context),
                                                 textColor: Colors.white,
                                                 iconColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1233,7 +1244,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 },
                                                 icon: Icons.camera_alt,
                                                 text: localizations.myBookingDetailUploadPaymentProof,
-                                                buttonColor: AppColors.primaryColor,
+                                                // Use primaryAdaptive for dark/light mode compatibility
+                                                buttonColor: AppColors.primaryAdaptive(context),
                                                 textColor: Colors.white,
                                                 iconColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
@@ -1252,7 +1264,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                   onPressed: () => _uploadImage(bookingIdrec, bookingData),
                                                   icon: Icons.cloud_upload,
                                                   text: localizations.myBookingDetailUploadThisImage,
-                                                  buttonColor: AppColors.primaryColor,
+                                                  // Use primaryAdaptive for dark/light mode compatibility
+                                                  buttonColor: AppColors.primaryAdaptive(context),
                                                   textColor: Colors.white,
                                                   iconColor: Colors.white,
                                                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),

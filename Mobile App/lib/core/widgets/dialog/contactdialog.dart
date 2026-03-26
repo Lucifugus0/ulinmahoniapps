@@ -51,7 +51,8 @@ Future<void> showContactDialog(BuildContext context) async {
             const SizedBox(height: 16),
             ListTile(
               leading: buildNetworkIcon(AppImage.whatsappIconUrl, Icons.perm_phone_msg_rounded),
-              title: Text("+$targetPhone"),
+              // Apply dark-aware text color to the phone number
+              title: Text("+$targetPhone", style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () {
                 Navigator.of(dialogContext).pop();
                 launchWhatsApp();
@@ -59,7 +60,8 @@ Future<void> showContactDialog(BuildContext context) async {
             ),
             ListTile(
               leading: buildNetworkIcon(AppImage.emailIconUrl, Icons.email_rounded),
-              title: Text(Contact.email),
+              // Apply dark-aware text color to the email address
+              title: Text(Contact.email, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () {
                 Navigator.of(dialogContext).pop();
                 launchEmail(targetEmail, subject: emailSubject);

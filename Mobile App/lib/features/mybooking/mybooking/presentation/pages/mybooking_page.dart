@@ -325,7 +325,8 @@ class _MyBookingPageState extends ConsumerState<MyBookingPage>
                                 icon: const Icon(Icons.search, color: Colors.white),
                                 label: Text(localizations.myBookingBrowseProperties),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryColor,
+                                  // Use primaryAdaptive for dark/light mode compatibility
+                                  backgroundColor: AppColors.primaryAdaptive(context),
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                   shape: RoundedRectangleBorder(

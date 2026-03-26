@@ -55,8 +55,10 @@ class ApiConfig {
   static String promoBannerbyId(int bannerId) => "$baseUrl/promo-banner?id=$bannerId";
 
   // FCM (Firebase Cloud Messaging) endpoints
-  static String get fcmToken => "$baseUrl/users/fcm-token";
-  static String get fcmTokenDelete => "$baseUrl/users/fcm-token";
+  // POST /device-token  → register/update device token (upsert by backend)
+  // DELETE /device-token → remove device token on logout
+  static String get fcmToken => "$baseUrl/device-token";
+  static String get fcmTokenDelete => "$baseUrl/device-token";
 
   static const dokuUrl = "https://api-sandbox.doku.com";
   static const dokuPayment ="$dokuUrl/checkout/v1/payment"; // Ini boleh const krn dokuUrl juga const

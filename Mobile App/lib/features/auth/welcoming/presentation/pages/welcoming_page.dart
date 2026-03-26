@@ -172,7 +172,8 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.primaryColor.withValues(alpha: _gradientOpacity),
+                    // Use primaryAdaptive for the fallback gradient start color
+                    AppColors.primaryAdaptive(context).withValues(alpha: _gradientOpacity),
                     AppColors.secondaryColor.withValues(alpha: _gradientOpacity),
                   ],
                 ),
@@ -335,8 +336,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                               ),
                             ],
                           ),
-                          children: const [
-                            TextSpan(
+                          // Remove const from children list — TextSpan uses non-const primaryAdaptive(context)
+                          children: [
+                            const TextSpan(
                               text: 'ULIN ',
                               style: TextStyle(
                                 color: AppColors.secondaryColor,
@@ -345,7 +347,8 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                             TextSpan(
                               text: 'MAHONI',
                               style: TextStyle(
-                                color: AppColors.primaryColor,
+                                // Use adaptive primary color for brand name text
+                                color: AppColors.primaryAdaptive(context),
                               ),
                             ),
                           ],
@@ -396,7 +399,8 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   // Semi-transparent liquid glass surface
-                                  color: AppColors.primaryColor.withValues(alpha: 0.45),
+                                  // Use primaryAdaptive for the liquid glass button surface color
+                  color: AppColors.primaryAdaptive(context).withValues(alpha: 0.45),
                                   borderRadius: BorderRadius.circular(_buttonBorderRadius),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.30),

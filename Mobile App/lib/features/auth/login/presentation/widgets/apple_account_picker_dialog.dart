@@ -3,6 +3,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../../../core/services/apple_multi_account_storage.dart';
 import '../../../../../core/utils/app_logger.dart';
 import '../../../../../core/constants/app_asset_constants.dart';
+import '../../../../../core/constants/appcolor_constants.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 
 /// Dialog for picking which Apple account to use for login
@@ -22,12 +23,14 @@ class AppleAccountPickerDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    // Dark mode detection for dialog background and text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Configure Indonesian locale for timeago
     timeago.setLocaleMessages('id', timeago.IdMessages());
 
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
       contentPadding: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -41,7 +44,8 @@ class AppleAccountPickerDialog extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              color: Colors.white,
+              // Use dark-aware background for the header section
+              color: isDark ? AppColors.surfaceDark : Colors.white,
               child: Column(
                 children: [
                   // Logo
@@ -54,26 +58,29 @@ class AppleAccountPickerDialog extends StatelessWidget {
                   // Title
                   Text(
                     localizations.selectAppleAccount,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      // Use dark-aware text color for the dialog title
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     localizations.selectAccountForLogin,
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    // Use dark-aware subtitle text color
+                    style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[400] : Colors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1),
+            Divider(height: 1, color: isDark ? Colors.white24 : Colors.grey[300]),
             // List of accounts
             Flexible(
               child: Container(
-                color: Colors.white,
+                // Use dark-aware background for the accounts list section
+                color: isDark ? AppColors.surfaceDark : Colors.white,
                 padding: const EdgeInsets.all(16),
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -85,10 +92,11 @@ class AppleAccountPickerDialog extends StatelessWidget {
                 ),
               ),
             ),
-            const Divider(height: 1),
+            Divider(height: 1, color: isDark ? Colors.white24 : Colors.grey[300]),
             // "Use new account" option
             Container(
-              color: Colors.white,
+              // Use dark-aware background for the footer section
+              color: isDark ? AppColors.surfaceDark : Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: _buildNewAccountOption(context),
             ),
@@ -108,11 +116,14 @@ class AppleAccountPickerDialog extends StatelessWidget {
     // If userId exists, we assume verified (successfully logged in before)
     // Can be explicitly set via isEmailVerified field for extra security
     final isVerified = account.isVerified;
+    // Dark mode detection for card and text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      color: Colors.white,
+      // Use dark-aware card background color
+      color: isDark ? AppColors.surfaceDarkElevated : Colors.white,
       child: InkWell(
         onTap: () {
           AppLogger.d(
@@ -150,9 +161,11 @@ class AppleAccountPickerDialog extends StatelessWidget {
                     // Name
                     Text(
                       account.fullName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        // Use dark-aware text color for account name
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -163,7 +176,8 @@ class AppleAccountPickerDialog extends StatelessWidget {
                       account.displayEmail,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[700],
+                        // Use dark-aware subtle text color for email
+                        color: isDark ? Colors.grey[400] : Colors.grey[700],
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -175,7 +189,8 @@ class AppleAccountPickerDialog extends StatelessWidget {
                         Icon(
                           Icons.access_time,
                           size: 14,
-                          color: Colors.grey[600],
+                          // Use dark-aware icon color for timestamp
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
                         ),
                         const SizedBox(width: 4),
                         Flexible(
@@ -183,7 +198,8 @@ class AppleAccountPickerDialog extends StatelessWidget {
                             timeago.format(lastLogin, locale: 'id'),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              // Use dark-aware text color for timestamp
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

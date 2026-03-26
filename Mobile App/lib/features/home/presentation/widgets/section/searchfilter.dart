@@ -364,7 +364,8 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                               }
                             },
                             icon: const Icon(Icons.remove),
-                            color: AppColors.primaryColor,
+                            // Use adaptive primary color for icon button
+                            color: AppColors.primaryAdaptive(context),
                             iconSize: 20,
                           ),
                           Container(
@@ -385,7 +386,8 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                               }
                             },
                             icon: const Icon(Icons.add),
-                            color: AppColors.primaryColor,
+                            // Use adaptive primary color for icon button
+                            color: AppColors.primaryAdaptive(context),
                             iconSize: 20,
                           ),
                         ],
@@ -407,7 +409,8 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
-                    backgroundColor: AppColors.primaryColor,
+                    // Use adaptive primary color for elevated button background
+                    backgroundColor: AppColors.primaryAdaptive(context),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

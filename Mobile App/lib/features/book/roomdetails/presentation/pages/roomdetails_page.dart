@@ -187,8 +187,8 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryColor,
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primaryAdaptive(context),
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: Colors.black,
@@ -505,7 +505,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: currentPage == index
-                          ? AppColors.primaryColor
+                          ? AppColors.primaryAdaptive(context)
                           : Colors.grey.withOpacity(0.7),
                     ),
                   ),
@@ -730,7 +730,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                 localizations.roomDetailsLoginRequired,
                 title: 'Login Required',
                 defaultIcon: Icons.lock_outline,
-                iconColor: AppColors.primaryColor,
+                iconColor: AppColors.primaryAdaptive(context),
                 okButtonText: 'Login',
                 onOkPressed: () {
                   // Navigate to login page
@@ -903,7 +903,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                               if (_roomData.level != null && _roomData.level!.isNotEmpty)
                                 Row(
                                   children: [
-                                    Icon(Icons.stairs, color: AppColors.primaryColor, size: textTheme.bodyLarge?.fontSize),
+                                    Icon(Icons.stairs, color: AppColors.primaryAdaptive(context), size: textTheme.bodyLarge?.fontSize),
                                     const SizedBox(width: 4),
                                     Text(localizations.roomDetailsFloor, style: textTheme.bodyMedium),
                                     Expanded(
@@ -914,7 +914,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                               if (_roomData.size != null && _roomData.size! > 0)
                                 Row(
                                   children: [
-                                    Icon(Icons.square, color: AppColors.primaryColor, size: textTheme.bodyLarge?.fontSize),
+                                    Icon(Icons.square, color: AppColors.primaryAdaptive(context), size: textTheme.bodyLarge?.fontSize),
                                     const SizedBox(width: 4),
                                     Text(localizations.roomDetailsArea, style: textTheme.bodyMedium),
                                     Expanded(
@@ -925,7 +925,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                               if (_roomData.capacity != null && _roomData.capacity! > 0)
                                 Row(
                                   children: [
-                                    Icon(Icons.people, color: AppColors.primaryColor, size: textTheme.bodyLarge?.fontSize),
+                                    Icon(Icons.people, color: AppColors.primaryAdaptive(context), size: textTheme.bodyLarge?.fontSize),
                                     const SizedBox(width: 4),
                                     Text(localizations.roomDetailsCapacity, style: textTheme.bodyMedium),
                                     Expanded(
@@ -936,7 +936,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                               if (_roomData.bed_type != null && _roomData.bed_type!.isNotEmpty)
                                 Row(
                                   children: [
-                                    Icon(Icons.king_bed_rounded, color: AppColors.primaryColor, size: textTheme.bodyLarge?.fontSize),
+                                    Icon(Icons.king_bed_rounded, color: AppColors.primaryAdaptive(context), size: textTheme.bodyLarge?.fontSize),
                                     const SizedBox(width: 4),
                                     Text(localizations.roomDetailsBed, style: textTheme.bodyMedium),
                                     Expanded(
@@ -947,7 +947,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                               if (_roomData.no != null && _roomData.no!.isNotEmpty)
                                 Row(
                                   children: [
-                                    Icon(Icons.door_front_door_rounded, color: AppColors.primaryColor, size: textTheme.bodyLarge?.fontSize),
+                                    Icon(Icons.door_front_door_rounded, color: AppColors.primaryAdaptive(context), size: textTheme.bodyLarge?.fontSize),
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(_roomData.no!, style: textTheme.bodyMedium, overflow: TextOverflow.ellipsis),
@@ -967,7 +967,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                               if (_roomData.depositFee != null && _roomData.depositFee! > 0) ...[
                                 Row(
                                   children: [
-                                    Icon(Icons.money, color: AppColors.primaryColor, size: 20),
+                                    Icon(Icons.money, color: AppColors.primaryAdaptive(context), size: 20),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
@@ -979,7 +979,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                       formatCurrency(_roomData.depositFee!),
                                       style: textTheme.bodyMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryColor,
+                                        color: AppColors.primaryAdaptive(context),
                                       ),
                                     ),
                                   ],
@@ -1002,7 +1002,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                               if (_roomData.parkingFees.any((p) => p.parkingType?.toLowerCase() == 'car')) ...[
                                 Row(
                                   children: [
-                                    Icon(Icons.directions_car, color: AppColors.primaryColor, size: 20),
+                                    Icon(Icons.directions_car, color: AppColors.primaryAdaptive(context), size: 20),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
@@ -1014,7 +1014,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                       formatCurrency(_roomData.parkingFees.firstWhere((p) => p.parkingType?.toLowerCase() == 'car').fee ?? 0),
                                       style: textTheme.bodyMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryColor,
+                                        color: AppColors.primaryAdaptive(context),
                                       ),
                                     ),
                                   ],
@@ -1037,7 +1037,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                               if (_roomData.parkingFees.any((p) => p.parkingType?.toLowerCase() == 'motorcycle')) ...[
                                 Row(
                                   children: [
-                                    Icon(Icons.two_wheeler, color: AppColors.primaryColor, size: 20),
+                                    Icon(Icons.two_wheeler, color: AppColors.primaryAdaptive(context), size: 20),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
@@ -1049,7 +1049,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                       formatCurrency(_roomData.parkingFees.firstWhere((p) => p.parkingType?.toLowerCase() == 'motorcycle').fee ?? 0),
                                       style: textTheme.bodyMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryColor,
+                                        color: AppColors.primaryAdaptive(context),
                                       ),
                                     ),
                                   ],

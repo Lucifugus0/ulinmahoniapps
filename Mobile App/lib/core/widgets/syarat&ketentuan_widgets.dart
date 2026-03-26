@@ -160,13 +160,16 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
     final localizations = AppLocalizations.of(context)!;
     final screenHeight = MediaQuery.of(context).size.height;
     final dialogMaxHeight = screenHeight * 0.8;
+    // Dark mode detection for dialog background and inner container colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(20),
       constraints: BoxConstraints(maxHeight: dialogMaxHeight),
       decoration: BoxDecoration(
         shape: BoxShape.rectangle,
-        color: Colors.white,
+        // Use dark surface color in dark mode, white in light mode
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -189,10 +192,11 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
                 AppImage.logo,
                 height: 60,
                 errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
+                  // Use primaryAdaptive for the fallback icon color
+                  return Icon(
                     Icons.apartment,
                     size: 60,
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryAdaptive(context),
                   );
                 },
               ),
@@ -202,7 +206,8 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
             _getTitle(localizations),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.primaryColor,
+              // Use primaryAdaptive for the dialog title color
+              color: AppColors.primaryAdaptive(context),
             ),
           ),
           const SizedBox(height: 15),
@@ -220,10 +225,12 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    // Use elevated dark surface in dark mode, light grey in light mode
+                    color: isDark ? AppColors.surfaceDarkElevated : Colors.grey[50],
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(
-                      color: AppColors.primaryColor.withOpacity(0.2),
+                      // Use primaryAdaptive for the scroll container border
+                      color: AppColors.primaryAdaptive(context).withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
@@ -251,8 +258,11 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
                   });
                 }
                     : null,
-                activeColor: AppColors.primaryColor,
+                // Use primaryAdaptive for the checkbox active color
+                activeColor: AppColors.primaryAdaptive(context),
                 checkColor: Colors.white,
+                // Add visible border for unchecked state in dark mode
+                side: isDark ? const BorderSide(color: Colors.white70, width: 2) : null,
               ),
               Expanded(
                 // Mengganti GestureDetector untuk hanya mengaktifkan RichText
@@ -283,7 +293,10 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
               }
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                // Use primaryAdaptive for the continue button background
+                backgroundColor: AppColors.primaryAdaptive(context),
+                // Use dark-aware disabled background color
+                disabledBackgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

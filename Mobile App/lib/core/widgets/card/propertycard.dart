@@ -71,7 +71,8 @@ class _PropertyCardState extends State<PropertyCard> {
 
     if (widget.isRoomDetail && widget.roomStatus != null) {
       if (widget.roomStatus == 1) {
-        statusBgColor = AppColors.primaryColor;
+        // Available: use adaptive primary color for the status badge
+        statusBgColor = AppColors.primaryAdaptive(context);
         statusIcon = Icons.check_circle_outline;
         displayTextForBadge = localizations.availableStatus;
         statusTextColor = Colors.white;
@@ -201,8 +202,9 @@ class _PropertyCardState extends State<PropertyCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
+                      // Use primaryAdaptive so the available-rooms badge adapts to dark/light
                       color: widget.availableRooms! > 0
-                          ? AppColors.primaryColor.withValues(alpha: 0.9)
+                          ? AppColors.primaryAdaptive(context).withValues(alpha: 0.9)
                           : Colors.red.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(12),
                     ),

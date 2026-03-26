@@ -176,7 +176,8 @@ class _ConfirmationDialogState extends State<ConfirmationDialog> {
                   _buildPriceRow(
                     '${localizations.paymentVoucherTitle} (${widget.voucherCode})',
                     -widget.voucherDiscount!,
-                    color: AppColors.primaryColor,
+                    // Use primaryAdaptive for the voucher discount row color
+                    color: AppColors.primaryAdaptive(context),
                   ),
                 ],
 
@@ -263,7 +264,8 @@ class _ConfirmationDialogState extends State<ConfirmationDialog> {
             Navigator.of(context).pop();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryColor,
+            // Use primaryAdaptive for the confirm button background
+            backgroundColor: AppColors.primaryAdaptive(context),
             foregroundColor: Colors.white,
           ),
           child: Text(localizations.confirmationDialogConfirmButton),

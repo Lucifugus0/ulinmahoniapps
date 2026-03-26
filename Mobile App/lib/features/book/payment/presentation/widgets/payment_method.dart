@@ -81,7 +81,8 @@ class _PaymentMethodItemState extends State<PaymentMethodItem> {
             // Radio button icon (MOVED TO LEFT)
             Icon(
               widget.isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: widget.isSelected ? AppColors.primaryColor : Colors.grey,
+              // Use primaryAdaptive for the radio button icon color when selected
+            color: widget.isSelected ? AppColors.primaryAdaptive(context) : Colors.grey,
             ),
             const SizedBox(width: 8),
 
@@ -102,8 +103,9 @@ class _PaymentMethodItemState extends State<PaymentMethodItem> {
                     style: TextStyle(
                       fontWeight:
                       widget.isSelected ? FontWeight.bold : FontWeight.normal,
+                      // Use primaryAdaptive for the payment method title color when selected
                       color: widget.isSelected
-                          ? AppColors.primaryColor
+                          ? AppColors.primaryAdaptive(context)
                           : (isDark ? Colors.white : Colors.black87),
                       fontSize: 14,
                     ),
