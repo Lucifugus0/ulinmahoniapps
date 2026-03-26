@@ -321,7 +321,8 @@ html.dark .checkout-modal-header ~ div {
   -webkit-backdrop-filter: var(--glass-blur);
 }
 
-/* Modals must have solid opaque backgrounds — override glass transparency */
+/* Modals must have solid opaque backgrounds — override glass transparency.
+   Also applies to all child elements inside modals to prevent glass bleed. */
 html.dark .bg-white.rounded-lg.shadow-xl,
 html.dark .bg-white.rounded-xl.shadow-xl {
   background-color: rgb(31, 41, 55) !important;  /* gray-800 */
@@ -330,6 +331,21 @@ html.dark .bg-white.rounded-xl.shadow-xl {
 }
 .bg-white.rounded-lg.shadow-xl,
 .bg-white.rounded-xl.shadow-xl {
+  background: white !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* Inner cards/panels inside modals — solid dark backgrounds, no glass */
+html.dark .shadow-xl .rounded-lg.border,
+html.dark .shadow-xl .rounded-xl.border,
+html.dark .shadow-xl .bg-white {
+  background-color: rgb(55, 65, 81) !important;  /* gray-700 — subtle contrast from gray-800 body */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: rgb(75, 85, 99) !important;  /* gray-600 */
+}
+.shadow-xl .rounded-lg.border,
+.shadow-xl .rounded-xl.border {
   background: white !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
