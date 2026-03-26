@@ -45,6 +45,7 @@
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
 | 2026-03-26 | User Model | Added `role()` relationship (belongsTo Role via `role_id`) for HQ CS user identification. |
+| 2026-03-26 | BookingController (renew booking API) | Fixed `Class "App\Http\Controllers\Api\User" not found` error — added missing `use App\Models\User` import. Line 1258 used unqualified `User::find()`. |
 
 ---
 
