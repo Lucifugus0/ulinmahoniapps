@@ -80,12 +80,12 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             padding: 2rem;
         }
-        /* Dark mode overrides for glass content cards */
+        /* Dark mode overrides for glass content cards — remove white outline */
         html.dark .content-card {
             background: rgba(255, 255, 255, 0.06) !important;
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
-            border-color: rgba(255, 255, 255, 0.10) !important;
+            border: none !important;
             color: #e5e7eb;
         }
         html.dark .content-card h1,
