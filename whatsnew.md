@@ -29,6 +29,8 @@
 | 2026-03-26 | Voucher Management (`/vouchers`) | Removed delete button from action column. Replaced status badge button with toggle switch (checkbox slider) matching Property master page pattern — blue when active, gray when inactive, with text label. |
 | 2026-03-26 | Deposit Entry (`/payment/deposit`) | Fixed "Illegal mix of collations" error. `t_deposit_fee_transaction` used `utf8mb4_general_ci` while `t_transactions` used `utf8mb4_unicode_ci`. Added migration to convert table collation to `utf8mb4_unicode_ci`. |
 | 2026-03-26 | Parking Entry (`/payment/parking`) | Fixed search/pagination error — filter route only accepted POST, pagination links used GET. Changed to `Route::match(['get','post'])`, added non-AJAX redirect to index, added JS pagination interceptor. |
+| 2026-03-26 | Check-in Modal (Confirmed Bookings) | Fixed dark mode header — was nearly transparent (rgba 0.08). Now uses solid dark green background (`rgb(6,78,59)`) with white text for readability. |
+| 2026-03-26 | Check-out Modal (Check-out Hari Ini) | Fixed dark mode header — was nearly transparent. Now uses solid dark amber background (`rgb(120,53,15)`) with white text for readability. |
 
 ---
 
