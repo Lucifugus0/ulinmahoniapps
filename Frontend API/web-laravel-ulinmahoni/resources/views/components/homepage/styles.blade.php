@@ -523,8 +523,8 @@ main::after {
   position: absolute;
   inset: 0;
   background-image: url('/images/assets/backgrounds/golden-leaves-bg.jpg');
-  /* Single image stretched to fill full width and height of content area */
-  background-size: 100% 100%;
+  /* Single image covering full content area — keeps aspect ratio, crops overflow */
+  background-size: auto 100%;
   background-position: center;
   background-repeat: no-repeat;
   opacity: 0.06;
