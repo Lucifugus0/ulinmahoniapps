@@ -34,7 +34,7 @@
 | 2026-03-26 | Check-in Modal body (Confirmed Bookings) | Fixed dark mode body — was `bg-white` without dark class. Added `dark:bg-gray-800` to modal wrapper and `dark:bg-gray-700` to inner panels (guest profile, upload ID). |
 | 2026-03-26 | All Modals (global CSS) | Fixed transparent modal bodies caused by global glass CSS rules (`.rounded-lg.border`, `.bg-white.rounded-lg`). Excluded `.shadow-xl` modals from glass rules and added solid white/gray-800 overrides. |
 | 2026-03-26 | All Modals inner cards (global CSS) | Fixed inner content cards still too bright in dark mode. Added CSS overrides for `.shadow-xl` child elements: solid `gray-700` bg, `gray-600` borders, no backdrop-filter. |
-| 2026-03-26 | Check-in Modal Detail Pemesanan | Removed time from check-in/check-out display (date only). Added Total Booking, Deposit, and Service Fee fields. Total Payment now bold. |
+| 2026-03-26 | Check-in Modal Detail Pemesanan | Removed time from check-in/check-out. Added Total Booking, Deposit, Service Fee. Reorganized into 3-column layout: Booking (Order ID, Guest, Property, Room) · Stay (Check-in, Check-out, Duration) · Payment (Booking, Deposit, Service Fee, Total). |
 
 ---
 
