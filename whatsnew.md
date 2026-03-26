@@ -39,6 +39,7 @@
 | 2026-03-26 | Check-out Modal Detail Pemesanan | Added Total Booking, Deposit, Service Fee between Duration and Total Payment. Added `room_price`, `deposit_fee`, `service_fees` to checkout API response. Total Payment now bold green with separator line. |
 | 2026-03-26 | Booking Cancellation (`/payment/pay`) | Allow cancellation with Rp 0 refund (no refund). Changed JS validation from `<= 0` to `< 0`. Added missing i18n key `enter_valid_refund_amount` in EN and ID. |
 | 2026-03-26 | Daily Pricing Management (`/properties/calendar`) | Added activate/deactivate button to each entry in the "Entri Aktif" list. The `toggleEntryStatus()` JS method existed but had no UI button. Active entries show red "Nonaktifkan", inactive show green "Aktifkan". |
+| 2026-03-26 | Room Type Management (`/properties/rooms/room-name-types`) | Fixed "route not found" error on store, update, and toggle-status. Fetch URLs were missing `/properties` prefix (used `/rooms/room-name-types/` instead of `/properties/rooms/room-name-types/`). |
 
 ---
 
