@@ -253,9 +253,27 @@
                                                                 <span class="text-sm text-gray-800"
                                                                     x-text="bookingDetails.duration"></span>
                                                             </div>
+                                                            {{-- Total Booking (room price before fees) --}}
+                                                            <div class="flex justify-between">
+                                                                <span class="text-sm font-medium text-gray-600">Total Booking:</span>
+                                                                <span class="text-sm text-gray-800"
+                                                                    x-text="bookingDetails.total_booking"></span>
+                                                            </div>
+                                                            {{-- Deposit fee --}}
+                                                            <div class="flex justify-between">
+                                                                <span class="text-sm font-medium text-gray-600">Deposit:</span>
+                                                                <span class="text-sm text-gray-800"
+                                                                    x-text="bookingDetails.deposit"></span>
+                                                            </div>
+                                                            {{-- Service fee --}}
+                                                            <div class="flex justify-between">
+                                                                <span class="text-sm font-medium text-gray-600">Service Fee:</span>
+                                                                <span class="text-sm text-gray-800"
+                                                                    x-text="bookingDetails.service_fee"></span>
+                                                            </div>
                                                             <div class="flex justify-between">
                                                                 <span class="text-sm font-medium text-gray-600">{{ __('ui.total_payment') }}:</span>
-                                                                <span class="text-sm text-gray-800"
+                                                                <span class="text-sm text-gray-800 font-bold"
                                                                     x-text="bookingDetails.total_payment"></span>
                                                             </div>
                                                         </div>

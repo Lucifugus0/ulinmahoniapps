@@ -363,25 +363,21 @@
                             data.transaction?.booking_months
                         );
 
+                        /* Build booking details object — date-only format (no time) for check-in/check-out,
+                           added total_booking, deposit, and service_fee fields */
                         this.bookingDetails = {
                             order_id: data.order_id,
                             check_in: data.transaction?.check_in ?
                                 new Date(data.transaction.check_in).toLocaleString('en-US', {
                                     year: 'numeric',
                                     month: 'long',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false
+                                    day: 'numeric'
                                 }) : 'N/A',
                             check_out: data.transaction?.check_out ?
                                 new Date(data.transaction.check_out).toLocaleString('en-US', {
                                     year: 'numeric',
                                     month: 'long',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false
+                                    day: 'numeric'
                                 }) : 'N/A',
                             check_in_date: checkIn.date,
                             check_in_time: checkIn.time,
@@ -396,7 +392,13 @@
                             room_name: data.room?.name || 'N/A',
                             room_number: data.room?.no || 'N/A',
                             update_by: data.transaction?.update_by || 'N/A',
-                            duration: duration, // Gunakan durasi yang sudah dihitung
+                            duration: duration,
+                            total_booking: data.transaction?.room_price ?
+                                this.formatRupiah(data.transaction.room_price) : 'N/A',
+                            deposit: data.transaction?.deposit_fee ?
+                                this.formatRupiah(data.transaction.deposit_fee) : 'Rp 0',
+                            service_fee: data.transaction?.service_fees ?
+                                this.formatRupiah(data.transaction.service_fees) : 'Rp 0',
                             total_payment: data.transaction?.grandtotal_price ?
                                 this.formatRupiah(data.transaction.grandtotal_price) : 'N/A',
                             transaction_type: data.transaction?.transaction_type || 'N/A',
