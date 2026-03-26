@@ -15,6 +15,7 @@ use App\Models\VoucherUsage;
 use App\Services\VoucherService;
 use App\Jobs\ExpireBooking;
 use App\Notifications\BookingConfirmationNotification;
+use App\Models\User;
 use App\Services\FirebaseNotificationService;
 
 use Illuminate\Http\Request;
