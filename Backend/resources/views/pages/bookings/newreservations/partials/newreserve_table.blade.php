@@ -172,7 +172,8 @@
                                         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                                         x-transition:leave-end="opacity-0 translate-y-4 scale-95" x-cloak>
 
-                                        <div class="bg-white rounded-lg shadow-xl overflow-auto w-full overflow-auto max-h-full flex flex-col text-left max-w-7xl"
+                                        {{-- Check-in modal body: added dark:bg-gray-800 for dark mode --}}
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-auto w-full overflow-auto max-h-full flex flex-col text-left max-w-7xl"
                                             @click.outside="closeModal" @keydown.escape.window="closeModal">
 
                                             <!-- Header Modal - dark mode uses darker bg for readability -->
@@ -263,7 +264,7 @@
                                                     <!-- Bagian 2: Profil Tamu dan Unggah Identifikasi Berdampingan -->
                                                     <div class="grid grid-cols-1 gap-8" :class="docRequired ? 'lg:grid-cols-2' : 'lg:grid-cols-1'">
                                                         <!-- Profil Tamu -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600">
                                                             <h3
                                                                 class="font-semibold text-lg text-gray-800 mb-4 flex items-center">
                                                                 <svg class="w-5 h-5 mr-2 text-purple-600"
@@ -366,7 +367,7 @@
                                                         </div>
 
                                                         <!-- Unggah Identifikasi -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200" x-show="docRequired">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600" x-show="docRequired">
                                                             <h3
                                                                 class="font-semibold text-lg text-gray-800 mb-4 flex items-center">
                                                                 <svg class="w-5 h-5 mr-2 text-green-600"
@@ -634,7 +635,7 @@
                                                         </div>
 
                                                         <!-- Informasi Dokumen Sudah Tersimpan -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200" x-show="!docRequired">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600" x-show="!docRequired">
                                                             <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
                                                                 <div class="flex items-start">
                                                                     <svg class="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

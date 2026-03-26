@@ -297,6 +297,12 @@ html.dark .checkin-modal-header .text-gray-600 { color: #e5e7eb !important; }
 html.dark .checkout-modal-header .text-gray-800,
 html.dark .checkin-modal-header .text-gray-800 { color: #ffffff !important; }
 
+/* Check-in/check-out modal body — solid dark background for content area */
+html.dark .checkin-modal-header ~ .flex-1,
+html.dark .checkout-modal-header ~ div {
+  color: #e5e7eb;
+}
+
 /* Light mode glass surfaces — translucent panels with blur for bordered cards */
 .rounded-xl.border, .rounded-lg.border {
   background: var(--glass-bg);
