@@ -72,8 +72,17 @@ class CheckOutController extends Controller
         return view('pages.bookings.checkout.index', compact('bookings'));
     }
 
+    /**
+     * Filter checkout bookings via AJAX — returns JSON with rendered HTML partial.
+     * Redirects non-AJAX requests to index to prevent raw JSON on pagination click.
+     */
     public function filter(Request $request)
     {
+        /* Redirect non-AJAX requests to index to prevent raw JSON display */
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return redirect()->route('checkout.index', $request->query());
+        }
+
         /* Show bookings due for check-out today or overdue:
            - Checked in, not yet checked out
            - Transaction check_out date is today or earlier */
