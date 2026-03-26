@@ -54,9 +54,24 @@ class ApiConfig {
   static String get promoBannerImages => "$baseUrl/promo-banner";
   static String promoBannerbyId(int bannerId) => "$baseUrl/promo-banner?id=$bannerId";
 
-  // FCM (Firebase Cloud Messaging) endpoints
-  static String get fcmToken => "$baseUrl/users/fcm-token";
-  static String get fcmTokenDelete => "$baseUrl/users/fcm-token";
+  /// Ticket endpoints — customer service ticketing system
+  static String get ticketCategories => "$baseUrl/tickets/categories";
+  static String get ticketEligibility => "$baseUrl/tickets/eligibility";
+  static String get ticketEligibleBookings => "$baseUrl/tickets/eligible-bookings";
+  static String get tickets => "$baseUrl/tickets";
+  static String ticketById(int id) => "$baseUrl/tickets/$id";
+  static String ticketMessages(int id) => "$baseUrl/tickets/$id/messages";
+  static String ticketRead(int id) => "$baseUrl/tickets/$id/read";
+  static String ticketClose(int id) => "$baseUrl/tickets/$id/close";
+  static String ticketReopen(int id) => "$baseUrl/tickets/$id/reopen";
+  /// Broadcast endpoints — one-way announcements
+  static String get broadcasts => "$baseUrl/broadcasts";
+  static String broadcastById(int id) => "$baseUrl/broadcasts/$id";
+
+  /// FCM device token registration — matches Frontend API POST /api/v1/device-token
+  static String get fcmToken => "$baseUrl/device-token";
+  /// FCM device token deletion — matches Frontend API DELETE /api/v1/device-token
+  static String get fcmTokenDelete => "$baseUrl/device-token";
 
   static const dokuUrl = "https://api-sandbox.doku.com";
   static const dokuPayment ="$dokuUrl/checkout/v1/payment"; // Ini boleh const krn dokuUrl juga const

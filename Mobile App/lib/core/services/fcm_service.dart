@@ -3,12 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// TODO: Uncomment when backend FCM endpoints ready
-// import 'package:dio/dio.dart';
 import '../utils/app_logger.dart';
 import 'local_notification_service.dart';
-// TODO: Uncomment when backend FCM endpoints ready
-// import '../data/repositories/fcm_repository.dart';
+import '../data/repositories/fcm_repository.dart';
 import '../../router/router.dart';
 
 /// Top-level function for background message handler
@@ -25,7 +22,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
     AppLogger.i('Background message received: ${message.messageId}', 'FCM-BG');
 
-    // Handle the message
+    // Handle the message — show local notification for chat messages
     if (message.data.containsKey('conversation_id')) {
       final conversationId = int.tryParse(message.data['conversation_id'] ?? '');
       final title = message.notification?.title ?? message.data['title'] ?? 'New Message';
@@ -45,27 +42,27 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
-/// Firebase Cloud Messaging Service
+/// Firebase Cloud Messaging Service — singleton that manages FCM token
+/// lifecycle, message handling, and backend token synchronization.
 class FCMService {
   static final FCMService _instance = FCMService._internal();
   factory FCMService() => _instance;
   FCMService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  // TODO: Uncomment when backend FCM endpoints ready
-  // late final FCMRepository _fcmRepository;
+  /// Repository for syncing device tokens with the backend API
+  late final FCMRepository _fcmRepository;
   StreamSubscription<String>? _tokenRefreshSubscription;
   StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
 
-  /// Initialize FCM service
+  /// Initialize FCM service — requests permissions, obtains token,
+  /// sets up message listeners, and syncs token to backend if user is logged in.
   Future<void> initialize() async {
     try {
       AppLogger.i('Initializing FCM Service', 'FCM');
 
-      // TODO: Uncomment when backend FCM endpoints ready
-      // Initialize repository
-      // final dio = Dio();
-      // _fcmRepository = FCMRepository(dio);
+      // Initialize repository — uses DioClient with auto-auth headers
+      _fcmRepository = FCMRepository();
 
       // Request notification permissions (iOS)
       final settings = await _firebaseMessaging.requestPermission(
@@ -90,27 +87,25 @@ class FCMService {
         AppLogger.s('FCM Token obtained: ${token.substring(0, 20)}...', 'FCM');
         await _saveTokenLocally(token);
 
-        // TODO: Uncomment when backend FCM endpoints ready
-        // Send token to backend
-        // await _sendTokenToBackend(token);
+        // Send token to backend if user is logged in
+        await _sendTokenToBackend(token);
       }
 
-      // Listen for token refresh
+      // Listen for token refresh — re-sync with backend when token changes
       _tokenRefreshSubscription = _firebaseMessaging.onTokenRefresh.listen(
         (newToken) async {
           AppLogger.i('FCM Token refreshed', 'FCM');
           await _saveTokenLocally(newToken);
 
-          // TODO: Uncomment when backend FCM endpoints ready
-          // Send new token to backend
-          // await _sendTokenToBackend(newToken);
+          // Send refreshed token to backend
+          await _sendTokenToBackend(newToken);
         },
         onError: (error) {
           AppLogger.e('Token refresh error', error, null, 'FCM');
         },
       );
 
-      // Handle foreground messages
+      // Handle foreground messages — show local notification for chat
       _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen(
         _handleForegroundMessage,
         onError: (error) {
@@ -134,7 +129,7 @@ class FCMService {
     }
   }
 
-  /// Get FCM token
+  /// Get FCM token from Firebase
   Future<String?> getToken() async {
     try {
       final token = await _firebaseMessaging.getToken();
@@ -148,7 +143,7 @@ class FCMService {
     }
   }
 
-  /// Get locally saved token
+  /// Get locally saved token from SharedPreferences
   Future<String?> getSavedToken() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -159,7 +154,7 @@ class FCMService {
     }
   }
 
-  /// Save token locally
+  /// Save token locally to SharedPreferences with timestamp
   Future<void> _saveTokenLocally(String token) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -171,36 +166,46 @@ class FCMService {
     }
   }
 
-  // TODO: Uncomment when backend FCM endpoints ready
-  /// Send token to backend
-  // Future<void> _sendTokenToBackend(String token) async {
-  //   try {
-  //     // Get user_id from SharedPreferences
-  //     final prefs = await SharedPreferences.getInstance();
-  //     final userId = prefs.getInt('user_id');
-  //
-  //     if (userId == null) {
-  //       AppLogger.w('User ID not found, cannot send FCM token to backend', 'FCM');
-  //       return;
-  //     }
-  //
-  //     // Send to backend
-  //     final success = await _fcmRepository.sendFCMToken(
-  //       userId: userId,
-  //       fcmToken: token,
-  //     );
-  //
-  //     if (success) {
-  //       AppLogger.s('FCM token registered with backend for user $userId', 'FCM');
-  //     } else {
-  //       AppLogger.w('Failed to register FCM token with backend', 'FCM');
-  //     }
-  //   } catch (e, stackTrace) {
-  //     AppLogger.e('Error sending FCM token to backend', e, stackTrace, 'FCM');
-  //   }
-  // }
+  /// Send FCM token to backend — skips if user is not logged in (no user_id).
+  /// The backend identifies the user from the Bearer token (Sanctum auth).
+  Future<void> _sendTokenToBackend(String token) async {
+    try {
+      // Check if user is logged in by looking for user_id in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
 
-  /// Handle foreground messages (app is open)
+      if (userId == null) {
+        AppLogger.w('User ID not found, cannot send FCM token to backend', 'FCM');
+        return;
+      }
+
+      // Send token to backend — auth header is auto-attached by DioClient
+      final success = await _fcmRepository.sendFCMToken(
+        fcmToken: token,
+      );
+
+      if (success) {
+        AppLogger.s('FCM token registered with backend for user $userId', 'FCM');
+      } else {
+        AppLogger.w('Failed to register FCM token with backend', 'FCM');
+      }
+    } catch (e, stackTrace) {
+      AppLogger.e('Error sending FCM token to backend', e, stackTrace, 'FCM');
+    }
+  }
+
+  /// Public method to sync saved FCM token to backend — called after login
+  /// when the user becomes authenticated and the token can be sent.
+  Future<void> syncTokenToBackend() async {
+    final token = await getSavedToken();
+    if (token != null) {
+      await _sendTokenToBackend(token);
+    } else {
+      AppLogger.w('No saved FCM token to sync', 'FCM');
+    }
+  }
+
+  /// Handle foreground messages (app is open) — display local notification for chat
   void _handleForegroundMessage(RemoteMessage message) {
     AppLogger.i('Foreground message: ${message.messageId}', 'FCM');
 
@@ -223,7 +228,7 @@ class FCMService {
     }
   }
 
-  /// Handle message that opened the app
+  /// Handle message that opened the app — navigate to chat room via GoRouter
   void _handleMessageOpenedApp(RemoteMessage message) {
     AppLogger.i('Message opened app: ${message.messageId}', 'FCM');
 
@@ -242,15 +247,13 @@ class FCMService {
     }
   }
 
-  /// Delete FCM token (on logout)
+  /// Delete FCM token (on logout) — removes from backend, Firebase, and local storage
   Future<void> deleteToken() async {
     try {
-      // TODO: Uncomment when backend FCM endpoints ready
-      // Get user_id before deleting
-      // final prefs = await SharedPreferences.getInstance();
-      // final userId = prefs.getInt('user_id');
-
       final prefs = await SharedPreferences.getInstance();
+
+      // Save token before deleting from Firebase so we can tell backend to remove it
+      final savedToken = prefs.getString('fcm_token');
 
       // Delete from Firebase
       await _firebaseMessaging.deleteToken();
@@ -259,11 +262,15 @@ class FCMService {
       await prefs.remove('fcm_token');
       await prefs.remove('fcm_token_timestamp');
 
-      // TODO: Uncomment when backend FCM endpoints ready
-      // Delete from backend
-      // if (userId != null) {
-      //   await _fcmRepository.deleteFCMToken(userId: userId);
-      // }
+      // Delete from backend if we had a token
+      if (savedToken != null) {
+        try {
+          await _fcmRepository.deleteFCMToken(fcmToken: savedToken);
+        } catch (e) {
+          AppLogger.w('Failed to delete FCM token from backend: $e', 'FCM');
+          // Continue with logout even if backend deletion fails
+        }
+      }
 
       AppLogger.s('FCM token deleted', 'FCM');
     } catch (e, stackTrace) {

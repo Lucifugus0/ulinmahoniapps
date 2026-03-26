@@ -191,6 +191,26 @@ Route::prefix('v1')->group(function () {
             Route::post('/conversations/{id}/participants', [ChatController::class, 'assignParticipant']);
         });
 
+        /** TICKET API ROUTES — customer service ticketing system */
+        Route::prefix('tickets')->group(function () {
+            Route::get('/categories', [\App\Http\Controllers\Api\TicketController::class, 'getCategories']);
+            Route::get('/eligibility', [\App\Http\Controllers\Api\TicketController::class, 'checkEligibility']);
+            Route::get('/eligible-bookings', [\App\Http\Controllers\Api\TicketController::class, 'getEligibleBookings']);
+            Route::get('/', [\App\Http\Controllers\Api\TicketController::class, 'listTickets']);
+            Route::post('/', [\App\Http\Controllers\Api\TicketController::class, 'createTicket']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\TicketController::class, 'getTicket'])->where('id', '[0-9]+');
+            Route::post('/{id}/messages', [\App\Http\Controllers\Api\TicketController::class, 'sendMessage'])->where('id', '[0-9]+');
+            Route::post('/{id}/read', [\App\Http\Controllers\Api\TicketController::class, 'markAsRead'])->where('id', '[0-9]+');
+            Route::post('/{id}/close', [\App\Http\Controllers\Api\TicketController::class, 'closeTicket'])->where('id', '[0-9]+');
+            Route::post('/{id}/reopen', [\App\Http\Controllers\Api\TicketController::class, 'reopenTicket'])->where('id', '[0-9]+');
+        });
+
+        /** BROADCAST API ROUTES — one-way announcements visible to users */
+        Route::prefix('broadcasts')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\TicketController::class, 'listBroadcasts']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\TicketController::class, 'getBroadcast'])->where('id', '[0-9]+');
+        });
+
         // PROMO BANNER API ROUTES
         // Use ?id= query param to get single banner
         Route::prefix('promo-banner')->group(function () {

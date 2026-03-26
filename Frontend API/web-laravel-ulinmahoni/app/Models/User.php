@@ -231,4 +231,10 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(DeviceToken::class)->where('is_active', true);
     }
+
+    /** User's assigned role (via role_id FK to m_roles table) */
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
 }

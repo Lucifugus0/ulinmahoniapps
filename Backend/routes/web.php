@@ -376,6 +376,25 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::delete('/{id}', [PromoBannerController::class, 'destroy'])->where('id', '[0-9]+')->name('promo-banners.destroy');
     });
 
+    /** Ticket Management Routes — customer service ticketing system */
+    Route::prefix('tickets')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Tickets\TicketController::class, 'index'])->name('tickets.index');
+        Route::get('/filter', [\App\Http\Controllers\Tickets\TicketController::class, 'filter'])->name('tickets.filter');
+        Route::get('/unread-count', [\App\Http\Controllers\Tickets\TicketController::class, 'getUnreadCount'])->name('tickets.unread-count');
+        Route::get('/{id}', [\App\Http\Controllers\Tickets\TicketController::class, 'show'])->where('id', '[0-9]+')->name('tickets.show');
+        Route::post('/{ticketId}/send', [\App\Http\Controllers\Tickets\TicketController::class, 'sendMessage'])->name('tickets.send');
+        Route::post('/{ticketId}/upload-image', [\App\Http\Controllers\Tickets\TicketController::class, 'uploadImage'])->name('tickets.upload-image');
+        Route::post('/{ticketId}/close', [\App\Http\Controllers\Tickets\TicketController::class, 'closeTicket'])->name('tickets.close');
+        Route::post('/{ticketId}/reopen', [\App\Http\Controllers\Tickets\TicketController::class, 'reopenTicket'])->name('tickets.reopen');
+        Route::post('/{ticketId}/status', [\App\Http\Controllers\Tickets\TicketController::class, 'updateStatus'])->name('tickets.status');
+
+        /** Broadcast Routes — one-way announcements to users */
+        Route::get('/broadcasts', [\App\Http\Controllers\Tickets\BroadcastController::class, 'index'])->name('broadcasts.index');
+        Route::get('/broadcasts/create', [\App\Http\Controllers\Tickets\BroadcastController::class, 'create'])->name('broadcasts.create');
+        Route::post('/broadcasts/store', [\App\Http\Controllers\Tickets\BroadcastController::class, 'store'])->name('broadcasts.store');
+        Route::get('/broadcasts/{id}', [\App\Http\Controllers\Tickets\BroadcastController::class, 'show'])->where('id', '[0-9]+')->name('broadcasts.show');
+    });
+
     Route::prefix('chat')->group(function () {
         Route::get('/', [ChatController::class, 'index'])->name('chat.index');
         Route::get('/filter', [ChatController::class, 'filter'])->name('chat.filter');

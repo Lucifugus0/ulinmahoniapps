@@ -1,25 +1,28 @@
-import 'package:dio/dio.dart';
+import 'dart:io';
 import '../../constants/api_constants.dart';
+import '../../network/dio_client.dart';
 import '../../utils/app_logger.dart';
 
+/// Repository for syncing FCM device tokens with the backend.
+/// Uses DioClient singleton which auto-attaches Bearer token via AuthInterceptor.
+/// Backend identifies user from the auth token — no user_id in request body.
 class FCMRepository {
-  final Dio _dio;
+  final _dio = DioClient().dio;
 
-  FCMRepository(this._dio);
-
-  /// Send FCM token to backend
-  /// POST /api/users/fcm-token
-  /// Body: { "user_id": 123, "fcm_token": "xyz..." }
+  /// Register or update FCM device token on backend.
+  /// POST /api/v1/device-token
+  /// Body: { "token": "...", "device_type": "ios|android", "device_name": "..." }
   Future<bool> sendFCMToken({
-    required int userId,
     required String fcmToken,
+    String? deviceName,
   }) async {
     try {
       final response = await _dio.post(
-        '${ApiConfig.baseUrl}/users/fcm-token',
+        ApiConfig.fcmToken,
         data: {
-          'user_id': userId,
-          'fcm_token': fcmToken,
+          'token': fcmToken,
+          'device_type': Platform.isIOS ? 'ios' : 'android',
+          'device_name': deviceName ?? '${Platform.isIOS ? 'iOS' : 'Android'} Device',
         },
       );
 
@@ -36,17 +39,17 @@ class FCMRepository {
     }
   }
 
-  /// Delete FCM token from backend (on logout)
-  /// DELETE /api/users/fcm-token
-  /// Body: { "user_id": 123 }
+  /// Delete FCM device token from backend (called on logout).
+  /// DELETE /api/v1/device-token
+  /// Body: { "token": "..." }
   Future<bool> deleteFCMToken({
-    required int userId,
+    required String fcmToken,
   }) async {
     try {
       final response = await _dio.delete(
-        '${ApiConfig.baseUrl}/users/fcm-token',
+        ApiConfig.fcmTokenDelete,
         data: {
-          'user_id': userId,
+          'token': fcmToken,
         },
       );
 

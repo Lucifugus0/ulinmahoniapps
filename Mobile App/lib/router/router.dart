@@ -19,8 +19,11 @@ import 'package:ulinmahoniapps/features/home/presentation/pages/homepage.dart';
 import 'package:ulinmahoniapps/features/mybooking/mybooking/presentation/pages/mybooking_page.dart';
 import 'package:ulinmahoniapps/features/profiles/viewprofile/presentation/pages/profilepage.dart';
 import 'package:ulinmahoniapps/features/propertytype/presentation/pages/propertytypepage.dart';
-import 'package:ulinmahoniapps/features/customerservice/presentation/pages/customerservice_page.dart';
 import 'package:ulinmahoniapps/features/customerservice/presentation/pages/chatroom_page.dart';
+import 'package:ulinmahoniapps/features/customerservice/presentation/pages/ticket_list_page.dart';
+import 'package:ulinmahoniapps/features/customerservice/presentation/pages/create_ticket_page.dart';
+import 'package:ulinmahoniapps/features/customerservice/presentation/pages/ticket_chat_page.dart';
+import 'package:ulinmahoniapps/features/customerservice/presentation/pages/broadcast_detail_page.dart';
 import 'package:ulinmahoniapps/features/promo_banner/presentation/pages/promo_detail_page.dart';
 import 'package:ulinmahoniapps/core/layout/mainlayout.dart';
 import '../features/book/roomdetails/model/rooms_model.dart';
@@ -53,10 +56,11 @@ final GoRouter appRouter = GoRouter(
           name: RouteNames.comingSoon,
           builder: (context, state) => const ComingSoonPage(),
         ),
+        /// Changed to TicketListPage — now the main CS landing page with ticket/broadcast tabs
         GoRoute(
           path: RoutePaths.customerService,
           name: RouteNames.customerService,
-          builder: (context, state) => const CustomerServicePage(),
+          builder: (context, state) => const TicketListPage(),
         ),
         GoRoute(
           path: RoutePaths.profile,
@@ -240,6 +244,7 @@ final GoRouter appRouter = GoRouter(
       name: RouteNames.updatePassword,
       builder: (context, state) => UpdatePasswordPage(),
     ),
+    /// Existing chat route — kept for backward compatibility with old CS chat flow
     GoRoute(
       path: RoutePaths.chat, // '/cs/chat/:conversationId'
       name: RouteNames.chat,
@@ -261,6 +266,49 @@ final GoRouter appRouter = GoRouter(
           recipientType: extra?['recipientType'] as String?,
           roomName: extra?['roomName'] as String?,
         );
+      },
+    ),
+
+    /// Create ticket page — multi-step wizard for submitting a new support ticket
+    GoRoute(
+      path: RoutePaths.createTicket, // '/cs/create'
+      name: RouteNames.createTicket,
+      builder: (context, state) => const CreateTicketPage(),
+    ),
+
+    /// Ticket chat page — displays messages and allows interaction for a specific ticket
+    GoRoute(
+      path: RoutePaths.ticketChat, // '/cs/ticket/:ticketId'
+      name: RouteNames.ticketChat,
+      builder: (context, state) {
+        final ticketIdString = state.pathParameters['ticketId'];
+        final ticketId = int.tryParse(ticketIdString ?? '');
+
+        if (ticketId == null) {
+          return const Scaffold(
+            body: Center(child: Text('Invalid ticket ID')),
+          );
+        }
+
+        return TicketChatPage(ticketId: ticketId);
+      },
+    ),
+
+    /// Broadcast detail page — read-only view of a single broadcast announcement
+    GoRoute(
+      path: RoutePaths.broadcastDetail, // '/cs/broadcast/:broadcastId'
+      name: RouteNames.broadcastDetail,
+      builder: (context, state) {
+        final broadcastIdString = state.pathParameters['broadcastId'];
+        final broadcastId = int.tryParse(broadcastIdString ?? '');
+
+        if (broadcastId == null) {
+          return const Scaffold(
+            body: Center(child: Text('Invalid broadcast ID')),
+          );
+        }
+
+        return BroadcastDetailPage(broadcastId: broadcastId);
       },
     ),
   ],

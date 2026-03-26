@@ -409,5 +409,7 @@
     </div>
 </header>
 
+{{-- Floating ticket widget — appears for authenticated users on all public pages --}}
+@include('components.ticket.floating-widget')
 
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>

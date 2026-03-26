@@ -8,6 +8,7 @@ import '../model/apple/applesignin_model.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../core/services/chat_background_service.dart';
+import '../../../../core/services/fcm_service.dart';
 import '../../../../core/services/apple_multi_account_storage.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -194,6 +195,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
           // Start background polling for chat notifications
           await ChatBackgroundService().startPolling();
           AppLogger.s('Background polling started for user ${user.id}', 'AUTH-PROVIDER');
+
+          /// Sync FCM device token to backend after successful login
+          try {
+            await FCMService().syncTokenToBackend();
+          } catch (e) {
+            AppLogger.w('FCM token sync after login failed: $e', 'AUTH-PROVIDER');
+          }
 
           state = state.copyWith(
             isLoggedIn: true,
@@ -507,15 +515,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final repository = ref.read(authRepositoryProvider);
     final currentUser = state.user.value;
 
-    // TODO: Uncomment when backend FCM endpoints ready
-    // Delete FCM token first
-    // try {
-    //   await FCMService().deleteToken();
-    //   AppLogger.d('FCM token deleted on logout', 'AUTH-PROVIDER');
-    // } catch (e) {
-    //   AppLogger.e('Failed to delete FCM token', e, null, 'AUTH-PROVIDER');
-    //   // Continue with logout even if FCM deletion fails
-    // }
+    /// Delete FCM device token from backend and Firebase on logout
+    try {
+      await FCMService().deleteToken();
+      AppLogger.d('FCM token deleted on logout', 'AUTH-PROVIDER');
+    } catch (e) {
+      AppLogger.e('Failed to delete FCM token', e, null, 'AUTH-PROVIDER');
+      // Continue with logout even if FCM deletion fails
+    }
 
     // Stop background polling
     await ChatBackgroundService().stopPolling();

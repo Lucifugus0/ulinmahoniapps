@@ -205,6 +205,18 @@ class User extends Authenticatable
         return $this->hasMany(ChatMessage::class, 'sender_id');
     }
 
+    /** Relationship to all device tokens for this user (from shared device_tokens table) */
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    /** Relationship to active device tokens only — used by FirebaseNotificationService */
+    public function activeDeviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class)->where('is_active', true);
+    }
+
     /**
      * Check if user is HO (Head Office) type
      * @return bool
