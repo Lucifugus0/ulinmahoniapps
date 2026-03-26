@@ -32,6 +32,7 @@
 | 2026-03-26 | Check-in Modal (Confirmed Bookings) | Fixed dark mode header — was nearly transparent (rgba 0.08). Now uses solid dark green background (`rgb(6,78,59)`) with white text for readability. |
 | 2026-03-26 | Check-out Modal (Check-out Hari Ini) | Fixed dark mode header — was nearly transparent. Now uses solid dark amber background (`rgb(120,53,15)`) with white text for readability. |
 | 2026-03-26 | Check-in Modal body (Confirmed Bookings) | Fixed dark mode body — was `bg-white` without dark class. Added `dark:bg-gray-800` to modal wrapper and `dark:bg-gray-700` to inner panels (guest profile, upload ID). |
+| 2026-03-26 | All Modals (global CSS) | Fixed transparent modal bodies caused by global glass CSS rules (`.rounded-lg.border`, `.bg-white.rounded-lg`). Excluded `.shadow-xl` modals from glass rules and added solid white/gray-800 overrides. |
 
 ---
 
