@@ -134,7 +134,7 @@
             const newStatus = checkbox.checked ? 1 : 0;
             const row = checkbox.closest('tr');
             const statusLabel = row.querySelector('.status-label');
-            fetch('/rooms/room-name-types/toggle-status', {
+            fetch('/properties/rooms/room-name-types/toggle-status', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, status: newStatus })
@@ -172,7 +172,7 @@
                 currentType: { name: '' },
                 async submitForm() {
                     try {
-                        const res = await fetch('/rooms/room-name-types/store', {
+                        const res = await fetch('/properties/rooms/room-name-types/store', {
                             method: 'POST',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
                             body: JSON.stringify({ name: this.currentType.name, status: 1 })
@@ -193,7 +193,7 @@
                 async submitEditForm() {
                     this.isSubmitting = true;
                     try {
-                        const res = await fetch(`/rooms/room-name-types/update/${this.typeData.id}`, {
+                        const res = await fetch(`/properties/rooms/room-name-types/update/${this.typeData.id}`, {
                             method: 'PUT',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
                             body: JSON.stringify({ name: this.typeData.name, status: this.typeData.status ? 1 : 0 })
