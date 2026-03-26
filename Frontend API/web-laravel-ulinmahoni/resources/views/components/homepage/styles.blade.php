@@ -512,9 +512,9 @@ html.dark body.liquid-glass-page {
   color: var(--text-primary) !important;
 }
 
-/* Golden leaves background — decorative overlay rendered ON TOP of all content.
+/* Golden leaves background — very subtle decorative overlay on top of content.
    Uses high z-index with pointer-events:none so it doesn't block interactions.
-   This approach works regardless of child stacking contexts or opaque backgrounds. */
+   Kept very low opacity so it doesn't interfere with photos/hero/readability. */
 body::after {
   content: '';
   position: fixed;
@@ -523,13 +523,13 @@ body::after {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: 0.06;
+  opacity: 0.03;
   z-index: 9999;
   pointer-events: none;
 }
-/* Dark mode — stronger opacity for visibility against dark backgrounds */
+/* Dark mode — slightly more visible against dark backgrounds */
 html.dark body::after {
-  opacity: 0.12;
+  opacity: 0.06;
 }
 
 /* Dark header glass — very transparent */
