@@ -206,9 +206,11 @@ html.dark .no-backdrop-filter.bg-white {
 html.dark .shadow-sm, html.dark .shadow-md { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important; }
 html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important; }
 html.dark .rounded-xl.border { border-color: var(--color-gray-700) !important; }
-/* Glass-transparent bg-gray-50 for dark mode surfaces */
+/* Dark mode bg-gray-50 — use solid dark color matching the main body background.
+   Was rgba(255,255,255,0.04) which was too transparent, causing page content
+   areas to bleed through the underlying animated gradient. */
 html.dark .bg-gray-50 {
-  background-color: rgba(255, 255, 255, 0.04) !important;
+  background-color: rgb(17, 24, 39) !important;  /* gray-900 — matches dark body bg */
 }
 /* Dark body uses animated deep-blue gradient for immersive liquid glass feel */
 html.dark body.bg-gray-100 {
@@ -303,22 +305,27 @@ html.dark .checkout-modal-header ~ div {
   color: #e5e7eb;
 }
 
-/* Light mode glass surfaces — translucent panels with blur for bordered cards.
-   Excludes modals (fixed/overflow containers) which need solid opaque backgrounds. */
-.rounded-xl.border:not([class*="fixed"]):not([class*="overflow-auto"]),
-.rounded-lg.border:not([class*="fixed"]):not([class*="overflow-auto"]) {
+/* Light mode ONLY glass surfaces — translucent panels with blur for bordered cards.
+   Disabled in dark mode where solid backgrounds are needed for readability. */
+html:not(.dark) .rounded-xl.border:not([class*="fixed"]):not([class*="overflow-auto"]):not([class*="shadow-xl"]),
+html:not(.dark) .rounded-lg.border:not([class*="fixed"]):not([class*="overflow-auto"]):not([class*="shadow-xl"]) {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-color: var(--glass-border-subtle) !important;
 }
 
-/* Glass cards in light mode — excludes modal wrappers and their children */
-.bg-white.rounded-xl:not([class*="shadow-xl"]),
-.bg-white.rounded-lg:not([class*="shadow-xl"]) {
+/* Light mode ONLY glass cards — excludes modal wrappers */
+html:not(.dark) .bg-white.rounded-xl:not([class*="shadow-xl"]),
+html:not(.dark) .bg-white.rounded-lg:not([class*="shadow-xl"]) {
   background: var(--glass-bg-strong) !important;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
+}
+
+/* Dark mode: bg-white elements get solid gray-800 background */
+html.dark .bg-white {
+  background-color: rgb(31, 41, 55) !important;  /* gray-800 */
 }
 
 /* Modals must have solid opaque backgrounds — override glass transparency.
