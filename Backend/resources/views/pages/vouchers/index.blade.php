@@ -490,6 +490,27 @@
                 });
             }
 
+            /* Intercept pagination link clicks inside the voucher table container.
+               Loads the page via AJAX instead of full browser navigation to prevent
+               raw JSON being displayed when clicking page 2, 3, etc. */
+            $(document).on('click', '#vouchers-table-container .pagination a', function(e) {
+                e.preventDefault();
+                const url = $(this).attr('href');
+                if (!url) return;
+
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(response) {
+                        $('#vouchers-table-container').html(response.html);
+                    },
+                    error: function(xhr) {
+                        console.error('Pagination error:', xhr);
+                    }
+                });
+            });
+
             // Reload table only without full page refresh
             function reloadTable() {
                 filterVouchers();

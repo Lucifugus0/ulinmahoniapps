@@ -192,8 +192,19 @@ class VoucherController extends Controller
         }
     }
 
+    /**
+     * Filter vouchers via AJAX — returns JSON with rendered HTML partial.
+     * If accessed via regular browser navigation (e.g., pagination link click),
+     * redirects to the index page with the same query parameters.
+     */
     public function filter(Request $request)
     {
+        /* Redirect non-AJAX requests to index to prevent raw JSON display
+           when users click pagination links directly */
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return redirect()->route('vouchers.index', $request->query());
+        }
+
         $perPage = $request->input('per_page', 10);
         $search = $request->input('search');
         $status = $request->input('status');
