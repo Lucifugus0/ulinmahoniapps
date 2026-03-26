@@ -64,6 +64,7 @@
 | 2026-03-26 | User Model | Added `role()` relationship (belongsTo Role via `role_id`) for HQ CS user identification. |
 | 2026-03-26 | BookingController (renew booking API) | Fixed `Class "App\Http\Controllers\Api\User" not found` error — added missing `use App\Models\User` import. Line 1258 used unqualified `User::find()`. |
 | 2026-03-26 | Payment Page (`/payment/show`) | Fixed dark mode not applying — body had no background/text classes. Added `dark:bg-gray-900 dark:text-gray-100` to body, section, and headings. Removed empty `class=""` from `<html>` tag. |
+| 2026-03-26 | Property Listing (gender badge) | Fixed gender badge (♂♀ label) hard to see in dark mode. Added semi-transparent white background, brighter text, and visible border. |
 
 ---
 
