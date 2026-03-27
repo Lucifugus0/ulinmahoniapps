@@ -83,7 +83,10 @@ class TicketService
 
     /**
      * Get all bookings eligible for ticket creation by a user.
-     * Returns paid bookings within stay or 7-day grace period.
+     * Eligible if:
+     *   - transaction_status = 'paid', AND either:
+     *     a) Currently checked-in (t_booking.check_in_at IS NOT NULL, check_out_at IS NULL), OR
+     *     b) Within 7-day grace period after scheduled check-out.
      */
     public function getEligibleBookings(int $userId): \Illuminate\Support\Collection
     {
@@ -91,7 +94,16 @@ class TicketService
 
         return Transaction::where('user_id', $userId)
             ->where('transaction_status', 'paid')
-            ->where('check_out', '>=', $graceLimit)
+            ->where(function ($q) use ($graceLimit) {
+                /* Active checked-in booking — always eligible regardless of check_out date */
+                $q->whereHas('booking', function ($bq) {
+                    $bq->whereNotNull('check_in_at')
+                       ->whereNull('check_out_at')
+                       ->where('status', 1);
+                })
+                /* OR within 7-day grace period after scheduled check-out */
+                ->orWhere('check_out', '>=', $graceLimit);
+            })
             ->with(['booking'])
             ->orderBy('check_in', 'desc')
             ->get();

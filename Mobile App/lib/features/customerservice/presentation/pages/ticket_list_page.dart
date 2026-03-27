@@ -206,8 +206,12 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
               );
             }
 
+            /* Bottom padding clears FAB + outer BottomNavBar */
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.only(
+                left: 16, right: 16, top: 16,
+                bottom: 20 + MediaQuery.of(context).padding.bottom,
+              ),
               itemCount: tickets.length,
               itemBuilder: (context, index) {
                 return _buildTicketCard(tickets[index], isDark);
@@ -228,10 +232,12 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
       ),
 
       /// FAB button to navigate to create ticket page.
-      /// Bottom margin accounts for outer ShellRoute's BottomNavBar overlapping
-      /// due to extendBody:true on the parent MainLayout scaffold.
+      /// Bottom margin uses MediaQuery safe area + fixed offset to clear the
+      /// outer ShellRoute's BottomNavBar (extendBody: true on parent scaffold).
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 100),
+        padding: EdgeInsets.only(
+          bottom: 5 + MediaQuery.of(context).padding.bottom,
+        ),
         child: FloatingActionButton.extended(
           onPressed: () => context.push('/cs/create'),
           backgroundColor: AppColors.primaryColor,
@@ -262,8 +268,12 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
             );
           }
 
+          /* Bottom padding clears outer BottomNavBar */
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.only(
+              left: 16, right: 16, top: 16,
+              bottom: 20 + MediaQuery.of(context).padding.bottom,
+            ),
             itemCount: broadcasts.length,
             itemBuilder: (context, index) {
               return _buildBroadcastCard(broadcasts[index], isDark);

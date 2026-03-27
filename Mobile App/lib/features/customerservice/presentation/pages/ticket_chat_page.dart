@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/constants/appcolor_constants.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -50,6 +51,9 @@ class _TicketChatPageState extends ConsumerState<TicketChatPage>
 
   /// Currently selected image for sending
   File? _selectedImage;
+
+  /// Guard flag — prevents double-tap sends before Riverpod state rebuilds
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -143,28 +147,37 @@ class _TicketChatPageState extends ConsumerState<TicketChatPage>
     }
   }
 
-  /// Send an image message to the ticket with optional caption
+  /// Send an image message to the ticket with optional caption.
+  /// Closes the preview immediately and guards against double-sends.
   Future<void> _sendImageMessage() async {
-    if (_selectedImage == null) return;
+    /* Guard: ignore tap if no image selected or already sending */
+    if (_selectedImage == null || _isSending) return;
 
     final user = ref.read(authProvider).user.value;
     if (user == null) return;
 
-    final controller = ref.read(ticketControllerProvider.notifier);
+    /* Lock sending and capture state before clearing */
+    final imageToSend = _selectedImage!;
     final caption = _captionController.text.trim();
+    setState(() {
+      _isSending = true;
+      /* Close preview immediately — prevents multiple sends while upload is in-flight */
+      _selectedImage = null;
+    });
+    _captionController.clear();
 
+    final controller = ref.read(ticketControllerProvider.notifier);
     final message = await controller.sendImageMessage(
       widget.ticketId,
       user.id,
-      _selectedImage!,
+      imageToSend,
       caption: caption.isNotEmpty ? caption : null,
     );
 
+    if (!mounted) return;
+    setState(() { _isSending = false; });
+
     if (message != null) {
-      setState(() {
-        _selectedImage = null;
-      });
-      _captionController.clear();
       _scrollToBottom();
       _refreshMessages();
     }
@@ -730,14 +743,24 @@ class _TicketChatPageState extends ConsumerState<TicketChatPage>
   Widget _buildImageAttachment(
       TicketMessageModel message, bool isFromUser) {
     final attachment = message.attachments.first;
-    final imageUrl = attachment.thumbnailUrl ?? attachment.fileUrl;
+    final rawUrl = attachment.thumbnailUrl ?? attachment.fileUrl;
 
-    if (imageUrl == null) return const SizedBox.shrink();
+    if (rawUrl == null) return const SizedBox.shrink();
+
+    /* Backend returns relative /storage/... paths — prepend the origin URL */
+    final imageUrl = rawUrl.startsWith('/')
+        ? '${ApiConfig.storageBaseUrl}$rawUrl'
+        : rawUrl;
+
+    /* Full-size URL also needs the origin prefix if relative */
+    final fullUrl = attachment.fileUrl != null && attachment.fileUrl!.startsWith('/')
+        ? '${ApiConfig.storageBaseUrl}${attachment.fileUrl}'
+        : attachment.fileUrl;
 
     return GestureDetector(
       /// Tap to view full-size image in a dialog
       onTap: () {
-        if (attachment.fileUrl != null) {
+        if (fullUrl != null) {
           showDialog(
             context: context,
             builder: (context) => Dialog(
@@ -745,7 +768,7 @@ class _TicketChatPageState extends ConsumerState<TicketChatPage>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
-                  attachment.fileUrl!,
+                  fullUrl,
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) =>
                       const Icon(Icons.broken_image, size: 48),
