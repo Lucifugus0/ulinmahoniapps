@@ -43,6 +43,16 @@ class _CreateTicketPageState extends ConsumerState<CreateTicketPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
+  void initState() {
+    super.initState();
+    /* Invalidate eligible bookings cache on every page open so fresh data is
+       fetched — prevents showing stale empty results from a previous session. */
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(eligibleBookingsProvider);
+    });
+  }
+
+  @override
   void dispose() {
     _subjectController.dispose();
     _messageController.dispose();
@@ -153,7 +163,14 @@ class _CreateTicketPageState extends ConsumerState<CreateTicketPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ticketState = ref.watch(ticketControllerProvider);
 
-    return Scaffold(
+    /* Intercept back navigation: on step 0 allow normal pop (back to ticket list),
+       on steps 1+ go to previous step instead of leaving the wizard. */
+    return PopScope(
+      canPop: _currentStep == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _previousStep();
+      },
+      child: Scaffold(
       backgroundColor:
           isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: PreferredSize(
@@ -174,7 +191,8 @@ class _CreateTicketPageState extends ConsumerState<CreateTicketPage> {
           ),
         ],
       ),
-    );
+    ), // Scaffold
+    ); // PopScope
   }
 
   /// Build a horizontal step indicator at the top of the page.
@@ -265,9 +283,13 @@ class _CreateTicketPageState extends ConsumerState<CreateTicketPage> {
   Widget _buildTypeSelectionStep(bool isDark) {
     final textColor =
         isDark ? AppColors.fontColorDark : AppColors.fontColorLight;
+    /* Use MediaQuery bottom padding so content clears the safe area (notch/home bar)
+       on all devices — prevents the Suggestion Box card from being clipped. */
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      physics: const ClampingScrollPhysics(),
+      padding: EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 24 + bottomPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

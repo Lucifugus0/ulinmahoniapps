@@ -3,6 +3,17 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiConfig {
   static String get baseUrl =>dotenv.env['BASE_URL'] ?? 'https://default-url.com';
   static String get apiKey => dotenv.env['API_KEY'] ?? '';
+
+  /// Storage base URL — origin of BASE_URL used to resolve relative /storage/... paths
+  /// returned by the backend (e.g., BASE_URL=https://staging.ulinmahoni.com/api/v1
+  /// → storageBaseUrl=https://staging.ulinmahoni.com).
+  static String get storageBaseUrl {
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null) return '';
+    /* Include port only if non-standard (not 80/443) */
+    final port = uri.hasPort && uri.port != 80 && uri.port != 443 ? ':${uri.port}' : '';
+    return '${uri.scheme}://${uri.host}$port';
+  }
   static String get loginUrl => '$baseUrl/auth/login';
   static String get registerUrl => '$baseUrl/auth/register';
   static String get forgotPasswordUrl => '$baseUrl/forgot-password';

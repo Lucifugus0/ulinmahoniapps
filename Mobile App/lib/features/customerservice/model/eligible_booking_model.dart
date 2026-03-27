@@ -20,9 +20,11 @@ class EligibleBookingModel {
   });
 
   factory EligibleBookingModel.fromJson(Map<String, dynamic> json) {
+    /* property_id may come as String from API — parse safely to int */
+    final rawId = json['property_id'];
     return EligibleBookingModel(
       orderId: json['order_id'] ?? '',
-      propertyId: json['property_id'],
+      propertyId: rawId is int ? rawId : int.tryParse(rawId?.toString() ?? ''),
       propertyName: json['property_name'],
       roomName: json['room_name'],
       checkIn: json['check_in'],
