@@ -47,6 +47,56 @@
         html.dark .text-gray-700 {
             color: #d1d5db !important;
         }
+
+        /* Datepicker popup z-index — must be above the leafy background overlay
+           (main::after z-index:1, main > * z-index:2) */
+        .datepicker {
+            z-index: 100 !important;
+        }
+
+        /* Dark mode: vanillajs-datepicker calendar popup.
+           Targets .datepicker-picker (the actual calendar panel) since the CDN CSS
+           sets background-color:#fff on .datepicker-picker, not .datepicker. */
+        html.dark .datepicker-picker {
+            background-color: #1f2937 !important;
+            border: 1px solid #4b5563 !important;
+        }
+        html.dark .datepicker-header {
+            background-color: #1f2937 !important;
+        }
+        html.dark .datepicker-controls .button {
+            color: #f3f4f6 !important;
+            background-color: transparent !important;
+            border-color: #4b5563 !important;
+        }
+        html.dark .datepicker-controls .button:hover {
+            background-color: #374151 !important;
+        }
+        /* Enabled dates — bright white for clear visibility */
+        html.dark .datepicker-cell {
+            color: #ffffff !important;
+        }
+        html.dark .datepicker-cell:hover {
+            background-color: #374151 !important;
+        }
+        html.dark .datepicker-cell.focused,
+        html.dark .datepicker-cell.selected {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+        }
+        html.dark .datepicker-cell.today:not(.selected) {
+            background-color: #374151 !important;
+            color: #60a5fa !important;
+        }
+        /* Disabled/out-of-range dates — dim grey to distinguish from enabled */
+        html.dark .datepicker-cell.disabled,
+        html.dark .datepicker-cell.prev,
+        html.dark .datepicker-cell.next {
+            color: #4b5563 !important;
+        }
+        html.dark .dow {
+            color: #9ca3af !important;
+        }
     </style>
 </head>
 <body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
@@ -1026,7 +1076,7 @@
                     // Set check-in date for monthly with 14-day minimum
                     const today = new Date();
                     const minCheckInDate = new Date(today);
-                    minCheckInDate.setDate(today.getDate() + 14);
+                    // Default check-in is today (no offset)
 
                     if (checkInMonthlyInput) {
                         checkInMonthlyInput.value = searchState?.check_in || minCheckInDate.toISOString().split('T')[0];
@@ -1060,7 +1110,7 @@
                     // Set dates from saved search or use defaults with 14-day minimum
                     const today = new Date();
                     const minCheckInDate = new Date(today);
-                    minCheckInDate.setDate(today.getDate() + 14);
+                    // Default check-in is today (no offset)
                     const minCheckOutDate = new Date(minCheckInDate);
                     minCheckOutDate.setDate(minCheckInDate.getDate() + 1);
 
@@ -1101,11 +1151,9 @@
 
                     // Calculate max checkout: 14 days OR end of month, whichever is earlier
                     const maxCheckoutDate = new Date(checkInDate);
-                    maxCheckoutDate.setDate(checkInDate.getDate() + 14);
+                    maxCheckoutDate.setDate(checkInDate.getDate() + 60);
 
-                    const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                    const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
+                    const actualMaxCheckout = maxCheckoutDate;
 
                     checkOutInput.min = minCheckout.toISOString().split('T')[0];
                     checkOutInput.max = actualMaxCheckout.toISOString().split('T')[0];
@@ -1160,33 +1208,11 @@
                     checkInInput.value = defaultCheckIn;
                     checkInInput.min = minCheckInStr;
 
-                    // Handle check-in date changes
+                    // Check-in change handler — only triggers availability check.
+                    // Check-out date constraints are managed by the Datepicker changeDate
+                    // handler via setOptions/setDate. Direct DOM manipulation here would
+                    // desync the Datepicker's internal state, breaking date selection.
                     checkInInput.addEventListener('change', function() {
-                        if (checkInInput.value) {
-                            const checkInDate = new Date(checkInInput.value);
-                            const minCheckout = new Date(checkInDate);
-                            minCheckout.setDate(checkInDate.getDate() + 1);
-
-                            // Calculate max checkout: 14 days OR end of month, whichever is earlier
-                            const maxCheckoutDate = new Date(checkInDate);
-                            maxCheckoutDate.setDate(checkInDate.getDate() + 14);
-
-                            const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                            const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
-
-                            if (checkOutInput) {
-                                checkOutInput.min = formatDate(minCheckout);
-                                checkOutInput.max = formatDate(actualMaxCheckout);
-
-                                // If current check-out is before new min date or after max date, update it
-                                if (!checkOutInput.value ||
-                                    new Date(checkOutInput.value) <= new Date(checkInInput.value) ||
-                                    new Date(checkOutInput.value) > actualMaxCheckout) {
-                                    checkOutInput.value = formatDate(minCheckout);
-                                }
-                            }
-                        }
                         checkRoomAvailability();
                     });
                 }
@@ -1526,33 +1552,9 @@
                 checkInInput.value = formatDate(minCheckInDate);
                 checkInInput.min = formatDate(minCheckInDate);
 
-                // Handle check-in date changes
+                // Check-in change handler — only triggers price update.
+                // Check-out constraints are managed by Datepicker changeDate handler.
                 checkInInput.addEventListener('change', function() {
-                    if (checkInInput.value) {
-                        const checkInDate = new Date(checkInInput.value);
-                        const minCheckout = new Date(checkInDate);
-                        minCheckout.setDate(checkInDate.getDate() + 1);
-
-                        // Calculate max checkout: 14 days OR end of month, whichever is earlier
-                        const maxCheckoutDate = new Date(checkInDate);
-                        maxCheckoutDate.setDate(checkInDate.getDate() + 14);
-
-                        const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                        const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
-
-                        if (checkOutInput) {
-                            checkOutInput.min = formatDate(minCheckout);
-                            checkOutInput.max = formatDate(actualMaxCheckout);
-
-                            // If current check-out is before new min date or after max date, update it
-                            if (!checkOutInput.value ||
-                                new Date(checkOutInput.value) <= new Date(checkInInput.value) ||
-                                new Date(checkOutInput.value) > actualMaxCheckout) {
-                                checkOutInput.value = formatDate(minCheckout);
-                            }
-                        }
-                    }
                     updatePriceSummary();
                 });
             }
@@ -1595,12 +1597,16 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
-            const maxDate = new Date();
-            maxDate.setDate(today.getDate() + 14);
+            // Max check-in dates differ by booking type:
+            // Daily booking — up to 90 days from today
+            // Monthly booking — up to 14 days from today
+            const maxCheckInDaily = new Date();
+            maxCheckInDaily.setDate(today.getDate() + 90);
+            const maxCheckInMonthly = new Date();
+            maxCheckInMonthly.setDate(today.getDate() + 14);
 
-            // Set default dates
+            // Set default dates (check-in defaults to today)
             const minCheckInDate = new Date(today);
-            minCheckInDate.setDate(today.getDate() + 14);
             const minCheckOutDate = new Date(minCheckInDate);
             minCheckOutDate.setDate(minCheckInDate.getDate() + 1);
 
@@ -1611,7 +1617,7 @@
                 checkInPicker = new Datepicker(checkInElem, {
                     format: 'yyyy-mm-dd',
                     minDate: today,
-                    maxDate: maxDate,
+                    maxDate: maxCheckInDaily,
                     autohide: true,
                     todayHighlight: true,
                     weekStart: 0
@@ -1620,7 +1626,10 @@
                 // Set default date
                 checkInPicker.setDate(minCheckInDate);
 
-                // Update check-out picker when check-in changes
+                // Update check-out picker when check-in changes.
+                // Destroys and recreates the check-out datepicker because
+                // vanillajs-datepicker's setOptions() does not reliably update
+                // min/max constraints, leaving the picker unresponsive.
                 checkInElem.addEventListener('changeDate', function(e) {
                     if (e.detail.date) {
                         const selectedCheckIn = new Date(e.detail.date);
@@ -1629,27 +1638,34 @@
 
                         // Calculate max checkout: 14 days from check-in OR end of month
                         const maxCheckOutDate = new Date(selectedCheckIn);
-                        maxCheckOutDate.setDate(selectedCheckIn.getDate() + 14);
+                        maxCheckOutDate.setDate(selectedCheckIn.getDate() + 60);
 
-                        const endOfMonth = new Date(selectedCheckIn.getFullYear(), selectedCheckIn.getMonth() + 1, 0);
-                        const actualMaxCheckOut = maxCheckOutDate < endOfMonth ? maxCheckOutDate : endOfMonth;
+                        const actualMaxCheckOut = maxCheckOutDate;
 
-                        // Update check-out datepicker options
+                        // Destroy and recreate check-out datepicker with new constraints.
+                        // setOptions() breaks the picker in vanillajs-datepicker v1.3.4.
+                        // Pass Date objects directly (not strings) to avoid timezone issues
+                        // where toISOString() shifts dates back a day in Asian timezones.
                         if (checkOutPicker) {
-                            checkOutPicker.setOptions({
+                            checkOutPicker.destroy();
+                        }
+                        const coElem = document.getElementById('check_out');
+                        if (coElem) {
+                            checkOutPicker = new Datepicker(coElem, {
+                                format: 'yyyy-mm-dd',
                                 minDate: minCheckOut,
-                                maxDate: actualMaxCheckOut
+                                maxDate: actualMaxCheckOut,
+                                autohide: true,
+                                todayHighlight: true,
+                                weekStart: 0
                             });
-
-                            // Auto-set check-out to min date if current value is invalid
-                            const currentCheckOut = checkOutPicker.getDate();
-                            if (!currentCheckOut || currentCheckOut <= selectedCheckIn || currentCheckOut > actualMaxCheckOut) {
-                                checkOutPicker.setDate(minCheckOut);
-                            }
+                            checkOutPicker.setDate(minCheckOut);
                         }
 
-                        // Trigger change event for form validation
-                        checkInElem.dispatchEvent(new Event('change', { bubbles: true }));
+                        // Update price summary and availability directly
+                        // (don't dispatch 'change' event — that would conflict with Datepicker)
+                        updatePriceSummary();
+                        checkRoomAvailability();
                     }
                 });
             }
@@ -1685,7 +1701,7 @@
                 checkInMonthlyPicker = new Datepicker(checkInMonthlyElem, {
                     format: 'yyyy-mm-dd',
                     minDate: today,
-                    maxDate: maxDate,
+                    maxDate: maxCheckInMonthly,
                     autohide: true,
                     todayHighlight: true,
                     weekStart: 0

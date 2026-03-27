@@ -1,6 +1,30 @@
-<!-- Header — liquid glass bar with strong backdrop blur for frosted transparency -->
-<!-- Header — light mode uses solid white/90 for readability, dark mode uses glass blur -->
-<header class="sticky top-0 before:absolute before:inset-0 before:backdrop-blur-[48px] max-lg:before:bg-white/90 dark:max-lg:before:bg-gray-900/20 before:-z-10 z-30 {{ $variant === 'v2' || $variant === 'v3' ? 'before:bg-white/90 dark:before:bg-white/15 after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200/30 dark:after:bg-gray-700/20 after:-z-10' : 'max-lg:shadow-xs lg:before:bg-white/90 dark:lg:before:bg-gray-900/15' }} {{ $variant === 'v2' ? 'dark:before:bg-gray-800/20' : '' }} {{ $variant === 'v3' ? 'dark:before:bg-gray-900/20' : '' }}">
+<!-- Header — liquid glass bar with backdrop blur, matching frontend glassmorphism style.
+     Blur styles are inline (not in app.css) because the Vite/Lightning CSS build strips
+     the unprefixed backdrop-filter property, which Firefox requires. -->
+<style>
+    /* Header ::before pseudo-element provides the glassmorphism blur layer.
+       Both prefixed and unprefixed backdrop-filter are needed for cross-browser support
+       (Firefox uses unprefixed, Safari/Chrome use -webkit- prefix). */
+    .admin-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: rgba(255, 255, 255, 0.35);
+        -webkit-backdrop-filter: blur(48px);
+        backdrop-filter: blur(48px);
+        border-bottom: 1px solid rgba(200, 200, 200, 0.30);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+    }
+    html.dark .admin-header::before {
+        background: rgba(10, 10, 25, 0.35);
+        -webkit-backdrop-filter: blur(48px);
+        backdrop-filter: blur(48px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    }
+</style>
+<header class="admin-header sticky top-0 z-30">
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 {{ $variant === 'v2' || $variant === 'v3' ? '' : 'lg:border-b border-gray-200 dark:border-gray-700/60' }}">
 

@@ -107,7 +107,9 @@ class UserSettingsController extends Controller
             'locale' => $validated['locale'],
         ]);
 
+        /* Set locale for current request and sync to session for consistency */
         App::setLocale($validated['locale']);
+        session(['locale' => $validated['locale']]);
 
         return redirect()->back()
             ->with('success', __('ui.language_updated'))

@@ -121,7 +121,7 @@
 /* Glass design tokens — Apple-style glassmorphism / liquid glass variables
    used across light and dark mode for translucent surfaces, blur, and shadows */
 :root {
-  --glass-bg: rgba(255, 255, 255, 0.18);
+  --glass-bg: rgba(255, 255, 255, 0.35);
   --glass-bg-hover: rgba(255, 255, 255, 0.28);
   --glass-bg-strong: rgba(255, 255, 255, 0.30);
   --glass-border: rgba(255, 255, 255, 0.35);
@@ -167,6 +167,17 @@ body.bg-gray-100 {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+/* Admin header — glassmorphism matching the frontend's .site-header style.
+   The ::before blur styles are defined in the header blade template (not here)
+   because Lightning CSS strips the unprefixed backdrop-filter that Firefox needs.
+   Only base positioning styles are here. */
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  isolation: isolate;
 }
 
 /* Placeholder text — standard gray for readability */

@@ -315,7 +315,8 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
         // ------------------------- DEPOSIT PAYMENTS -------------------------
         Route::get('/deposit', [DepositPaymentController::class, 'index'])->name('admin.deposit-payments.index');
-        Route::post('/deposit/filter', [DepositPaymentController::class, 'filter'])->name('admin.deposit-payments.filter');
+        /* Accept GET (pagination links) and POST (AJAX filter) */
+        Route::match(['get', 'post'], '/deposit/filter', [DepositPaymentController::class, 'filter'])->name('admin.deposit-payments.filter');
         Route::get('/deposit/checked-in-orders', [DepositPaymentController::class, 'getCheckedInOrders'])->name('admin.deposit-payments.checked-in-orders');
         Route::post('/deposit/store', [DepositPaymentController::class, 'store'])->name('admin.deposit-payments.store');
         Route::post('/deposit/approve/{id}', [DepositPaymentController::class, 'approve'])->name('admin.deposit-payments.approve');

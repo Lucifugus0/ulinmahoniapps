@@ -41,6 +41,12 @@
 | 2026-03-26 | Daily Pricing Management (`/properties/calendar`) | Added activate/deactivate button to each entry in the "Entri Aktif" list. The `toggleEntryStatus()` JS method existed but had no UI button. Active entries show red "Nonaktifkan", inactive show green "Aktifkan". |
 | 2026-03-26 | Room Type Management (`/properties/rooms/room-name-types`) | Fixed "route not found" error on store, update, and toggle-status. Fetch URLs were missing `/properties` prefix (used `/rooms/room-name-types/` instead of `/properties/rooms/room-name-types/`). |
 | 2026-03-26 | All Bookings filter (`/bookings/bookings`) | Fixed filter search — `t_booking` used `latin1_swedish_ci` while `t_transactions` used `utf8mb4_general_ci`, causing collation mismatch on LEFT JOIN. Converted to `utf8mb4_general_ci`. Added non-AJAX redirect guard. |
+| 2026-03-27 | All Bookings search (`/bookings/bookings`) | Fixed search returning 500 error — `order_id` and `property_id` columns were ambiguous after LEFT JOIN with `t_transactions`. Prefixed with `t_booking.` table name in both `index()` and `filter()` methods. |
+| 2026-03-27 | Today's Check-Out search (`/bookings/checkout`) | Same ambiguous column fix — prefixed `order_id` and `property_id` with `t_booking.` in both `index()` and `filter()` methods. |
+| 2026-03-27 | Deposit Entry (`/payment/deposit`) | Fixed "Illegal mix of collations" error — 24 tables used `utf8mb4_general_ci` while others used `utf8mb4_unicode_ci`, causing JOIN errors. Converted all tables to `utf8mb4_unicode_ci`. |
+| 2026-03-27 | Language Switcher (global) | Fixed locale not persisting — `SetLocale` middleware now syncs DB locale to session as backup, and `updateLocale` also writes to session. Prevents revert to default `id` on transient auth failures. |
+| 2026-03-27 | Deposit Entry pagination (`/payment/deposit`) | Fixed 405 "Method Not Allowed" on pagination — filter route only accepted POST but pagination links use GET. Changed to `Route::match(['get','post'])` and added non-AJAX redirect guard. |
+| 2026-03-27 | Header (global) | Changed header to glassmorphism style — 35% opacity with 48px backdrop blur for both light and dark modes. Blur styles in inline `<style>` block because Vite/Lightning CSS strips unprefixed `backdrop-filter` needed by Firefox. |
 | 2026-03-26 | Today's Check-Out filter (`/bookings/checkout`) | Same collation fix. Added non-AJAX redirect guard to filter method. |
 
 ---
@@ -65,6 +71,8 @@
 | 2026-03-26 | BookingController (renew booking API) | Fixed `Class "App\Http\Controllers\Api\User" not found` error — added missing `use App\Models\User` import. Line 1258 used unqualified `User::find()`. |
 | 2026-03-26 | Payment Page (`/payment/show`) | Fixed dark mode not applying — body had no background/text classes. Added `dark:bg-gray-900 dark:text-gray-100` to body, section, and headings. Removed empty `class=""` from `<html>` tag. |
 | 2026-03-26 | Property Listing (gender badge) | Fixed gender badge (♂♀ label) hard to see in dark mode. Added semi-transparent white background, brighter text, and visible border. |
+| 2026-03-27 | Header (homepage) | Changed `--glass-bg` from 18% to 35% opacity for light mode header, matching backend. |
+| 2026-03-27 | Room Detail (daily booking) | Fixed check-out date picker becoming unresponsive after changing check-in date. Replaced `setOptions()` with destroy/recreate pattern for vanillajs-datepicker. Applied to both ID and EN versions. |
 
 ---
 

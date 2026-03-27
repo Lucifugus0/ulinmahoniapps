@@ -55,6 +55,11 @@ class DepositPaymentController extends Controller
 
     public function filter(Request $request)
     {
+        /* Redirect non-AJAX requests to index to prevent raw JSON display on pagination click */
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return redirect()->route('admin.deposit-payments.index', $request->query());
+        }
+
         $perPage = $request->input('per_page', 8);
 
         $query = DepositFeeTransaction::with(['depositFee', 'images', 'verifiedBy', 'createdBy', 'transaction.property', 'transaction.room'])

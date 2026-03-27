@@ -236,7 +236,7 @@ All three apps support Indonesian (default), English, and Chinese (Simplified):
 - Shared dark mode badge styles for booking pages: `pages/bookings/partials/dark-badge-styles.blade.php`
 - Modal headers (check-in, check-out) use `.checkin-modal-header` / `.checkout-modal-header` classes with dark overrides in `app.css`
 - Dashboard-specific dark styles use custom CSS classes (`.card-header-green`, `.card-indigo`, etc.) defined in `<style>` block at top of `dashboard.blade.php`
-- Header opacity: 50% for both light and dark modes (backdrop-blur with `/50` opacity on pseudo-element)
+- Header opacity: 35% for both light and dark modes (backdrop-blur with 0.35 opacity on ::before pseudo-element)
 - After CSS changes, always run `npm run build` to rebuild assets
 
 ### Frontend API (Web Portal)

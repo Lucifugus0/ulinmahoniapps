@@ -7,7 +7,7 @@
    ======================================== */
 :root {
   /* Glass surface colors — high transparency for prominent frosted glass effect */
-  --glass-bg: rgba(255, 255, 255, 0.18);
+  --glass-bg: rgba(255, 255, 255, 0.35);
   --glass-bg-hover: rgba(255, 255, 255, 0.28);
   --glass-bg-strong: rgba(255, 255, 255, 0.30);
   --glass-border: rgba(255, 255, 255, 0.35);
@@ -523,10 +523,12 @@ main::after {
   position: absolute;
   inset: 0;
   background-image: url('/images/assets/backgrounds/golden-leaves-bg.jpg');
-  /* Single image covering full content area — keeps aspect ratio, crops overflow */
-  background-size: auto 100%;
-  background-position: center;
-  background-repeat: no-repeat;
+  /* Cover full width, repeat vertically. Uses 100vw width so leaf proportions
+     stay consistent across all pages regardless of <main> height.
+     Based on room detail page where the leaf size looks correct. */
+  background-size: 100vw auto;
+  background-position: top center;
+  background-repeat: repeat-y;
   opacity: 0.06;
   z-index: 1;
   pointer-events: none;

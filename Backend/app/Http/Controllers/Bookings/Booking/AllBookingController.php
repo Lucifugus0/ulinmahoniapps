@@ -52,7 +52,8 @@ class AllBookingController extends Controller
         // Filter by property_id for site users
         $user = Auth::user();
         if ($user && $user->isSiteRole() && $user->property_id) {
-            $query->where('property_id', $user->property_id);
+            /* Use fully-qualified column to avoid ambiguity with joined tables */
+            $query->where('t_booking.property_id', $user->property_id);
         }
 
         // Apply date filter only if user provides dates
@@ -75,8 +76,9 @@ class AllBookingController extends Controller
         // Pencarian berdasarkan order_id atau nama user
         if ($request->filled('search')) {
             $search = $request->search;
+            /* Use t_booking.order_id to avoid ambiguity with t_transactions.order_id from leftJoin */
             $query->where(function ($q) use ($search) {
-                $q->where('order_id', 'like', "%{$search}%")
+                $q->where('t_booking.order_id', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
                         $q->where('username', 'like', "%{$search}%")
                             ->orWhere('first_name', 'like', "%{$search}%")
@@ -189,7 +191,8 @@ class AllBookingController extends Controller
         // Filter by property_id for site users
         $user = Auth::user();
         if ($user && $user->isSiteRole() && $user->property_id) {
-            $query->where('property_id', $user->property_id);
+            /* Use fully-qualified column to avoid ambiguity with joined tables */
+            $query->where('t_booking.property_id', $user->property_id);
         }
 
         // Apply date filter only if user provides dates
@@ -212,8 +215,9 @@ class AllBookingController extends Controller
         // Search by order_id or user name
         if ($request->filled('search')) {
             $search = $request->search;
+            /* Use t_booking.order_id to avoid ambiguity with t_transactions.order_id from leftJoin */
             $query->where(function ($q) use ($search) {
-                $q->where('order_id', 'like', "%{$search}%")
+                $q->where('t_booking.order_id', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
                         $q->where('username', 'like', "%{$search}%")
                             ->orWhere('first_name', 'like', "%{$search}%")
