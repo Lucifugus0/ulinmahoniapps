@@ -632,7 +632,8 @@
                             <div class="bg-gray-50 p-4 rounded-lg mb-6">
                                 <h4 class="font-medium text-gray-900 mb-3">{{ __('properties.booking.total_price') }}</h4>
                                 <div class="space-y-3 text-sm">
-                                    <div class="flex items-center justify-between">
+                                    <!-- Rate row — hidden for daily bookings, shown for monthly -->
+                                    <div class="flex items-center justify-between" id="rateRow">
                                         <span class="text-gray-600" id="rateTypeDisplay">{{ __('properties.booking.daily_rate') }}: </span>
                                         <div class="text-right">
                                             <div class="text-gray-900" id="rateDisplay">
@@ -1162,6 +1163,9 @@
                 }
                 if (dailyRateDisplay) dailyRateDisplay.classList.toggle('hidden', rentType !== 'daily');
                 if (monthlyRateDisplay) monthlyRateDisplay.classList.toggle('hidden', rentType !== 'monthly');
+                // Hide the entire rate row for daily bookings (price breakdown per date is shown instead)
+                const rateRow = document.getElementById('rateRow');
+                if (rateRow) rateRow.classList.toggle('hidden', rentType === 'daily');
 
                 let duration = 0, roomTotal = 0;
 
@@ -1620,23 +1624,13 @@
                         isValid = false;
                     }
 
-                    // Validate month boundaries and 14-day maximum
+                    // Validate max 60-day booking period (cross-month is allowed)
                     if (checkInInput.value && checkOutInput.value) {
                         const checkIn = new Date(checkInInput.value);
                         const checkOut = new Date(checkOutInput.value);
-
-                        // Check if dates are in the same month
-                        if (checkIn.getMonth() !== checkOut.getMonth() || checkIn.getFullYear() !== checkOut.getFullYear()) {
-                            document.getElementById('check_outError').textContent = 'Booking cannot cross month boundaries';
-                            document.getElementById('check_outError').classList.remove('hidden');
-                            checkOutInput.classList.add('border-red-500');
-                            isValid = false;
-                        }
-
-                        // Check if booking period exceeds 14 days
                         const daysDiff = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-                        if (daysDiff > 14) {
-                            document.getElementById('check_outError').textContent = 'Booking period cannot exceed 14 days';
+                        if (daysDiff > 60) {
+                            document.getElementById('check_outError').textContent = 'Booking period cannot exceed 60 days';
                             document.getElementById('check_outError').classList.remove('hidden');
                             checkOutInput.classList.add('border-red-500');
                             isValid = false;

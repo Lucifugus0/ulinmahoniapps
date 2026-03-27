@@ -169,6 +169,16 @@ body.bg-gray-100 {
   100% { background-position: 0% 50%; }
 }
 
+/* Property type / facility selection buttons — peer-checked dark mode override.
+   Tailwind v4 dark:peer-checked: classes aren't in the compiled CSS bundle,
+   so selected state is invisible in dark mode without these explicit rules. */
+html.dark .peer:checked ~ label {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.25) !important;
+}
+
 /* Admin header — glassmorphism matching the frontend's .site-header style.
    The ::before blur styles are defined in the header blade template (not here)
    because Lightning CSS strips the unprefixed backdrop-filter that Firefox needs.

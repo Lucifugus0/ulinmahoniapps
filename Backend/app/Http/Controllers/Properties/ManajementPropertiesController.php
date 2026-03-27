@@ -15,7 +15,8 @@ class ManajementPropertiesController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 8);
+        // Default 5 items per page — must match the dropdown default in the view
+        $perPage = $request->input('per_page', 5);
         $statusFilter = $request->input('status', '1'); // Default menampilkan hanya yang aktif
 
         $query = Property::with(['creator', 'images', 'thumbnail'])
@@ -91,7 +92,8 @@ class ManajementPropertiesController extends Controller
 
     public function filter(Request $request)
     {
-        $perPage = $request->input('per_page', 8);
+        // Default 5 items per page — must match the dropdown default in the view
+        $perPage = $request->input('per_page', 5);
         $search = $request->input('search');
         $status = $request->input('status', '1'); // Default aktif
 
