@@ -4,6 +4,7 @@ import 'package:ulinmahoniapps/core/widgets/card/propertycard.dart';
 import 'package:ulinmahoniapps/features/home/model/properties_model.dart';
 import 'package:ulinmahoniapps/core/utils/formatcurrency.dart';
 import 'package:ulinmahoniapps/features/searchresult/model/searchfilter_model.dart';
+import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../core/utils/app_logger.dart';
 
 class SearchResultGrid extends StatelessWidget {
@@ -18,6 +19,7 @@ class SearchResultGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     AppLogger.d('DEBUG: currentFilter.rentType: ${currentFilter.rentType}', 'SEARCH-RESULT');
     AppLogger.d('DEBUG: currentFilter.category: ${currentFilter.category}', 'SEARCH-RESULT');
     AppLogger.d('DEBUG: currentFilter.durationRaw: ${currentFilter.durationRaw}', 'SEARCH-RESULT');
@@ -58,10 +60,10 @@ class SearchResultGrid extends StatelessWidget {
                 priceLabel = '/ ${property.totalDays} malam';
               } else if (monthlyPrice > 0) {
                 displayPrice = monthlyPrice;
-                priceLabel = '/bulan';
+                priceLabel = localizations.roomDetailsPerMonth;
               } else {
                 displayPrice = dailyPrice;
-                priceLabel = '/hari';
+                priceLabel = localizations.roomDetailsPerDay;
               }
 
               return Padding(

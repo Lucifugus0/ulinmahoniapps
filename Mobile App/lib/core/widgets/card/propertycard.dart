@@ -336,7 +336,8 @@ class _PropertyCardState extends State<PropertyCard> {
                     // Price
                     if (widget.price != null && widget.price!.isNotEmpty && widget.price != 'Rp 0')
                       Text(
-                        '${Localizations.localeOf(context).languageCode == 'id' ? 'Mulai dari' : 'Starting from'} ${widget.price!}',
+                        // Use localized prefix — handles ID/EN/ZH correctly
+                        '${localizations.bottomBarStartingFrom} ${widget.price!}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.white,

@@ -198,6 +198,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       centerTitle: false,
+      /* When back button is shown, remove the extra gap so title sits flush after it.
+         When no back button, keep default 16px left margin for breathing room. */
+      titleSpacing: showBackButton ? 0 : 16.0,
     );
   }
 }

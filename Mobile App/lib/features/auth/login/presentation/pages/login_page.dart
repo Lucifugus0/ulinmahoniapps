@@ -239,6 +239,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         next.when(
           data: (result) {
             if (result != null) {
+              // Check if account is deactivated (status == 0)
+              if (result.isAccountDeactivated) {
+                showNotificationDialog(
+                  context,
+                  localizations.accountDeactivatedMessage,
+                  title: localizations.accountDeactivatedTitle,
+                  iconColor: Colors.red,
+                  defaultIcon: Icons.block_outlined,
+                  onOkPressed: () async {
+                    // Logout any residual session and go to home (no user logged in)
+                    await ref.read(authProvider.notifier).logout();
+                    if (context.mounted) {
+                      context.go('/home');
+                    }
+                  },
+                );
+                return;
+              }
+
               // Check if email verification is required
               if (result.requiresEmailVerification) {
                 // Email not verified - show dialog and logout

@@ -10,6 +10,8 @@ import '../widgets/passwordfield.dart';
 import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/widgets/dialog/notificationdialog.dart';
+import '../../../../../core/theme/theme_provider.dart';
+import '../../../../../core/provider/language_provider.dart';
 
 class UpdatePasswordPage extends ConsumerStatefulWidget {
   const UpdatePasswordPage({Key? key}) : super(key: key);
@@ -40,29 +42,31 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!; 
+    final localizations = AppLocalizations.of(context)!;
     final updatePasswordState = ref.watch(updatePasswordNotifierProvider);
     final updatePasswordNotifier = ref.read(updatePasswordNotifierProvider.notifier);
     final currentUserId = ref.read(authProvider).user.value?.id;
+    // Dark mode detection for background and AppBar colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLocale = ref.watch(localeProvider);
 
     ref.listen<UpdatePasswordState>(
       updatePasswordNotifierProvider,
           (previous, current) {
         if (current is UpdatePasswordSuccess) {
+          // Navigate to profile when user taps OK — avoids GoRouter stack conflict with Future.delayed
           showNotificationDialog(
             context,
             localizations.updatePasswordSuccessMessage,
             iconColor: Colors.green,
             defaultIcon: Icons.check_circle_outline,
-          );
-
-          // Navigate to profile after delay
-          Future.delayed(const Duration(seconds: 2), () {
-            if (context.mounted) {
-              context.go('/profile');
+            onOkPressed: () {
               updatePasswordNotifier.resetState();
-            }
-          });
+              if (context.mounted) {
+                context.go('/profile');
+              }
+            },
+          );
         } else if (current is UpdatePasswordError) {
           showErrorDialog(context, current.message);
           updatePasswordNotifier.resetState();
@@ -71,11 +75,89 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      // Dark-aware scaffold background
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        // Dark-aware AppBar background
+        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(
+          // Dark-aware back button color
+          color: isDark ? Colors.white : Colors.black,
+        ),
+        // Language + theme toggle actions (top right)
+        actions: [
+          // Dark/light mode toggle button
+          GestureDetector(
+            onTap: () => ref.read(themeProvider.notifier).toggle(),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark ? Colors.white24 : Colors.grey[300]!,
+                  width: 0.5,
+                ),
+              ),
+              child: Icon(
+                isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                color: isDark ? Colors.white70 : Colors.black54,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Language cycle button: ID → EN → ZH → ID
+          GestureDetector(
+            onTap: () {
+              final code = currentLocale.languageCode;
+              final newLocale = code == 'id'
+                  ? const Locale('en')
+                  : code == 'en'
+                      ? const Locale('zh')
+                      : const Locale('id');
+              ref.read(localeProvider.notifier).state = newLocale;
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark ? Colors.white24 : Colors.grey[300]!,
+                  width: 0.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.language,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    currentLocale.languageCode.toUpperCase(),
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -90,13 +172,20 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                   Image.asset(AppImage.logo, height: 120),
                   const SizedBox(height: 24),
                   Text(
-                    localizations.updatePasswordTitle, 
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    localizations.updatePasswordTitle,
+                    // Dark-aware title color
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
+                  // Pass context for dark mode support in passwordField
                   passwordField(
-                    localizations.oldPasswordLabel, 
+                    context,
+                    localizations.oldPasswordLabel,
                     _oldPasswordController,
                     obscure: _obscureOldPassword,
                     onToggleVisibility: () {
@@ -106,14 +195,15 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return localizations.oldPasswordEmptyError; 
+                        return localizations.oldPasswordEmptyError;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   passwordField(
-                    localizations.newPasswordLabel, 
+                    context,
+                    localizations.newPasswordLabel,
                     _newPasswordController,
                     obscure: _obscureNewPassword,
                     onToggleVisibility: () {
@@ -123,25 +213,27 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return localizations.newPasswordEmptyError; 
+                        return localizations.newPasswordEmptyError;
                       }
                       if (value.length < 8) {
-                        return localizations.newPasswordLengthError; 
+                        return localizations.newPasswordLengthError;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    localizations.newPasswordLengthInfo, 
-                    style: const TextStyle(
+                    localizations.newPasswordLengthInfo,
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey,
+                      // Dark-aware hint text color
+                      color: isDark ? Colors.grey[400] : Colors.grey,
                     ),
                   ),
                   const SizedBox(height: 16),
                   passwordField(
-                    localizations.confirmNewPasswordLabel, 
+                    context,
+                    localizations.confirmNewPasswordLabel,
                     _confirmNewPasswordController,
                     obscure: _obscureConfirmNewPassword,
                     onToggleVisibility: () {
@@ -151,20 +243,21 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return localizations.confirmNewPasswordEmptyError; 
+                        return localizations.confirmNewPasswordEmptyError;
                       }
                       if (value != _newPasswordController.text) {
-                        return localizations.newPasswordMismatchError; 
+                        return localizations.newPasswordMismatchError;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    localizations.confirmNewPasswordInfo, 
-                    style: const TextStyle(
+                    localizations.confirmNewPasswordInfo,
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey,
+                      // Dark-aware hint text color
+                      color: isDark ? Colors.grey[400] : Colors.grey,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -173,12 +266,12 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                         ? null
                         : () async {
                       if (!_formKey.currentState!.validate()) {
-                        showErrorDialog(context, localizations.updatePasswordFormError); 
+                        showErrorDialog(context, localizations.updatePasswordFormError);
                         return;
                       }
 
                       if (currentUserId == null) {
-                        showErrorDialog(context, localizations.updatePasswordUserIdError); 
+                        showErrorDialog(context, localizations.updatePasswordUserIdError);
                         return;
                       }
 
@@ -206,6 +299,8 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
+                      // Dark-aware disabled state
+                      disabledBackgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
                     ),
                     child: updatePasswordState is UpdatePasswordLoading
                         ? const SizedBox(
@@ -215,7 +310,7 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                        : Text(localizations.updatePasswordButton), 
+                        : Text(localizations.updatePasswordButton),
                   ),
                   const SizedBox(height: 48),
                 ],

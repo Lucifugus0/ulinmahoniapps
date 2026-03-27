@@ -302,26 +302,26 @@ class _ConfirmationDialogState extends State<ConfirmationDialog> {
   }
 
   Widget _buildPriceRow(String title, double price, {Color? color, bool isBold = false}) {
+    final titleStyle = color != null
+        ? TextStyle(color: color, fontWeight: FontWeight.bold)
+        : isBold
+            ? const TextStyle(fontWeight: FontWeight.w600)
+            : null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: color != null
-                ? TextStyle(color: color, fontWeight: FontWeight.bold)
-                : isBold
-                    ? const TextStyle(fontWeight: FontWeight.w600)
-                    : null,
+          // Expanded so long titles (e.g. "Parkir motorcycle (2 bulan)") wrap instead of overflow
+          Expanded(
+            child: Text(title, style: titleStyle),
           ),
+          const SizedBox(width: 8),
           Text(
             formatCurrency(price),
-            style: color != null
-                ? TextStyle(color: color, fontWeight: FontWeight.bold)
-                : isBold
-                    ? const TextStyle(fontWeight: FontWeight.w600)
-                    : null,
+            style: titleStyle,
+            textAlign: TextAlign.right,
           ),
         ],
       ),

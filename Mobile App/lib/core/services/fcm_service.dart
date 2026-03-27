@@ -310,6 +310,24 @@ class FCMService {
     }
   }
 
+  /// Public method to sync FCM token to backend after login.
+  ///
+  /// Called by [AuthNotifier] after successful login so the token registered
+  /// during [initialize] (before login) is sent to the backend now that an
+  /// auth token is available.
+  Future<void> syncTokenToBackend() async {
+    final token = await getSavedToken();
+    if (token != null) {
+      await _sendTokenToBackend(token);
+    } else {
+      // No saved token — request a fresh one
+      final freshToken = await getToken();
+      if (freshToken != null) {
+        await _sendTokenToBackend(freshToken);
+      }
+    }
+  }
+
   /// Delete FCM token on logout.
   ///
   /// Removes the token from Firebase SDK, local storage, and backend.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/widgets/card/propertycard.dart';
 import '../../../../../core/widgets/animated_list_item.dart';
 import '../../../provider/property_provider.dart';
@@ -26,7 +27,8 @@ class FilteredPropertyListView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final propertiesAsync = ref.watch(propertiesProvider(selectedFilterLabel));
-    final textTheme = Theme.of(context).textTheme; 
+    final textTheme = Theme.of(context).textTheme;
+    final localizations = AppLocalizations.of(context)!;
 
     return Container(
       color: backgroundColor, 
@@ -82,7 +84,8 @@ class FilteredPropertyListView extends ConsumerWidget {
                         final monthlyPrice = double.tryParse(property.priceOriginalMonthly) ?? 0;
                         final dailyPrice = double.tryParse(property.priceOriginalDaily) ?? 0;
                         final displayPrice = monthlyPrice > 0 ? monthlyPrice : dailyPrice;
-                        final priceLabel = monthlyPrice > 0 ? '/bulan' : '/hari';
+                        // Use localized price suffix (bulan/hari in ID, month/day in EN, 月/天 in ZH)
+                        final priceLabel = monthlyPrice > 0 ? localizations.roomDetailsPerMonth : localizations.roomDetailsPerDay;
 
                         return AnimatedListItem(
                           index: index,
