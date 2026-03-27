@@ -96,3 +96,5 @@
 | 2026-03-26 | FCM Token Sync | Fixed endpoint mismatch: mobile was using `/api/users/fcm-token` but server expects `/api/v1/device-token`. Rewrote `FCMRepository` to use correct payload (`token`, `device_type`, `device_name`) with `DioClient` (auto-auth). |
 | 2026-03-26 | FCM Service | Enabled token sync code (was commented out). Token now registers on login via `syncTokenToBackend()` and deletes on logout. |
 | 2026-03-26 | Auth Provider | Added FCM token sync after successful login, FCM token cleanup on logout (was commented out). |
+| 2026-03-27 | Ticket List Page (`/cs`) | Fixed "New Ticket" FAB hidden behind bottom nav bar. Added bottom margin (100px) to account for ShellRoute's BottomNavBar with `extendBody:true`. |
+| 2026-03-27 | Register Page (signup) | Phone number input now follows frontend signup rules: strips leading zeros (matching frontend `replace(/^0+/, '')`), removed artificial "/15" max length counter, updated placeholder to "8123456789". |

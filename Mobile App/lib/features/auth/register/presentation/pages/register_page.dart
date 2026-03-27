@@ -46,13 +46,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   String? _fullPhoneNumber;
   String _currentCountryCode = 'ID';
-  int _phoneNumberLength = 0;
 
   @override
   void initState() {
     super.initState();
 
-    _phoneNumberController.addListener(_updatePhoneNumberLength);
     _usernameController.addListener(_checkFormValidity);
     _emailController.addListener(_checkFormValidity);
     _passwordController.addListener(_checkFormValidity);
@@ -75,7 +73,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _phoneNumberController.removeListener(_updatePhoneNumberLength);
     _phoneNumberController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
@@ -98,12 +95,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         );
       }
     }
-  }
-
-  void _updatePhoneNumberLength() {
-    setState(() {
-      _phoneNumberLength = _phoneNumberController.text.length;
-    });
   }
 
   void _checkFormValidity() {
@@ -260,14 +251,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   inputField(localizations.emailLabel, _emailController, context: context),
                   const SizedBox(height: 16),
 
-                  // Phone Field — single-layer fill via decoration (no Container wrapper)
+                  // Phone Field — single-layer fill via decoration (no Container wrapper).
+                  // Strips leading zeros and allows digits only, matching frontend signup rules.
                   IntlPhoneField(
                       key: ValueKey(_currentCountryCode),
                       controller: _phoneNumberController,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      inputFormatters: [
+                        // Only allow digits — matches frontend oninput replace(/[^0-9]/g, '')
+                        FilteringTextInputFormatter.digitsOnly,
+                        // Strip leading zeros — matches frontend oninput replace(/^0+/, '')
+                        _StripLeadingZerosFormatter(),
+                      ],
                       decoration: InputDecoration(
                         labelText: localizations.phoneNumberLabel,
-                        hintText: localizations.phoneNumberHint,
+                        // Placeholder matching frontend format (no leading zero)
+                        hintText: '8123456789',
                         // Single fill layer matching other input fields
                         filled: true,
                         fillColor: isDark ? const Color(0xFF374151) : Colors.grey[200],
@@ -300,7 +298,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       cursorColor: const Color(0xFF124624),
                       onChanged: (phone) {
                         _fullPhoneNumber = phone.completeNumber;
-                        _updatePhoneNumberLength();
                         _checkFormValidity();
                       },
                       onCountryChanged: (country) {
@@ -317,13 +314,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         }
                         return null;
                       },
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '${_phoneNumberLength}/15',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -740,6 +730,23 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// TextInputFormatter that strips leading zeros from phone number input.
+/// Matches frontend signup behavior: oninput replace(/^0+/, '').
+class _StripLeadingZerosFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final stripped = newValue.text.replaceFirst(RegExp(r'^0+'), '');
+    if (stripped == newValue.text) return newValue;
+    return TextEditingValue(
+      text: stripped,
+      selection: TextSelection.collapsed(offset: stripped.length),
     );
   }
 }

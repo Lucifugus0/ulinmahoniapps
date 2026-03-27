@@ -227,13 +227,18 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
         ),
       ),
 
-      /// FAB button to navigate to create ticket page
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/cs/create'),
-        backgroundColor: AppColors.primaryColor,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('New Ticket'),
+      /// FAB button to navigate to create ticket page.
+      /// Bottom margin accounts for outer ShellRoute's BottomNavBar overlapping
+      /// due to extendBody:true on the parent MainLayout scaffold.
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 100),
+        child: FloatingActionButton.extended(
+          onPressed: () => context.push('/cs/create'),
+          backgroundColor: AppColors.primaryColor,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add),
+          label: const Text('New Ticket'),
+        ),
       ),
     );
   }
