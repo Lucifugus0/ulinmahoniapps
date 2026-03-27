@@ -245,6 +245,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please verify your email first to continue. Check your email inbox and click the verification link we sent you.';
 
   @override
+  String get accountDeactivatedTitle => 'Account Deactivated';
+
+  @override
+  String get accountDeactivatedMessage =>
+      'Your account has been deactivated. Please contact support for more information.';
+
+  @override
   String get registerWelcomeTitle => 'Hello! Register to get started';
 
   @override
@@ -626,6 +633,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myBookingDetailSubtotal => 'Subtotal:';
+
+  @override
+  String get myBookingDetailSubtotalBeforeDiscount =>
+      'Subtotal Before Discount:';
+
+  @override
+  String get myBookingDetailVoucher => 'Voucher';
+
+  @override
+  String get myBookingDetailDeposit => 'Deposit:';
 
   @override
   String get myBookingDetailNumberOfDays => 'Number of days:';

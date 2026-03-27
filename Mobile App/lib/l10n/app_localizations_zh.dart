@@ -235,6 +235,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emailNotVerifiedMessage => '请先验证您的邮箱以继续。请检查您的邮箱收件箱并点击我们发送给您的验证链接。';
 
   @override
+  String get accountDeactivatedTitle => 'Akun Dinonaktifkan';
+
+  @override
+  String get accountDeactivatedMessage =>
+      'Akun Anda telah dinonaktifkan. Silakan hubungi support untuk informasi lebih lanjut.';
+
+  @override
   String get registerWelcomeTitle => '您好！注册开始使用';
 
   @override
@@ -596,6 +603,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get myBookingDetailSubtotal => '小计：';
+
+  @override
+  String get myBookingDetailSubtotalBeforeDiscount => '折扣前小计：';
+
+  @override
+  String get myBookingDetailVoucher => '优惠券';
+
+  @override
+  String get myBookingDetailDeposit => '押金：';
 
   @override
   String get myBookingDetailNumberOfDays => '天数：';

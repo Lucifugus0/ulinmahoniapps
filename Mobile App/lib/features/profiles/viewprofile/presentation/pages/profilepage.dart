@@ -82,8 +82,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             final currentLocale = ref.watch(localeProvider);
             final localizations = AppLocalizations.of(context)!;
 
+            // Dark mode detection inside dialog builder
+            final isDarkDialog = Theme.of(context).brightness == Brightness.dark;
+            // Dark-aware inactive button colors
+            final inactiveBg = isDarkDialog ? const Color(0xFF374151) : Colors.white;
+            final inactiveFg = isDarkDialog ? Colors.white : Colors.black87;
+            final inactiveBorder = isDarkDialog ? Colors.white24 : Colors.grey[300]!;
+
             return AlertDialog(
-          backgroundColor: Colors.white,
+          // Dark-aware dialog background
+          backgroundColor: isDarkDialog ? const Color(0xFF1F2937) : Colors.white,
           title: Text(
             // Dialog title in each language
             currentLocale.languageCode == 'id'
@@ -92,10 +100,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ? '选择语言'
                     : 'Select Language',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              // Dark-aware title color
+              color: isDarkDialog ? Colors.white : Colors.black87,
             ),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -108,7 +117,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 width: 80,
                 height: 80,
                 errorBuilder: (context, error, stackTrace) {
-                  // Remove const: color is adaptive (runtime context)
                   return Icon(
                     Icons.language,
                     color: AppColors.primaryAdaptive(context),
@@ -125,20 +133,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ref.read(localeProvider.notifier).state = const Locale('id');
                   },
                   style: ElevatedButton.styleFrom(
-                    // Use primaryAdaptive for dark/light mode compatibility
                     backgroundColor: currentLocale.languageCode == 'id'
                         ? AppColors.primaryAdaptive(context)
-                        : Colors.white,
+                        : inactiveBg,
                     foregroundColor: currentLocale.languageCode == 'id'
                         ? Colors.white
-                        : Colors.black87,
+                        : inactiveFg,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
                         color: currentLocale.languageCode == 'id'
                             ? AppColors.primaryAdaptive(context)
-                            : Colors.grey[300]!,
+                            : inactiveBorder,
                         width: 1,
                       ),
                     ),
@@ -166,20 +173,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ref.read(localeProvider.notifier).state = const Locale('en');
                   },
                   style: ElevatedButton.styleFrom(
-                    // Use primaryAdaptive for dark/light mode compatibility
                     backgroundColor: currentLocale.languageCode == 'en'
                         ? AppColors.primaryAdaptive(context)
-                        : Colors.white,
+                        : inactiveBg,
                     foregroundColor: currentLocale.languageCode == 'en'
                         ? Colors.white
-                        : Colors.black87,
+                        : inactiveFg,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
                         color: currentLocale.languageCode == 'en'
                             ? AppColors.primaryAdaptive(context)
-                            : Colors.grey[300]!,
+                            : inactiveBorder,
                         width: 1,
                       ),
                     ),
@@ -207,20 +213,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ref.read(localeProvider.notifier).state = const Locale('zh');
                   },
                   style: ElevatedButton.styleFrom(
-                    // Use primaryAdaptive for dark/light mode compatibility
                     backgroundColor: currentLocale.languageCode == 'zh'
                         ? AppColors.primaryAdaptive(context)
-                        : Colors.white,
+                        : inactiveBg,
                     foregroundColor: currentLocale.languageCode == 'zh'
                         ? Colors.white
-                        : Colors.black87,
+                        : inactiveFg,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
                         color: currentLocale.languageCode == 'zh'
                             ? AppColors.primaryAdaptive(context)
-                            : Colors.grey[300]!,
+                            : inactiveBorder,
                         width: 1,
                       ),
                     ),
@@ -249,8 +254,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               },
               child: Text(
                 localizations.cancelButton,
-                style: const TextStyle(
-                  color: Colors.black54,
+                // Dark-aware cancel button color
+                style: TextStyle(
+                  color: isDarkDialog ? Colors.grey[400] : Colors.black54,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -854,6 +860,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     value: isDarkMode,
                                     // Use primaryAdaptive for dark/light mode compatibility
                                     activeTrackColor: AppColors.primaryAdaptive(context),
+                                    activeThumbColor: Colors.white,
+                                    // In light mode the inactive thumb is white by default — make it visible
+                                    inactiveThumbColor: Colors.grey[600],
+                                    inactiveTrackColor: Colors.grey[300],
                                     onChanged: (value) {
                                       ref.read(themeProvider.notifier).toggle();
                                     },

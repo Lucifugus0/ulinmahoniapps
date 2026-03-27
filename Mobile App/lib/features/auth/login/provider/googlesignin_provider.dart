@@ -32,11 +32,14 @@ class GoogleSignInResult {
   final bool isNewUser;
   final String message;
   final bool requiresEmailVerification;
+  /// True when the user account has status = 0 (deactivated)
+  final bool isAccountDeactivated;
 
   GoogleSignInResult({
     required this.isNewUser,
     required this.message,
     this.requiresEmailVerification = false,
+    this.isAccountDeactivated = false,
   });
 }
 
@@ -179,6 +182,24 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
                     isNewUser: false,
                     message: 'EMAIL_NOT_VERIFIED', // Special message for UI to detect
                     requiresEmailVerification: true,
+                  ));
+                  return;
+                }
+
+                // Step 3.6: Check if account is active (status == 0 means deactivated)
+                if (existingUser.status == 0) {
+                  AppLogger.w(
+                    'Account deactivated for user: ${existingUser.email}',
+                    'GOOGLE-SIGNIN-CTRL',
+                  );
+                  // Sign out from Google so account is not cached on device
+                  final googleRepo = _ref.read(googleSignInRepositoryProvider);
+                  await googleRepo.signOut();
+
+                  state = AsyncValue.data(GoogleSignInResult(
+                    isNewUser: false,
+                    message: 'ACCOUNT_DEACTIVATED',
+                    isAccountDeactivated: true,
                   ));
                   return;
                 }

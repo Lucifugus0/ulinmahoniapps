@@ -89,6 +89,8 @@
     "biometricAuthNotConfigured": "Otentikasi biometrik belum terkonfigurasi. Silakan masuk secara manual dan isi kolom remember me terlebih dahulu.",
     "emailNotVerifiedTitle": "Email Belum Diverifikasi",
     "emailNotVerifiedMessage": "Silakan verifikasi email Anda terlebih dahulu untuk melanjutkan. Cek inbox email Anda dan klik link verifikasi yang telah kami kirimkan.",
+    "accountDeactivatedTitle": "Akun Dinonaktifkan",
+    "accountDeactivatedMessage": "Akun Anda telah dinonaktifkan. Silakan hubungi support untuk informasi lebih lanjut.",
 
     "@@title": "RegisterPage Strings",
     "registerWelcomeTitle": "Hello! Daftar untuk memulai",
@@ -228,6 +230,9 @@
     "myBookingDetailPricePerDay": "Harga per hari:",
     "myBookingDetailPricePerMonth": "Harga per bulan:",
     "myBookingDetailSubtotal": "Subtotal:",
+    "myBookingDetailSubtotalBeforeDiscount": "Subtotal Sebelum Diskon:",
+    "myBookingDetailVoucher": "Voucher",
+    "myBookingDetailDeposit": "Deposit:",
     "myBookingDetailNumberOfDays": "Jumlah Malam:",
     "myBookingDetailNumberOfMonths": "Jumlah Bulan:",
     "myBookingDetailTotalPriceTitle": "Total Harga",

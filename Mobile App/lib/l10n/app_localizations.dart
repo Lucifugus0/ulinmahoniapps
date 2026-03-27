@@ -544,6 +544,18 @@ abstract class AppLocalizations {
   /// **'Silakan verifikasi email Anda terlebih dahulu untuk melanjutkan. Cek inbox email Anda dan klik link verifikasi yang telah kami kirimkan.'**
   String get emailNotVerifiedMessage;
 
+  /// No description provided for @accountDeactivatedTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Akun Dinonaktifkan'**
+  String get accountDeactivatedTitle;
+
+  /// No description provided for @accountDeactivatedMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Akun Anda telah dinonaktifkan. Silakan hubungi support untuk informasi lebih lanjut.'**
+  String get accountDeactivatedMessage;
+
   /// No description provided for @registerWelcomeTitle.
   ///
   /// In id, this message translates to:
@@ -1269,6 +1281,24 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Subtotal:'**
   String get myBookingDetailSubtotal;
+
+  /// No description provided for @myBookingDetailSubtotalBeforeDiscount.
+  ///
+  /// In id, this message translates to:
+  /// **'Subtotal Sebelum Diskon:'**
+  String get myBookingDetailSubtotalBeforeDiscount;
+
+  /// No description provided for @myBookingDetailVoucher.
+  ///
+  /// In id, this message translates to:
+  /// **'Voucher'**
+  String get myBookingDetailVoucher;
+
+  /// No description provided for @myBookingDetailDeposit.
+  ///
+  /// In id, this message translates to:
+  /// **'Deposit:'**
+  String get myBookingDetailDeposit;
 
   /// No description provided for @myBookingDetailNumberOfDays.
   ///

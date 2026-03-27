@@ -127,7 +127,8 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
                         final monthlyPrice = double.tryParse(item.priceOriginalMonthly) ?? 0;
                         final dailyPrice = double.tryParse(item.priceOriginalDaily) ?? 0;
                         final displayPrice = monthlyPrice > 0 ? monthlyPrice : dailyPrice;
-                        final priceLabel = monthlyPrice > 0 ? '/bulan' : '/hari';
+                        // Use localized price suffix (bulan/hari in ID, month/day in EN, 月/天 in ZH)
+                        final priceLabel = monthlyPrice > 0 ? localizations.roomDetailsPerMonth : localizations.roomDetailsPerDay;
 
                         return AnimatedListItem(
                           index: index,

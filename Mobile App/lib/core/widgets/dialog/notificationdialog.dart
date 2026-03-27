@@ -62,7 +62,10 @@ Future<bool?> showNotificationDialog(
           onPressed: () {
             final bool popValue = onOkPressed != null ? false : true;
             onOkPressed?.call();
-            Navigator.of(ctx).pop(popValue);
+            // Guard against popping when GoRouter already replaced the stack
+            if (Navigator.of(ctx).canPop()) {
+              Navigator.of(ctx).pop(popValue);
+            }
           },
           child: Text(
             okButtonText,

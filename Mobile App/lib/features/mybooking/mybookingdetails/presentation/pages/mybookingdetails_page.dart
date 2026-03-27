@@ -203,11 +203,14 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
     }
 
     // For all other pending payment types (VA, Transfer Manual, etc.)
-    // that have no specific expiry stored, start a flat 15-minute countdown
+    // Calculate expiry from transaction_date + 15 minutes so the timer is
+    // consistent across devices, instead of resetting to 15 min from now.
     if (mounted && _remainingTime == Duration.zero) {
-      _startCountdownTimer(
-        DateTime.now().add(const Duration(minutes: 15)).toIso8601String(),
-      );
+      final transactionDate = bookingData['transaction_date'] as String?;
+      final expiredAt = transactionDate != null
+          ? DateTime.parse(transactionDate).add(const Duration(minutes: 15)).toIso8601String()
+          : DateTime.now().add(const Duration(minutes: 15)).toIso8601String();
+      _startCountdownTimer(expiredAt);
     }
   }
 
@@ -646,12 +649,12 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                   const Divider(height: 20, thickness: 0.5, color: Colors.grey),
                                   info(
                                     context,
-                                    'Subtotal Sebelum Diskon',
+                                    localizations.myBookingDetailSubtotalBeforeDiscount,
                                     formatCurrency(bookingData.subtotalBeforeDiscount),
                                   ),
                                   info(
                                     context,
-                                    'Voucher (${bookingData.voucherCode})',
+                                    '${localizations.myBookingDetailVoucher} (${bookingData.voucherCode})',
                                     '- ${formatCurrency(bookingData.discountAmount)}',
                                     // Use primaryAdaptive for dark/light mode compatibility
                                     color: AppColors.primaryAdaptive(context),
@@ -666,7 +669,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                 if (bookingData.depositFee != null && bookingData.depositFee! > 0)
                                   info(
                                     context,
-                                    'Deposit',
+                                    localizations.myBookingDetailDeposit,
                                     formatCurrency(bookingData.depositFee) ?? "0",
                                   ),
 
