@@ -78,7 +78,11 @@
                             <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ __('ui.checkout_property_label') }}</span><span class="text-sm text-gray-800" x-text="bookingDetails.property_name"></span></div>
                             <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ __('ui.checkout_room_label') }}</span><span class="text-sm text-gray-800" x-text="bookingDetails.room_name"></span></div>
                             <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ __('ui.checkout_duration_label') }}</span><span class="text-sm text-gray-800" x-text="bookingDetails.duration"></span></div>
-                            <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">{{ __('ui.checkout_total_payment_label') }}</span><span class="text-sm text-gray-800" x-text="bookingDetails.total_payment"></span></div>
+                            {{-- Price breakdown: Total Booking, Deposit, Service Fee between Duration and Total --}}
+                            <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">Total Booking:</span><span class="text-sm text-gray-800" x-text="bookingDetails.total_booking"></span></div>
+                            <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">Deposit:</span><span class="text-sm text-gray-800" x-text="bookingDetails.deposit"></span></div>
+                            <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">Service Fee:</span><span class="text-sm text-gray-800" x-text="bookingDetails.service_fee"></span></div>
+                            <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600"><span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('ui.checkout_total_payment_label') }}</span><span class="text-sm font-bold text-green-600 dark:text-green-400" x-text="bookingDetails.total_payment"></span></div>
                         </div>
                     </div>
 

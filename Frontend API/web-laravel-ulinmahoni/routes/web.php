@@ -467,6 +467,11 @@ Route::get('/hotels/{id}', [HotelController::class, 'show'])->name('hotels.show'
 Route::get('/promos', [PromoController::class, 'index'])->name('promos.index');
 Route::get('/promo/{id}', [PromoController::class, 'show'])->name('promos.show');
 
+/** Ticket Routes — customer service ticketing web UI */
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/tickets', [\App\Http\Controllers\ticket\TicketWebController::class, 'index'])->name('tickets.index');
+});
+
 // Bookings Routes (non-localized for backward compatibility)
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');

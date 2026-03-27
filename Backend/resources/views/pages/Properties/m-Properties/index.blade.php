@@ -189,14 +189,15 @@
                                                         Initial <span class="text-red-500">*</span>
                                                     </label>
                                                     <div class="flex items-center">
+                                                        {{-- Initial field: max 10 chars, auto-uppercase --}}
                                                         <input type="text" id="initial" name="initial" required
-                                                            maxlength="3"
+                                                            maxlength="10"
                                                             class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-center"
-                                                            placeholder="ABC"
+                                                            placeholder="UMKOST1"
                                                             oninput="this.value = this.value.toUpperCase()">
                                                     </div>
                                                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                        {{ __('ui.max_3_chars') }}</p>
+                                                        Max 10 characters</p>
                                                 </div>
                                             </div>
 
@@ -213,8 +214,9 @@
                                                                 type="radio" :value="type.value"
                                                                 x-model="selectedPropertyType"
                                                                 class="sr-only peer" required>
+                                                            {{-- Property type button: strong blue bg + white text when selected for clear differentiation --}}
                                                             <label :for="'type-' + type.value"
-                                                                class="flex items-center justify-center p-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-blue-600 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 peer-checked:text-blue-600 dark:peer-checked:text-blue-400 transition-all duration-200">
+                                                                class="flex items-center justify-center p-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white dark:peer-checked:bg-blue-600 dark:peer-checked:text-white dark:peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/25 transition-all duration-200">
                                                                 <span x-text="type.label"></span>
                                                             </label>
                                                         </div>
@@ -389,20 +391,28 @@
                                                         class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                 </div>
 
-                                                {{-- City dropdown populated from m_cities master table --}}
+                                                {{-- City input with datalist: auto-fills from map pin via reverseGeocode,
+                                                     allows typing existing cities or entering new ones.
+                                                     New cities are saved to m_cities master table on form submit. --}}
                                                 <div>
                                                     <label for="city"
                                                         class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                         {{ __('ui.city_regency') }} <span
                                                             class="text-red-500">*</span>
                                                     </label>
-                                                    <select id="city" name="city" required
+                                                    <input type="text" id="city" name="city" required
+                                                        list="city-list"
+                                                        autocomplete="off"
+                                                        placeholder="{{ __('ui.select_city') }}"
                                                         class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                                        <option value="">{{ __('ui.select_city') }}</option>
+                                                    <datalist id="city-list">
                                                         @foreach($cities as $city)
                                                             <option value="{{ $city->city_name }}">{{ $city->city_name }} ({{ $city->province }})</option>
                                                         @endforeach
-                                                    </select>
+                                                    </datalist>
+                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                        {{ __('ui.city_hint') ?? 'Select from list or type a new city name' }}
+                                                    </p>
                                                 </div>
                                             </div>
 
@@ -581,8 +591,9 @@
                                                             <input id="general-{{ $facility->idrec }}"
                                                                 name="general_facilities[]" type="checkbox"
                                                                 value="{{ $facility->idrec }}" class="sr-only peer">
+                                                            {{-- General facility: solid blue bg when selected for clear visibility --}}
                                                             <label for="general-{{ $facility->idrec }}"
-                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-blue-600 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 peer-checked:text-blue-600 dark:peer-checked:text-blue-400 transition-all duration-200">
+                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-blue-500 peer-checked:bg-blue-600 peer-checked:text-white dark:peer-checked:bg-blue-600 dark:peer-checked:text-white dark:peer-checked:border-blue-500 peer-checked:shadow-md transition-all duration-200">
                                                                 <div class="flex-1 overflow-hidden">
                                                                     <span
                                                                         class="block break-words flex items-center gap-1.5">
@@ -637,8 +648,9 @@
                                                             <input id="security-{{ $facility->idrec }}"
                                                                 name="security_facilities[]" type="checkbox"
                                                                 value="{{ $facility->idrec }}" class="sr-only peer">
+                                                            {{-- Security facility: solid green bg when selected for clear visibility --}}
                                                             <label for="security-{{ $facility->idrec }}"
-                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-green-600 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/30 peer-checked:text-green-600 dark:peer-checked:text-green-400 transition-all duration-200">
+                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-green-500 peer-checked:bg-green-600 peer-checked:text-white dark:peer-checked:bg-green-600 dark:peer-checked:text-white dark:peer-checked:border-green-500 peer-checked:shadow-md transition-all duration-200">
                                                                 <div class="flex-1 overflow-hidden">
                                                                     <span
                                                                         class="block break-words flex items-center gap-1.5">
@@ -693,8 +705,9 @@
                                                             <input id="amenities-{{ $facility->idrec }}"
                                                                 name="amenities_facilities[]" type="checkbox"
                                                                 value="{{ $facility->idrec }}" class="sr-only peer">
+                                                            {{-- Amenity: solid purple bg when selected for clear visibility --}}
                                                             <label for="amenities-{{ $facility->idrec }}"
-                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-purple-600 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/30 peer-checked:text-purple-600 dark:peer-checked:text-purple-400 transition-all duration-200">
+                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-purple-500 peer-checked:bg-purple-600 peer-checked:text-white dark:peer-checked:bg-purple-600 dark:peer-checked:text-white dark:peer-checked:border-purple-500 peer-checked:shadow-md transition-all duration-200">
                                                                 <div class="flex-1 overflow-hidden">
                                                                     <span
                                                                         class="block break-words flex items-center gap-1.5">

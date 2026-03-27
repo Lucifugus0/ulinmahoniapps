@@ -1,12 +1,13 @@
 <!-- Modal untuk memilih user yang check-in -->
-<div id="checkedInUsersModal" class="hidden fixed inset-0 bg-black/20 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white">
+{{-- Modal backdrop: increased opacity for better contrast in dark mode --}}
+<div id="checkedInUsersModal" class="hidden fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-600 w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white dark:bg-gray-800">
         <!-- Modal Header -->
-        <div class="flex items-center justify-between pb-3 border-b border-gray-200">
-            <h3 class="text-xl font-semibold text-gray-900">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-600">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 {{ __('ui.chat_select_user_title') }}
             </h3>
-            <button onclick="closeCheckedInModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <button onclick="closeCheckedInModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -21,7 +22,7 @@
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p class="mt-2 text-gray-600">Loading...</p>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Loading...</p>
             </div>
 
             <!-- User List -->
@@ -29,29 +30,29 @@
                 <!-- Search Box -->
                 <div class="mb-4">
                     <input type="text" id="modalSearch" placeholder="{{ __('ui.chat_search_modal_placeholder') }}"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <!-- Users Table -->
                 <div class="max-h-96 overflow-y-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50 sticky top-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                        <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     User Info
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Room
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Period
                                 </th>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Action
                                 </th>
                             </tr>
                         </thead>
-                        <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200">
+                        <tbody id="usersTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                             <!-- Dynamic content will be loaded here -->
                         </tbody>
                     </table>

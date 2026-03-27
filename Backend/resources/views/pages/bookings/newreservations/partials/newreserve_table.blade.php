@@ -172,14 +172,15 @@
                                         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                                         x-transition:leave-end="opacity-0 translate-y-4 scale-95" x-cloak>
 
-                                        <div class="bg-white rounded-lg shadow-xl overflow-auto w-full overflow-auto max-h-full flex flex-col text-left max-w-7xl"
+                                        {{-- Check-in modal body: added dark:bg-gray-800 for dark mode --}}
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-auto w-full overflow-auto max-h-full flex flex-col text-left max-w-7xl"
                                             @click.outside="closeModal" @keydown.escape.window="closeModal">
 
                                             <!-- Header Modal - dark mode uses darker bg for readability -->
                                             <div
                                                 class="checkin-modal-header px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
                                                 <div class="flex justify-between items-center">
-                                                    <div class="font-bold text-xl text-gray-800">{{ __('ui.process_checkin') }}</div>
+                                                    <div class="font-bold text-xl text-gray-800 dark:text-white">{{ __('ui.process_checkin') }}</div>
                                                     <button type="button"
                                                         class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
                                                         @click="closeModal">
@@ -190,8 +191,8 @@
                                                         </svg>
                                                     </button>
                                                 </div>
-                                                <p class="text-sm text-gray-600 mt-1">{{ __('ui.review_complete_checkin') }}</p>
-                                                <p class="text-lg font-bold text-gray-800 mt-1"
+                                                <p class="text-sm text-gray-600 dark:text-gray-200 mt-1">{{ __('ui.review_complete_checkin') }}</p>
+                                                <p class="text-lg font-bold text-gray-800 dark:text-green-300 mt-1"
                                                     x-text="currentDateTime">
                                                 </p>
                                             </div>
@@ -213,49 +214,65 @@
                                                             {{ __('ui.booking_details') }}
                                                         </h3>
 
-                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.order_id') }}:</span>
-                                                                <span class="text-sm text-gray-800 font-mono"
-                                                                    x-text="bookingDetails.order_id"></span>
+                                                        {{-- 3-column layout grouped by relevancy: Booking | Stay | Payment --}}
+                                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            {{-- Column 1: Booking Info --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Booking</h4>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.order_id') }}</span>
+                                                                    <p class="text-sm font-mono font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.order_id"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.guest_name') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.guest_name"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.property') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.property_name"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.room') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.room_name"></p>
+                                                                </div>
                                                             </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.check_in_date') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.check_in"></span>
+
+                                                            {{-- Column 2: Stay Details --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Stay</h4>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.check_in_date') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.check_in"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.check_out_date') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.check_out"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.duration') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.duration"></p>
+                                                                </div>
                                                             </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.check_out_date') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.check_out"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.guest_name') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.guest_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.property') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.property_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.room') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.room_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.duration') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.duration"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.total_payment') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.total_payment"></span>
+
+                                                            {{-- Column 3: Payment --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Payment</h4>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Total Booking</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.total_booking"></span>
+                                                                </div>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Deposit</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.deposit"></span>
+                                                                </div>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Service Fee</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.service_fee"></span>
+                                                                </div>
+                                                                <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                                                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('ui.total_payment') }}</span>
+                                                                    <span class="text-sm font-bold text-green-600 dark:text-green-400" x-text="bookingDetails.total_payment"></span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -263,7 +280,7 @@
                                                     <!-- Bagian 2: Profil Tamu dan Unggah Identifikasi Berdampingan -->
                                                     <div class="grid grid-cols-1 gap-8" :class="docRequired ? 'lg:grid-cols-2' : 'lg:grid-cols-1'">
                                                         <!-- Profil Tamu -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600">
                                                             <h3
                                                                 class="font-semibold text-lg text-gray-800 mb-4 flex items-center">
                                                                 <svg class="w-5 h-5 mr-2 text-purple-600"
@@ -366,7 +383,7 @@
                                                         </div>
 
                                                         <!-- Unggah Identifikasi -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200" x-show="docRequired">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600" x-show="docRequired">
                                                             <h3
                                                                 class="font-semibold text-lg text-gray-800 mb-4 flex items-center">
                                                                 <svg class="w-5 h-5 mr-2 text-green-600"
@@ -634,7 +651,7 @@
                                                         </div>
 
                                                         <!-- Informasi Dokumen Sudah Tersimpan -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200" x-show="!docRequired">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600" x-show="!docRequired">
                                                             <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
                                                                 <div class="flex items-start">
                                                                     <svg class="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

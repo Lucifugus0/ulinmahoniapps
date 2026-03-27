@@ -125,9 +125,11 @@
             font-weight: 700;
             color: #374151;
         }
+        /* Gender badge dark mode — semi-transparent bg + brighter text for visibility on dark cards */
         html.dark .gender-badge {
-            color: #e5e7eb !important;
-            border-color: #4b5563 !important;
+            color: #f3f4f6 !important;
+            border-color: #6b7280 !important;
+            background-color: rgba(255, 255, 255, 0.12) !important;
         }
 
         /* Liquid glass — filter/search container panel */

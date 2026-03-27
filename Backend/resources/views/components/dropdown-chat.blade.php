@@ -26,8 +26,9 @@
 
     {{-- Dropdown Panel --}}
     <div
-        class="origin-top-right z-10 absolute top-full -mr-48 sm:mr-0 min-w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-lg shadow-lg overflow-hidden mt-1 {{ $align === 'right' ? 'right-0' : 'left-0' }}"
-        style="width: 380px;"
+        class="origin-top-right z-10 absolute top-full -mr-48 sm:mr-0 min-w-80 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden mt-1 {{ $align === 'right' ? 'right-0' : 'left-0' }}"
+        style="width: 380px; background-color: white; isolation: isolate;"
+        x-bind:style="document.documentElement.classList.contains('dark') ? 'width: 380px; background-color: rgb(31, 41, 55); isolation: isolate;' : 'width: 380px; background-color: white; isolation: isolate;'"
         @click.outside="closeDropdown()"
         @keydown.escape.window="closeDropdown()"
         x-show="open && !chatWindowOpen"
@@ -118,8 +119,9 @@
 
     {{-- Chat Window Panel --}}
     <div
-        class="origin-top-right z-10 absolute top-full -mr-48 sm:mr-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-lg shadow-lg overflow-hidden mt-1 {{ $align === 'right' ? 'right-0' : 'left-0' }}"
-        style="width: 400px; height: 500px;"
+        class="origin-top-right z-10 absolute top-full -mr-48 sm:mr-0 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden mt-1 {{ $align === 'right' ? 'right-0' : 'left-0' }}"
+        style="width: 400px; height: 500px; background-color: white; isolation: isolate;"
+        x-bind:style="document.documentElement.classList.contains('dark') ? 'width: 400px; height: 500px; background-color: rgb(31, 41, 55); isolation: isolate;' : 'width: 400px; height: 500px; background-color: white; isolation: isolate;'"
         @click.outside="closeDropdown()"
         @keydown.escape.window="closeDropdown()"
         x-show="open && chatWindowOpen"

@@ -138,8 +138,17 @@ class AllBookingController extends Controller
         return view('pages.bookings.allbookings.index', compact('bookings', 'startDate', 'endDate'));
     }
 
+    /**
+     * Filter bookings via AJAX — returns JSON with rendered HTML partial.
+     * Redirects non-AJAX requests to index to prevent raw JSON on pagination click.
+     */
     public function filter(Request $request)
     {
+        /* Redirect non-AJAX requests to index to prevent raw JSON display */
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return redirect()->route('bookings.index', $request->query());
+        }
+
         /* Server-side sorting: accepts sort_by and sort_dir params from the frontend */
         $sortBy = $request->input('sort_by', 'checkin');
         $sortDir = in_array($request->input('sort_dir'), ['asc', 'desc']) ? $request->input('sort_dir') : 'desc';

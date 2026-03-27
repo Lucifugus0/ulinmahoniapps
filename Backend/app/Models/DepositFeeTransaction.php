@@ -43,15 +43,19 @@ class DepositFeeTransaction extends Model
         return $this->belongsTo(Transaction::class, 'order_id', 'order_id');
     }
 
+    /**
+     * Get the deposit fee via the transaction's property.
+     * Uses hasOneThrough to join through t_transactions to m_deposit_fee.
+     */
     public function depositFee()
     {
         return $this->hasOneThrough(
             DepositFee::class,
             Transaction::class,
-            'order_id', // Foreign key on transactions table
-            'property_id', // Foreign key on deposit_fees table
-            'order_id', // Local key on deposit_fee_transactions table
-            'property_id' // Local key on transactions table
+            'order_id',    // FK on t_transactions
+            'property_id', // FK on m_deposit_fee
+            'order_id',    // Local key on t_deposit_fee_transaction
+            'property_id'  // Local key on t_transactions
         );
     }
 

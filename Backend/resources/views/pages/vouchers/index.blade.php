@@ -490,6 +490,27 @@
                 });
             }
 
+            /* Intercept pagination link clicks inside the voucher table container.
+               Loads the page via AJAX instead of full browser navigation to prevent
+               raw JSON being displayed when clicking page 2, 3, etc. */
+            $(document).on('click', '#vouchers-table-container .pagination a', function(e) {
+                e.preventDefault();
+                const url = $(this).attr('href');
+                if (!url) return;
+
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(response) {
+                        $('#vouchers-table-container').html(response.html);
+                    },
+                    error: function(xhr) {
+                        console.error('Pagination error:', xhr);
+                    }
+                });
+            });
+
             // Reload table only without full page refresh
             function reloadTable() {
                 filterVouchers();
@@ -626,39 +647,37 @@
             });
 
             // Delete voucher
-            function deleteVoucher(id) {
-                Swal.fire({
-                    title: voucherTranslations.confirmDelete,
-                    text: voucherTranslations.confirmDeleteVoucher,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: voucherTranslations.yesDelete,
-                    cancelButtonText: voucherTranslations.cancel
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: `/vouchers/${id}`,
-                            method: 'DELETE',
-                            data: {
-                                _token: '{{ csrf_token() }}'
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    showToast(response.message, 'success');
-                                    setTimeout(() => reloadTable(), 500);
-                                }
-                            },
-                            error: function(xhr) {
-                                showToast(voucherTranslations.failedDeleteVoucher, 'error');
-                            }
-                        });
+            /** Toggle voucher status via checkbox switch — matches Property master page pattern.
+                Reads checked state from the toggle, sends AJAX to update, reloads table on success. */
+            function toggleVoucherStatus(checkbox) {
+                const id = $(checkbox).data('id');
+                const newStatus = checkbox.checked ? 'active' : 'inactive';
+
+                $.ajax({
+                    url: '{{ route('vouchers.toggle-status') }}',
+                    method: 'POST',
+                    data: {
+                        id: id,
+                        status: newStatus,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast(response.message || voucherTranslations.statusChangedSuccess, 'success');
+                            setTimeout(() => reloadTable(), 500);
+                        }
+                    },
+                    error: function(xhr) {
+                        // Revert toggle on failure
+                        checkbox.checked = !checkbox.checked;
+                        showToast(voucherTranslations.failedChangeStatus, 'error');
                     }
                 });
             }
 
-            // Toggle status
+            /* deleteVoucher and old toggleStatus functions removed — replaced by toggleVoucherStatus above */
+
+            // Legacy toggleStatus kept for backward compatibility with cached pages
             function toggleStatus(id, currentStatus) {
                 const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
                 const statusText = newStatus === 'active' ? voucherTranslations.activate : voucherTranslations.deactivate;

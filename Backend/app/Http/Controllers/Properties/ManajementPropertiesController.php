@@ -258,7 +258,8 @@ class ManajementPropertiesController extends Controller
     {
         $validated = $request->validate([
             'property_name' => 'required',
-            'initial' => 'required|string|max:3',
+            /* Initial field: increased max to 10 chars for longer property codes */
+            'initial' => 'required|string|max:10',
             'property_type' => 'required',
             'gender' => 'nullable|string|in:male,female,mixed',
             'province' => 'required|string',
@@ -341,6 +342,20 @@ class ManajementPropertiesController extends Controller
         $property->created_by = Auth::id();
         $property->save();
 
+        /* Auto-save new city to m_cities master table if not already present.
+           This allows the city dropdown to accept new cities typed by the user. */
+        if ($request->city) {
+            City::firstOrCreate(
+                ['city_name' => $request->city],
+                [
+                    'province' => $request->province ?? '',
+                    'status' => '1',
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]
+            );
+        }
+
         // Simpan ke tabel m_property_images
         foreach ($imagePaths as $index => $imagePath) {
             $image = new PropertyImage();
@@ -363,7 +378,8 @@ class ManajementPropertiesController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'initial' => 'required|string|max:3',
+                /* Initial field: increased max to 10 chars for longer property codes */
+            'initial' => 'required|string|max:10',
                 'tags' => 'required|string',
                 'gender' => 'nullable|string|in:male,female,mixed',
                 'description' => 'required|string',
@@ -477,6 +493,19 @@ class ManajementPropertiesController extends Controller
                 'updated_by' => Auth::id(),
                 'updated_at' => now(),
             ]);
+
+            /* Auto-save new city to m_cities master table on update */
+            if ($request->input('city')) {
+                City::firstOrCreate(
+                    ['city_name' => $request->input('city')],
+                    [
+                        'province' => $request->input('province') ?? '',
+                        'status' => '1',
+                        'created_by' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                    ]
+                );
+            }
 
             return response()->json([
                 'success' => true,

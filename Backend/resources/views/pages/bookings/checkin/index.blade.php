@@ -217,15 +217,19 @@
                             this.scheduledCheckoutTime = new Date(data.check_out);
                         }
 
+                        /* Build booking details with price breakdown for checkout modal */
                         this.bookingDetails = {
                             order_id: data.order_id,
                             guest_name: data.user_name,
                             property_name: data.property_name,
                             room_name: data.room_name,
                             check_in: formatDate(data.actual_check_in || data.check_in),
-                            check_out: formatDate(data.check_out), // Scheduled check-out
+                            check_out: formatDate(data.check_out),
                             duration: this.calculateDuration(data.actual_check_in || data
                                 .check_in, data.check_out),
+                            total_booking: data.room_price ? this.formatRupiah(data.room_price) : 'N/A',
+                            deposit: data.deposit_fee ? this.formatRupiah(data.deposit_fee) : 'Rp 0',
+                            service_fee: data.service_fees ? this.formatRupiah(data.service_fees) : 'Rp 0',
                             total_payment: this.formatRupiah(data.grandtotal_price)
                         };
 

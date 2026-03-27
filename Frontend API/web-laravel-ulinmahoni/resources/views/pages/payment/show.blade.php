@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" class="">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -269,7 +269,8 @@
     </style>
 </head>
 
-<body>
+{{-- Body background: white in light mode, gray-900 in dark mode --}}
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     @include('components.homepage.header')
     <div class="header-spacer"></div>
 
@@ -285,11 +286,12 @@
         </div>
 
         <!-- Payment Section -->
-        <section class="py-12 bg-gray-50">
+        {{-- Payment section: dark mode aware background and text --}}
+        <section class="py-12 bg-gray-50 dark:bg-gray-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900">{{ __('properties.payment.complete_payment') }}</h2>
-                    <p class="text-gray-600 mt-1">{{ __('properties.payment.choose_payment_method') }}</p>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ __('properties.payment.complete_payment') }}</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">{{ __('properties.payment.choose_payment_method') }}</p>
                 </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

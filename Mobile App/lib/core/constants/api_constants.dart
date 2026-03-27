@@ -54,6 +54,20 @@ class ApiConfig {
   static String get promoBannerImages => "$baseUrl/promo-banner";
   static String promoBannerbyId(int bannerId) => "$baseUrl/promo-banner?id=$bannerId";
 
+  /// Ticket endpoints — customer service ticketing system
+  static String get ticketCategories => "$baseUrl/tickets/categories";
+  static String get ticketEligibility => "$baseUrl/tickets/eligibility";
+  static String get ticketEligibleBookings => "$baseUrl/tickets/eligible-bookings";
+  static String get tickets => "$baseUrl/tickets";
+  static String ticketById(int id) => "$baseUrl/tickets/$id";
+  static String ticketMessages(int id) => "$baseUrl/tickets/$id/messages";
+  static String ticketRead(int id) => "$baseUrl/tickets/$id/read";
+  static String ticketClose(int id) => "$baseUrl/tickets/$id/close";
+  static String ticketReopen(int id) => "$baseUrl/tickets/$id/reopen";
+  /// Broadcast endpoints — one-way announcements
+  static String get broadcasts => "$baseUrl/broadcasts";
+  static String broadcastById(int id) => "$baseUrl/broadcasts/$id";
+
   // FCM (Firebase Cloud Messaging) endpoints
   // POST /device-token  → register/update device token (upsert by backend)
   // DELETE /device-token → remove device token on logout

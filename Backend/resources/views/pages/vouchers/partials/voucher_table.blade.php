@@ -78,34 +78,33 @@
                                 {{ ucfirst($voucher->scope_type) }}
                             </span>
                         </td>
+                        {{-- Status toggle switch — matches Property master page pattern --}}
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <button onclick="toggleStatus({{ $voucher->idrec }}, '{{ $voucher->status }}')"
-                                class="px-3 py-1 text-xs font-medium rounded-full transition-colors
-                                {{ $voucher->status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 hover:bg-red-200' }}">
-                                {{ ucfirst($voucher->status) }}
-                            </button>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex space-x-2">
-                                <button onclick="openEditModal({{ $voucher->idrec }})"
-                                    class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                    title="{{ __('ui.edit') }}">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                        </path>
-                                    </svg>
-                                </button>
-                                <button onclick="deleteVoucher({{ $voucher->idrec }})"
-                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                    title="{{ __('ui.delete') }}">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                        </path>
-                                    </svg>
-                                </button>
+                            <div class="flex items-center justify-center space-x-2">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer voucher-status-toggle"
+                                        data-id="{{ $voucher->idrec }}" {{ $voucher->status === 'active' ? 'checked' : '' }}
+                                        onchange="toggleVoucherStatus(this)">
+                                    {{-- Toggle switch — green when active, gray when inactive --}}
+                                    <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer-checked:bg-blue-600 transition-all duration-300"></div>
+                                    <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 peer-checked:translate-x-5"></div>
+                                </label>
+                                <span class="text-sm font-medium {{ $voucher->status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                    {{ $voucher->status === 'active' ? 'Active' : 'Inactive' }}
+                                </span>
                             </div>
+                        </td>
+                        {{-- Action column: edit only (delete button removed) --}}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="openEditModal({{ $voucher->idrec }})"
+                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                title="{{ __('ui.edit') }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                    </path>
+                                </svg>
+                            </button>
                         </td>
                     </tr>
                 @empty

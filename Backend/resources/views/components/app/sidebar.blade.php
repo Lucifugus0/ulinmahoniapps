@@ -185,6 +185,75 @@
                 </ul>
 
                 {{-- ==================== --}}
+                {{-- Customer Service Group (Tickets + Broadcasts) --}}
+                {{-- ==================== --}}
+                <ul class="space-y-1 mt-2">
+                    <li x-data="{ ticketUnread: 0 }"
+                        x-init="if (window.location.href.includes('tickets') || window.location.href.includes('broadcasts')) { activeMenu = 'customer_service' }
+                        fetch('/tickets/unread-count', { headers: { 'Accept': 'application/json' } })
+                            .then(r => r.json()).then(d => ticketUnread = d.unread_count || 0).catch(() => {});
+                        setInterval(() => {
+                            fetch('/tickets/unread-count', { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json()).then(d => ticketUnread = d.unread_count || 0).catch(() => {});
+                        }, 30000);">
+                        {{-- Group Header --}}
+                        <a @click="activeMenu = activeMenu === 'customer_service' ? '' : 'customer_service'"
+                            class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-colors cursor-pointer group relative overflow-hidden @if (Route::is('tickets.*', 'broadcasts.*')) bg-indigo-600 @endif">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="relative">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    {{-- Unread badge on icon (collapsed state) --}}
+                                    <span x-show="ticketUnread > 0 && !sidebarExpanded && window.innerWidth >= 1024"
+                                        class="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full"
+                                        x-text="ticketUnread > 9 ? '9+' : ticketUnread" x-cloak></span>
+                                </div>
+                                <span class="whitespace-nowrap transition-all duration-300"
+                                    style="transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+                                    :class="sidebarExpanded || window.innerWidth < 1024 ? 'opacity-100 max-w-[200px]' : 'lg:opacity-0 lg:max-w-0'">
+                                    {{ __('ui.sidebar_customer_service') ?? 'Customer Service' }}
+                                    <span x-show="ticketUnread > 0"
+                                        class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full min-w-[20px]"
+                                        x-text="ticketUnread > 99 ? '99+' : ticketUnread"></span>
+                                </span>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 transition-all duration-300"
+                                style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+                                :class="[activeMenu === 'customer_service' ? 'rotate-180' : '', sidebarExpanded || window.innerWidth < 1024 ? 'opacity-100' : 'lg:opacity-0']"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                            {{-- Tooltip (collapsed state) --}}
+                            <div class="absolute left-16 bg-gray-900 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50"
+                                :class="!sidebarExpanded && window.innerWidth >= 1024 ? 'block' : 'hidden'">
+                                {{ __('ui.sidebar_customer_service') ?? 'Customer Service' }}
+                            </div>
+                        </a>
+                        {{-- Submenu items --}}
+                        <div x-show="activeMenu === 'customer_service'" x-collapse x-cloak>
+                            <ul class="pl-9 mt-1 space-y-1"
+                                :class="sidebarExpanded || window.innerWidth < 1024 ? 'opacity-100' : 'lg:opacity-0'">
+                                <li>
+                                    <a href="{{ route('tickets.index') }}"
+                                        class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 rounded-lg hover:bg-indigo-600/30 transition-colors @if (Route::is('tickets.*')) text-white bg-indigo-600/40 @endif">
+                                        <i class="fas fa-ticket-alt text-xs w-4"></i>
+                                        {{ __('ui.sidebar_tickets') ?? 'Tickets' }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('broadcasts.index') }}"
+                                        class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 rounded-lg hover:bg-indigo-600/30 transition-colors @if (Route::is('broadcasts.*')) text-white bg-indigo-600/40 @endif">
+                                        <i class="fas fa-bullhorn text-xs w-4"></i>
+                                        {{ __('ui.sidebar_broadcasts') ?? 'Broadcasts' }}
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+
+                {{-- ==================== --}}
                 {{-- Bookings Group --}}
                 {{-- ==================== --}}
                 {{-- Collapsible group: bookings, check-in/out, change booking, door lock, parking management --}}

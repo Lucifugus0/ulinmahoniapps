@@ -155,7 +155,10 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        /* Only initialize Swiper if promo slides exist — prevents
+           getComputedStyle crash when .swiper-wrapper is missing */
         var slideCount = document.querySelectorAll('.promo-swiper .swiper-slide').length;
+        if (slideCount === 0) return;
         new Swiper('.promo-swiper', {
             slidesPerView: 1,
             spaceBetween: 0,

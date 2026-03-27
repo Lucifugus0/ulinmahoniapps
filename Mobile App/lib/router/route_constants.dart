@@ -20,6 +20,12 @@ class RouteNames {
   static const String chat = 'CHAT';
   static const String error = 'ERROR';
 
+  // Ticket routes — customer service ticketing system
+  static const String ticketList = 'TICKET_LIST';
+  static const String createTicket = 'CREATE_TICKET';
+  static const String ticketChat = 'TICKET_CHAT';
+  static const String broadcastDetail = 'BROADCAST_DETAIL';
+
   // Standalone Routes
   static const String browseAll = 'BROWSE_ALL';
   static const String search = 'SEARCH';
@@ -61,6 +67,12 @@ class RoutePaths {
   static const String chatRecipientSelection = '/cs/recipient';
   static const String chat = '/cs/chat/:conversationId';
   static const String error = '/error';
+
+  // Ticket paths — customer service ticketing system
+  static const String ticketList = '/cs';
+  static const String createTicket = '/cs/create';
+  static const String ticketChat = '/cs/ticket/:ticketId';
+  static const String broadcastDetail = '/cs/broadcast/:broadcastId';
   static const String browseAll = '/browse-all';
   static const String search = '/search';
   static const String help = '/help';
