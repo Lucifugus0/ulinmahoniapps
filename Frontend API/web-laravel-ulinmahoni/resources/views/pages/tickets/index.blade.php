@@ -179,6 +179,69 @@
                 </div>
             </div>
         </div>
+
+        {{-- Create Ticket Modal --}}
+        <div x-show="showCreateModal" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+             @click.self="showCreateModal = false">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6"
+                 @click.stop>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-plus-circle text-teal-500 mr-2"></i>New Ticket
+                    </h3>
+                    <button @click="showCreateModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitTicket()">
+                    {{-- Category --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
+                        <select x-model="newTicket.category_id" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="">Select category...</option>
+                            <template x-for="cat in categories" :key="cat.id">
+                                <option :value="cat.id" x-text="cat.label_en"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    {{-- Subject --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject *</label>
+                        <input type="text" x-model="newTicket.subject" required maxlength="255"
+                               placeholder="Brief description of your issue"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+
+                    {{-- Message --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
+                        <textarea x-model="newTicket.initial_message" rows="3" maxlength="5000"
+                                  placeholder="Describe your issue in detail..."
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"></textarea>
+                    </div>
+
+                    {{-- Error --}}
+                    <p x-show="createError" x-text="createError" class="text-red-500 text-xs mb-3"></p>
+
+                    {{-- Submit --}}
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="showCreateModal = false"
+                                class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                            Cancel
+                        </button>
+                        <button type="submit" :disabled="creatingTicket"
+                                class="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors">
+                            <span x-show="!creatingTicket">Create Ticket</span>
+                            <span x-show="creatingTicket"><i class="fas fa-spinner fa-spin mr-1"></i>Creating...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -198,10 +261,15 @@
             loadingMessages: false,
             sending: false,
             showCreateModal: false,
+            categories: [],
+            newTicket: { category_id: '', subject: '', initial_message: '' },
+            creatingTicket: false,
+            createError: '',
             pollingInterval: null,
 
             init() {
                 this.fetchTickets();
+                this.fetchCategories();
                 /** Check URL for ?open= param */
                 const params = new URLSearchParams(window.location.search);
                 const openId = params.get('open');
@@ -210,6 +278,41 @@
                 this.pollingInterval = setInterval(() => {
                     if (this.activeTicketId) this.refreshMessages();
                 }, 10000);
+            },
+
+            /** Fetch ticket categories for the create modal dropdown */
+            async fetchCategories() {
+                try {
+                    const r = await fetch('/api/v1/tickets/categories', { headers: { 'Accept': 'application/json', 'x-api-key': this.apiKey } });
+                    const d = await r.json();
+                    if (d.status === 'success') this.categories = d.data || [];
+                } catch (e) { console.error('Failed to load categories:', e); }
+            },
+
+            /** Submit a new ticket via the API */
+            async submitTicket() {
+                this.createError = '';
+                this.creatingTicket = true;
+                try {
+                    const r = await fetch('/api/v1/tickets', {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'x-api-key': this.apiKey },
+                        body: JSON.stringify({ user_id: this.userId, ...this.newTicket })
+                    });
+                    const d = await r.json();
+                    if (d.status === 'success') {
+                        this.showCreateModal = false;
+                        this.newTicket = { category_id: '', subject: '', initial_message: '' };
+                        await this.fetchTickets();
+                        if (d.data?.id) this.selectTicket(d.data.id);
+                    } else {
+                        this.createError = d.message || 'Failed to create ticket';
+                    }
+                } catch (e) {
+                    this.createError = 'Network error. Please try again.';
+                    console.error(e);
+                }
+                this.creatingTicket = false;
             },
 
             async fetchTickets() {

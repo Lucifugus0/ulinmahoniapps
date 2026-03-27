@@ -28,8 +28,8 @@
         <div class="bg-white rounded-2xl shadow-lg overflow-auto w-3/4 max-h-full flex flex-col text-left"
             @click.outside="editModalOpen = true" @keydown.escape.window="editModalOpen = false">
 
-            <!-- Modal header with step indicator -->
-            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <!-- Modal header with step indicator — room-edit-modal-header class for dark mode override in app.css -->
+            <div class="room-edit-modal-header px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div class="flex justify-between items-center mb-4">
                     <div class="font-bold text-xl text-gray-800">{{ __('ui.room_edit_title') }}</div>
                     <button type="button"
@@ -247,23 +247,13 @@
                                 </div>
                             </div>
 
+                            <!-- Daily type: hide price input, show message to use daily price management -->
                             <div x-show="selectedPriceType === 'daily'" x-transition>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    {{ __('ui.room_daily_price') }} <span class="text-red-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500">Rp</span>
-                                    </div>
-                                    <input type="text" x-ref="dailyPriceInput"
-                                        class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="{{ __('ui.room_daily_price_placeholder') }}" x-model="dailyPriceFormatted"
-                                        @input="updateDailyPrice($event.target.value)">
-                                    <!-- Hidden input untuk backend -->
-                                    <input type="hidden" name="daily_price" x-model="dailyPrice">
-                                </div>
-                                <p x-show="dailyPriceError" class="text-red-500 text-xs mt-1"
-                                    x-text="dailyPriceError"></p>
+                                <p class="text-sm text-blue-600 font-medium bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                                    {{ __('ui.room_daily_use_management') }}
+                                </p>
+                                <!-- Hidden inputs to preserve daily price data -->
+                                <input type="hidden" name="daily_price" x-model="dailyPrice">
                             </div>
 
                             <div x-show="selectedPriceType === 'monthly'" x-transition class="mt-4">

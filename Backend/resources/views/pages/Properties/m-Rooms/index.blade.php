@@ -1779,6 +1779,7 @@
                 editModalOpen: false,
                 editStep: 1,
                 selectedPriceType: '',
+                originalPriceType: '',
                 priceTypes: {
                     daily: false,
                     monthly: false
@@ -1878,6 +1879,9 @@
                         this.selectedPriceType = '';
                     }
 
+                    // Store original price type to allow reverting without booking check
+                    this.originalPriceType = this.selectedPriceType;
+
                     if (this.roomData.daily_price) {
                         this.dailyPrice = parseFloat(this.roomData.daily_price) || 0;
                         this.dailyPriceFormatted = this.formatRupiah(this.dailyPrice.toString());
@@ -1975,7 +1979,48 @@
                     }
                 },
 
-                onPriceTypeChange(type) {
+                /* Check for active/future bookings before allowing booking type change */
+                async onPriceTypeChange(type) {
+                    const previousType = this.selectedPriceType;
+
+                    // If type is the same as original, allow without check
+                    if (type === this.originalPriceType) {
+                        this.applyPriceTypeChange(type);
+                        return;
+                    }
+
+                    // Check for active/future bookings that block the change
+                    try {
+                        const response = await fetch('{{ route("rooms.check-room-bookings") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({ room_id: this.roomId })
+                        });
+                        const data = await response.json();
+
+                        if (data.has_bookings) {
+                            // Revert radio selection to previous value
+                            this.selectedPriceType = previousType;
+                            this.showErrorAlert(
+                                '{{ __("ui.room_booking_type_change_blocked_desc") }}',
+                                '{{ __("ui.room_booking_type_change_blocked") }}'
+                            );
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error checking bookings:', error);
+                        this.selectedPriceType = previousType;
+                        return;
+                    }
+
+                    this.applyPriceTypeChange(type);
+                },
+
+                /* Apply the booking type change after validation passes */
+                applyPriceTypeChange(type) {
                     this.selectedPriceType = type;
 
                     if (type === 'daily') {
@@ -2059,6 +2104,7 @@
                     }
                 },
 
+                /* Validate step 2 — daily type skips price check (managed via daily price management) */
                 validateStep2() {
                     try {
                         if (!this.selectedPriceType) {
@@ -2066,11 +2112,7 @@
                             return false;
                         }
 
-                        if (this.selectedPriceType === 'daily' && (!this.dailyPrice || this.dailyPrice <= 0)) {
-                            this.showErrorAlert('Harga harian harus diisi dan lebih dari 0', 'Harga Harian Tidak Valid');
-                            return false;
-                        }
-
+                        // Daily price is managed via daily price management, no validation needed here
                         if (this.selectedPriceType === 'monthly' && (!this.monthlyPrice || this.monthlyPrice <= 0)) {
                             this.showErrorAlert('Harga bulanan harus diisi dan lebih dari 0', 'Harga Bulanan Tidak Valid');
                             return false;

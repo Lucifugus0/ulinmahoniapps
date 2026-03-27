@@ -131,7 +131,8 @@
                             <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.actions') }}</th>
                         </tr>
                     </thead>
-                    <tbody id="reportTableBody" class="divide-y divide-gray-200">
+                    <!-- Table body with bg-white for dark mode glass treatment (matches All Bookings reference) -->
+                    <tbody id="reportTableBody" class="bg-white divide-y divide-gray-200">
                         <tr>
                             <td colspan="32" class="px-4 py-8 text-center text-gray-500">
                                 <div class="flex flex-col items-center gap-2">
@@ -295,7 +296,8 @@
                     '<span class="ml-1 px-1 py-0.5 text-xs bg-red-100 text-red-800 rounded font-semibold">REFUND</span>' : '';
 
                 return `
-                <tr class="hover:bg-gray-50 transition-colors ${refundClass}">
+                <!-- Row without hover:bg-gray-50 to prevent white bg in dark mode (matches All Bookings) -->
+                <tr class="transition-colors ${refundClass}">
                     <td class="px-3 py-3 text-xs text-gray-900">${row.no}</td>
                     <td class="px-3 py-3 text-xs font-medium text-blue-600">${row.invoice_number}${refundBadge}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.invoice_date}</td>

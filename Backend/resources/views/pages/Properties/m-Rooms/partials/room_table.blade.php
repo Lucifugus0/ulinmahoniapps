@@ -35,7 +35,8 @@
                         {{ __('ui.room_col_updated_by') }}</th>
                 </tr>
             </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400" id="rooms-table-body">
+            <!-- no-backdrop-filter prevents dark mode backdrop-filter from trapping fixed-position modals inside table rows -->
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400 no-backdrop-filter" id="rooms-table-body">
                 @forelse ($rooms as $room)
                     <tr class="hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer border-b border-gray-300 property-table-row">
                         <!-- Properti: property name + subdistrict -->

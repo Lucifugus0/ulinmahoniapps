@@ -18,6 +18,10 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-27 | Transaction Report (`/reports/payment`) | Fixed selected/hovered row background color in dark mode — was showing light gray-50 instead of subtle translucent highlight. |
+| 2026-03-27 | Property's Rooms (`/m-rooms`) Edit Modal | Fixed modal centering — was trapped inside table by dark mode `backdrop-filter` on tbody. Added `no-backdrop-filter` to tbody. |
+| 2026-03-27 | Property's Rooms (`/m-rooms`) Edit Modal | Fixed modal header color in dark mode — added dark blue background to match the blue/indigo gradient theme. |
+| 2026-03-27 | Property's Rooms (`/m-rooms`) Edit Modal | Renamed "Price Type" to "Booking Type" in step 2. For daily type, hides price input and shows "Please use daily price management." message. Blocks booking type change if room has active/future bookings. |
 | 2026-03-26 | Chat Dropdown (header widget) | Fixed dark mode transparency — dropdown was see-through due to parent backdrop-filter bleed. Added `isolation: isolate` and solid `background-color` for both chat list and chat window panels. |
 | 2026-03-26 | Checked-In Users Modal | Fixed dark mode transparency — increased backdrop opacity (`bg-black/20` → `bg-black/50`, dark: `/70`), added `dark:bg-gray-800` to modal body, dark mode classes to search input, table header/body, and text elements. |
 | 2026-03-26 | Add Property (`/properties` modal) | Initial field: increased `maxlength` from 3 to 10 characters (HTML + backend validation). |

@@ -224,6 +224,7 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::get('/m-rooms', [ManajementRoomsController::class, 'index'])->name('rooms.index');
         Route::post('/rooms/store', [ManajementRoomsController::class, 'store'])->name('rooms.store');
         Route::post('/rooms/check-room-number', [ManajementRoomsController::class, 'checkRoomNumber'])->name('rooms.check-room-number');
+        Route::post('/rooms/check-room-bookings', [ManajementRoomsController::class, 'checkRoomBookings'])->name('rooms.check-room-bookings');
         Route::put('/rooms/update/{idrec}', [ManajementRoomsController::class, 'update'])->name('rooms.update');
         Route::put('/rooms/{room}/status', [ManajementRoomsController::class, 'updateStatus'])->name('room.updateStatus');
         Route::post('/rooms/set-active-all', [ManajementRoomsController::class, 'setActiveAll'])->name('rooms.setActiveAll');

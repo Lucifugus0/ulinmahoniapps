@@ -445,6 +445,31 @@ class ManajementRoomsController extends Controller
     }
 
 
+    /**
+     * Check if a room has active (status=1) or future bookings
+     * that would prevent changing the booking type.
+     */
+    public function checkRoomBookings(Request $request)
+    {
+        $roomId = $request->input('room_id');
+
+        // Check for active bookings (status=1) or future bookings via transactions
+        $hasBookings = \App\Models\Booking::where('room_id', $roomId)
+            ->where('status', 1)
+            ->exists();
+
+        if (!$hasBookings) {
+            // Also check transactions with future check_out dates
+            $hasBookings = \App\Models\Transaction::where('room_id', $roomId)
+                ->where('check_out', '>=', Carbon::now())
+                ->exists();
+        }
+
+        return response()->json([
+            'has_bookings' => $hasBookings,
+        ]);
+    }
+
     public function update(Request $request, $idrec)
     {
         // Log request data untuk debugging
