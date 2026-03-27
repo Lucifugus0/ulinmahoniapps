@@ -139,8 +139,9 @@ class _CreateTicketPageState extends ConsumerState<CreateTicketPage> {
     if (ticketId != null) {
       AppLogger.s('Ticket created with ID: $ticketId', 'CREATE-TICKET');
 
-      /// Navigate to the newly created ticket's chat page
-      context.go('/cs/ticket/$ticketId');
+      /* Use pushReplacement so the wizard is removed from the stack —
+         back button on the chat page returns to the ticket list, not the wizard. */
+      context.pushReplacement('/cs/ticket/$ticketId');
     } else {
       /// Show error snackbar on failure
       final ticketState = ref.read(ticketControllerProvider);
