@@ -58,12 +58,9 @@ class BiometricAuthService {
         return true;
       }
 
+      // local_auth 3.x removed AuthenticationOptions — use named params directly
       final didAuthenticate = await _auth.authenticate(
         localizedReason: 'Verify your identity to continue',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
       );
 
       return didAuthenticate;

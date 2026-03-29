@@ -5,7 +5,7 @@ import '../model/eligible_booking_model.dart';
 import '../model/ticket_category_model.dart';
 import '../model/ticket_model.dart';
 
-/// Provider for the TicketRepository singleton
+/// Provider for the TicketRepository singleton.
 final ticketRepositoryProvider = Provider<TicketRepository>((ref) {
   return TicketRepository();
 });
@@ -42,8 +42,21 @@ final broadcastListProvider = FutureProvider.family<List<BroadcastModel>, int>((
   return repo.listBroadcasts(userId);
 });
 
-/// Provider to track currently selected ticket ID
-final selectedTicketProvider = StateProvider<int?>((ref) => null);
+/// Notifier for tracking currently selected ticket ID.
+/// Migrated from StateProvider to Notifier for Riverpod 3.x.
+class SelectedTicketNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+
+  /// Update the selected ticket ID.
+  void select(int? ticketId) {
+    state = ticketId;
+  }
+}
+
+/// Provider to track currently selected ticket ID.
+final selectedTicketProvider =
+    NotifierProvider<SelectedTicketNotifier, int?>(SelectedTicketNotifier.new);
 
 /// Total unread chat count across all tickets — used for bottom nav badge.
 /// Returns 0 on any error (network, auth, first install) to prevent crashes.
@@ -57,7 +70,7 @@ final chatUnreadCountProvider = FutureProvider.family<int, int>((ref, userId) as
   }
 });
 
-/// Parameters for ticket detail provider
+/// Parameters for ticket detail provider.
 class TicketDetailParams {
   final int ticketId;
   final int userId;

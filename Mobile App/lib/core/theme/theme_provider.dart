@@ -5,12 +5,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// SharedPreferences key for persisting theme mode
 const _themeKey = 'theme_mode';
 
-/// Riverpod StateNotifier that manages the app theme mode (dark/light/system).
+/// Riverpod 3.x Notifier that manages the app theme mode (dark/light/system).
 /// Persists the user's choice in SharedPreferences.
 /// Default: ThemeMode.dark (matches the liquid glass dark-first design).
-class ThemeNotifier extends StateNotifier<ThemeMode> {
-  ThemeNotifier() : super(ThemeMode.dark) {
+/// Migrated from StateNotifier to Notifier for Riverpod 3.x compatibility.
+class ThemeNotifier extends Notifier<ThemeMode> {
+  /// Returns the initial theme mode and triggers async load from SharedPreferences
+  @override
+  ThemeMode build() {
     _loadTheme();
+    return ThemeMode.dark;
   }
 
   /// Load saved theme from SharedPreferences on startup
@@ -54,7 +58,5 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   }
 }
 
-/// Global theme mode provider
-final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
-  return ThemeNotifier();
-});
+/// Global theme mode provider — migrated from StateNotifierProvider to NotifierProvider
+final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(ThemeNotifier.new);

@@ -39,14 +39,16 @@ class TicketControllerState {
 }
 
 /// TicketController — manages ticket actions (create, send, close, reopen).
-/// Uses StateNotifier pattern matching existing ChatController.
-class TicketController extends StateNotifier<TicketControllerState> {
-  final Ref ref;
-  final TicketRepository _repository;
+/// Migrated from StateNotifier to Notifier for Riverpod 3.x.
+class TicketController extends Notifier<TicketControllerState> {
+  late final TicketRepository _repository;
 
-  TicketController(this.ref)
-      : _repository = ref.read(ticketRepositoryProvider),
-        super(const TicketControllerState());
+  /// build() returns initial state and initializes dependencies.
+  @override
+  TicketControllerState build() {
+    _repository = ref.read(ticketRepositoryProvider);
+    return const TicketControllerState();
+  }
 
   /// Create a new ticket — returns the ticket ID on success, null on failure.
   Future<int?> createTicket({
@@ -147,8 +149,6 @@ class TicketController extends StateNotifier<TicketControllerState> {
   }
 }
 
-/// Provider for the TicketController
+/// Provider for the TicketController — Riverpod 3.x NotifierProvider.
 final ticketControllerProvider =
-    StateNotifierProvider<TicketController, TicketControllerState>((ref) {
-  return TicketController(ref);
-});
+    NotifierProvider<TicketController, TicketControllerState>(TicketController.new);

@@ -286,7 +286,8 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
 
     
 
-    final user = authState.user.valueOrNull;
+    // Riverpod 3.x: .value is now nullable by default, replacing .valueOrNull
+    final user = authState.user.value;
     final profilePhotoUrl = user?.profilePhotoUrl ?? '';
     final profilePhotoPath = user?.profilePhotoPath ?? '';
     bool hasProfilePic = isLoggedIn &&
@@ -294,7 +295,8 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
 
 
     final availabilityAsyncValue = availabilityCheckState.isRoomAvailable;
-    bool isRoomAvailable = availabilityAsyncValue.valueOrNull ?? false;
+    // Riverpod 3.x: .value is now nullable by default, replacing .valueOrNull
+    bool isRoomAvailable = availabilityAsyncValue.value ?? false;
 
     String? newWarningText;
     bool isValidNow = false;
@@ -608,7 +610,8 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
       ),
       data: (data) {
         // Use fresh room data from API if available, otherwise use passed data
-        final _roomData = roomByIdAsync.valueOrNull ?? data['room'] as RoomModel?;
+        // Riverpod 3.x: .value is now nullable by default, replacing .valueOrNull
+        final _roomData = roomByIdAsync.value ?? data['room'] as RoomModel?;
         final _propertyData = data['propertyData'] as DetailPropertyModel?;
         final _rentType = data['rentType'] as String?;
         final _duration = data['duration'] as int?;

@@ -6,14 +6,18 @@ import '../../home/data/repositories/property_repository.dart';
 import '../../../core/network/api_result.dart';
 import '../../../core/utils/app_logger.dart';
 
-// Property repository provider for fetching all properties
+/// Property repository provider for fetching all properties.
 final propertyRepositoryProvider = Provider<PropertyRepository>((ref) {
   return PropertyRepository();
 });
 
-class SearchFilterNotifier extends StateNotifier<SearchFilter> {
-  SearchFilterNotifier() : super(
-    SearchFilter(
+/// Notifier for search filter state.
+/// Migrated from StateNotifier to Notifier for Riverpod 3.x.
+class SearchFilterNotifier extends Notifier<SearchFilter> {
+  /// build() returns the initial empty filter state.
+  @override
+  SearchFilter build() {
+    final initialFilter = SearchFilter(
       category: null,
       rentType: null,
       checkInDate: null,
@@ -22,24 +26,26 @@ class SearchFilterNotifier extends StateNotifier<SearchFilter> {
       checkOutDate: null,
       city: null,
       province: null,
-    ),
-  ) {
-    AppLogger.d('SearchFilterNotifier initialized - Category: ${state.category}, RentType: ${state.rentType}', 'SEARCH-FILTER');
+    );
+    AppLogger.d('SearchFilterNotifier initialized - Category: ${initialFilter.category}, RentType: ${initialFilter.rentType}', 'SEARCH-FILTER');
+    return initialFilter;
   }
 
+  /// Replace the entire filter with a new one.
   void updateFilter(SearchFilter newFilter) {
     state = newFilter;
 
     AppLogger.i('Filter updated - Category: ${state.category}, RentType: ${state.rentType}, CheckIn: ${state.checkInDate}, CheckOut: ${state.checkOutDate}', 'SEARCH-FILTER');
   }
 
+  /// Partially update filter fields — only non-null params are applied.
   void updateFilterPartial({
     String? category,
     String? rentType,
-    String? checkInDate, 
+    String? checkInDate,
     int? durationRaw,
     int? durationInDays,
-    String? checkOutDate, 
+    String? checkOutDate,
     String? city,
     String? province
   }) {
@@ -57,6 +63,7 @@ class SearchFilterNotifier extends StateNotifier<SearchFilter> {
     AppLogger.i('Filter partially updated - Category: ${state.category}, Rent: ${state.rentType}, Province: ${state.province}, CheckIn: ${state.checkInDate}, Duration: ${state.durationRaw}, CheckOut: ${state.checkOutDate}', 'SEARCH-FILTER');
   }
 
+  /// Reset filter to default empty state.
   void resetFilter() {
     state = SearchFilter(
         category: null,
@@ -72,18 +79,17 @@ class SearchFilterNotifier extends StateNotifier<SearchFilter> {
   }
 }
 
+/// Provider for search filter state — Riverpod 3.x NotifierProvider.
+final searchFilterProvider = NotifierProvider<SearchFilterNotifier, SearchFilter>(
+  SearchFilterNotifier.new,
+);
 
-final searchFilterProvider = StateNotifierProvider<SearchFilterNotifier, SearchFilter>((ref) {
-  AppLogger.d('searchFilterProvider created', 'SEARCH-FILTER');
-  return SearchFilterNotifier();
-});
-
-
+/// Provider for search result repository singleton.
 final searchResultRepositoryProvider = Provider<SearchResultRepository>((ref) {
   return SearchResultRepository();
 });
 
-
+/// FutureProvider that fetches and sorts search results based on the current filter.
 final searchResultsProvider = FutureProvider<List<PropertyModel>>((ref) async {
   final repository = ref.watch(searchResultRepositoryProvider);
   final currentFilter = ref.watch(searchFilterProvider);

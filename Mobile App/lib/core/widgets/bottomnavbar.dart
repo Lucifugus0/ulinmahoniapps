@@ -82,8 +82,9 @@ class BottomNavBar extends ConsumerWidget {
     final bool isLoggedIn = authState.isLoggedIn;
     final userId = authState.user.value?.id;
     // Unread chat count for CS tab badge
+    // Riverpod 3.x: .valueOrNull removed, use .value which is now nullable by default
     final chatUnread = (isLoggedIn && userId != null)
-        ? ref.watch(chatUnreadCountProvider(userId)).valueOrNull ?? 0
+        ? ref.watch(chatUnreadCountProvider(userId)).value ?? 0
         : 0;
     // Detect dark/light mode
     final isDark = Theme.of(context).brightness == Brightness.dark;

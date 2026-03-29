@@ -4,12 +4,12 @@ import 'package:ulinmahoniapps/core/utils/app_logger.dart';
 import '../data/repositories/voucher_repository.dart';
 import '../model/voucher_model.dart';
 
-/// Provider for VoucherRepository
+/// Provider for VoucherRepository instance
 final voucherRepositoryProvider = Provider<VoucherRepository>((ref) {
   return VoucherRepository();
 });
 
-/// State class for voucher operations
+/// State class for voucher operations — holds validation/application results and applied voucher info
 class VoucherState {
   final AsyncValue<VoucherValidationResponse?> validationResult;
   final AsyncValue<VoucherApplicationResponse?> applicationResult;
@@ -39,13 +39,13 @@ class VoucherState {
   }
 }
 
-/// StateNotifier for managing voucher state
-class VoucherNotifier extends StateNotifier<VoucherState> {
-  final VoucherRepository _repository;
+/// Riverpod 3.x Notifier for managing voucher state — migrated from StateNotifier
+class VoucherNotifier extends Notifier<VoucherState> {
+  /// Build method returns the initial state (replaces constructor super call)
+  @override
+  VoucherState build() => VoucherState();
 
-  VoucherNotifier(this._repository) : super(VoucherState());
-
-  /// Validate a voucher code
+  /// Validate a voucher code against the server — checks eligibility before applying
   Future<void> validateVoucher({
     required String voucherCode,
     required int userId,
@@ -68,7 +68,8 @@ class VoucherNotifier extends StateNotifier<VoucherState> {
       roomId: roomId,
     );
 
-    final result = await _repository.validateVoucher(request);
+    final repository = ref.read(voucherRepositoryProvider);
+    final result = await repository.validateVoucher(request);
 
     switch (result) {
       case Success(:final data):
@@ -90,7 +91,7 @@ class VoucherNotifier extends StateNotifier<VoucherState> {
     }
   }
 
-  /// Apply a voucher to a booking
+  /// Apply a voucher to a booking — finalizes the discount on the server
   Future<void> applyVoucher({
     required String voucherCode,
     required int userId,
@@ -113,7 +114,8 @@ class VoucherNotifier extends StateNotifier<VoucherState> {
       roomId: roomId,
     );
 
-    final result = await _repository.applyVoucher(request);
+    final repository = ref.read(voucherRepositoryProvider);
+    final result = await repository.applyVoucher(request);
 
     switch (result) {
       case Success(:final data):
@@ -134,7 +136,7 @@ class VoucherNotifier extends StateNotifier<VoucherState> {
     }
   }
 
-  /// Remove applied voucher
+  /// Remove applied voucher and reset validation/application state
   void removeVoucher() {
     AppLogger.d('Removing applied voucher', 'VOUCHER-PROVIDER');
     state = state.copyWith(
@@ -144,13 +146,13 @@ class VoucherNotifier extends StateNotifier<VoucherState> {
     );
   }
 
-  /// Reset voucher state
+  /// Reset voucher state back to initial values
   void resetState() {
     AppLogger.d('Resetting voucher state', 'VOUCHER-PROVIDER');
     state = VoucherState();
   }
 
-  /// Get current discount amount
+  /// Get current discount amount — returns 0.0 if no voucher applied
   double get currentDiscount => state.discountAmount ?? 0.0;
 
   /// Check if voucher is applied
@@ -160,9 +162,6 @@ class VoucherNotifier extends StateNotifier<VoucherState> {
   String? get appliedVoucherCode => state.appliedVoucherCode;
 }
 
-/// Provider for VoucherNotifier
+/// Provider for VoucherNotifier — migrated from StateNotifierProvider to NotifierProvider
 final voucherNotifierProvider =
-    StateNotifierProvider<VoucherNotifier, VoucherState>((ref) {
-  final repository = ref.watch(voucherRepositoryProvider);
-  return VoucherNotifier(repository);
-});
+    NotifierProvider<VoucherNotifier, VoucherState>(VoucherNotifier.new);

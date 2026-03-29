@@ -40,23 +40,22 @@ class AppleSignInResult {
   });
 }
 
-/// Provider for AppleSignInController
+/// Migrated from StateNotifierProvider to NotifierProvider for Riverpod 3.x
 final appleSignInControllerProvider =
-    StateNotifierProvider<AppleSignInController, AsyncValue<AppleSignInResult?>>((ref) {
-  return AppleSignInController(ref);
-});
+    NotifierProvider<AppleSignInController, AsyncValue<AppleSignInResult?>>(AppleSignInController.new);
 
 /// Controller for Apple Sign-In flow with auto-register
+/// Migrated from StateNotifier to Notifier for Riverpod 3.x.
 /// FLOW (same as Google Sign-In):
 /// 1. Get user data from Apple SDK (email, givenName, familyName)
 /// 2. Check if user exists via GET /users?email={email}
 /// 3. If user NOT exists -> Auto-register via POST /auth/register -> Show notification (must verify email)
 /// 4. If user exists -> Save user data directly to local storage (no API login)
 /// 5. Navigate to /home (handled by login_page.dart)
-class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>> {
-  final Ref _ref;
-
-  AppleSignInController(this._ref) : super(const AsyncValue.data(null));
+class AppleSignInController extends Notifier<AsyncValue<AppleSignInResult?>> {
+  /// Returns initial state via build method (Riverpod 3.x pattern)
+  @override
+  AsyncValue<AppleSignInResult?> build() => const AsyncValue.data(null);
 
   /// Check for existing Apple accounts and show picker if multiple accounts exist
   /// This is called BEFORE calling Apple Sign-In SDK
@@ -104,7 +103,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
       }
 
       // Validate email verification via API
-      final validator = _ref.read(emailVerificationValidatorProvider);
+      final validator = ref.read(emailVerificationValidatorProvider);
       final verificationResult = await validator.isEmailVerified(account.userId!);
 
       switch (verificationResult) {
@@ -146,7 +145,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
   Future<void> _loginWithExistingAccount(AppleAccountData account, {bool rememberMe = true}) async {
     try {
       // Get full user data from API
-      final userFilterRepo = _ref.read(userFilterRepositoryProvider);
+      final userFilterRepo = ref.read(userFilterRepositoryProvider);
       final filterResult = await userFilterRepo.getUserByEmail(account.email ?? '');
 
       switch (filterResult) {
@@ -195,7 +194,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
             );
 
             // Update auth provider from SharedPreferences
-            final authNotifier = _ref.read(authProvider.notifier);
+            final authNotifier = ref.read(authProvider.notifier);
             authNotifier.checkAuthStatus();
 
             AppLogger.s('Login with existing Apple account (Remember Me) completed', 'APPLE-SIGNIN-CTRL');
@@ -215,7 +214,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
             );
 
             // Set user in memory only (no SharedPreferences)
-            final authNotifier = _ref.read(authProvider.notifier);
+            final authNotifier = ref.read(authProvider.notifier);
             authNotifier.setUserInMemoryOnly(user);
 
             AppLogger.s('Login with existing Apple account (memory only) completed', 'APPLE-SIGNIN-CTRL');
@@ -247,7 +246,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
 
     try {
       // Step 1: Get user from Apple SDK
-      final appleRepo = _ref.read(appleSignInRepositoryProvider);
+      final appleRepo = ref.read(appleSignInRepositoryProvider);
       final appleResult = await appleRepo.signInWithApple();
 
       switch (appleResult) {
@@ -267,7 +266,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
           );
 
           // Step 2: Check if user exists via GET /users?email={email}
-          final userFilterRepo = _ref.read(userFilterRepositoryProvider);
+          final userFilterRepo = ref.read(userFilterRepositoryProvider);
           final filterResult = await userFilterRepo.getUserByEmail(email);
 
           switch (filterResult) {
@@ -301,7 +300,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
                   displayName: displayName,
                 );
 
-                final userRegRepo = _ref.read(userRegistrationRepositoryProvider);
+                final userRegRepo = ref.read(userRegistrationRepositoryProvider);
                 final registerResult =
                     await userRegRepo.registerUser(registrationRequest);
 
@@ -418,7 +417,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
                   );
 
                   // Update auth provider from SharedPreferences
-                  final authNotifier = _ref.read(authProvider.notifier);
+                  final authNotifier = ref.read(authProvider.notifier);
                   authNotifier.checkAuthStatus();
 
                   AppLogger.s('Apple Sign-In with Remember Me completed', 'APPLE-SIGNIN-CTRL');
@@ -438,7 +437,7 @@ class AppleSignInController extends StateNotifier<AsyncValue<AppleSignInResult?>
                   );
 
                   // Set user in memory only (no SharedPreferences)
-                  final authNotifier = _ref.read(authProvider.notifier);
+                  final authNotifier = ref.read(authProvider.notifier);
                   authNotifier.setUserInMemoryOnly(user);
 
                   AppLogger.s('Apple Sign-In without Remember Me completed (memory only)', 'APPLE-SIGNIN-CTRL');

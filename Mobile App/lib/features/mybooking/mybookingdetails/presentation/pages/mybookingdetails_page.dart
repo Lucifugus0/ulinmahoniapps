@@ -40,6 +40,22 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/utils/payment_cache_utils.dart';
 import 'dart:ui' as ui;
 
+/// Notifier for attachment upload status — tracks async upload state.
+/// Migrated from inline StateProvider to top-level Notifier for Riverpod 3.x.
+class _UploadStatusNotifier extends Notifier<AsyncValue<bool>> {
+  @override
+  AsyncValue<bool> build() => const AsyncData(false);
+
+  /// Update the upload status state.
+  void setState(AsyncValue<bool> newState) {
+    state = newState;
+  }
+}
+
+/// Provider for attachment upload status.
+final _uploadStatusProvider =
+    NotifierProvider<_UploadStatusNotifier, AsyncValue<bool>>(_UploadStatusNotifier.new);
+
 class MyBookingDetail extends ConsumerStatefulWidget {
   final Map<String, dynamic> bookingData;
 
@@ -52,8 +68,6 @@ class MyBookingDetail extends ConsumerStatefulWidget {
 class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
   File? selectedImage;
   Uint8List? _decodedAttachmentImageBytes;
-
-  final StateProvider<AsyncValue<bool>> _uploadStatusProvider = StateProvider<AsyncValue<bool>>((ref) => const AsyncData(false));
 
   // Payment cache state
   Map<String, String>? _cachedQRData;
@@ -97,7 +111,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
       return;
     }
 
-    ref.read(_uploadStatusProvider.notifier).state = const AsyncLoading();
+    ref.read(_uploadStatusProvider.notifier).setState(const AsyncLoading());
 
     try {
       List<int> imageBytes = await selectedImage!.readAsBytes();
@@ -108,7 +122,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
 
       switch (result) {
         case Success(:final data):
-          ref.read(_uploadStatusProvider.notifier).state = const AsyncData(true);
+          ref.read(_uploadStatusProvider.notifier).setState(const AsyncData(true));
           showNotificationDialog(
             context,
             localizations.myBookingDetailUploadSuccess,
@@ -125,7 +139,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
           });
 
         case Failure(:final message):
-          ref.read(_uploadStatusProvider.notifier).state = AsyncError(message, StackTrace.current);
+          ref.read(_uploadStatusProvider.notifier).setState(AsyncError(message, StackTrace.current));
           showNotificationDialog(
             context,
             '${localizations.myBookingDetailUploadFailed}: $message',
@@ -134,7 +148,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
           );
       }
     } catch (e, stackTrace) {
-      ref.read(_uploadStatusProvider.notifier).state = AsyncError(e, stackTrace);
+      ref.read(_uploadStatusProvider.notifier).setState(AsyncError(e, stackTrace));
       showNotificationDialog(
         context,
         '${localizations.myBookingDetailUploadFailed}: $e',

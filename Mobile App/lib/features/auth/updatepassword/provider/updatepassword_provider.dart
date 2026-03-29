@@ -20,22 +20,27 @@ class UpdatePasswordLoading extends UpdatePasswordState {}
 
 
 class UpdatePasswordSuccess extends UpdatePasswordState {
-  final String message; 
+  final String message;
   UpdatePasswordSuccess(this.message);
 }
 
 
 class UpdatePasswordError extends UpdatePasswordState {
-  final String message; 
+  final String message;
   UpdatePasswordError(this.message);
 }
 
 
+/// Migrated from StateNotifierProvider to NotifierProvider for Riverpod 3.x
+final updatePasswordNotifierProvider = NotifierProvider<UpdatePasswordNotifier, UpdatePasswordState>(UpdatePasswordNotifier.new);
 
-class UpdatePasswordNotifier extends StateNotifier<UpdatePasswordState> {
-  final Ref _ref;
-
-  UpdatePasswordNotifier(this._ref) : super(UpdatePasswordInitial());
+/// Update password notifier — migrated from StateNotifier to Notifier.
+/// Uses build() instead of constructor for initial state.
+/// ref is available as a property (no need to store it).
+class UpdatePasswordNotifier extends Notifier<UpdatePasswordState> {
+  /// Returns initial state via build method (Riverpod 3.x pattern)
+  @override
+  UpdatePasswordState build() => UpdatePasswordInitial();
 
   Future<void> updatePassword({
     required String oldPassword,
@@ -44,7 +49,7 @@ class UpdatePasswordNotifier extends StateNotifier<UpdatePasswordState> {
   }) async {
     state = UpdatePasswordLoading();
 
-    final currentUserId = _ref.read(authProvider).user.value?.id;
+    final currentUserId = ref.read(authProvider).user.value?.id;
 
     if (currentUserId == null) {
       state = UpdatePasswordError('Pengguna tidak terautentikasi atau userId tidak ditemukan.');
@@ -52,7 +57,7 @@ class UpdatePasswordNotifier extends StateNotifier<UpdatePasswordState> {
       return;
     }
 
-    final repository = _ref.read(updatePasswordRepositoryProvider);
+    final repository = ref.read(updatePasswordRepositoryProvider);
     final result = await repository.updatePassword(
       userId: currentUserId.toString(),
       oldPassword: oldPassword,
@@ -71,14 +76,8 @@ class UpdatePasswordNotifier extends StateNotifier<UpdatePasswordState> {
     }
   }
 
-  
+
   void resetState() {
     state = UpdatePasswordInitial();
   }
 }
-
-
-
-final updatePasswordNotifierProvider = StateNotifierProvider<UpdatePasswordNotifier, UpdatePasswordState>((ref) {
-  return UpdatePasswordNotifier(ref);
-});

@@ -100,7 +100,7 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
   /// Builds tagline text spans — uses API tagline if available, otherwise falls back to localized 3-part text
   List<TextSpan> _buildTaglineSpans(AppLocalizations localizations) {
     final taglineAsync = ref.watch(taglineProvider);
-    final apiTagline = taglineAsync.valueOrNull;
+    final apiTagline = taglineAsync.value;
 
     if (apiTagline != null && apiTagline.isNotEmpty) {
       // Single text span with API tagline
@@ -155,7 +155,7 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
               // Show dynamic tagline from API, fallback to localized subtitle
               Builder(builder: (context) {
                 final taglineAsync = ref.watch(taglineProvider);
-                final apiTagline = taglineAsync.valueOrNull;
+                final apiTagline = taglineAsync.value;
                 final text = (apiTagline != null && apiTagline.isNotEmpty)
                     ? apiTagline
                     : localizations.homeSubtitle;

@@ -16,12 +16,42 @@ import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
 import 'package:ulinmahoniapps/core/constants/app_asset_constants.dart';
 import '../../../../../../core/utils/app_logger.dart';
 
-// StateProvider untuk selected room name filter
-final selectedRoomFilterProvider = StateProvider.family<String?, int>((ref, propertyId) => null);
+/// Notifier for selected room name filter — replaces StateProvider.family for Riverpod 3.x
+class SelectedRoomFilterNotifier extends Notifier<String?> {
+  final int propertyId;
+  SelectedRoomFilterNotifier(this.propertyId);
 
-// StateProvider untuk selected room status filter (rental_status)
-// null = all, '0' = available (Tersedia), '1' = occupied (Terisi)
-final selectedRoomStatusFilterProvider = StateProvider.family<String?, int>((ref, propertyId) => null);
+  @override
+  String? build() => null;
+
+  /// Update the selected room name filter value
+  void update(String? value) => state = value;
+}
+
+/// Provider for selected room name filter per property ID
+final selectedRoomFilterProvider =
+    NotifierProvider.family<SelectedRoomFilterNotifier, String?, int>(
+  (propertyId) => SelectedRoomFilterNotifier(propertyId),
+);
+
+/// Notifier for selected room status filter (rental_status) — replaces StateProvider.family for Riverpod 3.x
+/// null = all, '0' = available (Tersedia), '1' = occupied (Terisi)
+class SelectedRoomStatusFilterNotifier extends Notifier<String?> {
+  final int propertyId;
+  SelectedRoomStatusFilterNotifier(this.propertyId);
+
+  @override
+  String? build() => null;
+
+  /// Update the selected room status filter value
+  void update(String? value) => state = value;
+}
+
+/// Provider for selected room status filter per property ID
+final selectedRoomStatusFilterProvider =
+    NotifierProvider.family<SelectedRoomStatusFilterNotifier, String?, int>(
+  (propertyId) => SelectedRoomStatusFilterNotifier(propertyId),
+);
 
 class RoomTypeSection extends ConsumerWidget {
   final DetailPropertyModel propertyData;
@@ -89,7 +119,8 @@ class RoomTypeSection extends ConsumerWidget {
                           child: _RoomStatusFilterDropdown(
                             selectedStatusFilter: selectedStatusFilter,
                             onStatusFilterChanged: (value) {
-                              ref.read(selectedRoomStatusFilterProvider(propertyId).notifier).state = value;
+                              // Riverpod 3.x: use .update() method instead of .state setter
+                              ref.read(selectedRoomStatusFilterProvider(propertyId).notifier).update(value);
                             },
                             localizations: localizations,
                             isEnabled: true,
@@ -102,7 +133,8 @@ class RoomTypeSection extends ConsumerWidget {
                             roomNames: distinctRoomNames,
                             selectedFilter: selectedFilter,
                             onFilterChanged: (value) {
-                              ref.read(selectedRoomFilterProvider(propertyId).notifier).state = value;
+                              // Riverpod 3.x: use .update() method instead of .state setter
+                              ref.read(selectedRoomFilterProvider(propertyId).notifier).update(value);
                             },
                             localizations: localizations,
                             isEnabled: true,

@@ -8,17 +8,19 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import 'package:intl/intl.dart';
 
-class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  RoomDetailsNotifier(this.ref) : super(const AsyncValue.loading());
+/// Riverpod 3.x Notifier for room details state — migrated from StateNotifier
+/// Manages room data, rent type, duration, check-in/out dates, and multi-tier daily pricing
+class RoomDetailsNotifier extends Notifier<AsyncValue<Map<String, dynamic>>> {
+  /// Build method returns the initial loading state (replaces constructor super call)
+  @override
+  AsyncValue<Map<String, dynamic>> build() => const AsyncValue.loading();
 
-  final Ref ref;
-
+  /// Parse custom date format "dd-MM-yyyy HH:mm" to DateTime
   DateTime? _parseCustomDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) {
       return null;
     }
     try {
-
       final DateFormat formatter = DateFormat("dd-MM-yyyy HH:mm");
       return formatter.parseStrict(dateString);
     } catch (e) {
@@ -27,6 +29,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
+  /// Load room details from room model and property data, applying search filter defaults
   void loadRoomDetails(RoomModel room, DetailPropertyModel propertyData) {
     state = const AsyncValue.loading();
 
@@ -84,6 +87,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
+  /// Update rent type and reset duration/checkout — triggers checkout recalculation
   void updateRentType(String? newRentType) {
     if (state.value != null) {
       state = AsyncValue.data({
@@ -97,6 +101,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
+  /// Update booking duration — triggers checkout recalculation
   void updateDuration(int? newDuration) {
     if (state.value != null) {
       state = AsyncValue.data({
@@ -108,6 +113,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
+  /// Update check-in date — triggers checkout recalculation
   void updateCheckInDate(DateTime newCheckInDate) {
     if (state.value != null) {
       state = AsyncValue.data({
@@ -119,7 +125,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
-
+  /// Recalculate check-out date based on current rent type, duration, and check-in date
   void _calculateAndSetCheckOutDate() {
     if (state.value != null) {
       final rentType = state.value!['rentType'] as String?;
@@ -225,16 +231,15 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
-
+  /// Get current booking data map from state — returns empty map if no data loaded
   Map<String, dynamic> getBookingData() {
-
     if (state.hasValue) {
       return state.value!;
     }
     return {};
   }
 
-
+  /// Reset state to empty initial values
   void resetState() {
     state = const AsyncValue.data({
       'room': null,
@@ -247,8 +252,5 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
   }
 }
 
-
-final roomDetailsProvider = StateNotifierProvider.autoDispose<RoomDetailsNotifier, AsyncValue<Map<String, dynamic>>>((ref) {
-  AppLogger.d('roomDetailsProvider created', 'ROOM-DETAILS');
-  return RoomDetailsNotifier(ref);
-});
+/// Provider for RoomDetailsNotifier — migrated from StateNotifierProvider to NotifierProvider
+final roomDetailsProvider = NotifierProvider<RoomDetailsNotifier, AsyncValue<Map<String, dynamic>>>(RoomDetailsNotifier.new);

@@ -33,9 +33,9 @@ class LocalNotificationService {
         iOS: iosSettings,
       );
 
-      // Initialize plugin
+      // Initialize plugin — v21.x uses named parameters
       await _notificationsPlugin.initialize(
-        initSettings,
+        settings: initSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
@@ -123,10 +123,10 @@ class LocalNotificationService {
 
       // Use conversationId as notification ID to replace old notification with new one
       await _notificationsPlugin.show(
-        conversationId,
-        title,
-        body,
-        notificationDetails,
+        id: conversationId,
+        title: title,
+        body: body,
+        notificationDetails: notificationDetails,
         payload: 'chat:$conversationId',
       );
 
@@ -182,10 +182,10 @@ class LocalNotificationService {
       final notifId = (type + (orderId ?? '')).hashCode.abs();
 
       await _notificationsPlugin.show(
-        notifId,
-        title,
-        body,
-        notificationDetails,
+        id: notifId,
+        title: title,
+        body: body,
+        notificationDetails: notificationDetails,
         payload: 'booking:$type:${orderId ?? ''}',
       );
 
@@ -198,7 +198,7 @@ class LocalNotificationService {
   /// Cancel a specific notification by conversation ID
   Future<void> cancelNotification(int conversationId) async {
     try {
-      await _notificationsPlugin.cancel(conversationId);
+      await _notificationsPlugin.cancel(id: conversationId);
       AppLogger.d('Cancelled notification for conversation $conversationId', 'NOTIFICATION-SERVICE');
     } catch (e, stackTrace) {
       AppLogger.e('Failed to cancel notification', e, stackTrace, 'NOTIFICATION-SERVICE');

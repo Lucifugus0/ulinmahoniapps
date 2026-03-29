@@ -4,7 +4,7 @@ import '../../../../../core/utils/app_logger.dart';
 import '../model/doku_cc_model.dart';
 import '../data/repositories/doku_cc_repository.dart';
 
-/// State for DOKU CC
+/// State for DOKU CC payment generation — holds the async result of the CC generation request
 class DokuCCState {
   final AsyncValue<DokuCCResponse> generateResult;
 
@@ -21,13 +21,13 @@ class DokuCCState {
   }
 }
 
-/// StateNotifier for managing DOKU CC state
-class DokuCCNotifier extends StateNotifier<DokuCCState> {
-  final DokuCCRepository _repository;
+/// Riverpod 3.x Notifier for managing DOKU CC state — migrated from StateNotifier
+class DokuCCNotifier extends Notifier<DokuCCState> {
+  /// Build method returns the initial state (replaces constructor super call)
+  @override
+  DokuCCState build() => DokuCCState();
 
-  DokuCCNotifier(this._repository) : super(DokuCCState());
-
-  /// Generate DOKU Credit Card Payment
+  /// Generate DOKU Credit Card Payment via repository and update state accordingly
   Future<void> generateCC({
     required String orderId,
     required String userName,
@@ -53,7 +53,8 @@ class DokuCCNotifier extends StateNotifier<DokuCCState> {
       amount: amount,
     );
 
-    final result = await _repository.generateCC(request);
+    final repository = dokuCCRepositoryProvider;
+    final result = await repository.generateCC(request);
 
     switch (result) {
       case Success(:final data):
@@ -77,16 +78,13 @@ class DokuCCNotifier extends StateNotifier<DokuCCState> {
     }
   }
 
-  /// Reset state
+  /// Reset state back to initial values
   void resetState() {
     AppLogger.d('Resetting DOKU CC state', 'DOKU-CC-PROVIDER');
     state = DokuCCState();
   }
 }
 
-/// Provider for DokuCCNotifier
+/// Provider for DokuCCNotifier — migrated from StateNotifierProvider to NotifierProvider
 final dokuCCNotifierProvider =
-    StateNotifierProvider<DokuCCNotifier, DokuCCState>((ref) {
-  final repository = dokuCCRepositoryProvider;
-  return DokuCCNotifier(repository);
-});
+    NotifierProvider<DokuCCNotifier, DokuCCState>(DokuCCNotifier.new);

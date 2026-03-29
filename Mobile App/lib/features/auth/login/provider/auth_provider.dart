@@ -16,7 +16,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 class AuthState {
   final bool isLoggedIn;
-  final AsyncValue<User?> user; 
+  final AsyncValue<User?> user;
   final String? token;
   final String? errorMessage;
 
@@ -42,11 +42,17 @@ class AuthState {
   }
 }
 
-
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this.ref) : super(AuthState());
-
-  final Ref ref;
+/// Auth notifier — migrated from StateNotifier to Notifier for Riverpod 3.x.
+/// Uses build() instead of constructor for initial state.
+/// ref is available as a property (no need to store it).
+class AuthNotifier extends Notifier<AuthState> {
+  /// Returns initial state and triggers auth status check via build method
+  @override
+  AuthState build() {
+    // Trigger async auth check after initialization
+    checkAuthStatus();
+    return AuthState();
+  }
 
 
   Future<void> checkAuthStatus() async {
@@ -550,11 +556,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  
-  
-  final notifier = AuthNotifier(ref);
-  notifier.checkAuthStatus();
-  return notifier;
-});
+/// Global auth provider — migrated from StateNotifierProvider to NotifierProvider
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);

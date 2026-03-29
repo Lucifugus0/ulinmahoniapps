@@ -62,7 +62,7 @@ class _TicketChatPageState extends ConsumerState<TicketChatPage>
 
     /// Initialize ticket state after build — set selected ticket, mark as read, start polling
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(selectedTicketProvider.notifier).state = widget.ticketId;
+      ref.read(selectedTicketProvider.notifier).select(widget.ticketId);
       _markAsRead();
       _startPolling();
     });

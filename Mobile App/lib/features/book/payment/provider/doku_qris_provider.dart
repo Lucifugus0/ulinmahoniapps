@@ -4,7 +4,7 @@ import '../../../../../core/utils/app_logger.dart';
 import '../model/doku_qris_model.dart';
 import '../data/repositories/doku_qris_repository.dart';
 
-/// State for DOKU QRIS
+/// State for DOKU QRIS payment generation — holds the async result of the QRIS generation request
 class DokuQRISState {
   final AsyncValue<DokuQRISResponse> generateResult;
 
@@ -21,13 +21,13 @@ class DokuQRISState {
   }
 }
 
-/// StateNotifier for managing DOKU QRIS state
-class DokuQRISNotifier extends StateNotifier<DokuQRISState> {
-  final DokuQRISRepository _repository;
+/// Riverpod 3.x Notifier for managing DOKU QRIS state — migrated from StateNotifier
+class DokuQRISNotifier extends Notifier<DokuQRISState> {
+  /// Build method returns the initial state (replaces constructor super call)
+  @override
+  DokuQRISState build() => DokuQRISState();
 
-  DokuQRISNotifier(this._repository) : super(DokuQRISState());
-
-  /// Generate DOKU QRIS
+  /// Generate DOKU QRIS payment via repository and update state accordingly
   Future<void> generateQRIS({
     required String orderId,
     required String userName,
@@ -53,7 +53,8 @@ class DokuQRISNotifier extends StateNotifier<DokuQRISState> {
       amount: amount,
     );
 
-    final result = await _repository.generateQRIS(request);
+    final repository = dokuQRISRepositoryProvider;
+    final result = await repository.generateQRIS(request);
 
     switch (result) {
       case Success(:final data):
@@ -77,16 +78,13 @@ class DokuQRISNotifier extends StateNotifier<DokuQRISState> {
     }
   }
 
-  /// Reset state
+  /// Reset state back to initial values
   void resetState() {
     AppLogger.d('Resetting DOKU QRIS state', 'DOKU-QRIS-PROVIDER');
     state = DokuQRISState();
   }
 }
 
-/// Provider for DokuQRISNotifier
+/// Provider for DokuQRISNotifier — migrated from StateNotifierProvider to NotifierProvider
 final dokuQRISNotifierProvider =
-    StateNotifierProvider<DokuQRISNotifier, DokuQRISState>((ref) {
-  final repository = dokuQRISRepositoryProvider;
-  return DokuQRISNotifier(repository);
-});
+    NotifierProvider<DokuQRISNotifier, DokuQRISState>(DokuQRISNotifier.new);

@@ -7,14 +7,16 @@ final registerRepositoryProvider = Provider<RegisterRepository>((ref) {
   return RegisterRepository();
 });
 
-final registerControllerProvider = StateNotifierProvider<RegisterController, bool>((ref) {
-  return RegisterController(ref);
-});
+/// Migrated from StateNotifierProvider to NotifierProvider for Riverpod 3.x
+final registerControllerProvider = NotifierProvider<RegisterController, bool>(RegisterController.new);
 
-class RegisterController extends StateNotifier<bool> {
-  final Ref _ref;
-
-  RegisterController(this._ref) : super(false);
+/// Register controller — migrated from StateNotifier to Notifier.
+/// Uses build() instead of constructor for initial state.
+/// ref is available as a property (no need to store it).
+class RegisterController extends Notifier<bool> {
+  /// Returns initial loading state (false) via build method
+  @override
+  bool build() => false;
 
   Future<String?> register(String username, String email, String password, String phoneNumber, String firstName, String lastName) async {
     state = true;
@@ -37,7 +39,7 @@ class RegisterController extends StateNotifier<bool> {
     }
 
     try {
-      final repository = _ref.read(registerRepositoryProvider);
+      final repository = ref.read(registerRepositoryProvider);
 
       final result = await repository.register(
         username: username,

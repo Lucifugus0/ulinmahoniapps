@@ -53,8 +53,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage>
 
     // Set selected conversation
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(selectedConversationProvider.notifier).state =
-          widget.conversationId;
+      ref.read(selectedConversationProvider.notifier).select(
+          widget.conversationId);
 
       // Cancel notification for this conversation
       _cancelNotification();

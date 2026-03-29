@@ -507,7 +507,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   if (user != null) {
                     // Get grandtotal and order_id from backend response (source of truth)
                     final paymentState = ref.read(paymentNotifierProvider);
-                    final bookingData = paymentState.postBookingResult.valueOrNull;
+                    final bookingData = paymentState.postBookingResult.value;
                     final grandTotalValue = bookingData?['data']?['grandtotal_price'];
                     final grandTotalFromBackend = grandTotalValue != null
                         ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
@@ -518,7 +518,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
                     // Fallback to local calculation only if backend doesn't provide it
                     final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.valueOrNull;
+                      final paymentData = paymentState.paymentCalculationData.value;
                       final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
                       final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
                       final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
@@ -671,7 +671,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   if (user != null) {
                     // Get grandtotal and order_id from backend response (source of truth)
                     final paymentState = ref.read(paymentNotifierProvider);
-                    final bookingData = paymentState.postBookingResult.valueOrNull;
+                    final bookingData = paymentState.postBookingResult.value;
                     final grandTotalValue = bookingData?['data']?['grandtotal_price'];
                     final grandTotalFromBackend = grandTotalValue != null
                         ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
@@ -682,7 +682,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
                     // Fallback to local calculation only if backend doesn't provide it
                     final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.valueOrNull;
+                      final paymentData = paymentState.paymentCalculationData.value;
                       final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
                       final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
                       final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
@@ -847,7 +847,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   if (user != null) {
                     // Get grandtotal and order_id from backend response (source of truth)
                     final paymentState = ref.read(paymentNotifierProvider);
-                    final bookingData = paymentState.postBookingResult.valueOrNull;
+                    final bookingData = paymentState.postBookingResult.value;
                     final grandTotalValue = bookingData?['data']?['grandtotal_price'];
                     final grandTotalFromBackend = grandTotalValue != null
                         ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
@@ -858,7 +858,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
                     // Fallback to local calculation only if backend doesn't provide it
                     final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.valueOrNull;
+                      final paymentData = paymentState.paymentCalculationData.value;
                       final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
                       final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
                       final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
