@@ -26,29 +26,14 @@ class CustomerServicePage extends ConsumerStatefulWidget {
 }
 
 class _CustomerServicePageState extends ConsumerState<CustomerServicePage> {
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
+  // Biometric check removed — now handled at app launch level in LoginPage
 
   @override
   void initState() {
     super.initState();
-    _authenticateBiometricsOnLoad();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.invalidate(userBookingsProvider);
     });
-  }
-
-  Future<void> _authenticateBiometricsOnLoad() async {
-    if (!mounted) return;
-
-    final didAuthenticate = await _biometricAuthService.authenticateOnLoad(context);
-    if (!mounted) return;
-
-    if (!didAuthenticate) {
-      AppLogger.w('Biometric authentication failed, returning to home', 'BIOMETRIC');
-      context.go('/home');
-    } else {
-      AppLogger.s('Biometric authentication successful', 'BIOMETRIC');
-    }
   }
 
   Future<void> _onRefresh() async {

@@ -27,7 +27,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get popularArea => 'Popular Area';
 
   @override
-  String get budget => 'Fit Your Budget';
+  String get budget => 'Near You';
 
   @override
   String get promotion => 'Promotion';

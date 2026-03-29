@@ -28,6 +28,8 @@ class PropertyModel {
   final int? totalRooms;
   final int? availableRooms;
   final String? gender;
+  final double? latitude;
+  final double? longitude;
 
   /* Daily Multi Tier Pricing: optional fields for search results with per-date totals */
   final double? lowestTotalPrice;
@@ -64,6 +66,8 @@ class PropertyModel {
     this.totalRooms,
     this.availableRooms,
     this.gender,
+    this.latitude,
+    this.longitude,
     this.lowestTotalPrice,
     this.totalDays,
     this.isFlatRate,
@@ -137,6 +141,8 @@ class PropertyModel {
       totalRooms: json['total_rooms'],
       availableRooms: json['available_rooms'],
       gender: json['gender'] as String?,
+      latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
+      longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
       /* Daily Multi Tier Pricing: parse optional total price fields from search API */
       lowestTotalPrice: json['lowest_total_price'] != null
           ? double.tryParse(json['lowest_total_price'].toString())

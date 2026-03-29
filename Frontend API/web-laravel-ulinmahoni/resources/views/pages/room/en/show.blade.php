@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker.min.css">
     <!-- Styles -->
     @include('components.property.styles')
+    @include('components.property.dark-mode')
     @include('components.homepage.styles')
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     <style>

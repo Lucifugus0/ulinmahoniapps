@@ -139,7 +139,7 @@ abstract class AppLocalizations {
   /// No description provided for @budget.
   ///
   /// In id, this message translates to:
-  /// **'Sesuaikan Budget Anda'**
+  /// **'Dekat Anda'**
   String get budget;
 
   /// No description provided for @promotion.

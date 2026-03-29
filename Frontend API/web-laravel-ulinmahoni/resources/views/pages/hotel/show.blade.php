@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <!-- Styles -->
     @include('components.property.styles')
+    @include('components.property.dark-mode')
     @include('components.homepage.styles')
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
 </head>

@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import '../data/repositories/property_repository.dart';
 import '../model/properties_model.dart';
 import '../../../core/network/api_result.dart';
@@ -74,22 +76,59 @@ final availableNowPropertiesProvider = FutureProvider<List<PropertyModel>>((ref)
 });
 
 
-/// Budget section — cheapest available rooms (excludes full properties)
+/// "Near You" section — properties sorted by GPS distance, fallback to city name
 final cheapestPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
   final allProperties = await ref.watch(propertiesProvider('').future);
 
-  // Filter out full properties and sort by cheapest price (daily or monthly)
-  final available = allProperties
-      .where((p) => (p.availableRooms ?? 0) > 0)
-      .toList()
-    ..sort((a, b) {
-      final priceA = double.tryParse(a.priceOriginalDaily) ?? double.tryParse(a.priceOriginalMonthly) ?? double.infinity;
-      final priceB = double.tryParse(b.priceOriginalDaily) ?? double.tryParse(b.priceOriginalMonthly) ?? double.infinity;
-      return priceA.compareTo(priceB);
+  // Try to get user's GPS location
+  Position? userPosition;
+  try {
+    final permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      await Geolocator.requestPermission();
+    }
+    final finalPermission = await Geolocator.checkPermission();
+    if (finalPermission == LocationPermission.whileInUse ||
+        finalPermission == LocationPermission.always) {
+      userPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+      ).timeout(const Duration(seconds: 5), onTimeout: () => throw Exception('GPS timeout'));
+    }
+  } catch (e) {
+    AppLogger.w('GPS not available, sorting by city: $e', 'PROPERTY-PROVIDER');
+  }
+
+  final available = allProperties.where((p) => (p.availableRooms ?? 0) > 0).toList();
+
+  if (userPosition != null) {
+    // Sort by distance from user's GPS location
+    available.sort((a, b) {
+      final distA = _calculateDistance(userPosition!, a.latitude, a.longitude);
+      final distB = _calculateDistance(userPosition!, b.latitude, b.longitude);
+      return distA.compareTo(distB);
     });
+  } else {
+    // Fallback: sort by city name ascending
+    available.sort((a, b) => a.city.toLowerCase().compareTo(b.city.toLowerCase()));
+  }
 
   return available.take(3).toList();
 });
+
+/// Calculate distance in km between user position and property coordinates
+double _calculateDistance(Position user, double? lat, double? lng) {
+  if (lat == null || lng == null) return double.infinity;
+  const earthRadius = 6371.0; // km
+  final dLat = _toRadians(lat - user.latitude);
+  final dLng = _toRadians(lng - user.longitude);
+  final a = sin(dLat / 2) * sin(dLat / 2) +
+      cos(_toRadians(user.latitude)) * cos(_toRadians(lat)) *
+      sin(dLng / 2) * sin(dLng / 2);
+  final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  return earthRadius * c;
+}
+
+double _toRadians(double degrees) => degrees * pi / 180;
 
 final propertyByIdProvider = FutureProvider.family<PropertyModel?, int>((ref, propertyId) async {
   final repository = ref.watch(propertyRepositoryProvider);

@@ -52,23 +52,38 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _authenticateBiometricsOnLoad();
   }
 
+  /// Navigate to home and show biometric opt-in dialog if not yet shown
+  Future<void> _navigateToHomeWithOptIn() async {
+    if (!mounted) return;
+    context.go('/home');
+
+    // Show biometric opt-in dialog after navigation if not yet shown
+    final optInShown = await _biometricAuthService.wasOptInShown();
+    if (!optInShown && mounted) {
+      // Small delay to let home page render first
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        await _biometricAuthService.showOptInDialog(context);
+      }
+    }
+  }
+
   Future<void> _authenticateBiometricsOnLoad() async {
     if (!mounted) return;
 
-    // Step 1: Check if user has Remember Me enabled (token + user in SharedPreferences)
+    // Step 1: Check if user has saved credentials (token + user in SharedPreferences)
     final authRepository = ref.read(authRepositoryProvider);
     final storedToken = await authRepository.getTokenLocally();
     final storedUser = await authRepository.getUserLocally();
 
     if (storedToken == null || storedUser == null) {
-      // No Remember Me - stay on login page
+      // Fresh install or logged out — stay on login page, no biometric
       return;
     }
 
     // Step 2: Verify user still exists in backend via GET /users/{id}
     final userId = storedUser['id'] as int?;
     if (userId == null) {
-      // Invalid user data - clear and stay on login page
       await authRepository.logout();
       return;
     }
@@ -77,14 +92,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     switch (userResult) {
       case Failure():
-        // User doesn't exist or API error - clear local data and stay on login page
         await authRepository.logout();
         return;
 
       case Success(:final data):
-        // Check if email is verified
         if (!data.isEmailVerified) {
-          // Email not verified - logout and show dialog
           await authRepository.logout();
           if (mounted) {
             final localizations = AppLocalizations.of(context)!;
@@ -99,16 +111,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           return;
         }
 
-        // User exists and email verified - proceed with biometric
         if (!mounted) return;
 
-        final didAuthenticate = await _biometricAuthService.authenticateOnLoad(context);
+        // Check if biometric is enabled by user preference
+        final biometricEnabled = await _biometricAuthService.isEnabled();
 
-        if (didAuthenticate && mounted) {
-          // Biometric success - navigate to home
-          context.go('/home');
+        if (biometricEnabled) {
+          // Biometric enabled — prompt authentication
+          final didAuthenticate = await _biometricAuthService.authenticate();
+          if (didAuthenticate && mounted) {
+            context.go('/home');
+          }
+          // If failed — stay on login page
+        } else {
+          // Biometric not enabled — auto-login directly
+          if (mounted) {
+            context.go('/home');
+          }
         }
-        // If biometric fails - stay on login page with fingerprint button available
     }
   }
 
@@ -219,7 +239,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
         if (didAuthenticate && mounted) {
           // Biometric success - navigate to home
-          context.go('/home');
+          _navigateToHomeWithOptIn();
         } else if (mounted) {
           // Biometric failed - show error
           showErrorDialog(context, localizations.biometricAuthFailed);
@@ -251,7 +271,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     // Logout any residual session and go to home (no user logged in)
                     await ref.read(authProvider.notifier).logout();
                     if (context.mounted) {
-                      context.go('/home');
+                      _navigateToHomeWithOptIn();
                     }
                   },
                 );
@@ -300,7 +320,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     final authState = ref.read(authProvider);
                     if (authState.isLoggedIn) {
                       AppLogger.i('Sign-In successful, navigating to home', 'LOGIN-PAGE');
-                      context.go('/home');
+                      _navigateToHomeWithOptIn();
                     } else {
                       AppLogger.w('Auth state not logged in after sign-in', 'LOGIN-PAGE');
                     }
@@ -424,7 +444,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     final authState = ref.read(authProvider);
                     if (authState.isLoggedIn) {
                       AppLogger.i('Sign-In successful, navigating to home', 'LOGIN-PAGE');
-                      context.go('/home');
+                      _navigateToHomeWithOptIn();
                     } else {
                       AppLogger.w('Auth state not logged in after sign-in', 'LOGIN-PAGE');
                     }
@@ -621,7 +641,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   final authState =
                                   ref.read(authProvider);
                                   if (authState.isLoggedIn) {
-                                    context.go('/home');
+                                    _navigateToHomeWithOptIn();
                                   } else {
                                     // Use the error message from authState if available
                                     final errorMessage = authState.errorMessage ??
@@ -790,7 +810,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       onPressed: () async {
                         await ref.read(authProvider.notifier).logout();
                         if (mounted) {
-                          context.go('/home');
+                          _navigateToHomeWithOptIn();
                         }
                       },
                       style: ButtonStyle(

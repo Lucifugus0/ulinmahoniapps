@@ -27,7 +27,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get popularArea => '热门地区';
 
   @override
-  String get budget => '预算优选';
+  String get budget => '附近房源';
 
   @override
   String get promotion => '优惠活动';

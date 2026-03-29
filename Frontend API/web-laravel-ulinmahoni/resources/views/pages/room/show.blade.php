@@ -13,6 +13,7 @@
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
     <!-- Styles -->
     @include('components.property.styles')
+    @include('components.property.dark-mode')
     @include('components.homepage.styles')
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     <style>

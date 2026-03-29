@@ -399,8 +399,10 @@ class BookingController extends ApiController
 
         $propertyId = $request->property_id;
         $roomId = $request->room_id;
-        $checkIn = Carbon::parse($request->check_in)->startOfDay();
-        $checkOut = Carbon::parse($request->check_out)->endOfDay();
+        // Use actual booking times (14:00 check-in, 12:00 check-out) instead of startOfDay/endOfDay
+        // Allows back-to-back daily bookings on same day (checkout noon, checkin 2PM)
+        $checkIn = Carbon::parse($request->check_in . ' 14:00:00');
+        $checkOut = Carbon::parse($request->check_out . ' 12:00:00');
         $isRenewal = $request->is_renewal == 1;
 
         // Check if room rental_status is 1 (already rented)
@@ -435,24 +437,27 @@ class BookingController extends ApiController
         //     ->get();
 
         
-        // NEW CODE - with t_booking join to get checked_in_at and checked_out_at
-        $conflictingBookings = DB::table('t_transactions')
-            ->join('t_booking', 't_booking.order_id', '=', 't_transactions.order_id')
-            ->where('t_transactions.property_id', $propertyId)
-            ->where('t_transactions.room_id', $roomId)
-            ->where('t_transactions.status', '1')
+        // Query from t_booking as source of truth for room assignments.
+        // When a booking is reassigned to a new room, original booking status → 0, new row status → 1.
+        // Join t_transactions only for scheduled dates and payment status.
+        $conflictingBookings = DB::table('t_booking')
+            ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+            ->where('t_booking.property_id', $propertyId)
+            ->where('t_booking.room_id', $roomId)
+            ->where('t_booking.status', 1)
+            ->whereNull('t_booking.check_out_at')
             ->whereNotIn('t_transactions.transaction_status', [
                 'cancelled',
                 'expired',
                 'checked_out'
             ])
-            ->whereNull('t_booking.check_out_at') // Exclude if guest has already checked out
             ->where('t_transactions.check_in', '<', $checkOut)
             ->where('t_transactions.check_out', '>', $checkIn)
             ->select(
                 't_transactions.*',
                 't_booking.check_in_at',
-                't_booking.check_out_at'
+                't_booking.check_out_at',
+                't_booking.room_id as booking_room_id'
             )
             ->limit(5)
             ->get();

@@ -11,6 +11,7 @@ import 'package:ulinmahoniapps/features/auth/login/provider/auth_provider.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import 'package:ulinmahoniapps/core/provider/language_provider.dart';
 import 'package:ulinmahoniapps/core/theme/theme_provider.dart';
+import 'package:ulinmahoniapps/core/services/version_check_service.dart';
 
 class WelcomePage extends ConsumerStatefulWidget {
   const WelcomePage({super.key});
@@ -42,13 +43,20 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
   void initState() {
     super.initState();
     AppLogger.d('WelcomePage: initState called', 'WELCOME-PAGE');
-    _checkFirstTime();
+    // Run version check and video init in parallel for faster startup
     _initializeVideo();
+    _checkFirstTime();
   }
 
   Future<void> _checkFirstTime() async {
-    AppLogger.d('WelcomePage: Checking authentication status', 'WELCOME-PAGE');
+    AppLogger.d('WelcomePage: Checking version and authentication status', 'WELCOME-PAGE');
     try {
+      // Check app version in parallel — shows force update dialog if outdated
+      // Small delay to let the UI render first so the dialog has a context
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) VersionCheckService.checkVersion(context);
+      });
+
       final prefs = await SharedPreferences.getInstance();
 
       // Check for token and user data in SharedPreferences
@@ -152,7 +160,16 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
     return Scaffold(
       body: Stack(
         children: [
-          // Video Background
+          // Static image placeholder — loads instantly while video buffers
+          SizedBox.expand(
+            child: Image.asset(
+              AppImage.defaultRoomImage,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+          ),
+
+          // Video Background — overlays the static image once ready
           if (_isVideoInitialized)
             SizedBox.expand(
               child: FittedBox(
@@ -161,21 +178,6 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   width: _controller.value.size.width,
                   height: _controller.value.size.height,
                   child: VideoPlayer(_controller),
-                ),
-              ),
-            )
-          else
-            // Fallback gradient while video is loading
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    // Use primaryAdaptive for the fallback gradient start color
-                    AppColors.primaryAdaptive(context).withValues(alpha: _gradientOpacity),
-                    AppColors.secondaryColor.withValues(alpha: _gradientOpacity),
-                  ],
                 ),
               ),
             ),

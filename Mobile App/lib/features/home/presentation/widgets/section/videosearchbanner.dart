@@ -170,7 +170,7 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
             ],
           ),
         ),
-        // Video banner with text overlay
+        // Video banner — natural 16:9 aspect ratio, no cropping
         Stack(
           children: [
             ClipRRect(
@@ -179,18 +179,10 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                 bottomRight: Radius.circular(32),
               ),
               child: SizedBox(
-                height: bannerHeight,
                 width: double.infinity,
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: _controller.value.size.width,
-                    height: _controller.value.size.height,
-                    child: AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
-                    ),
-                  ),
+                child: AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio,
+                  child: VideoPlayer(_controller),
                 ),
               ),
             ),

@@ -91,20 +91,22 @@ class SearchController extends ApiController
             if ($request->has('check_in') && !empty($request->check_in) &&
                 $request->has('check_out') && !empty($request->check_out)) {
 
-                // Use same time handling as BookingController's checkAvailability
-                // startOfDay() for check-in (00:00:00) and endOfDay() for check-out (23:59:59)
-                $checkIn = Carbon::parse($request->check_in)->startOfDay();
-                $checkOut = Carbon::parse($request->check_out)->endOfDay();
+                // Use actual booking times (14:00 check-in, 12:00 check-out) — matches BookingController
+                // Allows back-to-back daily bookings on same day (checkout noon, checkin 2PM)
+                $checkIn = Carbon::parse($request->check_in . ' 14:00:00');
+                $checkOut = Carbon::parse($request->check_out . ' 12:00:00');
 
-                // Exclude rooms that have conflicting bookings
-                // Match the exact logic from BookingController's checkAvailability function
+                // Exclude rooms with conflicting active bookings.
+                // Uses t_booking as source of truth (room may be reassigned).
                 $query->whereNotExists(function($subQuery) use ($checkIn, $checkOut) {
                     $subQuery->select(DB::raw(1))
-                        ->from('t_transactions')
-                        ->whereColumn('t_transactions.property_id', 'm_rooms.property_id')  // Match property_id
-                        ->whereColumn('t_transactions.room_id', 'm_rooms.idrec')           // Match room_id
-                        ->where('t_transactions.status', '1')
-                        ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired'])
+                        ->from('t_booking')
+                        ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+                        ->whereColumn('t_booking.property_id', 'm_rooms.property_id')
+                        ->whereColumn('t_booking.room_id', 'm_rooms.idrec')
+                        ->where('t_booking.status', 1)
+                        ->whereNull('t_booking.check_out_at')
+                        ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired', 'checked_out'])
                         ->where('t_transactions.check_in', '<', $checkOut)
                         ->where('t_transactions.check_out', '>', $checkIn);
                 });

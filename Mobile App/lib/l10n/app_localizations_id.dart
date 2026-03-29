@@ -27,7 +27,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get popularArea => 'Area Populer';
 
   @override
-  String get budget => 'Sesuaikan Budget Anda';
+  String get budget => 'Dekat Anda';
 
   @override
   String get promotion => 'Promosi';

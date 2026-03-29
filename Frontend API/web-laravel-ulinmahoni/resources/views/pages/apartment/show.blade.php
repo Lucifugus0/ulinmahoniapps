@@ -103,6 +103,7 @@
 
         .gallery-item:hover .image-count { opacity: 1; transform: translateY(0); }
     </style>
+    @include('components.property.dark-mode')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
 </head>
