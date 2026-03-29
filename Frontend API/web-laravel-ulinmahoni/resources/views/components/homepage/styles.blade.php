@@ -529,13 +529,13 @@ main::after {
   background-size: 100vw auto;
   background-position: top center;
   background-repeat: repeat-y;
-  opacity: 0.06;
+  opacity: 0.15;
   z-index: 1;
   pointer-events: none;
 }
-/* Dark mode — slightly stronger for visibility against dark backgrounds */
+/* Dark mode — stronger for visibility against dark backgrounds */
 html.dark main::after {
-  opacity: 0.12;
+  opacity: 0.25;
 }
 /* Ensure main content sits above the leaf overlay */
 main > * {
