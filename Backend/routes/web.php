@@ -107,6 +107,17 @@ Route::middleware(['auth', 'permission'])->group(function () {
     Route::get('/settings/maintenance/status', [\App\Http\Controllers\MaintenanceModeController::class, 'status'])->name('maintenance.status');
     Route::post('/settings/maintenance/toggle', [\App\Http\Controllers\MaintenanceModeController::class, 'toggle'])->name('maintenance.toggle');
 
+    // <!-- Content management routes: tagline and hero video CRUD -->
+    Route::get('/settings/content-management', [\App\Http\Controllers\ContentManagementController::class, 'index'])->name('content-management.index');
+    Route::get('/settings/content-management/taglines', [\App\Http\Controllers\ContentManagementController::class, 'taglineList'])->name('content-management.taglines.list');
+    Route::post('/settings/content-management/taglines', [\App\Http\Controllers\ContentManagementController::class, 'taglineStore'])->name('content-management.taglines.store');
+    Route::put('/settings/content-management/taglines/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineUpdate'])->name('content-management.taglines.update');
+    Route::delete('/settings/content-management/taglines/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineDestroy'])->name('content-management.taglines.destroy');
+    Route::get('/settings/content-management/videos', [\App\Http\Controllers\ContentManagementController::class, 'videoList'])->name('content-management.videos.list');
+    Route::post('/settings/content-management/videos', [\App\Http\Controllers\ContentManagementController::class, 'videoStore'])->name('content-management.videos.store');
+    Route::post('/settings/content-management/videos/{id}/activate', [\App\Http\Controllers\ContentManagementController::class, 'videoActivate'])->name('content-management.videos.activate');
+    Route::delete('/settings/content-management/videos/{id}', [\App\Http\Controllers\ContentManagementController::class, 'videoDestroy'])->name('content-management.videos.destroy');
+
     Route::get('/settings/users-management/new', [UserController::class, 'indexNew'])->name('users-newManagement');
     Route::post('/settings/users-management/search', [UserController::class, 'searchUsers'])->name('users.search');
     Route::post('/check-email', [UserController::class, 'checkEmail'])->name('check.email');
@@ -390,6 +401,10 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::post('/{ticketId}/close', [\App\Http\Controllers\Tickets\TicketController::class, 'closeTicket'])->name('tickets.close');
         Route::post('/{ticketId}/reopen', [\App\Http\Controllers\Tickets\TicketController::class, 'reopenTicket'])->name('tickets.reopen');
         Route::post('/{ticketId}/status', [\App\Http\Controllers\Tickets\TicketController::class, 'updateStatus'])->name('tickets.status');
+
+        /** Admin ticket creation — eligible bookings lookup and store */
+        Route::get('/eligible-bookings', [\App\Http\Controllers\Tickets\TicketController::class, 'getEligibleBookings'])->name('tickets.eligible-bookings');
+        Route::post('/store', [\App\Http\Controllers\Tickets\TicketController::class, 'storeAdminTicket'])->name('tickets.store');
 
         /** Broadcast Routes — one-way announcements to users */
         Route::get('/broadcasts', [\App\Http\Controllers\Tickets\BroadcastController::class, 'index'])->name('broadcasts.index');

@@ -2,8 +2,8 @@
      Reloaded via AJAX on filter/search changes. --}}
 @forelse($tickets as $ticket)
 <div class="ticket-item cursor-pointer border-b border-gray-200 dark:border-gray-700 p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-     :class="{ 'bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-l-indigo-500': activeTicketId === {{ $ticket->id }} }"
-     @click="selectTicket({{ $ticket->id }})">
+     data-ticket-id="{{ $ticket->id }}"
+     onclick="if(window._selectTicket) window._selectTicket({{ $ticket->id }})">
     <div class="flex items-start justify-between">
         <div class="flex-1 min-w-0">
             {{-- Ticket number + status badge --}}
@@ -42,18 +42,30 @@
                 </span>
             </div>
 
-            {{-- User + property info --}}
+            {{-- Row 1: Name | Booking ID --}}
             <div class="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                <span>{{ $ticket->user->first_name ?? $ticket->user->name ?? 'User' }}</span>
-                @if($ticket->property)
-                    <span>&bull;</span>
-                    <span>{{ $ticket->property->name }}</span>
-                @endif
+                <span>{{ trim(($ticket->user->first_name ?? '') . ' ' . ($ticket->user->last_name ?? '')) ?: ($ticket->user->name ?? 'User') }}</span>
                 @if($ticket->order_id)
                     <span>&bull;</span>
                     <span class="font-mono">{{ $ticket->order_id }}</span>
                 @endif
             </div>
+            {{-- Row 2: Property Name | Room Type | Room Number --}}
+            @if($ticket->property || $ticket->transaction)
+            <div class="flex items-center gap-2 mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                @if($ticket->property)
+                    <span>{{ $ticket->property->name }}</span>
+                @endif
+                @if($ticket->transaction?->room_name)
+                    <span>&bull;</span>
+                    <span>{{ $ticket->transaction->room_name }}</span>
+                @endif
+                @if($ticket->transaction?->room?->no)
+                    <span>&bull;</span>
+                    <span>No.{{ $ticket->transaction->room->no }}</span>
+                @endif
+            </div>
+            @endif
         </div>
 
         {{-- Right side: time + unread badge --}}

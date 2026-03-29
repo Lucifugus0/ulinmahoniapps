@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -9,6 +10,8 @@ import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/utils/app_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/utils/greeting_helper.dart';
+import '../../../../../core/services/video_cache_service.dart';
+import '../../../provider/content_provider.dart';
 
 class VideoSearchBanner extends ConsumerStatefulWidget {
   const VideoSearchBanner({super.key});
@@ -24,31 +27,63 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset(AppVideo.homeVideo)
-      ..initialize().then((_) async {
-        // CRITICAL FIX: Check if widget AND controller still valid
-        if (!mounted) return;
-        if (!_controller.value.isInitialized) return;
+    _initializeVideo();
+  }
 
-        try {
-          await _controller.setLooping(true);
-          await _controller.setVolume(0.0);
+  /// Initialize video player — check for cached video first, fallback to bundled asset.
+  /// After init, check for new video in background and cache for next launch.
+  Future<void> _initializeVideo() async {
+    // Check for cached video file from previous background download
+    final cachedPath = await VideoCacheService.getCachedVideoPath();
 
-          // MEDIATEK FIX: Add delay before play to ensure codec ready
-          await Future.delayed(const Duration(milliseconds: 100));
+    if (cachedPath != null) {
+      _controller = VideoPlayerController.file(File(cachedPath));
+    } else {
+      _controller = VideoPlayerController.asset(AppVideo.homeVideo);
+    }
 
-          if (mounted && _controller.value.isInitialized) {
-            await _controller.play();
-            if (mounted) {
-              setState(() {});
-            }
+    _controller.initialize().then((_) async {
+      // CRITICAL FIX: Check if widget AND controller still valid
+      if (!mounted) return;
+      if (!_controller.value.isInitialized) return;
+
+      try {
+        await _controller.setLooping(true);
+        await _controller.setVolume(0.0);
+
+        // MEDIATEK FIX: Add delay before play to ensure codec ready
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        if (mounted && _controller.value.isInitialized) {
+          await _controller.play();
+          if (mounted) {
+            setState(() {});
           }
-        } catch (e) {
-          AppLogger.e("Error setting up video playback", e, StackTrace.current, 'VIDEO-BANNER');
         }
-      }).catchError((error) {
-        AppLogger.e("Error loading video", error, StackTrace.current, 'VIDEO-BANNER');
-      });
+      } catch (e) {
+        AppLogger.e("Error setting up video playback", e, StackTrace.current, 'VIDEO-BANNER');
+      }
+    }).catchError((error) {
+      AppLogger.e("Error loading video", error, StackTrace.current, 'VIDEO-BANNER');
+    });
+
+    // Background: check for new video URL and cache for next launch
+    _checkAndCacheNewVideo();
+  }
+
+  /// Fetches active video URL from API and caches it in background for next launch
+  void _checkAndCacheNewVideo() {
+    Future.microtask(() async {
+      try {
+        final videoUrlAsync = ref.read(heroVideoUrlProvider.future);
+        final videoUrl = await videoUrlAsync;
+        if (videoUrl != null && videoUrl.isNotEmpty) {
+          await VideoCacheService.checkAndCacheVideo(videoUrl);
+        }
+      } catch (e) {
+        AppLogger.e('Error checking hero video', e, null, 'VIDEO-BANNER');
+      }
+    });
   }
 
   @override
@@ -60,6 +95,24 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
     }
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Builds tagline text spans — uses API tagline if available, otherwise falls back to localized 3-part text
+  List<TextSpan> _buildTaglineSpans(AppLocalizations localizations) {
+    final taglineAsync = ref.watch(taglineProvider);
+    final apiTagline = taglineAsync.valueOrNull;
+
+    if (apiTagline != null && apiTagline.isNotEmpty) {
+      // Single text span with API tagline
+      return [TextSpan(text: apiTagline, style: const TextStyle(color: Colors.white))];
+    }
+
+    // Fallback: localized 3-part tagline with highlighted middle word
+    return [
+      TextSpan(text: localizations.homeBannerPart1, style: const TextStyle(color: Colors.white)),
+      TextSpan(text: localizations.homeBannerPart2, style: TextStyle(color: AppColors.primaryAdaptive(context))),
+      TextSpan(text: localizations.homeBannerPart3, style: const TextStyle(color: Colors.white)),
+    ];
   }
 
   void _showFilterDialog() {
@@ -99,13 +152,21 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                localizations.homeSubtitle,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                ),
-              ),
+              // Show dynamic tagline from API, fallback to localized subtitle
+              Builder(builder: (context) {
+                final taglineAsync = ref.watch(taglineProvider);
+                final apiTagline = taglineAsync.valueOrNull;
+                final text = (apiTagline != null && apiTagline.isNotEmpty)
+                    ? apiTagline
+                    : localizations.homeSubtitle;
+                return Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                );
+              }),
             ],
           ),
         ),
@@ -158,42 +219,7 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                 ),
               ),
             ),
-            // Banner title text above search bar - single line
-            Positioned(
-              left: 24,
-              right: 24,
-              bottom: 80,
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(2, 2),
-                        blurRadius: 6,
-                        color: Colors.black87,
-                      ),
-                    ],
-                  ),
-                  children: [
-                    TextSpan(
-                      text: localizations.homeBannerPart1,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    TextSpan(
-                      text: localizations.homeBannerPart2,
-                      // Remove const to allow non-const adaptive color based on context
-                      style: TextStyle(color: AppColors.primaryAdaptive(context)),
-                    ),
-                    TextSpan(
-                      text: localizations.homeBannerPart3,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Tagline removed from video overlay — now shown above video in greeting section
             // Glass-style search bar at bottom
             Positioned(
               left: 24,

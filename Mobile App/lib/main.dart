@@ -65,8 +65,8 @@ void main() async {
     }
   }
 
-  // Initialize Network Manager before app runs
-  await NetworkManager().initialize();
+  // NetworkManager disabled — connectivity dialog causes false positives
+  // await NetworkManager().initialize();
   await dotenv.load(fileName: ".env");
 
   // Only initialize Firebase-dependent services if Firebase is ready
@@ -164,9 +164,9 @@ class MyApp extends ConsumerWidget {
           PingMonitorService().initialize(context);
         });
 
-        return NetworkConnectivityMonitor(
-          child: child ?? const SizedBox.shrink(),
-        );
+        // NetworkConnectivityMonitor disabled — causes false positives on some devices.
+        // Connectivity issues are handled by API error responses and FCM push.
+        return child ?? const SizedBox.shrink();
       },
     );
   }

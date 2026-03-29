@@ -18,7 +18,13 @@ class CategoriesSection extends StatelessWidget {
     // Detect dark/light mode for theme-aware text colors
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Category list with "All" first, then property types
     final List<Map<String, dynamic>> categories = [
+      {
+        'label': localizations.filterCategoryAll,
+        'value': '',
+        'emoji': '🏘️',
+      },
       {
         'label': localizations.filterCategoryApartment,
         'value': 'Apartment',
@@ -41,56 +47,31 @@ class CategoriesSection extends StatelessWidget {
       },
     ];
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 12),
-            child: Row(
-              children: [
-                Text(
-                  '🏷️ ',
-                  style: TextStyle(fontSize: 20),
-                ),
-                Text(
-                  localizations.categories,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: categories.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final category = entry.value;
-                  final isActive = selectedLabel.toLowerCase() == category['value'].toLowerCase();
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      left: index == 0 ? 16 : 0,
-                      right: index < categories.length - 1 ? 12 : 16,
-                    ),
-                    child: _PillButton(
-                      label: category['label'],
-                      emoji: category['emoji'],
-                      isActive: isActive,
-                      onTap: () => onCategorySelected(category['value'].toString()),
-                    ),
-                  );
-                }).toList(),
+    // Category pills without header text — "All" is first and default selected
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: categories.asMap().entries.map((entry) {
+            final index = entry.key;
+            final category = entry.value;
+            // Match selected label with category value (both empty = "All" selected)
+            final isActive = selectedLabel.toLowerCase() == category['value'].toString().toLowerCase();
+            return Padding(
+              padding: EdgeInsets.only(
+                left: index == 0 ? 16 : 0,
+                right: index < categories.length - 1 ? 12 : 16,
               ),
-            ),
-          ),
-        ],
+              child: _PillButton(
+                label: category['label'],
+                emoji: category['emoji'],
+                isActive: isActive,
+                onTap: () => onCategorySelected(category['value'].toString()),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

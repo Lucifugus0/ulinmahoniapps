@@ -499,10 +499,15 @@
                         const data = await response.json();
 
                         if (data.success) {
+                            // Push new message and re-render immediately
                             this.messages.push(data.message);
                             this.clearImagePreview();
                             this.renderMessages();
-                            this.$nextTick(() => this.scrollToBottom());
+                            this.$nextTick(() => {
+                                this.scrollToBottom();
+                                // Also refresh conversation list to update last message preview
+                                this.refreshConversations();
+                            });
                         } else {
                             alert('Failed to send message. Please try again.');
                             this.newMessage = messageText;

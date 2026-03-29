@@ -86,12 +86,7 @@
                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         {{ __('ui.related_bookings') }}
                     </th>
-                    <!-- Action column: only visible to admin_tsno@gmail.com -->
-                    @if($isAdmin)
-                        <th scope="col" class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            {{ __('ui.action') }}
-                        </th>
-                    @endif
+                    {{-- Action column removed — room availability is system-managed --}}
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-100">
@@ -152,12 +147,12 @@
                         <!-- Status -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($room->rental_status == 1)
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 ring-1 ring-inset ring-rose-200">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 ring-1 ring-inset ring-rose-200 dark:ring-rose-800">
                                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
                                     {{ __('ui.occupied') }}
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-800">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     {{ __('ui.available') }}
                                 </span>
@@ -317,11 +312,11 @@
                                                                         </div>
                                                                         <div class="flex flex-col items-end space-y-1.5 ml-3">
                                                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="booking.status_badge" x-text="booking.status"></span>
-                                                                            <span x-show="booking.is_renewal" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-700 ring-1 ring-yellow-200">
+                                                                            <span x-show="booking.is_renewal" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 ring-1 ring-yellow-200 dark:ring-yellow-800">
                                                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                                                                 {{ __('ui.renewal') }}
                                                                             </span>
-                                                                            <span x-show="booking.is_room_changed" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700 ring-1 ring-purple-200">
+                                                                            <span x-show="booking.is_room_changed" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 ring-1 ring-purple-200 dark:ring-purple-800">
                                                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
                                                                                 {{ __('ui.room_change') }}
                                                                             </span>
@@ -413,30 +408,7 @@
                             @endif
                         </td>
 
-                        <!-- Action column: only visible to admin_tsno@gmail.com -->
-                        @if($isAdmin)
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex justify-center items-center">
-                                    @if ($room->rental_status == 1)
-                                        <button onclick="updateRoomStatus({{ $room->idrec }}, 0)"
-                                            class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                            {{ __('ui.set_available') }}
-                                        </button>
-                                    @else
-                                        <button onclick="updateRoomStatus({{ $room->idrec }}, 1)"
-                                            class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                            {{ __('ui.set_booked') }}
-                                        </button>
-                                    @endif
-                                </div>
-                            </td>
-                        @endif
+                        {{-- Action column removed — room availability is system-managed --}}
                     </tr>
                 @empty
                     <tr>

@@ -160,7 +160,7 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
               indicatorColor: AppColors.primaryColor,
               indicatorWeight: 3,
               tabs: const [
-                Tab(text: 'My Tickets'),
+                Tab(text: 'My Chats'),
                 Tab(text: 'Broadcasts'),
               ],
             ),
@@ -200,8 +200,8 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
             if (tickets.isEmpty) {
               return _buildEmptyState(
                 icon: Icons.confirmation_number_outlined,
-                title: 'No Tickets',
-                subtitle: 'You have no support tickets yet.',
+                title: 'No Chats',
+                subtitle: 'You have no chats yet.',
                 isDark: isDark,
               );
             }
@@ -243,7 +243,7 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
           backgroundColor: AppColors.primaryColor,
           foregroundColor: Colors.white,
           icon: const Icon(Icons.add),
-          label: const Text('New Ticket'),
+          label: const Text('New Chat'),
         ),
       ),
     );

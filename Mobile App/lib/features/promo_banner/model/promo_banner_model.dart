@@ -76,25 +76,35 @@ class PromoBannerModel {
     };
   }
 
-  /// Helper: Get primary image URL
-  /// Priority: 1. Root thumbnail, 2. Primary image thumbnail, 3. First image thumbnail, 4. First image URL
+  /// Helper: Get primary image URL for mobile display.
+  /// Priority: 1. Mobile image from primary, 2. Root thumbnail, 3. Primary image URL
+  /// Mobile image is optimized for 16:9 display; falls back to frontend image if unavailable.
   String? get primaryImageUrl {
-    // First, try root-level thumbnail
+    // Try mobile-optimized image from primary image in images array
+    if (images.isNotEmpty) {
+      try {
+        final primary = images.firstWhere(
+          (img) => img.isPrimary,
+          orElse: () => images.first,
+        );
+        // Prefer mobile image URL (already falls back to main image via API accessor)
+        if (primary.mobileImageUrl != null && primary.mobileImageUrl!.isNotEmpty) {
+          return primary.mobileImageUrl;
+        }
+        if (primary.thumbnailUrl != null && primary.thumbnailUrl!.isNotEmpty) {
+          return primary.thumbnailUrl;
+        }
+        if (primary.imageUrl.isNotEmpty) {
+          return primary.imageUrl;
+        }
+      } catch (_) {}
+    }
+
+    // Fallback to root-level thumbnail
     if (thumbnail != null && thumbnail!.isNotEmpty) {
       return thumbnail;
     }
 
-    // Fallback to images array
-    if (images.isEmpty) return null;
-
-    try {
-      final primary = images.firstWhere(
-        (img) => img.isPrimary,
-        orElse: () => images.first,
-      );
-      return primary.thumbnailUrl ?? primary.imageUrl;
-    } catch (e) {
-      return null;
-    }
+    return null;
   }
 }

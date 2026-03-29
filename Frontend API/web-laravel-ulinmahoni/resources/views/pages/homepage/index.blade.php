@@ -74,8 +74,8 @@
 
       <!-- Overlay with text — frosted text area over hero image -->
       <div class="absolute inset-0 gradient-overlay flex flex-col justify-center md:justify-end p-8 md:p-12 lg:p-16 text-white">
-        <h1 class="text-2xl md:text-5xl lg:text-5xl font-light mb-3 max-w-4xl tracking-tight" style="letter-spacing: -0.03em;">{{ __('homepage.hero.subtitle') }}</h1>
-        <p class="text-lg md:text-xl font-light mb-24 opacity-80">{{ __('homepage.hero.subtitle') }}</p>
+        <!-- Tagline — will be replaced with dynamic tagline from database -->
+        <h1 class="text-2xl md:text-5xl lg:text-5xl font-light mb-24 max-w-4xl tracking-tight" style="letter-spacing: -0.03em;">{{ $heroTagline ?? __('homepage.hero.subtitle') }}</h1>
     </div>
 
       <!-- Search Section -->

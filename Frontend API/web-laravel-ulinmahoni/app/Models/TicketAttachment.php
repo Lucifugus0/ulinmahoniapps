@@ -26,11 +26,12 @@ class TicketAttachment extends Model
         return $this->belongsTo(TicketMessage::class, 'message_id');
     }
 
-    /** Full URL to the file — strips storage prefixes for consistent path */
+    /** Full URL to the file — uses ADMIN_URL since attachments are stored on the Backend server */
     public function getFileUrlAttribute(): string
     {
         $path = $this->normalizePath($this->file_path);
-        return '/storage/' . $path;
+        $adminUrl = rtrim(env('ADMIN_URL', ''), '/');
+        return $adminUrl ? $adminUrl . '/storage/' . $path : '/storage/' . $path;
     }
 
     /** Full URL to the thumbnail — falls back to file_url if no thumbnail */
@@ -40,7 +41,8 @@ class TicketAttachment extends Model
             return $this->file_url;
         }
         $path = $this->normalizePath($this->thumbnail_path);
-        return '/storage/' . $path;
+        $adminUrl = rtrim(env('ADMIN_URL', ''), '/');
+        return $adminUrl ? $adminUrl . '/storage/' . $path : '/storage/' . $path;
     }
 
     /** Strip storage path prefixes for consistent URL generation */

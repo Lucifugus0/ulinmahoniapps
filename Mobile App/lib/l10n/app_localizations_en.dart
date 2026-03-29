@@ -18,7 +18,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categories => 'Categories';
 
   @override
-  String get bestSeller => 'Best Seller';
+  String get availableNow => 'Available Now';
+
+  @override
+  String get filterCategoryAll => 'All';
 
   @override
   String get popularArea => 'Popular Area';
@@ -31,6 +34,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get promoBanner => 'Special Promo';
+
+  @override
+  String get promoDetailTitle => 'Promo Details';
+
+  @override
+  String get promoDescription => 'Promo Description';
+
+  @override
+  String get noDescription => 'No description';
+
+  @override
+  String get promoHowToClaim => 'How to Claim';
+
+  @override
+  String get promoClaimStep1 => 'Choose the desired property';
+
+  @override
+  String get promoClaimStep2 => 'Then select the desired room';
+
+  @override
+  String get promoClaimStep3 => 'Enter Voucher Code when booking';
+
+  @override
+  String get promoClaimStep4 => 'Complete the booking';
+
+  @override
+  String get promoClaimStep5 => 'Enjoy your promo/discount';
+
+  @override
+  String get promoTermsTitle => 'Terms & Conditions';
+
+  @override
+  String get promoTerm1 => 'Terms and conditions apply';
+
+  @override
+  String get promoTerm2 => 'Cannot be combined with other promos';
+
+  @override
+  String get promoTerm3 => 'Promo period is limited';
+
+  @override
+  String get promoTerm4 => 'Only valid for limited users';
+
+  @override
+  String get promoLoadError => 'Failed to load promo details';
 
   @override
   String get homeLabel => 'Home';

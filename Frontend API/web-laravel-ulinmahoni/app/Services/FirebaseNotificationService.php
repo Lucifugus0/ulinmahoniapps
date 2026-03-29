@@ -89,20 +89,25 @@ class FirebaseNotificationService
             $client = new Client();
             $url = "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
 
+            /** Build data-only message (no 'notification' key) to prevent double notifications.
+             *  Android auto-shows system notification from 'notification' payload in background,
+             *  but our background handler also creates a local notification → duplicates.
+             *  Data-only messages let the app handler control display in all states. */
+            $messageData = array_merge(
+                ['title' => $title, 'body' => $body],
+                !empty($data) ? array_map('strval', $data) : []
+            );
+
             $message = [
                 'message' => [
                     'token' => $token,
-                    'notification' => [
-                        'title' => $title,
-                        'body' => $body,
+                    'data' => $messageData,
+                    /** Android: high priority ensures data-only messages wake the app */
+                    'android' => [
+                        'priority' => 'high',
                     ],
                 ],
             ];
-
-            if (!empty($data)) {
-                // FCM data values must be strings
-                $message['message']['data'] = array_map('strval', $data);
-            }
 
             $response = $client->post($url, [
                 'headers' => [

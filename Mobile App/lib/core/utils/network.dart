@@ -22,42 +22,22 @@ class NetworkManager {
 
   Future<void> initialize() async {
     debugPrint('--- 📡 NetworkManager: Initializing... ---');
+    // Assume online at startup — only show dialog on confirmed connectivity loss
+    _isOnline = true;
     _monitorNetworkChanges();
-    // Perform initial check after a small delay to allow network to be ready
-    Future.delayed(const Duration(milliseconds: 500), () {
-      hasInternet().then((isOnline) {
-        debugPrint('--- 📡 NetworkManager: Initial status = $isOnline ---');
-      }).catchError((error) {
-        debugPrint('--- ⚠️ NetworkManager: Initial check failed (network not ready) ---');
-        // Don't crash, just assume offline and let the stream monitor handle it
-        _updateStatus(false);
-      });
-    });
   }
 
+  /// Check if device has network connectivity (WiFi or cellular connected).
+  /// Does NOT perform deep internet ping to avoid false negatives on restricted networks.
   Future<bool> hasInternet() async {
     try {
       final connectivityResult = await (Connectivity().checkConnectivity());
-      if (_isConnectivityNone(connectivityResult)) {
-        _updateStatus(false);
-        return false;
-      }
-
-      // Add timeout to prevent hanging
-      final isConnected = await InternetConnection().hasInternetAccess
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              debugPrint('--- ⚠️ NetworkManager: Internet check timeout ---');
-              return false;
-            },
-          );
-      _updateStatus(isConnected);
-      return isConnected;
+      final connected = !_isConnectivityNone(connectivityResult);
+      _updateStatus(connected);
+      return connected;
     } catch (e) {
       debugPrint('--- ❌ NetworkManager Error: $e ---');
-      _updateStatus(false);
-      return false;
+      return true; // Assume online on error to avoid false dialogs
     }
   }
 
@@ -72,29 +52,14 @@ class NetworkManager {
     _connectivityStreamController.sink.add(newStatus);
   }
 
+  /// Monitor network changes using Connectivity plugin only.
+  /// Avoids InternetConnection deep ping which causes false negatives on restricted networks.
   void _monitorNetworkChanges() {
-    // Use only InternetConnection for more accurate monitoring
-    // This already handles both connectivity changes and actual internet access
-    _internetSubscription = InternetConnection().onStatusChange.listen(
-      (status) {
-        final isConnected = status == InternetStatus.connected;
-        debugPrint('--- 📡 NetworkManager: Status changed = $isConnected ---');
-        _updateStatus(isConnected);
-      },
-      onError: (error) {
-        debugPrint('--- ⚠️ NetworkManager: Stream error = $error ---');
-        _updateStatus(false);
-      },
-    );
-
-    // Optional: Keep connectivity for immediate "no connection" detection
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
       (event) {
-        if (_isConnectivityNone(event)) {
-          debugPrint('--- 📡 NetworkManager: No connectivity detected ---');
-          _updateStatus(false);
-        }
-        // Don't check hasInternetAccess here - let InternetConnection stream handle it
+        final connected = !_isConnectivityNone(event);
+        debugPrint('--- 📡 NetworkManager: Connectivity changed = $connected ---');
+        _updateStatus(connected);
       },
       onError: (error) {
         debugPrint('--- ⚠️ NetworkManager: Connectivity stream error = $error ---');
@@ -122,28 +87,23 @@ class NetworkConnectivityMonitor extends ConsumerStatefulWidget {
 }
 
 class _NetworkConnectivityMonitorState extends ConsumerState<NetworkConnectivityMonitor> {
-  // Kita simpan status koneksi lokal di state widget ini
   bool _isConnected = true;
+  bool _startupGracePeriod = true; // Suppress dialog during startup
   StreamSubscription<bool>? _connectivitySubscription;
 
   @override
   void initState() {
     super.initState();
-    // 1. Dengarkan stream - FIXED: Simpan subscription untuk di-cancel nanti
+
+    // Suppress dialog for first 5 seconds to avoid false positives on startup
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _startupGracePeriod = false);
+    });
+
     _connectivitySubscription = NetworkManager().connectivityStream.listen((isOnline) {
       if (mounted) {
         setState(() {
           _isConnected = isOnline;
-        });
-      }
-    });
-
-    // 2. Cek status awal (untuk sinkronisasi startup)
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final currentStatus = await NetworkManager().hasInternet();
-      if (mounted) {
-        setState(() {
-          _isConnected = currentStatus;
         });
       }
     });
@@ -170,8 +130,8 @@ class _NetworkConnectivityMonitorState extends ConsumerState<NetworkConnectivity
         // LAYER 1: APLIKASI UTAMA (Selalu di bawah)
         widget.child,
 
-        // LAYER 2: POPUP OFFLINE (Hanya muncul jika _isConnected == false)
-        if (!_isConnected)
+        // LAYER 2: POPUP OFFLINE (only after startup grace period)
+        if (!_isConnected && !_startupGracePeriod)
           Positioned.fill(
             child: Material(
               color: Colors.transparent,

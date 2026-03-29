@@ -63,6 +63,11 @@ class FilteredPropertyListView extends ConsumerWidget {
                 return property.tags.toLowerCase().contains(selectedFilterLabel);
               }).toList();
 
+              // Sort by name ascending when showing all properties (default fallback for GPS)
+              if (selectedFilterLabel.isEmpty) {
+                displayableProperties.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+              }
+
               if (displayableProperties.isEmpty) {
                 final cardHeight = MediaQuery.of(context).size.height * 0.22;
                 return ComingSoonWidget(customHeight: cardHeight + 5);

@@ -1,11 +1,11 @@
 <x-authentication-layout>
-    <!-- Liquid glass login card: translucent background with backdrop blur and subtle border -->
-    <div class="w-full rounded-2xl shadow-xl p-8 space-y-8 transition-all hover:shadow-2xl"
+    <!-- Liquid glass login card — light: 25% white, dark: 25% black -->
+    <div class="login-card w-full rounded-2xl shadow-xl p-8 space-y-8 transition-all hover:shadow-2xl"
         style="background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3);">
         <!-- Header -->
         <div class="text-center space-y-3">
-            <div class="animate-bounce-slow">
-                <svg class="w-14 h-14 mx-auto text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <div class="animate-bounce-slow flex justify-center">
+                <svg class="w-14 h-14 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
             </div>
@@ -41,27 +41,27 @@
                         </div>
                         <!-- Liquid glass: translucent input with white text -->
                         <x-input id="email" type="email" name="email" value="" required autofocus
-                            class="pl-10 w-full rounded-lg border-white/30 focus:border-amber-300 focus:ring-2 focus:ring-amber-200 transition-all text-white placeholder-gray-300"
-                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"
+                            class="pl-10 w-full rounded-lg border-white/30 focus:border-amber-300 focus:ring-2 focus:ring-amber-200 transition-all text-white placeholder-white/70"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); color: white;"
                             placeholder="{{ __('ui.login_email_placeholder') }}" />
                     </div>
                 </div>
 
-                <!-- Password Input -->
+                <!-- Password Input — icon and toggle use top offset to align with input center -->
                 <div>
                     <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-300 group-focus-within:text-amber-400 transition-colors">
+                        <div class="absolute left-0 pl-3 pointer-events-none text-gray-300 group-focus-within:text-amber-400 transition-colors" style="top: 50%; transform: translateY(-50%);">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                             </svg>
                         </div>
-                        <!-- Liquid glass: translucent input with white text -->
                         <x-input id="password" type="password" name="password" required autocomplete="current-password"
-                            class="pl-10 w-full pr-10 rounded-lg border-white/30 focus:border-amber-300 focus:ring-2 focus:ring-amber-200 transition-all text-white placeholder-gray-300"
-                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"
+                            class="pl-10 w-full pr-10 rounded-lg border-white/30 focus:border-amber-300 focus:ring-2 focus:ring-amber-200 transition-all text-white placeholder-white/70"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); color: white;"
                             placeholder="••••••••" />
                         <button type="button"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-amber-500 transition-colors"
+                            class="absolute right-3 text-gray-400 hover:text-amber-500 transition-colors"
+                            style="top: 50%; transform: translateY(-50%);"
                             onclick="togglePasswordVisibility()">
                             <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -103,6 +103,30 @@
             </p>
         </div> --}}
     </div>
+
+    <!-- Mobile App Download Link -->
+    <div class="mt-4 text-center">
+        <a href="{{ asset('downloads/ulinmahoni.apk') }}"
+           class="download-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all hover:-translate-y-0.5 hover:shadow-lg"
+           style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3);">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.523 2.293l-5.523 3.19-5.523-3.19L3 4.414V19.586l3.477 2.12 5.523-3.19 5.523 3.19L21 19.586V4.414l-3.477-2.12zM12 14.5L7.5 11.9V6.7L12 9.3l4.5-2.6v5.2L12 14.5z"/>
+            </svg>
+            Download Android App (.apk)
+        </a>
+    </div>
+
+    <!-- Dark mode overrides for login card and download button -->
+    <style>
+        html.dark .login-card {
+            background: rgba(0, 0, 0, 0.25) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+        }
+        html.dark .download-btn {
+            background: rgba(0, 0, 0, 0.20) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+    </style>
 
     <script>
         // Toggle password visibility

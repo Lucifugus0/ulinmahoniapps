@@ -41,8 +41,21 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       return;
     }
 
-    // Handle booking-related notifications
+    // Handle ticket creation notifications (admin-initiated chat)
     final type = data['type'] as String?;
+    if (type == 'ticket_created' || type == 'ticket_message') {
+      final ticketId = int.tryParse(data['ticket_id'] ?? '');
+      if (ticketId != null) {
+        await notificationService.showChatNotification(
+          conversationId: ticketId,
+          title: title,
+          body: body,
+        );
+      }
+      return;
+    }
+
+    // Handle booking-related notifications
     if (_isBookingType(type)) {
       await notificationService.showBookingNotification(
         type: type!,

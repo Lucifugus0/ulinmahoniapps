@@ -46,12 +46,17 @@ class PromoBannerController extends Controller
                 'promo_code'     => 'nullable|string|max:50',
                 'how_to_claim'   => 'nullable|array',
                 'how_to_claim.*' => 'nullable|string|max:500',
-                'banner_image'   => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+                'banner_image'   => 'required|image|mimes:jpeg,jpg,gif|max:5120',
+                'mobile_banner_image' => 'required|image|mimes:jpeg,jpg,gif|max:5120',
             ], [
                 'banner_image.required' => 'Gambar banner wajib diupload.',
                 'banner_image.image'    => 'File harus berupa gambar.',
-                'banner_image.mimes'    => 'Format gambar harus jpeg, png, jpg, gif, atau webp.',
+                'banner_image.mimes'    => 'Format gambar harus JPG atau GIF.',
                 'banner_image.max'      => 'Ukuran gambar maksimal 5MB.',
+                'mobile_banner_image.required' => 'Gambar banner mobile wajib diupload.',
+                'mobile_banner_image.image' => 'File harus berupa gambar.',
+                'mobile_banner_image.mimes' => 'Format gambar harus JPG atau GIF.',
+                'mobile_banner_image.max'   => 'Ukuran gambar maksimal 5MB.',
             ]);
 
             // Filter out empty how_to_claim items
@@ -69,15 +74,24 @@ class PromoBannerController extends Controller
                 'created_by'   => Auth::id(),
             ]);
 
-            // Handle image upload
+            // Handle frontend banner image upload
             if ($request->hasFile('banner_image')) {
                 $file = $request->file('banner_image');
                 $fileName = 'promo_banner_' . $banner->idrec . '_' . time() . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('promo_banners', $fileName, 'public');
 
+                // Handle mobile banner image upload (optional, falls back to main image)
+                $mobilePath = null;
+                if ($request->hasFile('mobile_banner_image')) {
+                    $mobileFile = $request->file('mobile_banner_image');
+                    $mobileFileName = 'promo_banner_mobile_' . $banner->idrec . '_' . time() . '.' . $mobileFile->getClientOriginalExtension();
+                    $mobilePath = $mobileFile->storeAs('promo_banners', $mobileFileName, 'public');
+                }
+
                 $image = PromoBannerImage::create([
                     'promo_banner_id' => $banner->idrec,
                     'image' => $path,
+                    'mobile_image' => $mobilePath,
                     'caption' => $validated['title'],
                     'sort_order' => 0,
                 ]);
@@ -117,7 +131,8 @@ class PromoBannerController extends Controller
                 'promo_code'     => 'nullable|string|max:50',
                 'how_to_claim'   => 'nullable|array',
                 'how_to_claim.*' => 'nullable|string|max:500',
-                'banner_image'   => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+                'banner_image'   => 'nullable|image|mimes:jpeg,jpg,gif|max:5120',
+                'mobile_banner_image' => 'nullable|image|mimes:jpeg,jpg,gif|max:5120',
             ]);
 
             // Filter out empty how_to_claim items
@@ -133,7 +148,7 @@ class PromoBannerController extends Controller
                 'updated_by'   => Auth::id(),
             ]);
 
-            // Handle image upload
+            // Handle frontend banner image upload
             if ($request->hasFile('banner_image')) {
                 $file = $request->file('banner_image');
                 $fileName = 'promo_banner_' . $banner->idrec . '_' . time() . '.' . $file->getClientOriginalExtension();
@@ -155,6 +170,18 @@ class PromoBannerController extends Controller
                     ]);
                     $banner->update(['image_id' => $image->idrec]);
                 }
+            }
+
+            // Handle mobile banner image upload
+            if ($request->hasFile('mobile_banner_image') && $banner->primaryImage) {
+                $mobileFile = $request->file('mobile_banner_image');
+                $mobileFileName = 'promo_banner_mobile_' . $banner->idrec . '_' . time() . '.' . $mobileFile->getClientOriginalExtension();
+                // Delete old mobile image if exists
+                if ($banner->primaryImage->mobile_image) {
+                    Storage::disk('public')->delete($banner->primaryImage->mobile_image);
+                }
+                $mobilePath = $mobileFile->storeAs('promo_banners', $mobileFileName, 'public');
+                $banner->primaryImage->update(['mobile_image' => $mobilePath]);
             }
 
             return response()->json([

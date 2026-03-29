@@ -30,31 +30,31 @@
                 </div>
 
                 <!-- Available -->
-                <div class="flex-1 lg:flex-none min-w-[140px] bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl shadow-sm border border-emerald-200 p-4 hover:shadow-md transition-shadow duration-300">
+                <div class="flex-1 lg:flex-none min-w-[140px] bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 rounded-xl shadow-sm border border-emerald-200 dark:border-emerald-800 p-4 hover:shadow-md transition-shadow duration-300">
                     <div class="flex items-center gap-3">
-                        <div class="p-2 bg-emerald-100 rounded-lg">
-                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+                            <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div>
-                            <p class="text-xs font-medium text-emerald-600 uppercase tracking-wide">Available</p>
-                            <p class="text-xl font-bold text-emerald-700" id="available-rooms">0</p>
+                            <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Available</p>
+                            <p class="text-xl font-bold text-emerald-700 dark:text-emerald-300" id="available-rooms">0</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Booked -->
-                <div class="flex-1 lg:flex-none min-w-[140px] bg-gradient-to-br from-rose-50 to-red-50 rounded-xl shadow-sm border border-rose-200 p-4 hover:shadow-md transition-shadow duration-300">
+                <div class="flex-1 lg:flex-none min-w-[140px] bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-900/30 dark:to-red-900/30 rounded-xl shadow-sm border border-rose-200 dark:border-rose-800 p-4 hover:shadow-md transition-shadow duration-300">
                     <div class="flex items-center gap-3">
-                        <div class="p-2 bg-rose-100 rounded-lg">
-                            <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="p-2 bg-rose-100 dark:bg-rose-900/50 rounded-lg">
+                            <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div>
-                            <p class="text-xs font-medium text-rose-600 uppercase tracking-wide">Booked</p>
-                            <p class="text-xl font-bold text-rose-700" id="booked-rooms">0</p>
+                            <p class="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase tracking-wide">Booked</p>
+                            <p class="text-xl font-bold text-rose-700 dark:text-rose-300" id="booked-rooms">0</p>
                         </div>
                     </div>
                 </div>

@@ -43,53 +43,16 @@ class ChatBackgroundService {
     */
   }
 
-  /// Start background polling
+  /// Start background polling — DISABLED: using FCM push notifications instead
   Future<void> startPolling() async {
-    try {
-      // Save enabled state
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_isEnabledKey, true);
+    AppLogger.w('ChatBackgroundService.startPolling() disabled — using FCM push instead', 'CHAT-BG-SERVICE');
+    return;
 
-      // Register one-time task for immediate test
-      await Workmanager().registerOneOffTask(
-        '${_taskName}_oneoff',
-        _taskName,
-        initialDelay: const Duration(seconds: 10),
-        constraints: Constraints(
-          networkType: NetworkType.connected,
-        ),
-      );
-
-      // Register periodic task (minimum 15 minutes on Android)
-      await Workmanager().registerPeriodicTask(
-        _taskName,
-        _taskName,
-        frequency: const Duration(minutes: 15),
-        constraints: Constraints(
-          networkType: NetworkType.connected,
-        ),
-      );
-
-      AppLogger.s('Background polling started', 'CHAT-BG-SERVICE');
-    } catch (e, stackTrace) {
-      AppLogger.e('Failed to start background polling', e, stackTrace, 'CHAT-BG-SERVICE');
-    }
   }
 
-  /// Stop background polling
+  /// Stop background polling — DISABLED: using FCM push notifications instead
   Future<void> stopPolling() async {
-    try {
-      // Save disabled state
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_isEnabledKey, false);
-
-      // Cancel the periodic task
-      await Workmanager().cancelByUniqueName(_taskName);
-
-      AppLogger.s('Background polling stopped', 'CHAT-BG-SERVICE');
-    } catch (e, stackTrace) {
-      AppLogger.e('Failed to stop background polling', e, stackTrace, 'CHAT-BG-SERVICE');
-    }
+    return;
   }
 
   /// Check if polling is enabled

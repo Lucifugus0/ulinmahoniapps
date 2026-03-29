@@ -367,6 +367,7 @@ class ChatController extends Controller
                 'order_id' => $booking->order_id,
                 'user_name' => $booking->user_name ?? 'N/A',
                 'user_email' => $booking->user_email ?? 'N/A',
+                'room_no' => $booking->room->no ?? null,
                 'room_name' => $booking->room->name ?? 'N/A',
                 'property_name' => $booking->property->name ?? 'N/A',
                 'check_in_at' => $checkInFormatted,

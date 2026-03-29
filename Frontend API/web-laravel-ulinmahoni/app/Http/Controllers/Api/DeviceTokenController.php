@@ -6,6 +6,7 @@ use App\Http\Controllers\ApiController;
 use App\Models\DeviceToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class DeviceTokenController extends ApiController
 {
@@ -32,7 +33,15 @@ class DeviceTokenController extends ApiController
         }
 
         try {
+            // Resolve user from Sanctum Bearer token (auth middleware not applied on API routes)
             $user = $request->user() ?? auth()->user();
+            if (!$user) {
+                $bearerToken = $request->bearerToken();
+                if ($bearerToken) {
+                    $accessToken = PersonalAccessToken::findToken($bearerToken);
+                    $user = $accessToken?->tokenable;
+                }
+            }
 
             if (!$user) {
                 return response()->json([
@@ -88,7 +97,15 @@ class DeviceTokenController extends ApiController
         }
 
         try {
+            // Resolve user from Sanctum Bearer token (auth middleware not applied on API routes)
             $user = $request->user() ?? auth()->user();
+            if (!$user) {
+                $bearerToken = $request->bearerToken();
+                if ($bearerToken) {
+                    $accessToken = PersonalAccessToken::findToken($bearerToken);
+                    $user = $accessToken?->tokenable;
+                }
+            }
 
             if (!$user) {
                 return response()->json([

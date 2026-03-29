@@ -118,11 +118,17 @@ abstract class AppLocalizations {
   /// **'Kategori'**
   String get categories;
 
-  /// No description provided for @bestSeller.
+  /// No description provided for @availableNow.
   ///
   /// In id, this message translates to:
-  /// **'Terlaris'**
-  String get bestSeller;
+  /// **'Tersedia Sekarang'**
+  String get availableNow;
+
+  /// No description provided for @filterCategoryAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get filterCategoryAll;
 
   /// No description provided for @popularArea.
   ///
@@ -147,6 +153,96 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Promo Spesial'**
   String get promoBanner;
+
+  /// No description provided for @promoDetailTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Promo'**
+  String get promoDetailTitle;
+
+  /// No description provided for @promoDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Deskripsi Promo'**
+  String get promoDescription;
+
+  /// No description provided for @noDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada deskripsi'**
+  String get noDescription;
+
+  /// No description provided for @promoHowToClaim.
+  ///
+  /// In id, this message translates to:
+  /// **'Cara Klaim'**
+  String get promoHowToClaim;
+
+  /// No description provided for @promoClaimStep1.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih properti yang diinginkan'**
+  String get promoClaimStep1;
+
+  /// No description provided for @promoClaimStep2.
+  ///
+  /// In id, this message translates to:
+  /// **'Lalu Pilih Kamar yang diinginkan'**
+  String get promoClaimStep2;
+
+  /// No description provided for @promoClaimStep3.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan Kode Voucher saat pemesanan'**
+  String get promoClaimStep3;
+
+  /// No description provided for @promoClaimStep4.
+  ///
+  /// In id, this message translates to:
+  /// **'Lakukan Pemesanan'**
+  String get promoClaimStep4;
+
+  /// No description provided for @promoClaimStep5.
+  ///
+  /// In id, this message translates to:
+  /// **'Nikmati promo/diskon yang didapatkan'**
+  String get promoClaimStep5;
+
+  /// No description provided for @promoTermsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Syarat & Ketentuan'**
+  String get promoTermsTitle;
+
+  /// No description provided for @promoTerm1.
+  ///
+  /// In id, this message translates to:
+  /// **'Syarat dan ketentuan berlaku'**
+  String get promoTerm1;
+
+  /// No description provided for @promoTerm2.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak dapat digabung dengan promo lain'**
+  String get promoTerm2;
+
+  /// No description provided for @promoTerm3.
+  ///
+  /// In id, this message translates to:
+  /// **'Periode promo terbatas'**
+  String get promoTerm3;
+
+  /// No description provided for @promoTerm4.
+  ///
+  /// In id, this message translates to:
+  /// **'Hanya berlaku untuk pengguna secara terbatas'**
+  String get promoTerm4;
+
+  /// No description provided for @promoLoadError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat detail promo'**
+  String get promoLoadError;
 
   /// No description provided for @homeLabel.
   ///

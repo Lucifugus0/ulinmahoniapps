@@ -149,7 +149,33 @@
                                     <div class="flex text-sm text-gray-600 dark:text-gray-400">
                                         <label for="banner_image" class="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
                                             <span>{{ __('ui.promo_banner_upload_image') }}</span>
-                                            <input id="banner_image" name="banner_image" type="file" class="sr-only" accept="image/*">
+                                            <input id="banner_image" name="banner_image" type="file" class="sr-only" accept="image/jpeg,image/jpg,image/gif">
+                                        </label>
+                                        <p class="pl-1">{{ __('ui.promo_banner_or_drag_drop') }}</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.promo_banner_file_format') }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mobile App Banner Image Upload (optional) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('ui.promo_banner_mobile_image_label') }}
+                                <span class="text-xs text-gray-500">{{ __('ui.promo_banner_mobile_image_size_note') }}</span>
+                            </label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:border-blue-500 transition-colors" id="mobile_dropzone">
+                                <div class="space-y-1 text-center">
+                                    <div id="mobile_image_preview_container" class="hidden mb-4">
+                                        <img id="mobile_image_preview" src="" alt="Mobile Preview" class="mx-auto max-h-48 rounded-lg">
+                                    </div>
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" id="mobile_upload_icon" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    <div class="flex text-sm text-gray-600 dark:text-gray-400">
+                                        <label for="mobile_banner_image" class="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                            <span>{{ __('ui.promo_banner_upload_image') }}</span>
+                                            <input id="mobile_banner_image" name="mobile_banner_image" type="file" class="sr-only" accept="image/jpeg,image/jpg,image/gif">
                                         </label>
                                         <p class="pl-1">{{ __('ui.promo_banner_or_drag_drop') }}</p>
                                     </div>
@@ -286,7 +312,7 @@
                         }
 
                         // Validate file type
-                        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/gif'];
                         if (!allowedTypes.includes(file.type)) {
                             showToast('{{ __('ui.promo_banner_unsupported_format') }}', 'error');
                             $(this).val(''); // Clear the input
@@ -300,6 +326,33 @@
                             $('#image_preview').attr('src', e.target.result);
                             $('#image_preview_container').removeClass('hidden');
                             $('#upload_icon').addClass('hidden');
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                // Mobile image preview with same validation
+                $('#mobile_banner_image').on('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        if (file.size > MAX_FILE_SIZE) {
+                            showToast('{{ __('ui.promo_banner_file_too_large') }}', 'error');
+                            $(this).val('');
+                            $('#mobile_image_preview_container').addClass('hidden');
+                            $('#mobile_upload_icon').removeClass('hidden');
+                            return;
+                        }
+                        const allowedMobileTypes = ['image/jpeg', 'image/jpg', 'image/gif'];
+                        if (!allowedMobileTypes.includes(file.type)) {
+                            showToast('{{ __('ui.promo_banner_unsupported_format') }}', 'error');
+                            $(this).val('');
+                            return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            $('#mobile_image_preview').attr('src', e.target.result);
+                            $('#mobile_image_preview_container').removeClass('hidden');
+                            $('#mobile_upload_icon').addClass('hidden');
                         };
                         reader.readAsDataURL(file);
                     }
@@ -349,7 +402,7 @@
                         }
 
                         // Validate file type
-                        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/gif'];
                         if (!allowedTypes.includes(file.type)) {
                             showToast('{{ __('ui.promo_banner_unsupported_format') }}', 'error');
                             return;
@@ -407,6 +460,63 @@
                 clearHowToClaim();
                 $('#bannerModal').removeClass('hidden').show();
             }
+
+            /** Open read-only view modal with banner details */
+            function openViewModal(id) {
+                $.ajax({
+                    url: `/promo-banners/${id}`,
+                    method: 'GET',
+                    success: function(response) {
+                        const banner = response.data;
+                        $('#viewBannerTitle').text(banner.title || '-');
+                        $('#viewBannerDescription').text(banner.descriptions || '-');
+                        $('#viewBannerPromoCode').text(banner.promo_code || '-');
+
+                        // Frontend image
+                        const img = banner.primary_image;
+                        if (img && img.image_url) {
+                            $('#viewBannerImage').attr('src', img.image_url).removeClass('hidden');
+                            $('#viewBannerImageEmpty').addClass('hidden');
+                        } else {
+                            $('#viewBannerImage').addClass('hidden');
+                            $('#viewBannerImageEmpty').removeClass('hidden');
+                        }
+
+                        // Mobile image
+                        if (img && img.mobile_image_url && img.mobile_image_url !== img.image_url) {
+                            $('#viewBannerMobileImage').attr('src', img.mobile_image_url).removeClass('hidden');
+                            $('#viewBannerMobileImageEmpty').addClass('hidden');
+                        } else {
+                            $('#viewBannerMobileImage').addClass('hidden');
+                            $('#viewBannerMobileImageEmpty').removeClass('hidden').text(img && img.mobile_image_url ? 'Using frontend image' : '-');
+                        }
+
+                        // How to claim
+                        const steps = banner.how_to_claim || [];
+                        if (steps.length > 0) {
+                            $('#viewBannerHowToClaim').html(steps.map(s => `<li>${$('<span>').text(s).html()}</li>`).join('')).removeClass('hidden');
+                            $('#viewBannerHowToClaimEmpty').addClass('hidden');
+                        } else {
+                            $('#viewBannerHowToClaim').addClass('hidden');
+                            $('#viewBannerHowToClaimEmpty').removeClass('hidden');
+                        }
+
+                        $('#viewBannerModal').css('display', 'flex');
+                    },
+                    error: function() {
+                        showToast('Failed to load banner details', 'error');
+                    }
+                });
+            }
+
+            function closeViewModal() {
+                $('#viewBannerModal').css('display', 'none');
+            }
+
+            // Close view modal on backdrop click
+            $('#viewBannerModal').on('click', function(e) {
+                if (e.target === this) closeViewModal();
+            });
 
             function openEditModal(id) {
                 $.ajax({
@@ -475,6 +585,12 @@
                 const imageFile = $('#banner_image')[0].files[0];
                 if (imageFile) {
                     formData.append('banner_image', imageFile);
+                }
+
+                // Append mobile banner image if selected
+                const mobileImageFile = $('#mobile_banner_image')[0].files[0];
+                if (mobileImageFile) {
+                    formData.append('mobile_banner_image', mobileImageFile);
                 }
 
                 if (bannerId) {

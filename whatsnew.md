@@ -6,6 +6,9 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-27 | Content Management (`/settings/content-management`) | Tagline & hero video management — create/edit/delete taglines (displayed randomly on home pages), upload/activate/delete hero background videos (MP4, max 100MB, 21:9 ratio). Two-tab Alpine.js interface with AJAX CRUD. |
+| 2026-03-27 | Content API (`/api/v1/content/*`) | Public endpoints for random tagline and active hero video URL — used by Frontend web and Mobile app. |
+| 2026-03-27 | Database: `m_taglines`, `m_hero_videos` | New master tables for dynamic tagline and hero video content management. |
 | 2026-03-26 | Ticket Inbox (`/tickets`) | Customer service ticketing system — two-panel layout with ticket list, chat detail, status filters, search. Staff can send text/image messages, close/reopen tickets. Auto-transitions to "in progress" on first staff reply. |
 | 2026-03-26 | Broadcast Management (`/tickets/broadcasts`) | One-way announcement system — create, list, and view broadcasts. Supports Front Desk (property-scoped) and HQ audiences. Sends FCM push to all target users. |
 | 2026-03-26 | Sidebar: Customer Service | New collapsible sidebar group with Tickets + Broadcasts sub-items, unread badge counter (30s polling). |
@@ -61,6 +64,8 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-27 | Home Page | Dynamic tagline loaded from database (random active tagline). Removed duplicate tagline text below hero heading. |
+| 2026-03-27 | Home Page | Dynamic hero video — loads active video from Backend storage, falls back to bundled default video. |
 | 2026-03-26 | Tickets Page (`/tickets`) | Full-page customer ticket management — split-pane layout with ticket list (status filter tabs) and chat panel. Supports text/image messages, close/reopen, 10s polling. |
 | 2026-03-26 | Floating Ticket Widget | Bottom-right chat bubble on all public pages (authenticated users only). Expands to show ticket list with unread badges, links to `/tickets`. 30s polling. |
 | 2026-03-26 | Ticket API (12 endpoints) | `/api/v1/tickets/*` — categories, eligibility, CRUD, messages, close/reopen, mark-as-read. `/api/v1/broadcasts/*` — list, detail. HEIC→JPEG conversion, FCM notifications. |
@@ -86,6 +91,9 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-27 | Home Page | Dynamic tagline loaded from API (random active tagline), falls back to localized 3-part text. |
+| 2026-03-27 | Home Page | Hero video caching — checks API for active video, downloads in background for next launch. Uses bundled asset as default fallback. |
+| 2026-03-27 | Bottom Navigation Bar | Moved menu bar lower by reducing bottom margin from 12px to 0px. |
 | 2026-03-26 | Ticket List Page (`/cs`) | Main customer service page with "My Tickets" and "Broadcasts" tabs. Shows ticket cards with status badges, unread counts, category labels. FAB for new ticket creation. |
 | 2026-03-26 | Create Ticket Page (`/cs/create`) | Multi-step wizard: select type → select booking → select category → enter subject + message. Supports Suggestion Box (no booking required). |
 | 2026-03-26 | Ticket Chat Page (`/cs/ticket/:id`) | Chat room for tickets — message bubbles, image send (camera/gallery), close/reopen actions, 5s polling. System messages for status changes. |

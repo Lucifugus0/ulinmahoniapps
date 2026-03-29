@@ -65,6 +65,10 @@ class ApiConfig {
   static String get promoBannerImages => "$baseUrl/promo-banner";
   static String promoBannerbyId(int bannerId) => "$baseUrl/promo-banner?id=$bannerId";
 
+  // <!-- Content management API endpoints for dynamic tagline and hero video -->
+  static String get contentTagline => "$baseUrl/content/tagline";
+  static String get contentHeroVideo => "$baseUrl/content/hero-video";
+
   /// Ticket endpoints — customer service ticketing system
   static String get ticketCategories => "$baseUrl/tickets/categories";
   static String get ticketEligibility => "$baseUrl/tickets/eligibility";

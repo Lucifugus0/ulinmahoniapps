@@ -55,28 +55,40 @@ final distinctCityPropertiesProvider = FutureProvider<List<PropertyModel>>((ref)
 });
 
 
-final bestSellerPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
-  AppLogger.i('Loading Best Seller properties', 'PROPERTY-PROVIDER');
+/// "Available Now" — properties with highest room availability, excluding full properties
+final availableNowPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
+  AppLogger.i('Loading Available Now properties', 'PROPERTY-PROVIDER');
 
   final allProperties = await ref.watch(propertiesProvider('').future);
 
-  // Take first 3 as best sellers
-  final limitedProperties = allProperties.take(3).toList();
+  // Filter out full properties (availableRooms == 0 or null) and sort by most available
+  final available = allProperties
+      .where((p) => (p.availableRooms ?? 0) > 0)
+      .toList()
+    ..sort((a, b) => (b.availableRooms ?? 0).compareTo(a.availableRooms ?? 0));
 
-  AppLogger.s('Loaded ${limitedProperties.length} Best Seller properties', 'PROPERTY-PROVIDER');
+  final limitedProperties = available.take(3).toList();
+
+  AppLogger.s('Loaded ${limitedProperties.length} Available Now properties', 'PROPERTY-PROVIDER');
   return limitedProperties;
 });
 
 
+/// Budget section — cheapest available rooms (excludes full properties)
 final cheapestPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
-  final repository = ref.watch(propertyRepositoryProvider);
+  final allProperties = await ref.watch(propertiesProvider('').future);
 
-  final result = await repository.fetchTop3CheapestProperties();
+  // Filter out full properties and sort by cheapest price (daily or monthly)
+  final available = allProperties
+      .where((p) => (p.availableRooms ?? 0) > 0)
+      .toList()
+    ..sort((a, b) {
+      final priceA = double.tryParse(a.priceOriginalDaily) ?? double.tryParse(a.priceOriginalMonthly) ?? double.infinity;
+      final priceB = double.tryParse(b.priceOriginalDaily) ?? double.tryParse(b.priceOriginalMonthly) ?? double.infinity;
+      return priceA.compareTo(priceB);
+    });
 
-  return switch (result) {
-    Success(:final data) => data,
-    Failure(:final message) => throw Exception(message),
-  };
+  return available.take(3).toList();
 });
 
 final propertyByIdProvider = FutureProvider.family<PropertyModel?, int>((ref, propertyId) async {

@@ -94,21 +94,20 @@ class FirebaseNotificationService
             $client = new Client();
             $url = "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
 
-            /** Build FCM message payload with notification and optional data */
+            /** Build data-only FCM message (no 'notification' key) to prevent double notifications.
+             *  Title and body are sent as data fields so the app handler controls display. */
+            $messageData = array_merge(
+                ['title' => $title, 'body' => $body],
+                !empty($data) ? array_map('strval', $data) : []
+            );
+
             $message = [
                 'message' => [
                     'token' => $token,
-                    'notification' => [
-                        'title' => $title,
-                        'body' => $body,
-                    ],
+                    'data' => $messageData,
+                    'android' => ['priority' => 'high'],
                 ],
             ];
-
-            /** FCM data values must be strings — convert all values */
-            if (!empty($data)) {
-                $message['message']['data'] = array_map('strval', $data);
-            }
 
             $response = $client->post($url, [
                 'headers' => [

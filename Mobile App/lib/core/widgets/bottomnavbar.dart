@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
 import '../../features/auth/login/provider/auth_provider.dart';
+import '../../features/customerservice/provider/ticket_provider.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../features/home/presentation/widgets/section/searchfilter.dart';
 import '../theme/glass_theme.dart';
@@ -79,6 +80,11 @@ class BottomNavBar extends ConsumerWidget {
     final localizations = AppLocalizations.of(context)!;
     final authState = ref.watch(authProvider);
     final bool isLoggedIn = authState.isLoggedIn;
+    final userId = authState.user.value?.id;
+    // Unread chat count for CS tab badge
+    final chatUnread = (isLoggedIn && userId != null)
+        ? ref.watch(chatUnreadCountProvider(userId)).valueOrNull ?? 0
+        : 0;
     // Detect dark/light mode
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -87,7 +93,8 @@ class BottomNavBar extends ConsumerWidget {
         margin: EdgeInsets.only(
             left: horizontalMargin,
             right: horizontalMargin,
-            bottom: 12,
+            // Reduced bottom margin to position nav bar lower on screen
+            bottom: 0,
         ),
         // Extra height to allow the search button to extend above the bar
         height: 85,
@@ -175,7 +182,7 @@ class BottomNavBar extends ConsumerWidget {
                               // OLD: Phone icon for UM dialog (preserved but commented)
                               // _buildNavItem(...)
 
-                              // NEW: Customer Service Chat
+                              // Customer Service Chat with unread badge
                               _buildNavItem(
                                   context,
                                   icon: Icons.chat_bubble_outline,
@@ -187,7 +194,8 @@ class BottomNavBar extends ConsumerWidget {
                                   fontSize: fontSize,
                                   iconSize: iconSize,
                                   isDark: isDark,
-                                  onTap: () => _onTap(context, 3, isLoggedIn)
+                                  onTap: () => _onTap(context, 3, isLoggedIn),
+                                  badgeCount: chatUnread,
                               ),
                               _buildNavItem(
                                   context,
@@ -260,9 +268,9 @@ class BottomNavBar extends ConsumerWidget {
         required double iconSize,
         required bool isDark,
         required VoidCallback onTap,
+        int badgeCount = 0,
       }) {
     final bool isSelected = index == currentIndex;
-    // Inactive color adapts to dark/light mode
     final Color inactiveColor = isDark
         ? Colors.grey.shade400
         : Colors.grey.shade500;
@@ -276,10 +284,34 @@ class BottomNavBar extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              color: isSelected ? activeColor : inactiveColor,
-              size: iconSize,
+            // Icon with optional unread badge
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  isSelected ? activeIcon : icon,
+                  color: isSelected ? activeColor : inactiveColor,
+                  size: iconSize,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -8,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 14),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 3),
             Text(

@@ -13,12 +13,13 @@ class PromoBannerImage extends Model
     protected $fillable = [
         'promo_banner_id',
         'image',
+        'mobile_image',
         'thumbnail',
         'caption',
         'sort_order',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'mobile_image_url'];
 
     public function promoBanner()
     {
@@ -48,5 +49,23 @@ class PromoBannerImage extends Model
 
         // Default: assume it's in storage
         return asset('storage/' . $this->image);
+    }
+
+    /** Accessor: full URL for mobile-optimized banner image (falls back to main image) */
+    public function getMobileImageUrlAttribute()
+    {
+        if (empty($this->mobile_image)) {
+            return $this->image_url;
+        }
+
+        if (filter_var($this->mobile_image, FILTER_VALIDATE_URL)) {
+            return $this->mobile_image;
+        }
+
+        if (str_starts_with($this->mobile_image, 'storage/')) {
+            return asset($this->mobile_image);
+        }
+
+        return asset('storage/' . $this->mobile_image);
     }
 }

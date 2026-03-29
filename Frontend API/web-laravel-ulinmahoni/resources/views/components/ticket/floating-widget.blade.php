@@ -46,10 +46,10 @@
                 {{-- New ticket + View all buttons --}}
                 <div class="p-3 border-b border-gray-100 dark:border-gray-800 flex gap-2">
                     <a href="/tickets" class="flex-1 text-center text-xs py-2 px-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        View All Tickets
+                        View All Chats
                     </a>
                     <a href="/tickets" class="flex-1 text-center text-xs py-2 px-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
-                        + New Ticket
+                        + New Chat
                     </a>
                 </div>
 

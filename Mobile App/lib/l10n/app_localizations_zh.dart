@@ -18,7 +18,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get categories => '分类';
 
   @override
-  String get bestSeller => '热门房源';
+  String get availableNow => '现在可用';
+
+  @override
+  String get filterCategoryAll => '全部';
 
   @override
   String get popularArea => '热门地区';
@@ -31,6 +34,51 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get promoBanner => '特别优惠';
+
+  @override
+  String get promoDetailTitle => '优惠详情';
+
+  @override
+  String get promoDescription => '优惠描述';
+
+  @override
+  String get noDescription => '暂无描述';
+
+  @override
+  String get promoHowToClaim => '如何领取';
+
+  @override
+  String get promoClaimStep1 => '选择您想要的房产';
+
+  @override
+  String get promoClaimStep2 => '然后选择您想要的房间';
+
+  @override
+  String get promoClaimStep3 => '在预订时输入优惠码';
+
+  @override
+  String get promoClaimStep4 => '完成预订';
+
+  @override
+  String get promoClaimStep5 => '享受您的优惠/折扣';
+
+  @override
+  String get promoTermsTitle => '条款与条件';
+
+  @override
+  String get promoTerm1 => '条款和条件适用';
+
+  @override
+  String get promoTerm2 => '不可与其他优惠同时使用';
+
+  @override
+  String get promoTerm3 => '优惠期限有限';
+
+  @override
+  String get promoTerm4 => '仅限部分用户使用';
+
+  @override
+  String get promoLoadError => '加载优惠详情失败';
 
   @override
   String get homeLabel => '首页';

@@ -177,7 +177,7 @@ class _CreateTicketPageState extends ConsumerState<CreateTicketPage> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: CustomAppBar(
-          title: 'New Ticket',
+          title: 'New Chat',
           showBackButton: true,
         ),
       ),

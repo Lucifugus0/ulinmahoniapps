@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Property;
 use App\Http\Controllers\promo\PromoController;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller {
     protected $promoController;
@@ -46,12 +47,18 @@ class HomeController extends Controller {
      */
     public function index()
     {
+        // <!-- Fetch random active tagline from database, fallback to translation key -->
+        $taglineRow = DB::table('m_taglines')->where('status', 1)->inRandomOrder()->first();
+        $heroTagline = $taglineRow ? $taglineRow->tagline : __('homepage.hero.subtitle');
+
+        // <!-- Fetch active hero video from database, fallback to default bundled video -->
+        $activeVideo = DB::table('m_hero_videos')->where('status', 1)->first();
+        $adminUrl = rtrim(env('ADMIN_URL', ''), '/');
         $heroMedia = [
             'type' => 'video',
             'sources' => [
                 'image' => 'images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg',
-                'video' => 'images/assets/My_Movie.mp4'
-                // 'video' => ''
+                'video' => $activeVideo && $adminUrl ? $adminUrl . '/storage/' . $activeVideo->file_path : 'images/assets/My_Movie.mp4'
             ]
         ];
 
@@ -148,6 +155,7 @@ class HomeController extends Controller {
                 'villas' => $propertyTypes['Villa'],
                 'hotels' => $propertyTypes['Hotel'],
                 'heroMedia' => $heroMedia,
+                'heroTagline' => $heroTagline,
                 'promos' => $promos,
                 'propertyAreas' => $propertyAreas,
                 'nearbyProperties' => $nearbyProperties,
@@ -180,6 +188,7 @@ class HomeController extends Controller {
                 'villas' => [],
                 'hotels' => [],
                 'heroMedia' => $heroMedia,
+                'heroTagline' => $heroTagline,
                 'promos' => $promos,
                 'propertyAreas' => [
                     'jakarta' => [],

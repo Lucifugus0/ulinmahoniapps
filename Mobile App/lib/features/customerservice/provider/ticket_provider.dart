@@ -45,6 +45,18 @@ final broadcastListProvider = FutureProvider.family<List<BroadcastModel>, int>((
 /// Provider to track currently selected ticket ID
 final selectedTicketProvider = StateProvider<int?>((ref) => null);
 
+/// Total unread chat count across all tickets — used for bottom nav badge.
+/// Returns 0 on any error (network, auth, first install) to prevent crashes.
+final chatUnreadCountProvider = FutureProvider.family<int, int>((ref, userId) async {
+  try {
+    final repo = ref.read(ticketRepositoryProvider);
+    final tickets = await repo.listTickets(userId);
+    return tickets.fold<int>(0, (sum, t) => sum + t.unreadCount);
+  } catch (_) {
+    return 0;
+  }
+});
+
 /// Parameters for ticket detail provider
 class TicketDetailParams {
   final int ticketId;

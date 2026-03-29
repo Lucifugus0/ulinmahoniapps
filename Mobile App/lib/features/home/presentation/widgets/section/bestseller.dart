@@ -23,7 +23,8 @@ class BestSellerSection extends ConsumerStatefulWidget {
 class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
   @override
   Widget build(BuildContext context) {
-    final bestSellerPropertiesAsyncValue = ref.watch(bestSellerPropertiesProvider);
+    // Watch "Available Now" provider instead of old bestSeller
+    final bestSellerPropertiesAsyncValue = ref.watch(availableNowPropertiesProvider);
     final textTheme = Theme.of(context).textTheme;
     final localizations = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -41,7 +42,7 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
               children: [
                 Expanded(
                   child: Text(
-                    localizations.bestSeller,
+                    localizations.availableNow,
                     style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,

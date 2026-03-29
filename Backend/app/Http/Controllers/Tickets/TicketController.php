@@ -38,7 +38,7 @@ class TicketController extends Controller
         $user = Auth::user();
 
         /** Build base query with eager loading */
-        $query = Ticket::with(['user', 'category', 'property', 'transaction'])
+        $query = Ticket::with(['user', 'category', 'property', 'transaction.room'])
             ->orderBy('last_message_at', 'desc')
             ->orderBy('created_at', 'desc');
 
@@ -113,7 +113,7 @@ class TicketController extends Controller
     {
         $user = Auth::user();
 
-        $query = Ticket::with(['user', 'category', 'property', 'transaction'])
+        $query = Ticket::with(['user', 'category', 'property', 'transaction.room'])
             ->orderBy('last_message_at', 'desc')
             ->orderBy('created_at', 'desc');
 
@@ -156,7 +156,7 @@ class TicketController extends Controller
     public function show(Request $request, $id)
     {
         $user = Auth::user();
-        $ticket = Ticket::with(['user', 'category', 'property', 'transaction'])->findOrFail($id);
+        $ticket = Ticket::with(['user', 'category', 'property', 'transaction.room'])->findOrFail($id);
 
         /** Property access check */
         if (!$user->canViewAllProperties() && $ticket->property_id && $ticket->property_id != $user->property_id) {
@@ -461,5 +461,115 @@ class TicketController extends Controller
         });
 
         return response()->json(['unread_count' => $totalUnread]);
+    }
+
+    /**
+     * GET /tickets/eligible-bookings — returns eligible bookings for admin ticket creation.
+     * HQ admin sees all properties, site admin sees only their property.
+     */
+    public function getEligibleBookings(Request $request)
+    {
+        $user = Auth::user();
+        $propertyId = $user->canViewAllProperties() ? null : $user->property_id;
+
+        $bookings = $this->ticketService->getEligibleBookingsForAdmin($propertyId);
+
+        /** Apply search filter if provided */
+        $search = $request->input('search');
+        if ($search) {
+            $search = strtolower($search);
+            $bookings = $bookings->filter(function ($t) use ($search) {
+                return str_contains(strtolower($t->user_name ?? ''), $search)
+                    || str_contains(strtolower($t->order_id ?? ''), $search)
+                    || str_contains(strtolower($t->property_name ?? ''), $search)
+                    || str_contains(strtolower($t->room_name ?? ''), $search);
+            });
+        }
+
+        /** Sort by property name, then room name ascending */
+        $sorted = $bookings->sortBy([
+            ['property_name', 'asc'],
+            ['room_name', 'asc'],
+        ])->values();
+
+        /** Determine booking status: checked-in (actual), checked-out (actual), active (scheduled), or upcoming */
+        $now = \Carbon\Carbon::now();
+        $formatted = $sorted->map(function ($t) use ($now) {
+            $scheduledIn = $t->check_in ? \Carbon\Carbon::parse($t->check_in) : null;
+            $scheduledOut = $t->check_out ? \Carbon\Carbon::parse($t->check_out) : null;
+
+            // Use actual check-in/out from t_booking for status
+            if ($t->check_out_at) {
+                $status = 'checked_out';
+            } elseif ($t->check_in_at) {
+                $status = 'checked_in';
+            } elseif ($scheduledIn && $now->gte($scheduledIn)) {
+                $status = 'active';
+            } else {
+                $status = 'upcoming';
+            }
+
+            return [
+                'order_id' => $t->order_id,
+                'user_name' => $t->user_name,
+                'property_name' => $t->property_name,
+                'room_no' => $t->room_no ?? '-',
+                'room_name' => $t->room_name,
+                'check_in' => $scheduledIn ? $scheduledIn->format('d M Y') : '-',
+                'check_out' => $scheduledOut ? $scheduledOut->format('d M Y') : '-',
+                'status' => $status,
+            ];
+        });
+
+        return response()->json(['success' => true, 'data' => $formatted]);
+    }
+
+    /**
+     * POST /tickets/store — admin creates a new ticket (Notice) for a booking customer.
+     */
+    public function storeAdminTicket(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|string',
+            'category_id' => 'required|integer|exists:t_ticket_categories,id',
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string|max:2000',
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            $ticket = $this->ticketService->createAdminTicket(
+                adminId: $user->id,
+                categoryId: $request->category_id,
+                orderId: $request->order_id,
+                subject: $request->subject,
+                initialMessage: $request->message,
+            );
+
+            /** Send FCM push notification to the customer */
+            try {
+                $fcm = app(FirebaseNotificationService::class);
+                $customer = \App\Models\User::find($ticket->user_id);
+                $fcm->sendToUser($customer, $request->subject, $request->message, [
+                    'type' => 'ticket_created',
+                    'ticket_id' => (string) $ticket->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('FCM notification failed for admin ticket: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ticket created successfully.',
+                'ticket_id' => $ticket->id,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin ticket creation failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create ticket: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

@@ -205,6 +205,105 @@ class TicketService
     }
 
     /**
+     * Get eligible bookings for admin-initiated tickets.
+     * HQ admin: all properties' active/future bookings within 7-day grace.
+     * Site admin: only their property's bookings within 7-day grace.
+     */
+    public function getEligibleBookingsForAdmin(?int $propertyId = null): \Illuminate\Support\Collection
+    {
+        $graceLimit = Carbon::now()->subDays(7);
+
+        /** Query from t_booking, join with t_transactions for dates/status, m_rooms for room info, m_properties for property name */
+        $query = \App\Models\Booking::query()
+            ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+            ->leftJoin('m_rooms', 't_booking.room_id', '=', 'm_rooms.idrec')
+            ->leftJoin('m_properties', 't_booking.property_id', '=', 'm_properties.idrec')
+            ->select(
+                't_booking.order_id',
+                't_booking.status as booking_status',
+                't_booking.check_in_at',
+                't_booking.check_out_at',
+                't_transactions.user_name',
+                't_transactions.user_id',
+                't_transactions.check_in',
+                't_transactions.check_out',
+                't_transactions.room_name',
+                'm_rooms.no as room_no',
+                'm_properties.name as property_name'
+            )
+            ->where('t_booking.status', 1)
+            ->where('t_transactions.transaction_status', 'paid')
+            ->where('t_transactions.check_out', '>=', $graceLimit)
+            ->orderBy('t_transactions.check_in', 'desc');
+
+        /** Site admin: scope to their property only */
+        if ($propertyId) {
+            $query->where('t_booking.property_id', $propertyId);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Create an admin-initiated ticket (Notice type).
+     * Admins can create tickets for any eligible booking without user eligibility check.
+     * The ticket's user_id is the booking customer, created_by is the admin.
+     */
+    public function createAdminTicket(
+        int $adminId,
+        int $categoryId,
+        string $orderId,
+        string $subject,
+        ?string $initialMessage = null
+    ): Ticket {
+        return DB::transaction(function () use ($adminId, $categoryId, $orderId, $subject, $initialMessage) {
+            $category = TicketCategory::findOrFail($categoryId);
+
+            /** Look up the transaction to get customer and property */
+            $transaction = Transaction::where('order_id', $orderId)->first();
+            if (!$transaction) {
+                throw new \Exception('Booking not found');
+            }
+
+            $propertyId = $transaction->property_id;
+            $customerId = $transaction->user_id;
+
+            /** Generate ticket number */
+            $ticketNumber = $this->generateTicketNumber($propertyId, $category->recipient_type);
+
+            /** Create the ticket — user_id is the customer, created_by is the admin */
+            $ticket = Ticket::create([
+                'ticket_number' => $ticketNumber,
+                'order_id' => $orderId,
+                'property_id' => $propertyId,
+                'user_id' => $customerId,
+                'category_id' => $categoryId,
+                'recipient_type' => $category->recipient_type,
+                'subject' => $subject,
+                'ticket_status' => 'in_progress',
+                'priority' => 'normal',
+                'last_message_at' => now(),
+                'created_by' => (string) $adminId,
+                'updated_by' => (string) $adminId,
+            ]);
+
+            /** Create the initial message from admin */
+            if ($initialMessage) {
+                TicketMessage::create([
+                    'ticket_id' => $ticket->id,
+                    'sender_id' => $adminId,
+                    'message_text' => $initialMessage,
+                    'message_type' => 'text',
+                    'created_by' => (string) $adminId,
+                    'updated_by' => (string) $adminId,
+                ]);
+            }
+
+            return $ticket;
+        });
+    }
+
+    /**
      * Close a ticket — sets status to 'closed', records who closed it,
      * and sets the reopen deadline to 7 days from now.
      * Creates a system message recording the action.

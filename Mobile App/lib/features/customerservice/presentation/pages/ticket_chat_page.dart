@@ -91,12 +91,14 @@ class _TicketChatPageState extends ConsumerState<TicketChatPage>
   /// Start 5-second polling timer to refresh messages
   void _startPolling() {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    // Poll every 3 seconds for faster message updates
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       _refreshMessages();
     });
   }
 
-  /// Refresh ticket detail (including messages) by invalidating the provider
+  /// Refresh ticket messages silently using refresh() instead of invalidate()
+  /// to avoid full reload/loading state flicker
   Future<void> _refreshMessages() async {
     final user = ref.read(authProvider).user.value;
     if (user != null) {
@@ -104,8 +106,8 @@ class _TicketChatPageState extends ConsumerState<TicketChatPage>
         ticketId: widget.ticketId,
         userId: user.id,
       );
-      ref.invalidate(ticketDetailProvider(params));
-      await Future.delayed(const Duration(milliseconds: 500));
+      // refresh() re-fetches without showing loading state (keeps previous data)
+      ref.refresh(ticketDetailProvider(params));
     }
   }
 
@@ -758,22 +760,47 @@ class _TicketChatPageState extends ConsumerState<TicketChatPage>
         : attachment.fileUrl;
 
     return GestureDetector(
-      /// Tap to view full-size image in a dialog
+      /// Tap to view full-size image in a fullscreen popup with download and close
       onTap: () {
         if (fullUrl != null) {
           showDialog(
             context: context,
-            builder: (context) => Dialog(
-              backgroundColor: Colors.transparent,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  fullUrl,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.broken_image, size: 48),
+            barrierColor: Colors.black87,
+            builder: (context) => Stack(
+              children: [
+                // Full-size image centered
+                Center(
+                  child: InteractiveViewer(
+                    child: Image.network(
+                      fullUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.broken_image, size: 48, color: Colors.white),
+                    ),
+                  ),
                 ),
-              ),
+                // Top-right buttons: download + close
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  right: 16,
+                  child: Row(
+                    children: [
+                      // Close button
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(Icons.close, color: Colors.white, size: 24),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           );
         }

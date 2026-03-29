@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\PromoBannerController;
 use App\Http\Controllers\Api\DepositFeeController;
 use App\Http\Controllers\Api\ParkingFeeController;
 use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\ContentController;
 
 use App\Http\Middleware\VerifyApiKey;
 use Illuminate\Support\Facades\Auth;
@@ -75,6 +76,12 @@ Route::prefix('v1')->group(function () {
 
     // ROUTES THAT REQUIRE API KEY (MIDDLEWARE)
     Route::middleware([VerifyApiKey::class])->group(function () {
+
+        // <!-- Content API routes: public tagline and hero video endpoints -->
+        Route::prefix('content')->group(function () {
+            Route::get('/tagline', [ContentController::class, 'randomTagline']);
+            Route::get('/hero-video', [ContentController::class, 'activeHeroVideo']);
+        });
 
         // BANNER API ROUTES
         Route::prefix('banner')->group(function () {

@@ -18,7 +18,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get categories => 'Kategori';
 
   @override
-  String get bestSeller => 'Terlaris';
+  String get availableNow => 'Tersedia Sekarang';
+
+  @override
+  String get filterCategoryAll => 'Semua';
 
   @override
   String get popularArea => 'Area Populer';
@@ -31,6 +34,51 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get promoBanner => 'Promo Spesial';
+
+  @override
+  String get promoDetailTitle => 'Detail Promo';
+
+  @override
+  String get promoDescription => 'Deskripsi Promo';
+
+  @override
+  String get noDescription => 'Tidak ada deskripsi';
+
+  @override
+  String get promoHowToClaim => 'Cara Klaim';
+
+  @override
+  String get promoClaimStep1 => 'Pilih properti yang diinginkan';
+
+  @override
+  String get promoClaimStep2 => 'Lalu Pilih Kamar yang diinginkan';
+
+  @override
+  String get promoClaimStep3 => 'Masukkan Kode Voucher saat pemesanan';
+
+  @override
+  String get promoClaimStep4 => 'Lakukan Pemesanan';
+
+  @override
+  String get promoClaimStep5 => 'Nikmati promo/diskon yang didapatkan';
+
+  @override
+  String get promoTermsTitle => 'Syarat & Ketentuan';
+
+  @override
+  String get promoTerm1 => 'Syarat dan ketentuan berlaku';
+
+  @override
+  String get promoTerm2 => 'Tidak dapat digabung dengan promo lain';
+
+  @override
+  String get promoTerm3 => 'Periode promo terbatas';
+
+  @override
+  String get promoTerm4 => 'Hanya berlaku untuk pengguna secara terbatas';
+
+  @override
+  String get promoLoadError => 'Gagal memuat detail promo';
 
   @override
   String get homeLabel => 'Beranda';

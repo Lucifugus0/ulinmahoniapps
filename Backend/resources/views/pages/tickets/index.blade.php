@@ -11,10 +11,17 @@
                     <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
                         <i class="fas fa-headset mr-2 text-indigo-500"></i>{{ __('ui.tickets') ?? 'Tickets' }}
                     </h2>
-                    <a href="{{ route('broadcasts.index') }}"
-                       class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
-                        <i class="fas fa-bullhorn mr-1"></i>{{ __('ui.broadcasts') ?? 'Broadcasts' }}
-                    </a>
+                    <div class="flex items-center gap-2">
+                        <!-- New Ticket button — admin-initiated notice -->
+                        <button @click="showNewTicketModal = true; loadEligibleBookings()"
+                            class="text-xs px-2.5 py-1.5 bg-green-600 text-white rounded-sm hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>{{ __('ui.new_ticket') ?? 'New Ticket' }}
+                        </button>
+                        <a href="{{ route('broadcasts.index') }}"
+                           class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                            <i class="fas fa-bullhorn mr-1"></i>{{ __('ui.broadcasts') ?? 'Broadcasts' }}
+                        </a>
+                    </div>
                 </div>
 
                 {{-- Search --}}
@@ -43,6 +50,7 @@
                         <option value="booking">Booking</option>
                         <option value="complaint">Complaint</option>
                         <option value="suggestion">Suggestion</option>
+                        <option value="notice">Notice</option>
                     </select>
                 </div>
             </div>
@@ -90,9 +98,13 @@
                             </div>
                             <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1" x-text="currentTicket?.subject"></p>
                             <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                                <span x-text="currentTicket?.user?.first_name || currentTicket?.user?.name || 'User'"></span>
+                                <span x-text="[currentTicket?.user?.first_name, currentTicket?.user?.last_name].filter(Boolean).join(' ') || currentTicket?.user?.name || 'User'"></span>
                                 <template x-if="currentTicket?.property">
-                                    <span>&bull; <span x-text="currentTicket?.property?.name"></span></span>
+                                    <span>&bull; <span x-text="currentTicket?.property?.name"></span>
+                                        <template x-if="currentTicket?.transaction?.room?.no">
+                                            <span> No.<span x-text="currentTicket.transaction.room.no"></span></span>
+                                        </template>
+                                    </span>
                                 </template>
                                 <template x-if="currentTicket?.order_id">
                                     <span>&bull; <span class="font-mono" x-text="currentTicket?.order_id"></span></span>
@@ -136,17 +148,17 @@
                             </button>
                         </div>
 
-                        <div class="flex items-end gap-2">
+                        <div class="flex items-center gap-2">
                             <div class="flex-1">
                                 <textarea x-model="newMessage"
                                           @keydown.enter.prevent="if(!$event.shiftKey) sendCurrentMessage()"
                                           placeholder="{{ __('ui.ticket_type_message') ?? 'Type a message...' }}"
                                           rows="1"
-                                          class="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2.5 resize-none focus:ring-indigo-500 focus:border-indigo-500"
+                                          class="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2.5 resize-none focus:ring-indigo-500 focus:border-indigo-500"
                                           style="min-height: 40px; max-height: 120px;"></textarea>
                             </div>
                             {{-- Image upload button --}}
-                            <label class="cursor-pointer text-gray-400 hover:text-indigo-500 transition-colors p-2">
+                            <label class="cursor-pointer text-gray-400 hover:text-indigo-500 transition-colors flex items-center justify-center w-10 h-10">
                                 <i class="fas fa-image text-lg"></i>
                                 <input type="file" class="hidden" accept="image/jpeg,image/png,image/heic,image/heif"
                                        @change="handleImageSelect($event)">
@@ -154,7 +166,7 @@
                             {{-- Send button --}}
                             <button @click="sendCurrentMessage()"
                                     :disabled="sending || (!newMessage.trim() && !selectedImage)"
-                                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    class="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                                 <i class="fas fa-paper-plane" :class="{ 'fa-spinner fa-spin': sending }"></i>
                             </button>
                         </div>
@@ -162,10 +174,151 @@
                 </template>
             </div>
         </div>
+
+        {{-- NEW CHAT MODAL — admin-initiated chat with searchable booking table and category selector --}}
+        <div x-show="showNewTicketModal" x-cloak
+             class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center"
+             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700"
+                 style="box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);"
+                 @click.outside="showNewTicketModal = false">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-plus-circle mr-2 text-green-500"></i>{{ __('ui.new_ticket') }}
+                    </h3>
+                    <button @click="showNewTicketModal = false" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="px-6 py-5 space-y-4">
+                    <!-- Booking search + selectable table -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {{ __('ui.select_booking') }} <span class="text-red-500">*</span>
+                        </label>
+                        <!-- Search box -->
+                        <input type="text" x-model="bookingSearch" @input.debounce.300ms="searchBookings()"
+                               placeholder="{{ __('ui.search_booking') }}"
+                               class="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 mb-2">
+                        <!-- Selected booking display -->
+                        <div x-show="newTicketForm.order_id" class="text-xs bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg px-3 py-2 mb-2 flex justify-between items-center">
+                            <span><i class="fas fa-check-circle mr-1"></i> Selected: <strong x-text="newTicketForm.order_id"></strong></span>
+                            <button @click="newTicketForm.order_id = ''" class="text-red-500 hover:text-red-700 text-xs"><i class="fas fa-times"></i></button>
+                        </div>
+                        <!-- Booking results table -->
+                        <div x-show="loadingBookings" class="text-sm text-gray-500 py-3 text-center">
+                            <i class="fas fa-spinner fa-spin mr-1"></i> Loading...
+                        </div>
+                        <div x-show="!loadingBookings && eligibleBookings.length > 0" class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg relative">
+                            <table class="w-full text-xs">
+                                <!-- Sticky header with glassmorphism backdrop blur -->
+                                <thead class="sticky top-0 z-10" style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+                                    <tr class="bg-gray-100/90 dark:bg-gray-700/90">
+                                        <th class="px-3 py-2 text-left text-gray-500 dark:text-gray-400 uppercase font-semibold">{{ __('ui.property') }}</th>
+                                        <th class="px-3 py-2 text-left text-gray-500 dark:text-gray-400 uppercase font-semibold">Room</th>
+                                        <th class="px-3 py-2 text-left text-gray-500 dark:text-gray-400 uppercase font-semibold">{{ __('ui.name') }}</th>
+                                        <th class="px-3 py-2 text-left text-gray-500 dark:text-gray-400 uppercase font-semibold">Check-in — Check-out</th>
+                                        <th class="px-3 py-2 text-center text-gray-500 dark:text-gray-400 uppercase font-semibold">{{ __('ui.status') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                    <template x-for="b in eligibleBookings" :key="b.order_id">
+                                        <tr @click="newTicketForm.order_id = b.order_id"
+                                            class="cursor-pointer transition-colors"
+                                            :class="newTicketForm.order_id === b.order_id ? 'bg-green-50 dark:bg-green-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'">
+                                            <td class="px-3 py-2 text-gray-900 dark:text-white" x-text="b.property_name"></td>
+                                            <td class="px-3 py-2">
+                                                <!-- Room number + room type badge -->
+                                                <div class="text-gray-900 dark:text-white font-medium" x-text="'No. ' + b.room_no"></div>
+                                                <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300" x-text="b.room_name"></span>
+                                            </td>
+                                            <td class="px-3 py-2 text-gray-900 dark:text-white" x-text="b.user_name"></td>
+                                            <td class="px-3 py-2 text-gray-600 dark:text-gray-400" x-text="b.check_in + ' — ' + b.check_out"></td>
+                                            <td class="px-3 py-2 text-center">
+                                                <span class="px-1.5 py-0.5 rounded text-xs font-medium"
+                                                    :class="{
+                                                        'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': b.status === 'checked_in',
+                                                        'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300': b.status === 'upcoming' || b.status === 'active',
+                                                        'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300': b.status === 'checked_out'
+                                                    }"
+                                                    x-text="b.status === 'checked_in' ? 'Checked In' : b.status === 'upcoming' ? 'Upcoming' : b.status === 'active' ? 'Active' : 'Checked Out'"></span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p x-show="!loadingBookings && eligibleBookings.length === 0 && bookingSearch" class="text-xs text-gray-500 mt-1">No bookings found.</p>
+                    </div>
+                    <!-- Category: admin can only select Notice -->
+                    @php $noticeCategory = $categories->firstWhere('category', 'notice'); @endphp
+                    @if($noticeCategory)
+                        <input type="hidden" x-model="newTicketForm.category_id" value="{{ $noticeCategory->id }}">
+                    @endif
+                    <!-- Subject -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {{ __('ui.subject') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" x-model="newTicketForm.subject" maxlength="255"
+                               placeholder="{{ __('ui.ticket_subject_placeholder') }}"
+                               class="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <!-- Message -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {{ __('ui.message') }} <span class="text-red-500">*</span>
+                        </label>
+                        <textarea x-model="newTicketForm.message" rows="3" maxlength="2000"
+                                  placeholder="{{ __('ui.ticket_message_placeholder') }}"
+                                  class="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"></textarea>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
+                        <i class="fas fa-info-circle mr-1 text-green-500"></i>
+                        {{ __('ui.ticket_notice_info') }}
+                    </div>
+                </div>
+                <!-- Footer -->
+                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+                    <button @click="showNewTicketModal = false" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800">
+                        {{ __('ui.cancel') }}
+                    </button>
+                    <button @click="submitNewTicket()"
+                            :disabled="!newTicketForm.order_id || !newTicketForm.subject || !newTicketForm.message || creatingTicket"
+                            class="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                        <i x-show="creatingTicket" class="fas fa-spinner fa-spin mr-1"></i>
+                        {{ __('ui.create_ticket') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Image preview modal — 80% screen with close button --}}
+    <div id="chatImageModal" class="fixed inset-0 bg-black/80 z-[60] hidden items-center justify-center" style="display: none;" onclick="if(event.target===this)closeImageModal()">
+        <div class="relative" style="width: 80vw; height: 80vh;">
+            <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-2xl font-bold z-10">&times;</button>
+            <img id="chatImageModalImg" src="" alt="Preview" class="w-full h-full object-contain">
+        </div>
     </div>
 
     @push('scripts')
     <script>
+    /** Open image preview modal */
+    function openImageModal(url) {
+        document.getElementById('chatImageModalImg').src = url;
+        document.getElementById('chatImageModal').style.display = 'flex';
+    }
+    function closeImageModal() {
+        document.getElementById('chatImageModal').style.display = 'none';
+        document.getElementById('chatImageModalImg').src = '';
+    }
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeImageModal(); });
+
     /** Alpine.js component for the ticket management two-panel interface */
     function ticketManager() {
         return {
@@ -185,8 +338,19 @@
             pollingInterval: null,
             currentUserId: {{ Auth::id() }},
 
+            // New Chat modal state
+            showNewTicketModal: false,
+            eligibleBookings: [],
+            loadingBookings: false,
+            bookingSearch: '',
+            newTicketForm: { order_id: '', category_id: '{{ $categories->firstWhere("category", "notice")?->id ?? "" }}', subject: '', message: '' },
+            creatingTicket: false,
+
             /** Initialize component — load ticket if URL has ?open= param */
             init() {
+                // Expose selectTicket globally so server-rendered onclick can call it
+                window._selectTicket = (id) => this.selectTicket(id);
+
                 if (this.activeTicketId) {
                     this.selectTicket(this.activeTicketId);
                 }
@@ -196,9 +360,23 @@
                 }, 10000);
             },
 
+            /** Highlight the active ticket in the list — works after AJAX reload */
+            highlightActiveTicket() {
+                document.querySelectorAll('.ticket-item').forEach(el => {
+                    const id = parseInt(el.dataset.ticketId);
+                    if (id === this.activeTicketId) {
+                        el.classList.add('bg-indigo-50', 'dark:bg-indigo-900/30', 'border-l-4', 'border-l-indigo-500');
+                        el.classList.remove('hover:bg-gray-50', 'dark:hover:bg-gray-800');
+                    } else {
+                        el.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/30', 'border-l-4', 'border-l-indigo-500');
+                    }
+                });
+            },
+
             /** Select a ticket and load its messages */
             async selectTicket(ticketId) {
                 this.activeTicketId = ticketId;
+                this.highlightActiveTicket();
                 this.loadingMessages = true;
 
                 try {
@@ -242,7 +420,7 @@
                     const isMe = msg.sender_id === this.currentUserId;
                     const isSystem = msg.message_type === 'system';
                     const time = new Date(msg.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-                    const senderName = msg.sender?.first_name || msg.sender?.name || 'Unknown';
+                    const senderName = [msg.sender?.first_name, msg.sender?.last_name].filter(Boolean).join(' ') || msg.sender?.name || 'Unknown';
 
                     if (isSystem) {
                         return `<div class="flex justify-center my-2">
@@ -255,7 +433,7 @@
                     if (msg.attachments && msg.attachments.length > 0) {
                         msg.attachments.forEach(att => {
                             if (att.file_type && att.file_type.startsWith('image/')) {
-                                attachmentHtml += `<a href="${att.file_url}" target="_blank"><img src="${att.thumbnail_url || att.file_url}" class="max-w-xs rounded-lg mt-1 cursor-pointer hover:opacity-90" loading="lazy"></a>`;
+                                attachmentHtml += `<img src="${att.thumbnail_url || att.file_url}" data-full="${att.file_url}" class="max-w-xs mt-1 cursor-pointer hover:opacity-90" loading="lazy" onclick="openImageModal(this.dataset.full)">`;
                             }
                         });
                     }
@@ -267,7 +445,7 @@
                     return `<div class="flex ${align} mb-2">
                         <div class="max-w-[70%]">
                             <div class="text-xs ${metaColor} mb-0.5 ${isMe ? 'text-right' : ''}">${this.escapeHtml(senderName)}</div>
-                            <div class="${bubbleBg} rounded-xl px-3 py-2 shadow-sm">
+                            <div class="${bubbleBg} rounded-md px-3 py-2 shadow-sm">
                                 ${attachmentHtml}
                                 ${msg.message_text ? `<p class="text-sm whitespace-pre-wrap">${this.escapeHtml(msg.message_text)}</p>` : ''}
                                 <p class="text-xs ${metaColor} mt-1 ${isMe ? 'text-right' : ''}">${time}</p>
@@ -378,6 +556,8 @@
                     const data = await response.json();
                     document.getElementById('ticketListContent').innerHTML = data.html;
                     document.getElementById('ticketPagination').innerHTML = data.pagination;
+                    // Re-apply active highlight after DOM update
+                    this.$nextTick(() => this.highlightActiveTicket());
                 } catch (e) {
                     console.error('Filter failed:', e);
                 } finally {
@@ -435,6 +615,7 @@
                     'booking': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
                     'complaint': 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
                     'suggestion': 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
+                    'notice': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
                 };
                 return classes[type] || 'bg-gray-100 text-gray-600';
             },
@@ -450,6 +631,79 @@
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
+            },
+
+            /** Load eligible bookings for the new chat modal */
+            async loadEligibleBookings() {
+                this.loadingBookings = true;
+                this.eligibleBookings = [];
+                this.bookingSearch = '';
+                try {
+                    const res = await fetch('/tickets/eligible-bookings', {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const data = await res.json();
+                    if (data.success) this.eligibleBookings = data.data;
+                } catch (e) {
+                    console.error('Failed to load bookings:', e);
+                } finally {
+                    this.loadingBookings = false;
+                }
+            },
+
+            /** Search bookings with debounced input */
+            async searchBookings() {
+                this.loadingBookings = true;
+                try {
+                    const params = this.bookingSearch ? `?search=${encodeURIComponent(this.bookingSearch)}` : '';
+                    const res = await fetch(`/tickets/eligible-bookings${params}`, {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const data = await res.json();
+                    if (data.success) this.eligibleBookings = data.data;
+                } catch (e) {
+                    console.error('Failed to search bookings:', e);
+                } finally {
+                    this.loadingBookings = false;
+                }
+            },
+
+            /** Submit admin-initiated chat with selected category */
+            async submitNewTicket() {
+                if (!this.newTicketForm.order_id || !this.newTicketForm.category_id || !this.newTicketForm.subject || !this.newTicketForm.message) return;
+                this.creatingTicket = true;
+                try {
+                    const res = await fetch('/tickets/store', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            order_id: this.newTicketForm.order_id,
+                            category_id: this.newTicketForm.category_id,
+                            subject: this.newTicketForm.subject,
+                            message: this.newTicketForm.message,
+                        }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.showNewTicketModal = false;
+                        this.newTicketForm = { order_id: '', category_id: '{{ $categories->firstWhere("category", "notice")?->id ?? "" }}', subject: '', message: '' };
+                        this.filterTickets();
+                        if (data.ticket_id) {
+                            this.selectTicket(data.ticket_id);
+                        }
+                    } else {
+                        alert(data.message || 'Failed to create chat');
+                    }
+                } catch (e) {
+                    console.error('Create chat failed:', e);
+                    alert('Failed to create chat');
+                } finally {
+                    this.creatingTicket = false;
+                }
             },
 
             /** Cleanup on destroy */

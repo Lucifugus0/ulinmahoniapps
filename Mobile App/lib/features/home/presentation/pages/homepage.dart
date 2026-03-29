@@ -11,6 +11,7 @@ import '../../provider/property_provider.dart';
 import '../../../promo_banner/provider/promo_banner_provider.dart';
 import '../widgets/section/filteredproperties.dart';
 import '../../../../core/utils/app_logger.dart';
+import '../../provider/content_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -20,15 +21,19 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  String _selectedFilterLabel = "kos";
+  // Default to "All" (empty string = no filter, show all properties)
+  String _selectedFilterLabel = "";
 
   Future<void> _onRefresh() async {
     ref.invalidate(propertiesProvider(_selectedFilterLabel));
     ref.invalidate(distinctCitiesProvider);
     ref.invalidate(distinctCityPropertiesProvider);
-    ref.invalidate(bestSellerPropertiesProvider);
+    ref.invalidate(availableNowPropertiesProvider);
     ref.invalidate(cheapestPropertiesProvider);
     ref.invalidate(activeBannersProvider);
+    // Refresh dynamic tagline and hero video on pull-to-refresh
+    ref.invalidate(taglineProvider);
+    ref.invalidate(heroVideoUrlProvider);
     AppLogger.d("🔄 HomePage: Memuat ulang data properti...", 'HOME');
   }
 
@@ -70,19 +75,12 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                 const SizedBox(height: 6),
 
-                const PromoBannerSection(),
-
-                // const SizedBox(height: 24),
-
-                // const PromotionSection(),
-
-                // const SizedBox(height: 24),
-
-                // const AreaPopularSection(),
+                // Budget section before Promo (swapped per requirement)
+                const BudgetSection(),
 
                 const SizedBox(height: 6),
 
-                const BudgetSection(),
+                const PromoBannerSection(),
               ],
             ),
           ),
