@@ -215,9 +215,10 @@
                 <div class="lg:col-span-2">
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">About this property</h2>
                     <div class="prose max-w-none">
-                        <p class="text-gray-600">
-                            {{ $property['description'] }}
-                        </p>
+                        <!-- Multi-language description with line break support -->
+                        <div class="text-gray-600">
+                            {!! nl2br(e(\App\Helpers\DescriptionHelper::get($property['description'] ?? '', app()->getLocale()))) !!}
+                        </div>
                     </div>
 
                     <!-- Room Facilities -->

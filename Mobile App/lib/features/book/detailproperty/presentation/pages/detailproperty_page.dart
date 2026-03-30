@@ -924,16 +924,25 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
 
                   const SizedBox(height: 8),
 
-                  if (property.description != null && property.description!.isNotEmpty)
-                    Text(
-                      property.description!,
-                      style: textTheme.bodyMedium,
-                      softWrap: true,
-                      overflow: TextOverflow.visible,
-                      textAlign: TextAlign.left,
-                    )
-                  else
-                    const SizedBox.shrink(),
+                  // Multi-language: resolve property description by current locale with fallback chain
+                  Builder(builder: (context) {
+                    final locale = Localizations.localeOf(context).languageCode;
+                    final description = property.descriptionParsed?[locale]
+                        ?? property.descriptionParsed?['en']
+                        ?? property.descriptionParsed?['id']
+                        ?? property.description
+                        ?? '';
+                    if (description.isNotEmpty) {
+                      return Text(
+                        description,
+                        style: textTheme.bodyMedium,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        textAlign: TextAlign.left,
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }),
 
                   // Gender
                   if (property.gender != null && property.gender!.isNotEmpty) ...[

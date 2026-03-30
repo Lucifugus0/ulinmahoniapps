@@ -892,16 +892,25 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                   ],
                                 ],
                               ),
-                          if (_roomData.descriptions != null && _roomData.descriptions!.isNotEmpty)
-                            Text(
-                              _roomData.descriptions!,
-                              style: textTheme.bodyMedium,
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
-                              textAlign: TextAlign.justify,
-                            )
-                          else
-                            const SizedBox.shrink(),
+                          // Multi-language: resolve room description by current locale with fallback chain
+                          Builder(builder: (context) {
+                            final locale = Localizations.localeOf(context).languageCode;
+                            final description = _roomData.descriptionsParsed?[locale]
+                                ?? _roomData.descriptionsParsed?['en']
+                                ?? _roomData.descriptionsParsed?['id']
+                                ?? _roomData.descriptions
+                                ?? '';
+                            if (description.isNotEmpty) {
+                              return Text(
+                                description,
+                                style: textTheme.bodyMedium,
+                                softWrap: true,
+                                overflow: TextOverflow.visible,
+                                textAlign: TextAlign.justify,
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          }),
                               const SizedBox(height: 4),
                               if (_roomData.level != null && _roomData.level!.isNotEmpty)
                                 Row(

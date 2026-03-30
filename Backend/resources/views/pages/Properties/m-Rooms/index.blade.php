@@ -231,14 +231,16 @@
                                                 placeholder="Ukuran">
                                         </div>
 
+                                        <!-- Room Description Multi-language -->
                                         <div>
-                                            <label for="description_id"
-                                                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                {{ __('ui.room_description_label') }} <span class="text-red-500">*</span>
-                                            </label>
-                                            <textarea id="description_id" name="description_id" rows="4" required
-                                                class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                                placeholder="{{ __('ui.room_description_placeholder') }}"></textarea>
+                                            <x-multilang-textarea
+                                                name="description_id"
+                                                :value="''"
+                                                :required="true"
+                                                :rows="4"
+                                                :placeholder="__('ui.room_description_placeholder')"
+                                                :label="__('ui.room_description_label')"
+                                            />
                                         </div>
                                     </div>
                                 </div>

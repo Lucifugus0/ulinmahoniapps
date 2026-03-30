@@ -42,6 +42,8 @@ class RoomModel {
   final String? priceOriginalAnnual;
   final int? periodeAnnual;
   final bool? hasSeasonalPricing;
+  /// Multi-language descriptions parsed from API as `{"id": "...", "en": "...", "zh": "..."}`
+  final Map<String, String>? descriptionsParsed;
 
   RoomModel({
     required this.id,
@@ -83,6 +85,7 @@ class RoomModel {
     this.priceOriginalAnnual,
     this.periodeAnnual,
     this.hasSeasonalPricing,
+    this.descriptionsParsed,
   });
 
   /* Daily Multi Tier Pricing: create a copy with overridden daily price */
@@ -103,6 +106,7 @@ class RoomModel {
       priceWeekday: priceWeekday, priceWeekend: priceWeekend,
       priceOriginalAnnual: priceOriginalAnnual, periodeAnnual: periodeAnnual,
       hasSeasonalPricing: hasSeasonalPricing,
+      descriptionsParsed: descriptionsParsed,
     );
   }
 
@@ -196,6 +200,14 @@ class RoomModel {
       rentalStatus: json['rental_status'] ?? 0,
       depositFee: json['deposit_fee'] != null ? double.tryParse(json['deposit_fee'].toString()) : null,
       parkingFees: parsedParkingFees,
+      // Multi-language: parse descriptions_parsed map for locale-aware display
+      descriptionsParsed: json['descriptions_parsed'] != null
+          ? Map<String, String>.from(
+              (json['descriptions_parsed'] as Map).map(
+                (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+              ),
+            )
+          : null,
       // Multi-Tier Pricing: parse new optional fields with null-safety fallback
       priceWeekday: json['price_weekday']?.toString(),
       priceWeekend: json['price_weekend']?.toString(),

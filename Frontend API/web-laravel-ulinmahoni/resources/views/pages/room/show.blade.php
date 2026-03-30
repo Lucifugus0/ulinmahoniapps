@@ -362,7 +362,8 @@
                             <div class="space-y-6">
                                 <div class="prose prose-lg max-w-none">
                                     <h3 class="text-xl font-semibold text-gray-900 mb-4">{{ __('properties.room_detail.room_description') }}</h3>
-                                    <pre class="text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{!! $room['descriptions'] !!}</pre>
+                                    <!-- Multi-language description with line break support -->
+                                    <div class="text-gray-600 leading-relaxed">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($room['descriptions'] ?? '', app()->getLocale()))) !!}</div>
                                 </div>
                             </div>
 

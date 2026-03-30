@@ -474,16 +474,17 @@
                                                         <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">{{ __('ui.gender_hint') }}</p>
                                                     </div>
 
-                                                    <!-- Deskripsi -->
+                                                    <!-- Deskripsi Multi-language -->
                                                     <div>
-                                                        <label for="description_edit_{{ $property->idrec }}"
-                                                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                            {{ __('ui.description') }} <span class="text-red-500">*</span>
-                                                        </label>
-                                                        <textarea id="description_edit_{{ $property->idrec }}" name="description" rows="4" required
-                                                            x-model="propertyData.description"
-                                                            class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                            placeholder="{{ __('ui.describe_your_property') }}..."></textarea>
+                                                        <x-multilang-textarea
+                                                            name="description"
+                                                            :value="$property->description ?? ''"
+                                                            :required="true"
+                                                            :rows="4"
+                                                            :placeholder="__('ui.describe_your_property')"
+                                                            :label="__('ui.description')"
+                                                            xModel="propertyData.description"
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>

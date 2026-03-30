@@ -81,6 +81,11 @@ Route::get('storage/{path}', function ($path) {
     }
 })->where('path', '.*');
 
+// <!-- Auto-translation endpoint for admin description fields (requires auth) -->
+Route::middleware(['auth'])->group(function () {
+    Route::post('/api/translate', [\App\Http\Controllers\TranslateController::class, 'translate'])->name('api.translate');
+});
+
 Route::middleware(['auth', 'permission'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/room-report', [DashboardController::class, 'getPropertyRoomReport']);

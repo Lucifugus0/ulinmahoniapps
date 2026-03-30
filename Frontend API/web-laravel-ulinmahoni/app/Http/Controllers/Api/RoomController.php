@@ -77,6 +77,9 @@ class RoomController extends ApiController
                     ->where('status', 1)
                     ->exists();
 
+                // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
+                $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
+
                 // Remove image-related fields from the main room object
                 unset(
                     $roomArray['image_id'],
@@ -152,6 +155,9 @@ class RoomController extends ApiController
                     ->whereIn('date_type', ['holiday', 'high_season', 'low_season'])
                     ->where('status', 1)
                     ->exists();
+
+                // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
+                $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
 
                 // Remove image-related fields from the main room object
                 unset(
@@ -229,6 +235,9 @@ class RoomController extends ApiController
                 $roomArray['images'] = $images;
                 $roomArray['parking_fees'] = $parkingFees;
                 $roomArray['deposit_fee'] = $depositFee;
+
+                // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
+                $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
 
                 // Remove image-related fields from the main room object
                 unset(

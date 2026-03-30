@@ -24,6 +24,8 @@ class DetailPropertyModel {
   final List<ParkingFeeModel> parkingFees;
   final List<NearbyLocationModel>? nearbyLocations;
   final String? gender;
+  /// Multi-language description parsed from API as `{"id": "...", "en": "...", "zh": "..."}`
+  final Map<String, String>? descriptionParsed;
 
   DetailPropertyModel({
     this.id,
@@ -49,6 +51,7 @@ class DetailPropertyModel {
     this.parkingFees = const [],
     this.nearbyLocations,
     this.gender,
+    this.descriptionParsed,
   });
 
   factory DetailPropertyModel.fromJson(Map<String, dynamic> json) {
@@ -127,6 +130,14 @@ class DetailPropertyModel {
       parkingFees: parsedParkingFees,
       nearbyLocations: parsedNearbyLocations,
       gender: json['gender'] as String?,
+      // Multi-language: parse description_parsed map for locale-aware display
+      descriptionParsed: json['description_parsed'] != null
+          ? Map<String, String>.from(
+              (json['description_parsed'] as Map).map(
+                (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+              ),
+            )
+          : null,
     );
   }
 }

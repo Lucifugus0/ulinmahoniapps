@@ -112,6 +112,9 @@ class PropertyController extends ApiController
                 $propertyArray['total_rooms'] = $totalRooms;
                 $propertyArray['available_rooms'] = $availableRooms;
 
+                // <!-- Multi-language: add parsed description for mobile app locale selection -->
+                $propertyArray['description_parsed'] = \App\Helpers\DescriptionHelper::parse($property->description ?? '');
+
                 // Remove image-related fields from the main property object
                 unset(
                     $propertyArray['image_id'],
@@ -223,6 +226,9 @@ class PropertyController extends ApiController
 
                 $propertyArray['total_rooms'] = $totalRooms;
                 $propertyArray['available_rooms'] = $availableRooms;
+
+                // <!-- Multi-language: add parsed description for mobile app locale selection -->
+                $propertyArray['description_parsed'] = \App\Helpers\DescriptionHelper::parse($property->description ?? '');
 
                 // Remove image-related fields from the main property object
                 unset(

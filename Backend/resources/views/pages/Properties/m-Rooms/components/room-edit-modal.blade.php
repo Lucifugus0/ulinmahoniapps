@@ -206,14 +206,17 @@
                                 </div>
                             </div>
 
+                            <!-- Room Description Multi-language -->
                             <div>
-                                <label for="edit_description"
-                                    class="block text-sm font-semibold text-gray-700 mb-2">
-                                    {{ __('ui.room_description_label') }} <span class="text-red-500">*</span>
-                                </label>
-                                <textarea id="edit_description" name="description" rows="4" required
-                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    placeholder="{{ __('ui.room_description_placeholder') }}" x-model="roomData.description"></textarea>
+                                <x-multilang-textarea
+                                    name="description"
+                                    :value="''"
+                                    :required="true"
+                                    :rows="4"
+                                    :placeholder="__('ui.room_description_placeholder')"
+                                    :label="__('ui.room_description_label')"
+                                    xModel="roomData.description"
+                                />
                             </div>
                         </div>
                     </div>

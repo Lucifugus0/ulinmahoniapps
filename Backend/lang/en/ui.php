@@ -1718,4 +1718,14 @@ return [
 
     // Booking Cancellation
     'enter_valid_refund_amount' => 'Please enter a valid refund amount (0 for no refund).',
+
+    // Multi-language Description
+    'description_tab_id' => 'Indonesian',
+    'description_tab_en' => 'English',
+    'description_tab_zh' => 'Chinese',
+    'auto_translate' => 'Auto Translate',
+    'translating' => 'Translating...',
+    'translate_failed' => 'Translation failed. Please try again or enter manually.',
+    'translate_empty_source' => 'Please enter text in the current tab first.',
+    'multilang_help_note' => 'Enter description in each language tab. Use Auto Translate to fill other languages from the current tab.',
 ];

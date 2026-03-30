@@ -6,6 +6,8 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-30 | Property & Room CRUD | Multi-language description support (ID/EN/ZH) — tabbed textarea with auto-translate via Google Translate. Descriptions stored as XML-tagged string in existing column. |
+| 2026-03-30 | Translation API (`/api/translate`) | Backend endpoint for auto-translating description text between Indonesian, English, and Simplified Chinese using `stichoza/google-translate-php`. |
 | 2026-03-27 | Content Management (`/settings/content-management`) | Tagline & hero video management — create/edit/delete taglines (displayed randomly on home pages), upload/activate/delete hero background videos (MP4, max 100MB, 21:9 ratio). Two-tab Alpine.js interface with AJAX CRUD. |
 | 2026-03-27 | Content API (`/api/v1/content/*`) | Public endpoints for random tagline and active hero video URL — used by Frontend web and Mobile app. |
 | 2026-03-27 | Database: `m_taglines`, `m_hero_videos` | New master tables for dynamic tagline and hero video content management. |
@@ -64,6 +66,8 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-30 | Property & Room Detail | Multi-language description display — shows description based on user's language selector (ID/EN/ZH). Fallback chain: selected locale -> EN -> ID. Added line break support via `nl2br`. |
+| 2026-03-30 | Property & Room API | Added `description_parsed` / `descriptions_parsed` fields to API responses with per-language breakdown for mobile app. |
 | 2026-03-27 | Home Page | Dynamic tagline loaded from database (random active tagline). Removed duplicate tagline text below hero heading. |
 | 2026-03-27 | Home Page | Dynamic hero video — loads active video from Backend storage, falls back to bundled default video. |
 | 2026-03-26 | Tickets Page (`/tickets`) | Full-page customer ticket management — split-pane layout with ticket list (status filter tabs) and chat panel. Supports text/image messages, close/reopen, 10s polling. |
@@ -91,6 +95,7 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-30 | Room & Property Detail | Multi-language description support — displays description based on app locale (ID/EN/ZH) using `descriptions_parsed`/`description_parsed` from API. Fallback: current locale -> EN -> ID -> raw. |
 | 2026-03-27 | Home Page | Dynamic tagline loaded from API (random active tagline), falls back to localized 3-part text. |
 | 2026-03-27 | Home Page | Hero video caching — checks API for active video, downloads in background for next launch. Uses bundled asset as default fallback. |
 | 2026-03-27 | Bottom Navigation Bar | Moved menu bar lower by reducing bottom margin from 12px to 0px. |
@@ -115,3 +120,4 @@
 | 2026-03-29 | Room Details Providers | Migrated `RoomDetailsNotifier`, `AvailabilityCheckNotifier` from `StateNotifier`/`StateNotifierProvider` to Riverpod 3.x `Notifier`/`NotifierProvider`. |
 | 2026-03-29 | Room Filter (Detail Property) | Migrated `selectedRoomFilterProvider` and `selectedRoomStatusFilterProvider` from `StateProvider.family` to Riverpod 3.x family `Notifier`/`NotifierProvider.family`. |
 | 2026-03-29 | Room Details Page, Video Banner | Replaced deprecated `.valueOrNull` with `.value` (nullable by default in Riverpod 3.x). |
+| 2026-03-29 | Room Detail, Property Detail | Multi-language descriptions — room and property models now parse `descriptions_parsed` / `description_parsed` from API. Detail pages resolve description by app locale (`id`, `en`, `zh`) with fallback chain. |

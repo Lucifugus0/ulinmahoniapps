@@ -1718,4 +1718,14 @@ return [
 
     // Pembatalan Booking
     'enter_valid_refund_amount' => 'Masukkan jumlah refund yang valid (0 untuk tanpa refund).',
+
+    // Deskripsi Multi-bahasa
+    'description_tab_id' => 'Indonesia',
+    'description_tab_en' => 'Inggris',
+    'description_tab_zh' => 'Mandarin',
+    'auto_translate' => 'Terjemahkan Otomatis',
+    'translating' => 'Menerjemahkan...',
+    'translate_failed' => 'Terjemahan gagal. Silakan coba lagi atau masukkan secara manual.',
+    'translate_empty_source' => 'Silakan masukkan teks di tab saat ini terlebih dahulu.',
+    'multilang_help_note' => 'Masukkan deskripsi di setiap tab bahasa. Gunakan Terjemahkan Otomatis untuk mengisi bahasa lain dari tab saat ini.',
 ];
