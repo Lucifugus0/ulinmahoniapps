@@ -122,7 +122,6 @@
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.grand_total') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.deposit') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.deposit_fee') }}</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.dpp_deposit_fee') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.service_fee') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.payment_status') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.verified_by') }}</th>
@@ -323,7 +322,6 @@
                     <td class="px-3 py-3 text-xs font-semibold text-gray-900">${row.grand_total}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.deposit}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.deposit_fee}</td>
-                    <td class="px-3 py-3 text-xs text-gray-900">${row.dpp_deposit_fee}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.service_fee}</td>
                     <td class="px-3 py-3 text-xs text-gray-700">${row.payment_status}</td>
                     <td class="px-3 py-3 text-xs text-gray-700">${row.verified_by}</td>
@@ -469,7 +467,6 @@
                             <td>${row.grand_total}</td>
                             <td>${row.deposit}</td>
                             <td>${row.deposit_fee}</td>
-                            <td>${row.dpp_deposit_fee}</td>
                             <td>${row.service_fee}</td>
                             <td>${row.payment_status}</td>
                             <td>${row.verified_by}</td>
@@ -630,7 +627,6 @@
                                 <th>{{ __('ui.grand_total') }}</th>
                                 <th>{{ __('ui.deposit') }}</th>
                                 <th>{{ __('ui.deposit_fee') }}</th>
-                                <th>{{ __('ui.dpp_deposit_fee') }}</th>
                                 <th>{{ __('ui.service_fee') }}</th>
                                 <th>{{ __('ui.status') }}</th>
                                 <th>{{ __('ui.verified_by') }}</th>

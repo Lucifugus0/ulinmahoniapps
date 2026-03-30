@@ -90,7 +90,7 @@ class PaymentReportExport
             'DPP Diskon',
             'Parkir',
             'DPP Parkir',
-            'VATT 11%',
+            'VATT',
             'Grand Total',
             'Deposit',
             'Service Fee',
@@ -152,7 +152,7 @@ class PaymentReportExport
             'S' => 15,  // DPP Diskon
             'T' => 15,  // Parkir
             'U' => 15,  // DPP Parkir
-            'V' => 15,  // VATT 11%
+            'V' => 15,  // VATT
             'W' => 18,  // Grand Total
             'X' => 15,  // Deposit
             'Y' => 15,  // Service Fee
@@ -357,12 +357,11 @@ class PaymentReportExport
         $parkir = $transaction->parking_fee ?? 0;
         $dppParkir = $parkir / 1.11;
 
-        // Deposit Fee
+        // <!-- Deposit Fee — not subject to VAT (refundable security deposit) -->
         $depositFee = $transaction->deposit_fee ?? 0;
-        $dppDepositFee = $depositFee / 1.11;
 
-        // VATT 11% = (Subtotal - DPP Diskon + DPP Parkir + DPP Deposit Fee) * 11%
-        $vatt = ($subtotal - $dppDiskon + $dppParkir + $dppDepositFee) * 0.11;
+        // <!-- VATT = (Subtotal - DPP Diskon + DPP Parkir) × 11% — deposit excluded from VAT base -->
+        $vatt = ($subtotal - $dppDiskon + $dppParkir) * 0.11;
 
         // Grand Total calculation for display
         // Note: Using actual grandtotal_price from transaction for accuracy
@@ -432,7 +431,7 @@ class PaymentReportExport
             round($dppDiskon, 0),                                                                  // DPP Diskon
             round($parkir, 0),                                                                     // Parkir
             round($dppParkir, 0),                                                                  // DPP Parkir
-            round($vatt, 0),                                                                       // VATT 11%
+            round($vatt, 0),                                                                       // VATT
             round($grandTotal, 0),                                                                 // Grand Total
             round($deposit + $depositFee, 0),                                                      // Deposit (includes deposit fee)
             round($serviceFee, 0),                                                                 // Service Fee

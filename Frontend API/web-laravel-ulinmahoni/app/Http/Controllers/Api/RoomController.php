@@ -79,6 +79,8 @@ class RoomController extends ApiController
 
                 // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
                 $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $roomArray['descriptions'] = \App\Helpers\DescriptionHelper::get($room->descriptions ?? '', 'id');
 
                 // Remove image-related fields from the main room object
                 unset(
@@ -158,6 +160,8 @@ class RoomController extends ApiController
 
                 // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
                 $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $roomArray['descriptions'] = \App\Helpers\DescriptionHelper::get($room->descriptions ?? '', 'id');
 
                 // Remove image-related fields from the main room object
                 unset(
@@ -238,6 +242,8 @@ class RoomController extends ApiController
 
                 // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
                 $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $roomArray['descriptions'] = \App\Helpers\DescriptionHelper::get($room->descriptions ?? '', 'id');
 
                 // Remove image-related fields from the main room object
                 unset(

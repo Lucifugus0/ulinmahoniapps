@@ -114,6 +114,8 @@ class PropertyController extends ApiController
 
                 // <!-- Multi-language: add parsed description for mobile app locale selection -->
                 $propertyArray['description_parsed'] = \App\Helpers\DescriptionHelper::parse($property->description ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $propertyArray['description'] = \App\Helpers\DescriptionHelper::get($property->description ?? '', 'id');
 
                 // Remove image-related fields from the main property object
                 unset(
@@ -229,6 +231,8 @@ class PropertyController extends ApiController
 
                 // <!-- Multi-language: add parsed description for mobile app locale selection -->
                 $propertyArray['description_parsed'] = \App\Helpers\DescriptionHelper::parse($property->description ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $propertyArray['description'] = \App\Helpers\DescriptionHelper::get($property->description ?? '', 'id');
 
                 // Remove image-related fields from the main property object
                 unset(

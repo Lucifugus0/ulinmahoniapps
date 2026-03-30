@@ -155,12 +155,11 @@ class PaymentReportController extends Controller
             $parkir = $transaction->parking_fee ?? 0;
             $dppParkir = $parkir / 1.11;
 
-            // Deposit Fee
+            // <!-- Deposit Fee — not subject to VAT (refundable security deposit) -->
             $depositFee = $transaction->deposit_fee ?? 0;
-            $dppDepositFee = $depositFee / 1.11;
 
-            // VATT 11% = (Subtotal - DPP Diskon + DPP Parkir + DPP Deposit Fee) * 11%
-            $vatt = ($subtotal - $dppDiskon + $dppParkir + $dppDepositFee) * 0.11;
+            // <!-- VATT = (Subtotal - DPP Diskon + DPP Parkir) × 11% — deposit excluded from VAT base -->
+            $vatt = ($subtotal - $dppDiskon + $dppParkir) * 0.11;
 
             // Room type (name from m_rooms)
             $roomType = '-';
@@ -207,7 +206,6 @@ class PaymentReportController extends Controller
                 'grand_total' => 'Rp ' . number_format($transaction->grandtotal_price ?? 0, 0, ',', '.'),
                 'deposit' => 'Rp ' . number_format($transaction->deposit ?? 0, 0, ',', '.'),
                 'deposit_fee' => 'Rp ' . number_format(round($depositFee, 0), 0, ',', '.'),
-                'dpp_deposit_fee' => 'Rp ' . number_format(round($dppDepositFee, 0), 0, ',', '.'),
                 'service_fee' => 'Rp ' . number_format($transaction->service_fees ?? 0, 0, ',', '.'),
                 'payment_status' => 'Paid',
                 'verified_by' => $verifiedBy,

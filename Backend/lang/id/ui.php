@@ -908,7 +908,7 @@ return [
     'dpp_discount' => 'DPP Diskon',
     'parking' => 'Parkir',
     'dpp_parking' => 'DPP Parkir',
-    'vatt' => 'PPN 11%',
+    'vatt' => 'PPN',
     'grand_total' => 'Grand Total',
     'deposit' => 'Deposit',
     'service_fee' => 'Biaya Layanan',

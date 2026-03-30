@@ -908,7 +908,7 @@ return [
     'dpp_discount' => 'DPP Discount',
     'parking' => 'Parking',
     'dpp_parking' => 'DPP Parking',
-    'vatt' => 'VAT 11%',
+    'vatt' => 'VAT',
     'grand_total' => 'Grand Total',
     'deposit' => 'Deposit',
     'service_fee' => 'Service Fee',
