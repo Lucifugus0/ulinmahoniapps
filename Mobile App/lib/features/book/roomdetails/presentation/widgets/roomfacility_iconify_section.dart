@@ -52,12 +52,12 @@ class RoomFacilitiesIconifyGrid extends StatelessWidget {
               ),
               const SizedBox(width: 10), // Increased from 8 to 10
 
-              // Facility name
+              // <!-- Multi-language: show facility name in app's current locale -->
               Flexible(
                 child: Text(
-                  facility.name,
+                  facility.getLocalizedName(Localizations.localeOf(context).languageCode),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 15, // Explicitly set font size to 15
+                    fontSize: 15,
                   ),
                   softWrap: true,
                   overflow: TextOverflow.ellipsis,

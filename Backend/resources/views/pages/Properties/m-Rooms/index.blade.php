@@ -490,19 +490,18 @@
                                     <div class="space-y-6">
                                         <div>
                                             <label class="block text-sm font-semibold text-gray-700 mb-3">
-                                                Foto Kamar <span class="text-red-500">*</span>
+                                                {{ __('ui.room_photos_label') }} <span class="text-red-500">*</span>
                                                 <span class="text-sm font-normal text-gray-500">
-                                                    (Minimal 3 foto, maksimal 5 foto - <span
-                                                        x-text="remainingSlots"></span> slot tersisa)
+                                                    ({{ __('ui.room_photos_min_max') }} - <span
+                                                        x-text="remainingSlots"></span> {{ __('ui.room_slots_remaining') }})
                                                 </span>
                                             </label>
 
                                             <!-- Thumbnail Selection Area -->
                                             <div class="mb-6">
                                                 <h4 class="text-sm font-semibold text-gray-700 mb-2">
-                                                    Pilih Thumbnail <span class="text-red-500">*</span>
-                                                    <span class="text-xs font-normal text-gray-500">(Foto utama yang
-                                                        akan ditampilkan)</span>
+                                                    {{ __('ui.room_select_thumbnail') }} <span class="text-red-500">*</span>
+                                                    <span class="text-xs font-normal text-gray-500">({{ __('ui.room_thumbnail_hint') }})</span>
                                                 </h4>
 
                                                 <div class="flex items-center space-x-4">
@@ -562,12 +561,12 @@
                                                     <div class="flex text-sm text-gray-600 justify-center">
                                                         <label for="room_images"
                                                             class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                                            <span>Upload foto</span>
+                                                            <span>{{ __('ui.upload_photo') }}</span>
                                                             <input id="room_images" name="room_images[]"
                                                                 type="file" multiple accept="image/*"
                                                                 @change="handleFileSelect($event)" class="sr-only">
                                                         </label>
-                                                        <p class="pl-1">atau drag and drop</p>
+                                                        <p class="pl-1">{{ __('ui.or_drag_and_drop') }}</p>
                                                     </div>
                                                     <p class="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
                                                     <p class="text-xs text-blue-600"
@@ -584,15 +583,14 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                     </svg>
-                                                    <p class="text-sm text-green-600 font-medium">5 foto telah
-                                                        diupload!</p>
-                                                    <p class="text-xs text-green-500">Maksimal foto telah tercapai</p>
+                                                    <p class="text-sm text-green-600 font-medium">5 {{ __('ui.photos_uploaded') }}!</p>
+                                                    <p class="text-xs text-green-500">{{ __('ui.max_photos_reached') }}</p>
                                                 </div>
                                             </div>
 
                                             <!-- Image Preview Grid -->
                                             <div x-show="images.length > 0" class="mt-4">
-                                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Foto Terupload
+                                                <h4 class="text-sm font-semibold text-gray-700 mb-2">{{ __('ui.uploaded_photos') }}
                                                 </h4>
                                                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3"
                                                     x-transition:enter="transition ease-out duration-300"
@@ -666,8 +664,7 @@
 
                                                 <p class="text-sm text-green-600"
                                                     x-show="images.length === 3 && thumbnailIndex !== null">
-                                                    <span class="font-medium">Sempurna!</span>
-                                                    Semua foto telah diupload dan thumbnail telah dipilih.
+                                                    {{ __('ui.validation_perfect') }}
                                                 </p>
                                             </div>
                                         </div>
@@ -684,12 +681,12 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M15 19l-7-7 7-7"></path>
                                             </svg>
-                                            Sebelumnya
+                                            {{ __('ui.previous') }}
                                         </button>
                                         <button type="button" x-show="step < 4"
                                             @click="validateStep(step) && step++"
                                             class="px-6 py-2 border-2 border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                                            Selanjutnya
+                                            {{ __('ui.next') }}
                                             <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -703,7 +700,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M5 13l4 4L19 7"></path>
                                             </svg>
-                                            Simpan
+                                            {{ __('ui.save') }}
                                         </button>
                                     </div>
                                 </div>

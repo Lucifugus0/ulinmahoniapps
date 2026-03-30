@@ -397,7 +397,12 @@ class PropertyController extends ApiController
             // Order by category then facility name
             $query->orderBy('category')->orderBy('facility');
 
-            $facilities = $query->get();
+            $facilities = $query->get()->map(function ($f) {
+                // <!-- Multi-language: add parsed facility name for mobile app -->
+                $f->facility_parsed = \App\Helpers\DescriptionHelper::parse($f->facility ?? '');
+                $f->facility = \App\Helpers\DescriptionHelper::get($f->facility ?? '', 'id');
+                return $f;
+            });
 
             return $this->respond([
                 'data' => $facilities

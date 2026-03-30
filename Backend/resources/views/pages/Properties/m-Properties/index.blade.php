@@ -827,13 +827,13 @@
                                                             class="flex text-sm text-gray-600 dark:text-gray-400 justify-center">
                                                             <label for="property_images"
                                                                 class="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                                                <span>Upload foto</span>
+                                                                <span>{{ __('ui.upload_photo') }}</span>
                                                                 <input id="property_images" name="property_images[]"
                                                                     type="file" multiple accept="image/*"
                                                                     @change="handleFileSelect($event)"
                                                                     class="sr-only">
                                                             </label>
-                                                            <p class="pl-1">atau drag and drop</p>
+                                                            <p class="pl-1">{{ __('ui.or_drag_and_drop') }}</p>
                                                         </div>
                                                         <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG,
                                                             JPEG up to 5MB</p>
@@ -853,10 +853,8 @@
                                                         </svg>
                                                         <p
                                                             class="text-sm text-green-600 dark:text-green-400 font-medium">
-                                                            10 foto telah
-                                                            diupload!</p>
-                                                        <p class="text-xs text-green-500 dark:text-green-400">Maksimal
-                                                            foto telah tercapai
+                                                            10 {{ __('ui.photos_uploaded') }}!</p>
+                                                        <p class="text-xs text-green-500 dark:text-green-400">{{ __('ui.max_photos_reached') }}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -865,7 +863,7 @@
                                                 <div x-show="images.length > 0" class="mt-4">
                                                     <h4
                                                         class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        Foto Terupload
+                                                        {{ __('ui.uploaded_photos') }}
                                                     </h4>
                                                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3"
                                                         x-transition:enter="transition ease-out duration-300"
@@ -940,8 +938,7 @@
 
                                                     <p class="text-sm text-green-600"
                                                         x-show="images.length === 3 && thumbnailIndex !== null">
-                                                        <span class="font-medium">Sempurna!</span>
-                                                        Semua foto telah diupload dan thumbnail telah dipilih.
+                                                        {{ __('ui.validation_perfect') }}
                                                     </p>
                                                 </div>
                                             </div>
@@ -958,12 +955,12 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         stroke-width="2" d="M15 19l-7-7 7-7"></path>
                                                 </svg>
-                                                Sebelumnya
+                                                {{ __('ui.previous') }}
                                             </button>
                                             <button type="button" x-show="step < 4"
                                                 @click="validateStep(step) && step++"
                                                 class="px-6 py-2 border-2 border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                                                Selanjutnya
+                                                {{ __('ui.next') }}
                                                 <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor"
                                                     viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -977,7 +974,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                 </svg>
-                                                Simpan
+                                                {{ __('ui.save') }}
                                             </button>
                                         </div>
                                     </div>

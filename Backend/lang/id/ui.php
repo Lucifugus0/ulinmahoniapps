@@ -1728,4 +1728,10 @@ return [
     'translate_failed' => 'Terjemahan gagal. Silakan coba lagi atau masukkan secara manual.',
     'translate_empty_source' => 'Silakan masukkan teks di tab saat ini terlebih dahulu.',
     'multilang_help_note' => 'Masukkan deskripsi di setiap tab bahasa. Gunakan Terjemahkan Otomatis untuk mengisi bahasa lain dari tab saat ini.',
+
+    // Tombol CRUD Fasilitas
+    'facility_add_btn' => 'Tambah Fasilitas',
+    'category_general' => 'Umum',
+    'category_security' => 'Keamanan',
+    'category_amenities' => 'Fasilitas',
 ];

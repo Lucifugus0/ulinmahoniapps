@@ -349,7 +349,7 @@
                                 <label class="block text-sm font-semibold text-gray-700 mb-3">
                                     {{ __('ui.room_photos_label') }} <span class="text-red-500">*</span>
                                     <span class="text-sm font-normal text-gray-500">
-                                        (Minimal 3 foto, maksimal 5 foto - <span x-text="editRemainingSlots"></span> slot tersisa)
+                                        ({{ __('ui.room_photos_min_max') }} - <span x-text="editRemainingSlots"></span> {{ __('ui.room_slots_remaining') }})
                                     </span>
                                 </label>
 
@@ -387,7 +387,7 @@
                                                 {{ __('ui.room_click_photo_thumbnail') }}
                                             </p>
                                             <p class="text-xs text-gray-500">
-                                                Pastikan memilih foto terbaik sebagai thumbnail karena ini akan menjadi gambar utama kamar Anda.
+                                                {{ __('ui.room_best_thumbnail_hint') }}
                                             </p>
                                         </div>
                                     </div>
@@ -410,7 +410,7 @@
                                                 <input id="edit_room_images" name="room_images[]" type="file" multiple accept="image/*"
                                                     @change="handleEditFileSelect($event)" class="sr-only">
                                             </label>
-                                            <p class="pl-1">atau drag and drop</p>
+                                            <p class="pl-1">{{ __('ui.or_drag_and_drop') }}</p>
                                         </div>
                                         <p class="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
                                         <p class="text-xs text-blue-600" x-text="`Dapat upload ${editRemainingSlots} foto lagi`"></p>
@@ -423,8 +423,8 @@
                                         <svg class="w-12 h-12 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
-                                        <p class="text-sm text-green-600 font-medium">5 foto telah diupload!</p>
-                                        <p class="text-xs text-green-500">Maksimal foto telah tercapai</p>
+                                        <p class="text-sm text-green-600 font-medium">5 {{ __('ui.photos_uploaded') }}!</p>
+                                        <p class="text-xs text-green-500">{{ __('ui.max_photos_reached') }}</p>
                                     </div>
                                 </div>
 
@@ -516,12 +516,12 @@
                             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
-                            Sebelumnya
+                            {{ __('ui.previous') }}
                         </button>
                         <button type="button" x-show="editStep < 4"
                             @click="validateEditStep(editStep) && editStep++"
                             class="px-6 py-2 border-2 border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                            Selanjutnya
+                            {{ __('ui.next') }}
                             <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
@@ -531,7 +531,7 @@
                             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Update
+                            {{ __('ui.update') }}
                         </button>
                     </div>
                 </form>

@@ -1728,4 +1728,10 @@ return [
     'translate_failed' => 'Translation failed. Please try again or enter manually.',
     'translate_empty_source' => 'Please enter text in the current tab first.',
     'multilang_help_note' => 'Enter description in each language tab. Use Auto Translate to fill other languages from the current tab.',
+
+    // Facility CRUD Buttons
+    'facility_add_btn' => 'Add Facility',
+    'category_general' => 'General',
+    'category_security' => 'Security',
+    'category_amenities' => 'Amenities',
 ];

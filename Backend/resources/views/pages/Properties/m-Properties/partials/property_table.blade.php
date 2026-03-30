@@ -1099,8 +1099,7 @@
                                                                 </svg>
                                                                 <p
                                                                     class="text-sm text-green-600 dark:text-green-400 font-medium">
-                                                                    <span x-text="editMaxImages"></span> foto telah
-                                                                    diupload!
+                                                                    <span x-text="editMaxImages"></span> {{ __('ui.photos_uploaded') }}!
                                                                 </p>
                                                                 <p class="text-xs text-green-500 dark:text-green-400">
                                                                     {{ __('ui.max_photos_reached') }}</p>

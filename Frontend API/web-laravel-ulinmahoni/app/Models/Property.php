@@ -296,10 +296,13 @@ class Property extends Model
                     WHERE idrec IN ($placeholders)
                 ", $generalIds);
 
+                // <!-- Multi-language: parse facility name by current locale with fallback -->
+                $locale = app()->getLocale();
                 $facilities = [];
                 foreach ($records as $record) {
                     $facilities[] = [
-                        'name' => $record->facility,
+                        'name' => \App\Helpers\DescriptionHelper::get($record->facility ?? '', $locale),
+                        'name_parsed' => \App\Helpers\DescriptionHelper::parse($record->facility ?? ''),
                         'icon' => $record->icon ?? null,
                     ];
                 }
@@ -378,10 +381,13 @@ class Property extends Model
                     WHERE idrec IN ($placeholders)
                 ", $facilityIds);
 
+                // <!-- Multi-language: parse facility name by current locale with fallback -->
+                $locale = app()->getLocale();
                 $facilities = [];
                 foreach ($records as $record) {
                     $facilities[] = [
-                        'name' => $record->facility,
+                        'name' => \App\Helpers\DescriptionHelper::get($record->facility ?? '', $locale),
+                        'name_parsed' => \App\Helpers\DescriptionHelper::parse($record->facility ?? ''),
                         'icon' => $record->icon ?? null,
                         'description' => $record->description ?? null,
                         'category' => $record->category ?? null,

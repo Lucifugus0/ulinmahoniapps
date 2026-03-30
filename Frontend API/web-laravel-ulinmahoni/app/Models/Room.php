@@ -306,10 +306,13 @@ class Room extends Model
                     WHERE idrec IN ($placeholders)
                 ", $facilityIds);
 
+                // <!-- Multi-language: parse facility name by current locale with fallback -->
+                $locale = app()->getLocale();
                 $facilities = [];
                 foreach ($facilityRecords as $record) {
                     $facilities[] = [
-                        'name' => $record->facility,
+                        'name' => \App\Helpers\DescriptionHelper::get($record->facility ?? '', $locale),
+                        'name_parsed' => \App\Helpers\DescriptionHelper::parse($record->facility ?? ''),
                         'icon' => $record->icon ?? null
                     ];
                 }

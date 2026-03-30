@@ -65,10 +65,10 @@ class PropertyFacilitiesIconifyGrid extends StatelessWidget {
               ),
               const SizedBox(width: 10),
 
-              // Facility name
+              // <!-- Multi-language: show facility name in app's current locale -->
               Flexible(
                 child: Text(
-                  facility.name,
+                  facility.getLocalizedName(Localizations.localeOf(context).languageCode),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontSize: 15, // Consistent with room details
                   ),
