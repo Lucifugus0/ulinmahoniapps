@@ -46,7 +46,8 @@
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
 
     <script>
-        if (localStorage.getItem('dark-mode') === 'false' || !('dark-mode' in localStorage)) {
+        // <!-- Default to dark mode — only switch to light if explicitly set -->
+        if (localStorage.getItem('dark-mode') === 'false') {
             document.querySelector('html').classList.remove('dark');
             document.querySelector('html').style.colorScheme = 'light';
         } else {

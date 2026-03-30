@@ -16,7 +16,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script>
-        if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');
+        if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }

@@ -11,7 +11,7 @@
     @include('components.property.styles')
     @include('components.homepage.styles')
     <!-- Dark mode: apply 'dark' class before render to prevent flash of light mode -->
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         /* Video background fixed below header (header ~72px tall) */
         .video-wrapper {

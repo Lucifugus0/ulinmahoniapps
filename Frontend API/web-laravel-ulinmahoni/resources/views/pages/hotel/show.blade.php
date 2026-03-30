@@ -11,7 +11,7 @@
     @include('components.property.styles')
     @include('components.property.dark-mode')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
 </head>
 <body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
     <!-- Header -->
@@ -109,9 +109,9 @@
                 <div class="lg:col-span-2">
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">About this property</h2>
                     <div class="prose max-w-none">
-                        <p class="text-gray-600">
-                            {{ $hotel['description'] }}
-                        </p>
+                        <div class="text-gray-600">
+                            {!! nl2br(e(\App\Helpers\DescriptionHelper::get($hotel['description'] ?? '', app()->getLocale()))) !!}
+                        </div>
                     </div>
 
                     <!-- Room Facilities -->

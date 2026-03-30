@@ -11,7 +11,7 @@
     @include('components.property.styles')
     @include('components.property.dark-mode')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
     .image-gallery {
             --gap: 1rem;
@@ -370,7 +370,7 @@
                     <!-- About -->
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ __('properties.sections.about_property') }}</h2>
                     <div class="prose max-w-none">
-                        <p class="text-gray-600">{{ $villa['description'] }}</p>
+                        <div class="text-gray-600">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($villa['description'] ?? '', app()->getLocale()))) !!}</div>
                     </div>
 
                     <!-- Room Facilities -->

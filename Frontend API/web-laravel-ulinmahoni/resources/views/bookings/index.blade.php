@@ -171,7 +171,7 @@
     };
     </script>
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <!-- Dark mode + liquid glass overrides for booking page -->
     <style>
         /* Dark mode overrides for booking page */

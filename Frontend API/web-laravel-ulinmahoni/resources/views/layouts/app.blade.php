@@ -23,9 +23,9 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        <!-- Dark mode: apply 'dark' class before render to prevent flash of light mode -->
+        <!-- Dark mode: default to dark — only disable if explicitly set to false -->
         <script>
-            if (localStorage.getItem('dark-mode') === 'true') {
+            if (localStorage.getItem('dark-mode') !== 'false') {
                 document.documentElement.classList.add('dark');
             }
         </script>
@@ -51,7 +51,8 @@
             } else {
                 document.querySelector('body').classList.remove('sidebar-expanded');
             }
-            if (localStorage.getItem('dark-mode') === 'true') {
+            // <!-- Default to dark mode -->
+            if (localStorage.getItem('dark-mode') !== 'false') {
                 document.documentElement.classList.add('dark');
             }
         </script>

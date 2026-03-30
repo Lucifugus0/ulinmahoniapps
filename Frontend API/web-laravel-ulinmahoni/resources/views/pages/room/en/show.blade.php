@@ -14,7 +14,7 @@
     @include('components.property.styles')
     @include('components.property.dark-mode')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -247,7 +247,7 @@
                             <div class="space-y-6">
                                 <div class="prose prose-lg max-w-none">
                                     <h3 class="text-xl font-semibold text-gray-900 mb-4">Room Description</h3>
-                                    <p class="text-gray-600 leading-relaxed">{{ $room['descriptions'] }}</p>
+                                    <div class="text-gray-600 leading-relaxed">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($room['descriptions'] ?? '', app()->getLocale()))) !!}</div>
                                 </div>
                             </div>
                         </div>

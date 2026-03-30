@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
     .image-gallery {
             --gap: 1rem;
@@ -328,7 +328,7 @@
                 <div class="lg:col-span-2">
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ __('properties.sections.about_property') }}</h2>
                     <div class="prose max-w-none">
-                        <p class="text-gray-600">{{ $apartment['description'] }}</p>
+                        <div class="text-gray-600">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($apartment['description'] ?? '', app()->getLocale()))) !!}</div>
                     </div>
 
                     <!-- Location Map -->

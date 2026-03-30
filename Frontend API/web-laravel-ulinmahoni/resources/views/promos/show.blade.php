@@ -34,7 +34,7 @@
         html.dark nav .text-gray-900 { color: #e5e7eb !important; }
     </style>
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
 </head>
 
 <body class="font-inter antialiased text-gray-900 tracking-tight" style="background-color: #f8f7f4;">

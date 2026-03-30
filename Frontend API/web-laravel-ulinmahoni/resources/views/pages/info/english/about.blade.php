@@ -9,7 +9,7 @@
     <script>tailwind.config = { darkMode: 'class' }</script>
     @include('components.homepage.styles')
     <!-- Dark mode: apply 'dark' class before render to prevent flash of light mode -->
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         /* Glass content card — translucent panel */
         .content-card {

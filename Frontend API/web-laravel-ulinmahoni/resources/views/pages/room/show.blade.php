@@ -15,7 +15,7 @@
     @include('components.property.styles')
     @include('components.property.dark-mode')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         @keyframes spin {
             0% { transform: rotate(0deg); }

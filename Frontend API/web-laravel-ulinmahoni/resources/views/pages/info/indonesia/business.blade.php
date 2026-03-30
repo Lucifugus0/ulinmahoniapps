@@ -9,7 +9,7 @@
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         /* Glass content card — translucent panel */
         .content-card {

@@ -10,7 +10,7 @@
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
     .image-gallery {
             --gap: 1rem;
@@ -317,9 +317,9 @@
                 <div class="lg:col-span-2">
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">Tentang Properti</h2>
                     <div class="prose max-w-none">
-                        <p class="text-gray-600">
-                            {{ $house['description'] }}
-                        </p>
+                        <div class="text-gray-600">
+                            {!! nl2br(e(\App\Helpers\DescriptionHelper::get($house['description'] ?? '', app()->getLocale()))) !!}
+                        </div>
                     </div>
 
                     <!-- Room Facilities -->
@@ -450,7 +450,7 @@
 
                                     <div class="p-6">
                                         <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $room['name'] }}</h3>
-                                        <p class="text-gray-600 text-sm mb-4">{{ $room['descriptions'] }}</p>
+                                        <div class="text-gray-600 text-sm mb-4">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($room['descriptions'] ?? '', app()->getLocale()))) !!}</div>
 
                                         <div class="mb-4">
                                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Room Facilities:</h4>

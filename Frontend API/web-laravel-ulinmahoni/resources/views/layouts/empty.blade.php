@@ -17,7 +17,8 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <script>
-        if (localStorage.getItem('dark-mode') === 'true') {
+        // <!-- Default to dark mode -->
+        if (localStorage.getItem('dark-mode') !== 'false') {
             document.documentElement.classList.add('dark');
         }
     </script>
