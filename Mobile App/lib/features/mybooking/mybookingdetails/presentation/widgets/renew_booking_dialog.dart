@@ -64,7 +64,16 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
   DateTime _calcCheckOut() {
     if (_checkInDate == null) return DateTime.now();
     if (_rentType == 'monthly') {
-      return _checkInDate!.copyWith(month: _checkInDate!.month + _duration);
+      // Use original check-in day for renewal checkout calculation.
+      // This preserves the day across renewals (e.g., Jan 31→Feb 28→Mar 31, not Mar 28).
+      // Falls back to check-in day if original_checkin_day is not available.
+      final originalDay = widget.bookingData.originalCheckinDay ?? _checkInDate!.day;
+      final tMonth = _checkInDate!.month + _duration;
+      final tYear = _checkInDate!.year + (tMonth - 1) ~/ 12;
+      final nMonth = ((tMonth - 1) % 12) + 1;
+      final maxDay = DateTime(tYear, nMonth + 1, 0).day;
+      final day = originalDay > maxDay ? maxDay : originalDay;
+      return DateTime(tYear, nMonth, day, _checkInDate!.hour, _checkInDate!.minute);
     }
     return _checkInDate!.add(Duration(days: _duration));
   }

@@ -14,6 +14,7 @@ use App\Models\ParkingFee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Services\RefundCalculationService;
 
 class PaymentController extends Controller
 {
@@ -21,6 +22,10 @@ class PaymentController extends Controller
     {
         $user = Auth::user();
         $perPage = $request->input('per_page', 8);
+
+        // Server-side sorting: supported columns map to actual DB columns/joins
+        $sortBy = $request->input('sort_by', 'tanggal');
+        $sortDir = $request->input('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
 
         $query = Payment::with([
             'booking',
@@ -30,16 +35,28 @@ class PaymentController extends Controller
                 $query->with(['property', 'room', 'user']);
             }
         ])->whereHas('transaction', function ($q) use ($user) {
-            // Filter by property based on user access
-            // Site users (user_type = 1) only see their property
-            // HO users (user_type = 0) and Super Admin see all
             if ($user->isSite() && $user->property_id) {
                 $q->where('property_id', $user->property_id);
             }
-            // Exclude expired transactions
             $q->where('transaction_status', '!=', 'expired');
-        })
-            ->orderBy('idrec', 'desc');
+        });
+
+        // Apply sort — join t_transactions for sortable columns
+        if (in_array($sortBy, ['tanggal', 'orderid', 'pelanggan', 'property'])) {
+            $query->join('t_transactions', 't_payment.order_id', '=', 't_transactions.order_id');
+            if ($sortBy === 'tanggal') {
+                $query->orderBy('t_transactions.created_at', $sortDir);
+            } elseif ($sortBy === 'orderid') {
+                $query->orderBy('t_transactions.order_id', $sortDir);
+            } elseif ($sortBy === 'pelanggan') {
+                $query->orderBy('t_transactions.user_name', $sortDir);
+            } elseif ($sortBy === 'property') {
+                $query->orderBy('t_transactions.property_name', $sortDir);
+            }
+            $query->select('t_payment.*'); // avoid ambiguous columns
+        } else {
+            $query->orderBy('idrec', 'desc');
+        }
 
         $payments = $perPage === 'all'
             ? $query->get()
@@ -58,6 +75,10 @@ class PaymentController extends Controller
         $search = $request->input('search');
         $status = $request->input('status', 'all');
 
+        // Server-side sorting
+        $sortBy = $request->input('sort_by', 'tanggal');
+        $sortDir = $request->input('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
+
         $query = Payment::with([
             'booking',
             'user',
@@ -66,16 +87,28 @@ class PaymentController extends Controller
                 $query->with(['property', 'room', 'user']);
             }
         ])->whereHas('transaction', function ($q) use ($user) {
-            // Filter by property based on user access
-            // Site users (user_type = 1) only see their property
-            // HO users (user_type = 0) and Super Admin see all
             if ($user->isSite() && $user->property_id) {
                 $q->where('property_id', $user->property_id);
             }
-            // Exclude expired transactions
             $q->where('transaction_status', '!=', 'expired');
-        })
-            ->orderBy('idrec', 'desc');
+        });
+
+        // Apply sort
+        if (in_array($sortBy, ['tanggal', 'orderid', 'pelanggan', 'property'])) {
+            $query->join('t_transactions', 't_payment.order_id', '=', 't_transactions.order_id');
+            if ($sortBy === 'tanggal') {
+                $query->orderBy('t_transactions.created_at', $sortDir);
+            } elseif ($sortBy === 'orderid') {
+                $query->orderBy('t_transactions.order_id', $sortDir);
+            } elseif ($sortBy === 'pelanggan') {
+                $query->orderBy('t_transactions.user_name', $sortDir);
+            } elseif ($sortBy === 'property') {
+                $query->orderBy('t_transactions.property_name', $sortDir);
+            }
+            $query->select('t_payment.*');
+        } else {
+            $query->orderBy('idrec', 'desc');
+        }
 
         // Filter based on search
         if ($search) {
@@ -254,15 +287,25 @@ class PaymentController extends Controller
                 ? $request->customCancelReason
                 : $request->cancelReason;
 
-            // Bersihkan nilai refundAmount dari format rupiah (misal: "1.000.000" → 1000000)
-            $refundAmount = (int) str_replace(['Rp', '.', ' '], '', $request->refundAmount);
+            // Calculate refund using RefundCalculationService for breakdown
+            $refundService = new RefundCalculationService();
+            $refundCalc = $refundService->calculate($payment->transaction);
 
-            // Simpan data refund ke tabel t_refund
+            // Allow admin to override the total refund amount if provided
+            $refundAmount = $request->refundAmount
+                ? (int) str_replace(['Rp', '.', ' '], '', $request->refundAmount)
+                : $refundCalc['total_refund'];
+
+            // Simpan data refund ke tabel t_refund with breakdown
             Refund::create([
                 'id_booking'    => $payment->order_id,
                 'status'        => 'pending',
                 'reason'        => $cancelReason,
                 'amount'        => $refundAmount,
+                'refund_type'   => 'admin',
+                'room_refund'   => $refundCalc['room_refund'],
+                'deposit_refund' => $refundCalc['deposit_refund'],
+                'other_refund'  => $refundCalc['other_refund'],
                 'img'           => null,
                 'image_caption' => null,
                 'image_path'    => null,

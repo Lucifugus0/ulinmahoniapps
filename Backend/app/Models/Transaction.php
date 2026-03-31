@@ -25,6 +25,7 @@ class Transaction extends Model
         'transaction_date',
         'check_in',
         'check_out',
+        'original_checkin_day',
         'room_name',
         'user_email',
         'booking_days',

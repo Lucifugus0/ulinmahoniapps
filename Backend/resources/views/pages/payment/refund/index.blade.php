@@ -83,6 +83,9 @@
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 {{ __('ui.property') }}</th>
                             <th scope="col"
+                                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Source</th>
+                            <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 {{ __('ui.refund_amount') }}</th>
                             <th scope="col"
@@ -116,12 +119,44 @@
                                     <div class="text-sm text-gray-500">{{ $refund->transaction->room_name ?? 'N/A' }}
                                     </div>
                                 </td>
+                                <!-- Source column: User Request or Admin -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    @if($refund->refund_type === 'user')
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                            User Request
+                                        </span>
+                                        @if($refund->refund_bank_name)
+                                        <div class="text-xs text-gray-500 mt-1" title="Bank: {{ $refund->refund_bank_name }} - {{ $refund->refund_account_no }} ({{ $refund->refund_account_holder }})">
+                                            {{ $refund->refund_bank_name }}
+                                        </div>
+                                        @endif
+                                    @else
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            Admin
+                                        </span>
+                                    @endif
+                                </td>
+                                <!-- Refund amount with breakdown -->
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="text-sm font-medium text-gray-900">Rp
-                                        {{ number_format($refund->transaction->grandtotal_price ?? 0, 0, ',', '.') }}
+                                        {{ number_format($refund->amount ?? $refund->transaction->grandtotal_price ?? 0, 0, ',', '.') }}
                                     </div>
+                                    @if($refund->room_refund || $refund->deposit_refund || $refund->other_refund)
+                                    <div class="text-xs text-gray-500 space-y-0.5 mt-1">
+                                        @if($refund->room_refund > 0)
+                                        <div>Kamar: Rp {{ number_format($refund->room_refund, 0, ',', '.') }}</div>
+                                        @endif
+                                        @if($refund->deposit_refund > 0)
+                                        <div>Deposit: Rp {{ number_format($refund->deposit_refund, 0, ',', '.') }}</div>
+                                        @endif
+                                        @if($refund->other_refund > 0)
+                                        <div>Parkir: Rp {{ number_format($refund->other_refund, 0, ',', '.') }}</div>
+                                        @endif
+                                    </div>
+                                    @else
                                     <div class="text-xs text-gray-500">{{ $refund->transaction->booking_days ?? 0 }}
                                         {{ __('ui.days') }}</div>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {{ \Carbon\Carbon::parse($refund->refund_date)->format('d M Y') }}
@@ -321,6 +356,36 @@
                                                                     </div>
                                                                 </div>
                                                             </div>
+                                                            <!-- Admin Notes -->
+                                                            <div class="mb-4">
+                                                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                                    Catatan Admin (opsional)
+                                                                </label>
+                                                                <textarea name="admin_notes" rows="3"
+                                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                                    placeholder="Catatan tambahan untuk refund ini..."></textarea>
+                                                            </div>
+
+                                                            <!-- Bank details display for user-initiated refunds -->
+                                                            @if($refund->refund_type === 'user' && $refund->refund_bank_name)
+                                                            <div class="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                                                                <h4 class="text-sm font-medium text-orange-800 mb-2">Rekening Tujuan Refund (dari User)</h4>
+                                                                <div class="grid grid-cols-3 gap-3 text-sm">
+                                                                    <div>
+                                                                        <span class="text-gray-500">Bank:</span>
+                                                                        <span class="font-medium text-gray-900">{{ $refund->refund_bank_name }}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="text-gray-500">No. Rekening:</span>
+                                                                        <span class="font-medium text-gray-900">{{ $refund->refund_account_no }}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="text-gray-500">Atas Nama:</span>
+                                                                        <span class="font-medium text-gray-900">{{ $refund->refund_account_holder }}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            @endif
                                                         </form>
                                                     </div>
 
@@ -375,7 +440,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
                                     <div class="flex flex-col items-center justify-center py-8">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-4"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -526,6 +591,12 @@
                         .content);
                     formData.append('order_id', this.idBooking);
                     formData.append('refund_image', this.selectedFile);
+
+                    // Include admin notes if provided
+                    const adminNotes = form.querySelector('textarea[name="admin_notes"]');
+                    if (adminNotes && adminNotes.value) {
+                        formData.append('admin_notes', adminNotes.value);
+                    }
 
                     try {
                         const response = await fetch(form.action, {

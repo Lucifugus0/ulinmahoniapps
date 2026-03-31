@@ -182,11 +182,14 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
         calculatedCheckOutDate = checkInDate!.add(Duration(days: durationRaw!));
       } else if (selectedRentType == 'Monthly') {
         durationInDays = durationRaw! * 30;
-        calculatedCheckOutDate = DateTime(
-          checkInDate!.year,
-          checkInDate!.month + durationRaw!,
-          checkInDate!.day,
-        );
+        // Clamped month addition: clamp to last day of target month
+        // e.g. Jan 31 + 1 month = Feb 28, Mar 31 + 1 month = Apr 30
+        final tMonth = checkInDate!.month + durationRaw!;
+        final tYear = checkInDate!.year + (tMonth - 1) ~/ 12;
+        final nMonth = ((tMonth - 1) % 12) + 1;
+        final maxDay = DateTime(tYear, nMonth + 1, 0).day;
+        final cDay = checkInDate!.day > maxDay ? maxDay : checkInDate!.day;
+        calculatedCheckOutDate = DateTime(tYear, nMonth, cDay);
       } else {
         durationInDays = null;
         calculatedCheckOutDate = null;

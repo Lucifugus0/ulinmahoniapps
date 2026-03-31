@@ -425,6 +425,17 @@
     @include('components.homepage.footer')
 
     <script>
+        // Clamped month addition: avoids overflow when target month has fewer days
+        function addMonthsClamped(date, months) {
+            const d = new Date(date);
+            const day = d.getDate();
+            d.setDate(1);
+            d.setMonth(d.getMonth() + months);
+            const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(day, maxDay));
+            return d;
+        }
+
         // --- Global variables ---
         let bookingForm, errorAlert, loadingOverlay, submitButton, monthInput, dateInputs, monthsSelect, rentTypeSelect;
         let checkInInput, checkOutInput, availabilityStatusDiv;
@@ -1056,10 +1067,9 @@
                     // For monthly, update check-out based on months
                     const checkInDate = new Date(checkInInput.value);
                     const months = parseInt(monthsSelect.value, 10) || 1;
-                    const checkOutDate = new Date(checkInDate);
-                    checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                    const checkOutDate = addMonthsClamped(checkInDate, months);
                     checkOutInput.value = checkOutDate.toISOString().split('T')[0];
-                    
+
                 } else {
                     // For daily, normal logic
                     const minCheckout = new Date(checkInInput.value);

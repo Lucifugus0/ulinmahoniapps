@@ -238,9 +238,9 @@
                             <h4 class="text-lg font-bold text-gray-900 mb-3">
                                 Description</h4>
                             <div class="bg-gray-50 p-4 rounded-lg">
-                                <p class="text-gray-700 leading-relaxed whitespace-pre-line"
-                                    x-text="selectedRoom.description">
-                                </p>
+                                <div class="text-gray-700 leading-relaxed prose max-w-none"
+                                    x-html="selectedRoom.description">
+                                </div>
                             </div>
                         </div>
                     </div>

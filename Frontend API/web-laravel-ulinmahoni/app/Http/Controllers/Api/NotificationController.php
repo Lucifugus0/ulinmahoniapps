@@ -523,7 +523,7 @@ class NotificationController extends ApiController
     public function sendPushNotification(Request $request)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'type' => 'required|string|in:booking_created,check_in,booking_renewed,payment_received,booking_expired,custom',
+            'type' => 'required|string|in:booking_created,check_in,booking_renewed,payment_received,booking_expired,booking_cancelled,custom',
             'title' => 'nullable|string|max:255',
             'body' => 'nullable|string|max:1000',
             'data' => 'nullable|array',
@@ -560,6 +560,10 @@ class NotificationController extends ApiController
             'booking_expired' => [
                 'title' => 'Booking Expired',
                 'body' => 'Your booking has expired due to incomplete payment.',
+            ],
+            'booking_cancelled' => [
+                'title' => 'Booking Cancelled',
+                'body' => 'Your booking has been cancelled. Refund will be processed within 14-30 business days.',
             ],
         ];
 

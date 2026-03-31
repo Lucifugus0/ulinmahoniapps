@@ -20,20 +20,17 @@ class RoomAvailabilityController extends Controller
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
 
-        // Query untuk room availability
+        // Query untuk room availability — load both current occupants and upcoming bookings
         $rooms = Room::where('status', 1)->with(['property', 'thumbnail', 'bookings' => function ($query) use ($startDate, $endDate) {
-            // Hanya ambil booking aktif (status=1) dengan status paid
-            // status=0 berarti booking lama dari pindah kamar, tidak perlu ditampilkan
+            // Active bookings (status=1) with paid transaction
+            // Includes: currently checked-in (for "Occupied By") AND future bookings (for "Upcoming")
             $query->where('status', 1)
-            ->whereNotNull('check_in_at')
-            ->whereNull('check_out_at')
             ->whereHas('transaction', function ($q) {
                 $q->where('transaction_status', 'paid');
             })
-            ->with(['user', 'transaction', 'payment']);
+            ->with(['user', 'transaction.user', 'payment']);
 
-            // Filter berdasarkan tanggal menggunakan transaction dates untuk konsistensi
-            // Logika overlap: booking overlap jika check_in < endDate DAN check_out > startDate
+            // Filter berdasarkan tanggal jika ada
             if ($startDate && $endDate) {
                 $query->whereHas('transaction', function ($q) use ($startDate, $endDate) {
                     $q->where('check_in', '<', $endDate)

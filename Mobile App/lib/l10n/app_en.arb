@@ -13,6 +13,7 @@
     "promoBanner": "Special Promo",
     "promoDetailTitle": "Promo Details",
     "promoDescription": "Promo Description",
+    "promoCodeLabel": "Promo Code",
     "noDescription": "No description",
     "promoHowToClaim": "How to Claim",
     "promoClaimStep1": "Choose the desired property",

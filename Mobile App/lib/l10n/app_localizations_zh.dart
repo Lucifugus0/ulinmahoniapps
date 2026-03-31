@@ -42,6 +42,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get promoDescription => '优惠描述';
 
   @override
+  String get promoCodeLabel => '优惠码';
+
+  @override
   String get noDescription => '暂无描述';
 
   @override

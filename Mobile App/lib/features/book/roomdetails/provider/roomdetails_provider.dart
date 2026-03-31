@@ -54,15 +54,15 @@ class RoomDetailsNotifier extends Notifier<AsyncValue<Map<String, dynamic>>> {
           AppLogger.d('Calculated checkOutDate (Daily): ${initialCheckOutDate.toIso8601String()}', 'ROOM-DETAILS');
         } else if (initialRentType == 'Monthly') {
 
-          initialCheckOutDate = DateTime(
-            initialCheckInDate.year,
-            initialCheckInDate.month + initialDuration,
-            initialCheckInDate.day,
-            initialCheckInDate.hour,
-            initialCheckInDate.minute,
-            initialCheckInDate.second,
-            initialCheckInDate.millisecond,
-            initialCheckInDate.microsecond,
+          // Clamped month addition: if target month has fewer days, clamp to last day
+          // e.g. Jan 31 + 1 month = Feb 28, Mar 31 + 1 month = Apr 30
+          final targetMonth = initialCheckInDate.month + initialDuration;
+          final targetYear = initialCheckInDate.year + (targetMonth - 1) ~/ 12;
+          final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+          final maxDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+          final clampedDay = initialCheckInDate.day > maxDay ? maxDay : initialCheckInDate.day;
+          initialCheckOutDate = DateTime(targetYear, normalizedMonth, clampedDay,
+            initialCheckInDate.hour, initialCheckInDate.minute, initialCheckInDate.second,
           );
           AppLogger.d('Calculated checkOutDate (Monthly): ${initialCheckOutDate.toIso8601String()}', 'ROOM-DETAILS');
         }
@@ -139,15 +139,14 @@ class RoomDetailsNotifier extends Notifier<AsyncValue<Map<String, dynamic>>> {
           calculatedCheckOutDate = checkInDate.add(Duration(days: duration));
         } else if (rentType == 'monthly' || rentType == 'Monthly') {
 
-          calculatedCheckOutDate = DateTime(
-            checkInDate.year,
-            checkInDate.month + duration,
-            checkInDate.day,
-            checkInDate.hour,
-            checkInDate.minute,
-            checkInDate.second,
-            checkInDate.millisecond,
-            checkInDate.microsecond,
+          // Clamped month addition: clamp to last day of target month
+          final tMonth = checkInDate.month + duration;
+          final tYear = checkInDate.year + (tMonth - 1) ~/ 12;
+          final nMonth = ((tMonth - 1) % 12) + 1;
+          final mDay = DateTime(tYear, nMonth + 1, 0).day;
+          final cDay = checkInDate.day > mDay ? mDay : checkInDate.day;
+          calculatedCheckOutDate = DateTime(tYear, nMonth, cDay,
+            checkInDate.hour, checkInDate.minute, checkInDate.second,
           );
         }
       }

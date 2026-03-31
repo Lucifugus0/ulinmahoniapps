@@ -79,11 +79,29 @@
                 <div class="grid md:grid-cols-2 gap-8 p-8">
                     <!-- Left Column -->
                     <div>
-                        <!-- Promo Code -->
+                        <!-- Promo Code with copy button -->
                         @if(!empty($promo['promo_code']))
                         <div class="mb-6">
-                            <h2 class="text-2xl font-semibold mb-2">{{ __('promo.promo_code') }}</h2>
-                            <span class="text-lg font-bold text-gray-900">{{ $promo['promo_code'] }}</span>
+                            <h2 class="text-2xl font-semibold mb-3">{{ __('promo.promo_code') }}</h2>
+                            <div class="inline-flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-dashed border-teal-400 bg-teal-50">
+                                <span class="text-2xl font-extrabold tracking-wider text-teal-700">{{ $promo['promo_code'] }}</span>
+                                <button type="button" id="copyPromoBtn"
+                                    onclick="navigator.clipboard.writeText('{{ $promo['promo_code'] }}').then(function() {
+                                        var btn = document.getElementById('copyPromoBtn');
+                                        btn.innerHTML = '<svg class=\'w-4 h-4\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'/></svg><span>Copied!</span>';
+                                        btn.classList.remove('bg-teal-600', 'hover:bg-teal-700');
+                                        btn.classList.add('bg-green-600');
+                                        setTimeout(function() {
+                                            btn.innerHTML = '<svg class=\'w-4 h-4\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'/></svg><span>Copy</span>';
+                                            btn.classList.remove('bg-green-600');
+                                            btn.classList.add('bg-teal-600', 'hover:bg-teal-700');
+                                        }, 2000);
+                                    })"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-teal-600 hover:bg-teal-700 text-white transition-all duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
                         </div>
                         @endif
 

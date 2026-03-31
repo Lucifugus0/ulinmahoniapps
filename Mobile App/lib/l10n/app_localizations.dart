@@ -166,6 +166,12 @@ abstract class AppLocalizations {
   /// **'Deskripsi Promo'**
   String get promoDescription;
 
+  /// No description provided for @promoCodeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode Promo'**
+  String get promoCodeLabel;
+
   /// No description provided for @noDescription.
   ///
   /// In id, this message translates to:

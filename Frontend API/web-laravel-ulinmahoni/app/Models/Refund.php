@@ -50,16 +50,10 @@ class Refund extends Model
         return $this->belongsTo(Transaction::class, 'id_booking', 'order_id');
     }
 
-    // User who requested the refund (for user-initiated cancellations)
+    // User who requested the refund
     public function requestedBy()
     {
         return $this->belongsTo(User::class, 'requested_by');
-    }
-
-    // Admin who processed/confirmed the refund
-    public function processedBy()
-    {
-        return $this->belongsTo(User::class, 'processed_by');
     }
 
     public function getImageUrlAttribute()

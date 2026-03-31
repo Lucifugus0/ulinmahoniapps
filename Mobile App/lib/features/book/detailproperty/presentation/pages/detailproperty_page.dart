@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../../core/widgets/html_description.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../roomdetails/provider/rooms_provider.dart';
 import '../../../../../core/layout/mainlayout.dart';
@@ -933,12 +934,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                         ?? property.description
                         ?? '';
                     if (description.isNotEmpty) {
-                      return Text(
-                        description,
-                        style: textTheme.bodyMedium,
-                        softWrap: true,
-                        overflow: TextOverflow.visible,
-                        textAlign: TextAlign.left,
+                      return HtmlDescription(
+                        html: description,
+                        textStyle: textTheme.bodyMedium,
                       );
                     }
                     return const SizedBox.shrink();

@@ -76,32 +76,27 @@ final availableNowPropertiesProvider = FutureProvider<List<PropertyModel>>((ref)
 });
 
 
-/// "Near You" section — properties sorted by GPS distance, fallback to city name
+/// "Near You" section — properties sorted by GPS distance, fallback to city name.
+/// GPS permission is checked but never requested here (avoid blocking UI).
+/// Only uses location if already granted.
 final cheapestPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
   final allProperties = await ref.watch(propertiesProvider('').future);
+  final available = allProperties.where((p) => (p.availableRooms ?? 0) > 0).toList();
 
-  // Try to get user's GPS location
+  // Only use GPS if permission was already granted — never request here
   Position? userPosition;
   try {
     final permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      await Geolocator.requestPermission();
-    }
-    final finalPermission = await Geolocator.checkPermission();
-    if (finalPermission == LocationPermission.whileInUse ||
-        finalPermission == LocationPermission.always) {
-      userPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low,
-      ).timeout(const Duration(seconds: 5), onTimeout: () => throw Exception('GPS timeout'));
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
+      // Use last known position (instant, no GPS wait)
+      userPosition = await Geolocator.getLastKnownPosition();
     }
   } catch (e) {
-    AppLogger.w('GPS not available, sorting by city: $e', 'PROPERTY-PROVIDER');
+    AppLogger.w('GPS check failed: $e', 'PROPERTY-PROVIDER');
   }
 
-  final available = allProperties.where((p) => (p.availableRooms ?? 0) > 0).toList();
-
   if (userPosition != null) {
-    // Sort by distance from user's GPS location
     available.sort((a, b) {
       final distA = _calculateDistance(userPosition!, a.latitude, a.longitude);
       final distB = _calculateDistance(userPosition!, b.latitude, b.longitude);

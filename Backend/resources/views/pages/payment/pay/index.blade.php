@@ -348,27 +348,36 @@
 
         document.addEventListener('DOMContentLoaded', function() {
              // Fungsi untuk mengambil data booking terfilter
+            // Exposed globally so sort column clicks in the table partial can trigger a reload
+            window.loadPaymentData = function() { window.fetchFilteredBookings(); };
+
             window.fetchFilteredBookings = function() {
                 // Ambil semua nilai filter
                 const params = new URLSearchParams();
 
-                // Ambil nilai pencarian
+                // Pencarian
                 const search = document.getElementById('search').value;
                 if (search) params.append('search', search);
 
-                // Ambil nilai status
+                // Status
                 const status = document.getElementById('status').value;
                 if (status && status !== 'all') params.append('status', status);
 
-                // Ambil nilai rentang tanggal
+                // Rentang tanggal
                 const startDate = document.getElementById('start_date').value;
                 const endDate = document.getElementById('end_date').value;
                 if (startDate) params.append('start_date', startDate);
                 if (endDate) params.append('end_date', endDate);
 
-                // Ambil nilai per halaman
+                // Per halaman
                 const perPage = document.getElementById('per_page').value;
                 params.append('per_page', perPage);
+
+                // Server-side sort params
+                if (window._paySort) {
+                    params.append('sort_by', window._paySort.column);
+                    params.append('sort_dir', window._paySort.direction);
+                }
 
                 // Tampilkan loading
                 const tableContainer = document.getElementById('transactionTable');
@@ -390,7 +399,14 @@
                         return response.json();
                     })
                     .then(data => {
-                        document.getElementById('transactionTable').innerHTML = data.html;
+                        const tableEl = document.getElementById('transactionTable');
+                        // Destroy existing Alpine components before replacing
+                        tableEl.querySelectorAll('[x-data]').forEach(el => {
+                            if (el._x_dataStack) Alpine.destroyTree(el);
+                        });
+                        tableEl.innerHTML = data.html;
+                        // Re-initialize Alpine on new content so sorting works
+                        Alpine.initTree(tableEl);
                         // Update paginasi jika ada
                         const paginationContainer = document.querySelector('.bg-gray-50');
                         if (paginationContainer && data.pagination) {

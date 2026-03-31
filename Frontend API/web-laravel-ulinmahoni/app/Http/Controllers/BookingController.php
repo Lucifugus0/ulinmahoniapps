@@ -846,7 +846,14 @@ class BookingController extends Controller
 
             if ($request->rent_type === 'monthly') {
                 $bookingMonths = (int) $request->months;
-                $checkOutDate = $checkInDate->copy()->addMonths($bookingMonths);
+                // Clamped month addition: if target month has fewer days, clamp to last day
+                // e.g. Jan 31 + 1 month = Feb 28, Mar 31 + 1 month = Apr 30
+                $checkOutDate = $checkInDate->copy();
+                $targetMonth = $checkOutDate->month + $bookingMonths;
+                $targetYear = $checkOutDate->year + intdiv($targetMonth - 1, 12);
+                $targetMonth = (($targetMonth - 1) % 12) + 1;
+                $maxDay = Carbon::create($targetYear, $targetMonth, 1)->daysInMonth;
+                $checkOutDate = Carbon::create($targetYear, $targetMonth, min($checkInDate->day, $maxDay), $checkInDate->hour, $checkInDate->minute, $checkInDate->second);
                 $totalPrice = $price * $bookingMonths;
 
             } elseif ($request->rent_type === 'annual') {
@@ -970,6 +977,7 @@ class BookingController extends Controller
                 'transaction_date' => now(),
                 'check_in' => $checkIn,
                 'check_out' => $checkOut,
+                'original_checkin_day' => Carbon::parse($checkIn)->day,
                 'room_name' => $room->name,
                 'booking_type' => $request->booking_type,
                 'booking_days' => $bookingDays,

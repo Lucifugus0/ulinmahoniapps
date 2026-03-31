@@ -1,12 +1,13 @@
 {{--
-    Multi-language tabbed textarea component.
+    Multi-language rich text editor component using Quill.js.
     Stores descriptions as XML-tagged string: <ID>...</ID><EN>...</EN><ZH>...</ZH>
+    Content inside each tag is HTML (bold, italic, color, lists, links).
 
     Props:
     - name: form field name (e.g. 'description')
     - value: current raw description string (for edit mode; empty for create)
     - required: boolean
-    - rows: textarea rows (default 4)
+    - rows: editor height in rows (default 4, converted to rem)
     - placeholder: placeholder text
     - label: label text (optional)
     - xModel: Alpine.js x-model binding name for edit forms (optional)
@@ -21,26 +22,78 @@
     'xModel' => '',
 ])
 
-<!-- Multi-language description textarea with auto-translate -->
+@once
+{{-- Load Quill.js CSS and JS from CDN (only once per page) --}}
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<style>
+    /* Quill editor dark mode overrides */
+    html.dark .ql-toolbar.ql-snow {
+        background-color: rgb(55, 65, 81) !important;
+        border-color: rgb(75, 85, 99) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    html.dark .ql-container.ql-snow {
+        background-color: rgb(55, 65, 81) !important;
+        border-color: rgb(75, 85, 99) !important;
+        color: #e5e7eb !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    html.dark .ql-editor.ql-blank::before {
+        color: rgb(156, 163, 175) !important;
+    }
+    html.dark .ql-snow .ql-stroke {
+        stroke: #e5e7eb !important;
+    }
+    html.dark .ql-snow .ql-fill {
+        fill: #e5e7eb !important;
+    }
+    html.dark .ql-snow .ql-picker-label {
+        color: #e5e7eb !important;
+    }
+    html.dark .ql-snow .ql-picker-options {
+        background-color: rgb(55, 65, 81) !important;
+        border-color: rgb(75, 85, 99) !important;
+    }
+    /* Quill editor sizing */
+    .multilang-quill .ql-editor {
+        min-height: {{ $rows * 1.5 }}rem;
+    }
+    .multilang-quill .ql-toolbar.ql-snow {
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+    .multilang-quill .ql-container.ql-snow {
+        border-radius: 0 0 0.5rem 0.5rem;
+    }
+</style>
+@endonce
+
+@php $uid = 'mlrt_' . uniqid(); @endphp
+
+<!-- Multi-language rich text description editor with auto-translate -->
 <div x-data="{
     activeTab: 'id',
     descriptions: { id: '', en: '', zh: '' },
     translating: false,
     translateError: '',
+    editors: {},
 
-    {{-- <!-- Initialize: parse existing XML-tagged value into per-language fields --> --}}
     init() {
         const raw = this.getInitialValue();
         this.parseValue(raw);
 
-        {{-- <!-- If xModel binding exists, watch for external changes --> --}}
         @if($xModel)
         this.$watch('{{ $xModel }}', (val) => {
             if (val !== this.composedValue()) {
                 this.parseValue(val || '');
+                this.syncEditorsFromData();
             }
         });
         @endif
+
+        this.$nextTick(() => this.initEditors());
     },
 
     getInitialValue() {
@@ -51,7 +104,51 @@
         @endif
     },
 
-    {{-- <!-- Parse XML tags from raw string into per-language object --> --}}
+    initEditors() {
+        const toolbarOptions = [
+            ['bold', 'italic'],
+            [{ 'color': [] }],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            ['link'],
+            ['clean']
+        ];
+
+        ['id', 'en', 'zh'].forEach(lang => {
+            const el = document.getElementById('{{ $uid }}_' + lang);
+            if (!el || this.editors[lang]) return;
+
+            const quill = new Quill(el, {
+                theme: 'snow',
+                placeholder: '{{ $placeholder }}',
+                modules: { toolbar: toolbarOptions }
+            });
+
+            if (this.descriptions[lang]) {
+                quill.root.innerHTML = this.descriptions[lang];
+            }
+
+            quill.on('text-change', () => {
+                const html = quill.root.innerHTML;
+                this.descriptions[lang] = (html === '<p><br></p>') ? '' : html;
+                this.syncValue();
+            });
+
+            this.editors[lang] = quill;
+        });
+    },
+
+    syncEditorsFromData() {
+        ['id', 'en', 'zh'].forEach(lang => {
+            if (this.editors[lang]) {
+                const current = this.editors[lang].root.innerHTML;
+                const target = this.descriptions[lang] || '';
+                if (current !== target && !(current === '<p><br></p>' && target === '')) {
+                    this.editors[lang].root.innerHTML = target;
+                }
+            }
+        });
+    },
+
     parseValue(raw) {
         if (!raw) return;
         const regex = /<(ID|EN|ZH)>([\s\S]*?)<\/\1>/gi;
@@ -66,7 +163,6 @@
         }
     },
 
-    {{-- <!-- Compose per-language fields back into XML-tagged string --> --}}
     composedValue() {
         let parts = [];
         ['id', 'en', 'zh'].forEach(lang => {
@@ -79,7 +175,6 @@
         return parts.join('\n');
     },
 
-    {{-- <!-- Sync composed value to hidden input and optional xModel --> --}}
     syncValue() {
         const val = this.composedValue();
         this.$refs.hiddenInput.value = val;
@@ -88,14 +183,17 @@
         @endif
     },
 
-    {{-- <!-- Auto-translate from current tab to empty language tabs --> --}}
     async autoTranslate() {
-        const sourceText = this.descriptions[this.activeTab]?.trim();
-        if (!sourceText) {
+        const sourceHtml = this.descriptions[this.activeTab]?.trim();
+        if (!sourceHtml) {
             this.translateError = '{{ __('ui.translate_empty_source') }}';
             setTimeout(() => this.translateError = '', 3000);
             return;
         }
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = sourceHtml;
+        const sourceText = tempDiv.textContent || tempDiv.innerText || '';
 
         this.translating = true;
         this.translateError = '';
@@ -120,7 +218,7 @@
 
                 const json = await response.json();
                 if (json.status === 'success' && json.data?.translated) {
-                    this.descriptions[target] = json.data.translated;
+                    this.descriptions[target] = '<p>' + json.data.translated + '</p>';
                 }
             } catch (e) {
                 console.error('Translation failed for', target, e);
@@ -129,6 +227,7 @@
         }
 
         this.translating = false;
+        this.syncEditorsFromData();
         this.syncValue();
     },
 
@@ -137,14 +236,13 @@
     }
 }" x-init="init()" x-effect="syncValue()">
 
-    {{-- <!-- Label --> --}}
     @if($label)
     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
         {{ $label }} @if($required)<span class="text-red-500">*</span>@endif
     </label>
     @endif
 
-    {{-- <!-- Tab bar + auto-translate button --> --}}
+    {{-- Tab bar + auto-translate button --}}
     <div class="flex items-center justify-between mb-2">
         <div class="flex space-x-1">
             <template x-for="lang in ['id', 'en', 'zh']" :key="lang">
@@ -159,7 +257,6 @@
             </template>
         </div>
 
-        {{-- <!-- Auto-translate button --> --}}
         <button type="button"
             @click="autoTranslate()"
             :disabled="translating"
@@ -179,27 +276,23 @@
         </button>
     </div>
 
-    {{-- <!-- Error message --> --}}
     <div x-show="translateError" x-text="translateError"
         class="text-xs text-red-500 mb-2" x-cloak></div>
 
-    {{-- <!-- Textareas (one per language, shown based on active tab) --> --}}
-    <template x-for="lang in ['id', 'en', 'zh']" :key="'ta-' + lang">
-        <textarea
-            x-show="activeTab === lang"
-            x-model="descriptions[lang]"
-            @input="syncValue()"
-            rows="{{ $rows }}"
-            :placeholder="'{{ $placeholder }}'"
-            :required="lang === 'id' && {{ $required ? 'true' : 'false' }}"
-            class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-        </textarea>
-    </template>
+    {{-- Quill editors: one per language, toggle visibility by active tab --}}
+    <div x-show="activeTab === 'id'" class="multilang-quill">
+        <div id="{{ $uid }}_id"></div>
+    </div>
+    <div x-show="activeTab === 'en'" class="multilang-quill">
+        <div id="{{ $uid }}_en"></div>
+    </div>
+    <div x-show="activeTab === 'zh'" class="multilang-quill">
+        <div id="{{ $uid }}_zh"></div>
+    </div>
 
-    {{-- <!-- Hidden input that holds the composed XML string for form submission --> --}}
+    {{-- Hidden input for form submission --}}
     <input type="hidden" name="{{ $name }}" x-ref="hiddenInput" :value="composedValue()">
 
-    {{-- <!-- Help note --> --}}
     <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
         {{ __('ui.multilang_help_note') }}
     </p>

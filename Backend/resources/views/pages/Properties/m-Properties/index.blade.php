@@ -853,7 +853,7 @@
                                                         </svg>
                                                         <p
                                                             class="text-sm text-green-600 dark:text-green-400 font-medium">
-                                                            10 {{ __('ui.photos_uploaded') }}!</p>
+                                                            <span x-text="maxImages"></span> {{ __('ui.photos_uploaded') }}!</p>
                                                         <p class="text-xs text-green-500 dark:text-green-400">{{ __('ui.max_photos_reached') }}
                                                         </p>
                                                     </div>
@@ -1114,6 +1114,21 @@
     </div>
 
     <script>
+        // Sort state — tracks current column and direction
+        let currentSortBy = '{{ request('sort_by', 'name') }}';
+        let currentSortDir = '{{ request('sort_dir', 'asc') }}';
+
+        // Toggle sort for a column and reload data
+        function sortProperties(column) {
+            if (currentSortBy === column) {
+                currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortBy = column;
+                currentSortDir = 'asc';
+            }
+            loadPropertiesData();
+        }
+
         // Fungsi global untuk memuat data dengan AJAX
         function loadPropertiesData() {
             const searchInput = document.getElementById('searchInput');
@@ -1137,6 +1152,8 @@
             formData.append('search', searchInput.value);
             formData.append('status', statusFilter.value);
             formData.append('per_page', perPageSelect.value);
+            formData.append('sort_by', currentSortBy);
+            formData.append('sort_dir', currentSortDir);
             formData.append('_token', '{{ csrf_token() }}');
 
             // Kirim request AJAX
@@ -1274,7 +1291,7 @@
                     { label: 'Hotel', value: 'Hotel' }
                 ],
                 images: [],
-                maxImages: 10,
+                maxImages: 20,
                 minImages: 3,
                 map: null,
                 marker: null,
@@ -1984,9 +2001,8 @@
                     });
 
                     // Clear the file input to allow re-selection
-                    if (event.target) {
-                        event.target.value = '';
-                    }
+                    const fileInput = document.querySelector('#propertyForm input[type="file"]');
+                    if (fileInput) fileInput.value = '';
                 },
 
                 removeImage(index, event) {
@@ -2241,7 +2257,7 @@
                 editModalOpen: false,
                 editStep: 1,
                 editMinImages: 3,
-                editMaxImages: 10,
+                editMaxImages: 20,
                 editImages: [],
                 map: null,
                 marker: null,
@@ -3012,9 +3028,8 @@
                     });
 
                     // Clear the file input to allow re-selection
-                    if (event.target) {
-                        event.target.value = '';
-                    }
+                    const editInput = this.$el?.querySelector('input[type="file"]');
+                    if (editInput) editInput.value = '';
                 },
 
                 // Get the actual index in the combined array
@@ -3268,8 +3283,9 @@
                         }
                     });
 
-                    // Clear the file input
-                    event.target.value = '';
+                    // Clear the file input (use DOM query since event is not available here)
+                    const editFileInput = document.querySelector(`#propertyFormEdit-${property.idrec} input[type="file"]`);
+                    if (editFileInput) editFileInput.value = '';
                 },
 
                 showAlert(type, message) {

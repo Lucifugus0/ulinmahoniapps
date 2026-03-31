@@ -68,4 +68,46 @@ class DescriptionHelper
         // <!-- Final fallback: return raw string (for untagged legacy data) -->
         return trim($raw);
     }
+
+    /**
+     * <!-- Sanitize HTML description: allow safe formatting tags only -->
+     * Strips dangerous tags (script, iframe, etc.) while keeping
+     * bold, italic, color, lists, links, and paragraphs from Quill editor.
+     */
+    public static function sanitize(string $html): string
+    {
+        if (empty($html)) {
+            return '';
+        }
+
+        // Allow only safe HTML tags from the Quill rich text editor
+        $allowed = '<p><br><strong><b><em><i><u><s><ol><ul><li><a><span><h1><h2><h3>';
+        $clean = strip_tags($html, $allowed);
+
+        // Remove any on* event handlers from remaining tags (e.g. onclick, onerror)
+        $clean = preg_replace('/\s+on\w+\s*=\s*["\'][^"\']*["\']/i', '', $clean);
+
+        return $clean;
+    }
+
+    /**
+     * <!-- Get sanitized HTML description for display -->
+     * Returns safe HTML ready for {!! !!} output in Blade templates.
+     * For plain text (legacy data without HTML), wraps in <p> with nl2br.
+     */
+    public static function getHtml(?string $raw, string $locale = 'id'): string
+    {
+        $text = self::get($raw, $locale);
+        if (empty($text)) {
+            return '';
+        }
+
+        // If content has HTML tags, sanitize and return
+        if ($text !== strip_tags($text)) {
+            return self::sanitize($text);
+        }
+
+        // Plain text (legacy): escape, convert newlines, wrap in paragraph
+        return nl2br(e($text));
+    }
 }

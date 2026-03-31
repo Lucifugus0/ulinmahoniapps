@@ -1,39 +1,72 @@
+@php
+    $currentSort = request('sort_by', 'name');
+    $currentDir = request('sort_dir', 'asc');
+@endphp
 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
     <thead class="bg-gray-50 dark:bg-gray-800">
         <tr>
+            {{-- Initial --}}
             <th scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.name') }}
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Initial
             </th>
+            {{-- Property Name (sortable) --}}
             <th scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.province') }}
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none"
+                onclick="sortProperties('name')">
+                <div class="flex items-center gap-1">
+                    {{ __('ui.name') }}
+                    @if($currentSort === 'name')
+                        <svg class="w-3 h-3 {{ $currentDir === 'desc' ? 'rotate-180' : '' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    @else
+                        <svg class="w-3 h-3 opacity-30" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    @endif
+                </div>
             </th>
+            {{-- City (sortable) --}}
             <th scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.addition_date') }}
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none"
+                onclick="sortProperties('city')">
+                <div class="flex items-center gap-1">
+                    City
+                    @if($currentSort === 'city')
+                        <svg class="w-3 h-3 {{ $currentDir === 'desc' ? 'rotate-180' : '' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    @else
+                        <svg class="w-3 h-3 opacity-30" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    @endif
+                </div>
             </th>
+            {{-- Status --}}
             <th scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.change_date') }}
-            </th>
-            <th scope="col"
-                class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.added_by') }}
-            </th>
-            <th scope="col"
-                class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 {{ __('ui.status') }}
             </th>
+            {{-- Action --}}
             <th scope="col"
-                class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 {{ __('ui.action') }}
             </th>
+            {{-- Created By --}}
+            <th scope="col"
+                class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Created By
+            </th>
+            {{-- Changed By --}}
+            <th scope="col"
+                class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Changed By
+            </th>
         </tr>
-    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400" id="propertyTableBody">
+    </thead>
+    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400 no-backdrop-filter" id="propertyTableBody">
         @forelse ($properties as $property)
             <tr class="hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer border-b border-gray-300 property-table-row">
-                <td class="px-6 py-4 whitespace-nowrap">
+                {{-- Initial --}}
+                <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ $property->initial ?? '-' }}</span>
+                </td>
+                {{-- Property Name with thumbnail --}}
+                <td class="px-4 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 h-10 w-10">
                             @if ($property->thumbnail)
@@ -54,31 +87,15 @@
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-left">
-                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $property->province }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ $property->city }}</div>
+                {{-- City (row 1) + Province badge (row 2) --}}
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-left">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $property->city }}</div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300 mt-1">
+                        {{ $property->province }}
+                    </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-left">
-                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ \Carbon\Carbon::parse($property->created_at)->format('Y M d') }}</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-500">
-                        {{ \Carbon\Carbon::parse($property->created_at)->format('H:i') }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-left">
-                    @if ($property->updated_at)
-                        <div class="text-sm font-medium text-gray-900 dark:text-white">
-                            {{ \Carbon\Carbon::parse($property->updated_at)->format('Y M d') }}</div>
-                        <div class="text-xs text-gray-400 dark:text-gray-500">
-                            {{ \Carbon\Carbon::parse($property->updated_at)->format('H:i') }}</div>
-                    @else
-                        <div class="text-gray-500 dark:text-gray-400">-</div>
-                    @endif
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ $property->creator->username ?? 'Unknown' }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-center">
+                {{-- Status --}}
+                <td class="px-4 py-4 whitespace-nowrap text-center">
                     <div class="flex items-center justify-center space-x-2">
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" class="sr-only peer property-status-toggle"
@@ -382,14 +399,14 @@
                                                             <div class="flex items-center">
                                                                 <input type="text"
                                                                     id="initial_edit_{{ $property->idrec }}"
-                                                                    name="initial" required maxlength="3"
+                                                                    name="initial" required maxlength="10"
                                                                     x-model="propertyData.initial"
                                                                     class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-center"
                                                                     placeholder="ABC"
                                                                     oninput="this.value = this.value.toUpperCase()">
                                                             </div>
                                                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                                {{ __('ui.max_3_chars') }}</p>
+                                                                Max 10 characters</p>
                                                         </div>
                                                     </div>
 
@@ -1305,10 +1322,28 @@
                         </div>
                     </div>
                 </td>
+                {{-- Created By: username + creation datetime --}}
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-center">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                        {{ $property->creator->username ?? 'Unknown' }}</div>
+                    <div class="text-xs text-gray-400 dark:text-gray-500">
+                        {{ \Carbon\Carbon::parse($property->created_at)->format('d M Y H:i') }}</div>
+                </td>
+                {{-- Changed By: username + update datetime --}}
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-center">
+                    @if($property->updated_by && $property->updater)
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ $property->updater->username }}</div>
+                        <div class="text-xs text-gray-400 dark:text-gray-500">
+                            {{ \Carbon\Carbon::parse($property->updated_at)->format('d M Y H:i') }}</div>
+                    @else
+                        <div class="text-gray-400 dark:text-gray-500">-</div>
+                    @endif
+                </td>
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                     {{ __('ui.no_properties_found') }}.
                 </td>
             </tr>

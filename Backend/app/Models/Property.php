@@ -68,6 +68,11 @@ class Property extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
     public function roomTypes()
     {
         return $this->hasMany(RoomType::class, 'property_id', 'idrec');

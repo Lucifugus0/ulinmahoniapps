@@ -6,6 +6,11 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-31 | Property & Room Description | Rich text editor (Quill.js) for property and room descriptions — supports bold, italic, text color, bullet/numbered lists, and links. Replaces plain textarea in multi-language description component. |
+| 2026-03-31 | Refund Management (`/refund`) | Enhanced refund page — shows Source column (User Request/Admin badge), refund breakdown (room/deposit/parking), bank account details for QRIS/VA user-initiated refunds, admin notes field in confirmation modal. |
+| 2026-03-31 | Booking Cancellation (PaymentController) | Admin cancel now uses RefundCalculationService for automatic refund breakdown calculation with tiered percentages. |
+| 2026-03-31 | RefundCalculationService | New service for calculating refund amounts — tiered room+parking refund (>10d:75%, 9-7d:50%, 6-3d:25%, <3d:0%), deposit always 100%, service/admin fees not refunded. |
+| 2026-03-31 | Database: `t_refund` (migration) | Added columns: `requested_by`, `refund_type`, `refund_bank_name`, `refund_account_no`, `refund_account_holder`, `room_refund`, `deposit_refund`, `other_refund`, `admin_notes`, `processed_by`, `processed_at`. |
 | 2026-03-30 | Property & Room CRUD | Multi-language description support (ID/EN/ZH) — tabbed textarea with auto-translate via Google Translate. Descriptions stored as XML-tagged string in existing column. |
 | 2026-03-30 | Translation API (`/api/translate`) | Backend endpoint for auto-translating description text between Indonesian, English, and Simplified Chinese using `stichoza/google-translate-php`. |
 | 2026-03-27 | Content Management (`/settings/content-management`) | Tagline & hero video management — create/edit/delete taglines (displayed randomly on home pages), upload/activate/delete hero background videos (MP4, max 100MB, 21:9 ratio). Two-tab Alpine.js interface with AJAX CRUD. |
@@ -23,6 +28,7 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-31 | Payments (`/payments`) | Internationalized all hardcoded strings in payment table — table headers, status badges, action buttons, cancel/reject/edit modals, notes editor, and empty state now use `__('ui.*')` translation keys for ID/EN support. |
 | 2026-03-27 | Transaction Report (`/reports/payment`) | Fixed selected/hovered row background color in dark mode — was showing light gray-50 instead of subtle translucent highlight. |
 | 2026-03-27 | Property's Rooms (`/m-rooms`) Edit Modal | Fixed modal centering — was trapped inside table by dark mode `backdrop-filter` on tbody. Added `no-backdrop-filter` to tbody. |
 | 2026-03-27 | Property's Rooms (`/m-rooms`) Edit Modal | Fixed modal header color in dark mode — added dark blue background to match the blue/indigo gradient theme. |
@@ -66,6 +72,13 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-31 | My Bookings (`/bookings`) | User-initiated booking cancellation — "Batalkan" button on Upcoming tab (pending/waiting) and Completed tab (paid, not checked-in). SweetAlert2 modal shows refund breakdown preview, bank account form for QRIS/VA, and confirmation. |
+| 2026-03-31 | Cancel API (`/api/v1/booking/{order_id}/cancel`) | New POST endpoint for cancelling bookings. Creates refund record, releases room and parking, sends FCM notifications. |
+| 2026-03-31 | Cancel Preview API (`/api/v1/booking/{order_id}/cancel-preview`) | New GET endpoint returning refund breakdown calculation without cancelling. |
+| 2026-03-31 | RefundCalculationService | Shared refund calculation service — tiered percentages for room+parking, 100% deposit, detects QRIS/VA for bank account requirement. |
+| 2026-03-31 | Refund Model | New Eloquent model for `t_refund` table with user-initiated refund fields and relationships. |
+| 2026-03-31 | FCM: `booking_cancelled` | New notification type added to push notification templates. |
+| 2026-03-31 | Property & Room Description | Rich text HTML rendering for descriptions — `DescriptionHelper::getHtml()` sanitizes HTML (allows bold, italic, color, lists, links) while stripping dangerous tags. Backward compatible with plain text. Updated all 14 blade templates (property, room, house, villa, apartment, hotel). |
 | 2026-03-30 | Property & Room Detail | Multi-language description display — shows description based on user's language selector (ID/EN/ZH). Fallback chain: selected locale -> EN -> ID. Added line break support via `nl2br`. |
 | 2026-03-30 | Property & Room API | Added `description_parsed` / `descriptions_parsed` fields to API responses with per-language breakdown for mobile app. |
 | 2026-03-27 | Home Page | Dynamic tagline loaded from database (random active tagline). Removed duplicate tagline text below hero heading. |
@@ -95,6 +108,10 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-03-31 | Booking Detail Page | User-initiated booking cancellation — "Batalkan Booking" red button on detail page for pending/waiting/paid (not checked-in) bookings. Opens cancel dialog with refund breakdown preview, bank account form for QRIS/VA, and confirmation. |
+| 2026-03-31 | Cancel Booking Dialog | New dialog widget showing tiered refund calculation (room, deposit, parking), QRIS/VA bank account inputs, cancel confirmation. Refreshes booking list on success. |
+| 2026-03-31 | Cancel Booking Data Layer | Repository (`cancel_booking_repository.dart`), model (`cancel_refund_model.dart`), provider (`cancel_booking_provider.dart`) — Riverpod 3.x Notifier pattern. |
+| 2026-03-31 | Property & Room Description | Rich text HTML rendering for descriptions using `flutter_widget_from_html_core`. New `HtmlDescription` widget auto-detects HTML vs plain text content. Updated property detail and room detail pages. |
 | 2026-03-30 | Room & Property Detail | Multi-language description support — displays description based on app locale (ID/EN/ZH) using `descriptions_parsed`/`description_parsed` from API. Fallback: current locale -> EN -> ID -> raw. |
 | 2026-03-27 | Home Page | Dynamic tagline loaded from API (random active tagline), falls back to localized 3-part text. |
 | 2026-03-27 | Home Page | Hero video caching — checks API for active video, downloads in background for next launch. Uses bundled asset as default fallback. |

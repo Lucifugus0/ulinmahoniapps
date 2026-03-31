@@ -162,7 +162,7 @@
                             <div class="space-y-6">
                                 <div class="prose prose-lg max-w-none">
                                     <h3 class="text-xl font-semibold text-gray-900 mb-4">Deskripsi Kamar</h3>
-                                    <div class="text-gray-600 leading-relaxed">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($room['descriptions'] ?? '', app()->getLocale()))) !!}</div>
+                                    <div class="text-gray-600 leading-relaxed">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
                                 </div>
                             </div>
                         </div>
@@ -366,6 +366,17 @@
     @include('components.homepage.footer')
 
     <script>
+        // Clamped month addition: avoids overflow when target month has fewer days
+        function addMonthsClamped(date, months) {
+            const d = new Date(date);
+            const day = d.getDate();
+            d.setDate(1);
+            d.setMonth(d.getMonth() + months);
+            const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(day, maxDay));
+            return d;
+        }
+
         // --- Element references ---
         let bookingForm, errorAlert, loadingOverlay, submitButton, monthInput, dateInputs, monthsSelect, rentTypeSelect;
         let checkInInput, checkOutInput;
@@ -524,8 +535,7 @@
                     // For monthly, update check-out based on months
                     const checkInDate = new Date(checkInInput.value);
                     const months = parseInt(monthsSelect.value, 10) || 1;
-                    const checkOutDate = new Date(checkInDate);
-                    checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                    const checkOutDate = addMonthsClamped(checkInDate, months);
                     checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                 } else {
                     // For daily, normal logic

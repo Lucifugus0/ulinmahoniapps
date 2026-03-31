@@ -318,7 +318,7 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">Tentang Properti</h2>
                     <div class="prose max-w-none">
                         <div class="text-gray-600">
-                            {!! nl2br(e(\App\Helpers\DescriptionHelper::get($house['description'] ?? '', app()->getLocale()))) !!}
+                            {!! \App\Helpers\DescriptionHelper::getHtml($house['description'] ?? '', app()->getLocale()) !!}
                         </div>
                     </div>
 
@@ -450,7 +450,7 @@
 
                                     <div class="p-6">
                                         <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $room['name'] }}</h3>
-                                        <div class="text-gray-600 text-sm mb-4">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($room['descriptions'] ?? '', app()->getLocale()))) !!}</div>
+                                        <div class="text-gray-600 text-sm mb-4">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
 
                                         <div class="mb-4">
                                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Room Facilities:</h4>

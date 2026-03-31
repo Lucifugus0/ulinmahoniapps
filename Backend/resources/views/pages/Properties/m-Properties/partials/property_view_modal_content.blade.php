@@ -55,7 +55,7 @@
     <div class="p-6 space-y-8">
         <!-- Description -->
         <div class="text-center">
-            <p class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed whitespace-pre-line" x-text="selectedProperty.description"></p>
+            <div class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed prose dark:prose-invert max-w-none" x-html="selectedProperty.description"></div>
         </div>
 
         <!-- Main Content Area -->

@@ -15,6 +15,7 @@ class PromoBannerModel {
   final String? thumbnail;
   final List<PromoBannerImageModel> images;
   final List<String>? howToClaim;
+  final String? promoCode;
 
   PromoBannerModel({
     required this.id,
@@ -31,6 +32,7 @@ class PromoBannerModel {
     this.thumbnail,
     required this.images,
     this.howToClaim,
+    this.promoCode,
   });
 
   factory PromoBannerModel.fromJson(Map<String, dynamic> json) {
@@ -54,6 +56,7 @@ class PromoBannerModel {
       howToClaim: (json['how_to_claim'] as List?)
               ?.map((e) => e as String)
               .toList(),
+      promoCode: json['promo_code'] as String?,
     );
   }
 
@@ -73,6 +76,7 @@ class PromoBannerModel {
       'thumbnail': thumbnail,
       'images': images.map((e) => e.toJson()).toList(),
       'how_to_claim': howToClaim,
+      'promo_code': promoCode,
     };
   }
 

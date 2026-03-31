@@ -32,7 +32,7 @@ class RouteServiceProvider extends ServiceProvider
         $this->routes(function () {
             // API routes with API key in URL
             Route::prefix('api')
-                // ->middleware(['api', 'api.key'])
+                ->middleware('api')
                 ->group(base_path('routes/api.php'));
 
             // Web routes

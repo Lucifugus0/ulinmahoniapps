@@ -497,6 +497,9 @@
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         {{ __('booking.index.table_headers.attachment') }}
                                     </th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -802,11 +805,23 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        
+                                        <!-- Cancel button for pending/waiting bookings -->
+                                        <td class="px-6 py-4">
+                                            @php
+                                                $canCancel = in_array(strtolower($booking->transaction_status), ['pending', 'waiting']);
+                                            @endphp
+                                            @if($canCancel)
+                                            <button onclick="cancelBooking('{{ $booking->order_id }}', '{{ strtolower($booking->transaction_status) }}')"
+                                                    class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 text-sm font-medium">
+                                                <i class="fas fa-times-circle mr-2"></i>
+                                                Batalkan
+                                            </button>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="px-6 py-12 text-center">
+                                        <td colspan="8" class="px-6 py-12 text-center">
                                             <div class="flex flex-col items-center justify-center text-gray-500">
                                                 <i class="fas fa-calendar-times text-4xl mb-4"></i>
                                                 <p class="text-lg">{{ __('booking.index.empty_states.no_bookings') }}</p>
@@ -966,6 +981,15 @@
                                                 // Can only renew if: checked in, not checked out, not too late, not already renewed
                                                 $canRenew = $isCheckedIn && !$isCheckedOut && !$isTooLate && !$isAlreadyRenewed;
                                             @endphp
+                                            {{-- Cancel button for paid + not checked-in bookings --}}
+                                            @if(!$isCheckedIn && !$isCheckedOut && strtolower($booking->transaction_status) === 'paid')
+                                            <button onclick="cancelBooking('{{ $booking->order_id }}', 'paid')"
+                                                    class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 text-sm font-medium mb-2">
+                                                <i class="fas fa-times-circle mr-2"></i>
+                                                Batalkan
+                                            </button>
+                                            @endif
+
                                             @if($isAlreadyRenewed)
                                             <button disabled
                                                     class="inline-flex items-center px-4 py-2 bg-blue-400 text-white rounded-md cursor-not-allowed text-sm font-medium"
@@ -994,6 +1018,7 @@
                                                 bookingType: '{{ $booking->booking_type }}',
                                                 months: {{ $booking->booking_months ?? 1 }},
                                                 previousCheckOut: '{{ $booking->check_out->format('Y-m-d') }}',
+                                                originalCheckinDay: {{ $booking->original_checkin_day ?? $booking->check_in->day }},
                                                 userId: {{ $booking->user_id }},
                                                 userName: '{{ addslashes($booking->user_name) }}',
                                                 userPhone: '{{ $booking->user_phone_number }}',
@@ -1437,8 +1462,12 @@
             roomName,
             bookingType,
             months,
-            previousCheckOut
+            previousCheckOut,
+            originalCheckinDay
         };
+
+        // Store originalCheckinDay for updateCheckOutDate() to use
+        window._renewOriginalCheckinDay = data.originalCheckinDay || null;
 
         const modal = document.getElementById('renewBookingModal');
 
@@ -1616,6 +1645,19 @@
         document.getElementById('renewBookingForm').reset();
     }
 
+    // Clamped month addition: avoids overflow when target month has fewer days.
+    // originalDay: use the original check-in day for renewals to preserve days across chain.
+    // e.g. Jan 31→Feb 28→Mar 31 (not Mar 28)
+    function addMonthsClamped(date, months, originalDay) {
+        const d = new Date(date);
+        const day = originalDay || d.getDate();
+        d.setDate(1);
+        d.setMonth(d.getMonth() + months);
+        const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        d.setDate(Math.min(day, maxDay));
+        return d;
+    }
+
     function updateCheckOutDate() {
         const checkIn = document.getElementById('renew_check_in_monthly').value;
         const months = parseInt(document.getElementById('renew_months').value) || 1;
@@ -1631,12 +1673,12 @@
                 return;
             }
 
-            checkInDate.setMonth(checkInDate.getMonth() + months);
+            const coDate = addMonthsClamped(checkInDate, months, window._renewOriginalCheckinDay);
 
             // Format as YYYY-MM-DD
-            const year = checkInDate.getFullYear();
-            const month = String(checkInDate.getMonth() + 1).padStart(2, '0');
-            const day = String(checkInDate.getDate()).padStart(2, '0');
+            const year = coDate.getFullYear();
+            const month = String(coDate.getMonth() + 1).padStart(2, '0');
+            const day = String(coDate.getDate()).padStart(2, '0');
             const checkOutDate = `${year}-${month}-${day}`;
 
             document.getElementById('renew_check_out_monthly').value = checkOutDate;
@@ -1832,6 +1874,175 @@
             submitBtn.disabled = false;
             btnText.classList.remove('hidden');
             btnLoader.classList.add('hidden');
+        }
+    }
+    </script>
+
+    <script>
+    /**
+     * Cancel booking flow — shows refund preview for paid bookings,
+     * simple confirmation for pending/waiting bookings.
+     */
+    async function cancelBooking(orderId, status) {
+        const apiBase = '{{ rtrim(config("app.url"), "/") }}/api/v1';
+
+        // For pending/waiting — simple cancellation, no refund
+        if (status === 'pending' || status === 'waiting') {
+            const result = await Swal.fire({
+                title: 'Batalkan Booking?',
+                text: `Apakah Anda yakin ingin membatalkan booking ${orderId}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Tidak',
+            });
+            if (!result.isConfirmed) return;
+
+            try {
+                Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const res = await fetch(`${apiBase}/booking/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'x-api-key': API_KEY },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    await Swal.fire({ icon: 'success', title: 'Booking Dibatalkan', text: data.message, confirmButtonColor: '#0d9488' });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: data.message || 'Terjadi kesalahan', confirmButtonColor: '#0d9488' });
+                }
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0d9488' });
+            }
+            return;
+        }
+
+        // For paid bookings — fetch refund preview first
+        try {
+            Swal.fire({ title: 'Menghitung refund...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            const previewRes = await fetch(`${apiBase}/booking/${orderId}/cancel-preview`, {
+                headers: { 'Accept': 'application/json', 'x-api-key': API_KEY }
+            });
+            const previewData = await previewRes.json();
+            Swal.close();
+
+            if (!previewRes.ok) {
+                Swal.fire({ icon: 'error', title: 'Gagal', text: previewData.message || 'Gagal menghitung refund', confirmButtonColor: '#0d9488' });
+                return;
+            }
+
+            const refund = previewData.data.refund;
+            const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
+
+            // Build refund breakdown HTML
+            let breakdownHtml = `
+                <div style="text-align:left; font-size:14px; margin-top:10px;">
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:16px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span>Refund Kamar (${refund.refund_percentage}%)</span>
+                            <strong>${fmt(refund.room_refund)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span>Refund Deposit (100%)</span>
+                            <strong>${fmt(refund.deposit_refund)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span>Refund Parkir (${refund.refund_percentage}%)</span>
+                            <strong>${fmt(refund.other_refund)}</strong>
+                        </div>
+                        <hr style="border-color:#bbf7d0; margin:8px 0;">
+                        <div style="display:flex; justify-content:space-between; font-size:16px;">
+                            <strong>Total Refund</strong>
+                            <strong style="color:#059669;">${fmt(refund.total_refund)}</strong>
+                        </div>
+                    </div>
+                    <p style="color:#6b7280; font-size:12px;">Hari sebelum check-in: ${refund.days_before_checkin} hari</p>
+                    <p style="color:#6b7280; font-size:12px;">Waktu proses refund: 14-30 hari kerja</p>
+            `;
+
+            // If QRIS/VA, add bank account fields
+            if (refund.requires_bank_account) {
+                breakdownHtml += `
+                    <div style="background:#fef3c7; border:1px solid #fde68a; border-radius:8px; padding:12px; margin-top:12px;">
+                        <p style="font-weight:600; color:#92400e; margin-bottom:8px;">Pembayaran via QRIS/VA — isi data rekening:</p>
+                        <div style="margin-bottom:8px;">
+                            <label style="display:block; font-size:12px; color:#6b7280; margin-bottom:2px;">Nama Bank</label>
+                            <input type="text" id="refund-bank-name" class="swal2-input" placeholder="BCA, Mandiri, BNI..." style="width:100%; margin:0; font-size:14px;">
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <label style="display:block; font-size:12px; color:#6b7280; margin-bottom:2px;">Nomor Rekening</label>
+                            <input type="text" id="refund-account-no" class="swal2-input" placeholder="1234567890" style="width:100%; margin:0; font-size:14px;">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:12px; color:#6b7280; margin-bottom:2px;">Nama Pemilik Rekening</label>
+                            <input type="text" id="refund-account-holder" class="swal2-input" placeholder="Nama lengkap" style="width:100%; margin:0; font-size:14px;">
+                        </div>
+                    </div>
+                `;
+            }
+            breakdownHtml += '</div>';
+
+            // Show confirmation with refund preview
+            const confirmResult = await Swal.fire({
+                title: 'Batalkan Booking?',
+                html: breakdownHtml,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Batalkan & Refund',
+                cancelButtonText: 'Tidak',
+                width: '500px',
+                preConfirm: () => {
+                    if (refund.requires_bank_account) {
+                        const bankName = document.getElementById('refund-bank-name').value.trim();
+                        const accountNo = document.getElementById('refund-account-no').value.trim();
+                        const accountHolder = document.getElementById('refund-account-holder').value.trim();
+                        if (!bankName || !accountNo || !accountHolder) {
+                            Swal.showValidationMessage('Semua field rekening bank wajib diisi');
+                            return false;
+                        }
+                        return { bank_name: bankName, account_no: accountNo, account_holder: accountHolder };
+                    }
+                    return {};
+                }
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
+            // Execute cancellation
+            Swal.fire({ title: 'Memproses pembatalan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            const cancelBody = confirmResult.value || {};
+            const cancelRes = await fetch(`${apiBase}/booking/${orderId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'x-api-key': API_KEY },
+                body: JSON.stringify(cancelBody)
+            });
+            const cancelData = await cancelRes.json();
+
+            if (cancelRes.ok) {
+                const totalRefund = cancelData.data?.refund?.total_refund;
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Booking Dibatalkan',
+                    html: totalRefund
+                        ? `Refund sebesar <strong>${fmt(totalRefund)}</strong> akan diproses dalam 14-30 hari kerja.`
+                        : cancelData.message,
+                    confirmButtonColor: '#0d9488'
+                });
+                window.location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Gagal', text: cancelData.message || 'Terjadi kesalahan', confirmButtonColor: '#0d9488' });
+            }
+
+        } catch (e) {
+            console.error('Cancel booking error:', e);
+            Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0d9488' });
         }
     }
     </script>

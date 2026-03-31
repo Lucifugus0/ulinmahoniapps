@@ -217,7 +217,7 @@
                     <div class="prose max-w-none">
                         <!-- Multi-language description with line break support -->
                         <div class="text-gray-600">
-                            {!! nl2br(e(\App\Helpers\DescriptionHelper::get($property['description'] ?? '', app()->getLocale()))) !!}
+                            {!! \App\Helpers\DescriptionHelper::getHtml($property['description'] ?? '', app()->getLocale()) !!}
                         </div>
                     </div>
 

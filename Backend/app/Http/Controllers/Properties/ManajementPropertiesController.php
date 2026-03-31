@@ -19,8 +19,15 @@ class ManajementPropertiesController extends Controller
         $perPage = $request->input('per_page', 5);
         $statusFilter = $request->input('status', '1'); // Default menampilkan hanya yang aktif
 
-        $query = Property::with(['creator', 'images', 'thumbnail'])
-            ->orderBy('created_at', 'desc');
+        // Sortable columns: name (default asc), city
+        $sortBy = $request->input('sort_by', 'name');
+        $sortDir = $request->input('sort_dir', 'asc');
+        $allowedSorts = ['name', 'city'];
+        if (!in_array($sortBy, $allowedSorts)) { $sortBy = 'name'; }
+        $sortDir = $sortDir === 'desc' ? 'desc' : 'asc';
+
+        $query = Property::with(['creator', 'updater', 'images', 'thumbnail'])
+            ->orderBy($sortBy, $sortDir);
 
         // Filter berdasarkan property_id user (kecuali super admin dan HO role)
         $user = Auth::user();
@@ -97,8 +104,15 @@ class ManajementPropertiesController extends Controller
         $search = $request->input('search');
         $status = $request->input('status', '1'); // Default aktif
 
-        $query = Property::with(['creator', 'images', 'thumbnail'])
-            ->orderBy('created_at', 'desc');
+        // Sortable columns: name (default asc), city
+        $sortBy = $request->input('sort_by', 'name');
+        $sortDir = $request->input('sort_dir', 'asc');
+        $allowedSorts = ['name', 'city'];
+        if (!in_array($sortBy, $allowedSorts)) { $sortBy = 'name'; }
+        $sortDir = $sortDir === 'desc' ? 'desc' : 'asc';
+
+        $query = Property::with(['creator', 'updater', 'images', 'thumbnail'])
+            ->orderBy($sortBy, $sortDir);
 
         // Filter berdasarkan property_id user (kecuali super admin dan HO role)
         $user = Auth::user();

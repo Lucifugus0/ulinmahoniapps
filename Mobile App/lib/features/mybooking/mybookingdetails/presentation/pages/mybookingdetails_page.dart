@@ -31,6 +31,7 @@ import '../../../../../core/network/api_result.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/utils/app_logger.dart';
 import '../widgets/renew_booking_dialog.dart';
+import '../widgets/cancel_booking_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:gal/gal.dart';
@@ -1293,6 +1294,60 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 ),
                                               ),
                                             ),
+                                        ],
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
+                                // Cancel Booking section — shows for pending/waiting/paid (not checked-in)
+                                Builder(
+                                  builder: (context) {
+                                    final status = bookingData.transactionStatus?.toLowerCase().trim() ?? '';
+                                    final isPaid = _isTransactionPaid(bookingData.transactionStatus);
+                                    final hasCheckedIn = bookingData.checked_in_at != null && bookingData.checked_in_at!.isNotEmpty;
+                                    final isPendingOrWaiting = status == 'pending' || status == 'waiting';
+
+                                    // Can cancel if: pending/waiting, OR paid+not-checked-in
+                                    final canCancel = isPendingOrWaiting || (isPaid && !hasCheckedIn);
+
+                                    if (canCancel) {
+                                      return Column(
+                                        children: [
+                                          const Divider(height: 32, thickness: 1),
+                                          sectionTitle(context, 'Batalkan Booking'),
+                                          const SizedBox(height: 12),
+                                          Center(
+                                            child: SizedBox(
+                                              width: 250,
+                                              child: ElevatedButton.icon(
+                                                onPressed: () async {
+                                                  final result = await showDialog<bool>(
+                                                    context: context,
+                                                    barrierDismissible: false,
+                                                    builder: (_) => CancelBookingDialog(
+                                                      orderId: bookingData.orderId,
+                                                      transactionStatus: status,
+                                                      idrec: bookingData.idrec,
+                                                    ),
+                                                  );
+                                                  // If cancelled successfully, go back to booking list
+                                                  if (result == true && mounted) {
+                                                    Navigator.of(context).pop();
+                                                  }
+                                                },
+                                                icon: const Icon(Icons.cancel_outlined, size: 20),
+                                                label: const Text('Batalkan Booking', style: TextStyle(fontSize: 16)),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.red,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
                                         ],
                                       );
                                     }

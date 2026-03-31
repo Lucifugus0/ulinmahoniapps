@@ -45,6 +45,7 @@ dependencies:
   internet_connection_checker_plus: ^2.9.1
   intl: ^0.20.2
   intl_phone_field: ^3.2.0
+  flutter_widget_from_html_core: ^0.15.2
   link_text: ^0.2.1
   local_auth: ^3.0.0
   lottie: ^3.3.1

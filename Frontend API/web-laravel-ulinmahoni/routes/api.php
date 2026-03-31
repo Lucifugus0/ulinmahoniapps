@@ -115,7 +115,9 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}/payment-method', [BookingController::class, 'updatePaymentMethod']);
             Route::post('/{order_id}/check-in', [BookingController::class, 'checkInByOrderId']);
             Route::post('/{order_id}/renew', [BookingController::class, 'renewBooking']);
-            // Removed duplicate check-availability route
+            // Cancellation & refund endpoints
+            Route::get('/{order_id}/cancel-preview', [BookingController::class, 'previewCancelRefund']);
+            Route::post('/{order_id}/cancel', [BookingController::class, 'cancelBooking']);
         });
 
         // DOKU PAYMENT API ROUTES

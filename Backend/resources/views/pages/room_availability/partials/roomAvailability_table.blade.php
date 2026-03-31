@@ -3,9 +3,9 @@
 <!-- Action column: only visible to admin_tsno@gmail.com -->
 @php
     $isAdmin = Auth::check() && Auth::user()->email === 'admin_tsno@gmail.com';
-    $colCount = $isAdmin ? 5 : 4;
+    $colCount = $isAdmin ? 7 : 6;
 @endphp
-<div class="room-avail-table bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+<div class="room-avail-table bg-white rounded-xl shadow-sm border border-gray-200"
     x-data="{
         sortColumn: 'property',
         sortDirection: 'asc',
@@ -47,7 +47,7 @@
         /* Apply default sort on init */
         init() { this.performSort(); }
     }">
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto" style="overflow-y: visible;">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-slate-100">
                 <tr>
@@ -72,6 +72,10 @@
                             <template x-if="sortColumn !== 'property'"><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg></template>
                         </div>
                     </th>
+                    <!-- Currently Occupied By -->
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Currently Occupied By
+                    </th>
                     <!-- Sortable Status column header -->
                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
                         @click="sortTable('status')">
@@ -82,14 +86,14 @@
                             <template x-if="sortColumn !== 'status'"><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg></template>
                         </div>
                     </th>
-                    <!-- Related Bookings (not sortable) -->
+                    <!-- Upcoming Bookings (not sortable) -->
                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        {{ __('ui.related_bookings') }}
+                        Upcoming Bookings
                     </th>
                     {{-- Action column removed — room availability is system-managed --}}
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
+            <tbody class="bg-white divide-y divide-gray-100 no-backdrop-filter">
                 @forelse($rooms as $index => $room)
                     <!-- Each row has data-* attributes for client-side sorting -->
                     <tr class="hover:bg-blue-50/30 transition-all duration-200 {{ $index % 2 == 0 ? 'bg-white' : 'bg-gray-50/50' }}"
@@ -144,7 +148,39 @@
                             </div>
                         </td>
 
-                        <!-- Status -->
+                        <!-- Currently Occupied By -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @php
+                                // Find current occupant: checked-in, not checked-out, paid transaction
+                                // Use getRawOriginal('status') because the Booking model's status accessor
+                                // returns display strings like "Checked-In" instead of the raw DB value (1/0)
+                                $activeBooking = $room->bookings->first(function ($booking) {
+                                    return $booking->check_in_at && !$booking->check_out_at
+                                        && $booking->getRawOriginal('status') == 1
+                                        && $booking->transaction
+                                        && $booking->transaction->transaction_status === 'paid';
+                                });
+                            @endphp
+                            @if($activeBooking && $activeBooking->transaction)
+                                @php
+                                    $user = $activeBooking->transaction->user ?? null;
+                                    $occupantName = $user
+                                        ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))
+                                        : ($activeBooking->transaction->user_name ?? 'Unknown');
+                                    if (empty(trim($occupantName))) $occupantName = $activeBooking->transaction->user_name ?? 'Unknown';
+                                @endphp
+                                <div class="text-sm font-medium text-gray-900">{{ $occupantName }}</div>
+                                <div class="text-xs text-gray-500 mt-0.5">
+                                    {{ \Carbon\Carbon::parse($activeBooking->transaction->check_in)->format('d M Y') }}
+                                    —
+                                    {{ \Carbon\Carbon::parse($activeBooking->transaction->check_out)->format('d M Y') }}
+                                </div>
+                            @else
+                                <span class="text-sm text-gray-400">—</span>
+                            @endif
+                        </td>
+
+                        <!-- Status + Rent Type -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($room->rental_status == 1)
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 ring-1 ring-inset ring-rose-200 dark:ring-rose-800">
@@ -157,253 +193,57 @@
                                     {{ __('ui.available') }}
                                 </span>
                             @endif
+                            {{-- Rent type from master room --}}
+                            <div class="mt-1">
+                                @if($room->periode_daily && $room->periode_monthly)
+                                    <span class="text-xs text-gray-500">Daily & Monthly</span>
+                                @elseif($room->periode_daily)
+                                    <span class="text-xs text-gray-500">Daily</span>
+                                @elseif($room->periode_monthly)
+                                    <span class="text-xs text-gray-500">Monthly</span>
+                                @else
+                                    <span class="text-xs text-gray-400">—</span>
+                                @endif
+                            </div>
                         </td>
 
-                        <!-- Related Bookings -->
+                        <!-- Upcoming Bookings — future bookings only (check_in > today, not yet checked-in) -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             @php
-                                $startDate = request('start_date');
-                                $endDate = request('end_date');
+                                $today = \Carbon\Carbon::today();
 
-                                $currentBookings = $room->bookings->filter(function ($booking) use ($startDate, $endDate) {
-                                    if (!$booking->transaction) {
-                                        return false;
-                                    }
-                                    if (!$startDate || !$endDate) {
-                                        return true;
-                                    }
-                                    $checkIn = $booking->transaction->check_in;
-                                    $checkOut = $booking->transaction->check_out;
-                                    return !($checkOut < $startDate || $checkIn > $endDate);
+                                // Future bookings: active (raw status=1), paid, check_in after today, not yet checked in
+                                $upcomingBookings = $room->bookings->filter(function ($booking) use ($today) {
+                                    if (!$booking->transaction) return false;
+                                    if ($booking->transaction->transaction_status !== 'paid') return false;
+                                    if ($booking->getRawOriginal('status') != 1) return false;
+                                    // Must not be currently checked in (that's the "occupied by" column)
+                                    if ($booking->check_in_at && !$booking->check_out_at) return false;
+                                    // Check-in date must be in the future
+                                    $checkIn = \Carbon\Carbon::parse($booking->transaction->check_in)->startOfDay();
+                                    return $checkIn->gt($today);
                                 });
 
-                                // Hitung penyewa unik: user_id sama = perpanjangan = 1 penyewa
-                                // Hanya booking dengan is_renewal=0 yang dihitung sebagai booking baru
-                                $uniqueTenantCount = $currentBookings
-                                    ->groupBy(function ($booking) {
-                                        return $booking->transaction->user_id
-                                            ?? $booking->user_id
-                                            ?? $booking->order_id;
-                                    })
-                                    ->count();
+                                $upcomingCount = $upcomingBookings->count();
                             @endphp
 
-                            @if ($currentBookings->count() > 0)
-                                <div x-data="modalView()" class="relative">
-                                    <button
-                                        class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition-all duration-200 font-medium text-sm ring-1 ring-inset ring-blue-200 hover:ring-blue-300"
-                                        type="button" @click.prevent="openModal({{ $room->idrec }})"
-                                        title="{{ __('ui.view_bookings') }}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                        <span>{{ $uniqueTenantCount }} {{ __('ui.booking') }}</span>
-                                    </button>
-
-                                    <!-- Modal Backdrop -->
-                                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
-                                        x-show="modalOpenDetail" x-transition:enter="transition ease-out duration-300"
-                                        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                                        x-transition:leave="transition ease-out duration-200"
-                                        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                                        aria-hidden="true" x-cloak>
-                                    </div>
-
-                                    <!-- Modal Dialog -->
-                                    <div id="property-detail-modal"
-                                        class="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4"
-                                        role="dialog" aria-modal="true" x-show="modalOpenDetail"
-                                        x-transition:enter="transition ease-in-out duration-300"
-                                        x-transition:enter-start="opacity-0 scale-95"
-                                        x-transition:enter-end="opacity-100 scale-100"
-                                        x-transition:leave="transition ease-in-out duration-200"
-                                        x-transition:leave-start="opacity-100 scale-100"
-                                        x-transition:leave-end="opacity-0 scale-95" x-cloak>
-
-                                        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col"
-                                            @click.outside="modalOpenDetail = false"
-                                            @keydown.escape.window="modalOpenDetail = false">
-
-                                            <!-- Modal Header -->
-                                            <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
-                                                <div class="text-left">
-                                                    <div class="flex items-center gap-3 mb-1">
-                                                        <div class="p-2 bg-blue-100 rounded-lg">
-                                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                                            </svg>
-                                                        </div>
-                                                        <h3 class="text-xl font-bold text-gray-900" x-text="selectedProperty.roomName"></h3>
-                                                    </div>
-                                                    <p class="text-gray-500 text-sm ml-11">{{ __('ui.active_users_list') }}</p>
-                                                </div>
-                                                <div class="flex items-center space-x-4">
-                                                    <div class="text-right">
-                                                        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg shadow-sm">
-                                                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                            </svg>
-                                                            <span class="text-sm font-semibold text-gray-700" x-text="`${selectedProperty.totalBookings || 0} booking`"></span>
-                                                        </div>
-                                                        <div class="flex items-center justify-end mt-2" x-show="loading">
-                                                            <svg class="animate-spin h-4 w-4 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24">
-                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                            </svg>
-                                                            <span class="text-xs text-gray-500">{{ __('ui.loading') }}</span>
-                                                        </div>
-                                                    </div>
-                                                    <button type="button"
-                                                        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-all duration-200"
-                                                        @click="modalOpenDetail = false">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <!-- Modal Content -->
-                                            <div class="overflow-y-auto flex-1 p-6 bg-gray-50/50">
-                                                <!-- Empty State -->
-                                                <template x-if="!loading && (!selectedProperty.bookings || selectedProperty.bookings.length === 0)">
-                                                    <div class="text-center py-16">
-                                                        <div class="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                                                            <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                            </svg>
-                                                        </div>
-                                                        <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ __('ui.no_active_bookings') }}</h3>
-                                                        <p class="text-gray-500 max-w-sm mx-auto text-sm">
-                                                            {{ __('ui.no_active_bookings_desc') }}
-                                                        </p>
-                                                    </div>
-                                                </template>
-
-                                                <!-- Loading State -->
-                                                <template x-if="loading">
-                                                    <div class="flex flex-col justify-center items-center py-16">
-                                                        <div class="relative">
-                                                            <div class="w-14 h-14 border-4 border-blue-200 rounded-full animate-spin border-t-blue-600"></div>
-                                                        </div>
-                                                        <p class="text-gray-500 mt-4 text-sm">{{ __('ui.loading_booking_data') }}</p>
-                                                    </div>
-                                                </template>
-
-                                                <!-- Bookings List -->
-                                                <template x-if="!loading && selectedProperty.bookings && selectedProperty.bookings.length > 0">
-                                                    <div class="grid gap-4 md:grid-cols-2">
-                                                        <template x-for="booking in selectedProperty.bookings" :key="booking.id">
-                                                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 overflow-hidden">
-                                                                <!-- Card Header: invoice number on top, then user info with status badges -->
-                                                                <div class="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/50">
-                                                                    <!-- Invoice number displayed as text above user name -->
-                                                                    <p class="font-semibold text-gray-900 mb-2" x-text="booking.booking_code"></p>
-                                                                    <div class="flex justify-between items-start">
-                                                                        <div class="flex-1 min-w-0">
-                                                                            <div class="flex items-center gap-2">
-                                                                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs" x-text="booking.user_name ? booking.user_name.charAt(0).toUpperCase() : 'U'"></div>
-                                                                                <div class="min-w-0">
-                                                                                    <h4 class="font-semibold text-gray-900 truncate" x-text="booking.user_name"></h4>
-                                                                                    <p class="text-xs text-gray-500 truncate" x-text="booking.user_email"></p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="flex flex-col items-end space-y-1.5 ml-3">
-                                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="booking.status_badge" x-text="booking.status"></span>
-                                                                            <span x-show="booking.is_renewal" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 ring-1 ring-yellow-200 dark:ring-yellow-800">
-                                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                                                                {{ __('ui.renewal') }}
-                                                                            </span>
-                                                                            <span x-show="booking.is_room_changed" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 ring-1 ring-purple-200 dark:ring-purple-800">
-                                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                                                                                {{ __('ui.room_change') }}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                <!-- Card Body -->
-                                                                <div class="p-5">
-                                                                    <div class="grid grid-cols-2 gap-3 mb-4">
-                                                                        <div class="text-center p-3 bg-blue-50 rounded-xl">
-                                                                            <p class="text-[10px] font-semibold text-blue-600 uppercase tracking-wider mb-1">{{ __('ui.check_in') }}</p>
-                                                                            <p class="text-sm font-bold text-gray-900" x-text="formatDate(booking.check_in)"></p>
-                                                                        </div>
-                                                                        <div class="text-center p-3 bg-emerald-50 rounded-xl">
-                                                                            <p class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-1">{{ __('ui.check_out') }}</p>
-                                                                            <p class="text-sm font-bold text-gray-900" x-text="formatDate(booking.check_out)"></p>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="space-y-2.5">
-                                                                        <div class="flex justify-between items-center text-sm">
-                                                                            <span class="text-gray-500 flex items-center gap-1.5">
-                                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                                </svg>
-                                                                                {{ __('ui.duration') }}
-                                                                            </span>
-                                                                            <span class="font-semibold text-gray-900" x-text="booking.duration"></span>
-                                                                        </div>
-                                                                        <div class="flex justify-between items-center text-sm">
-                                                                            <span class="text-gray-500 flex items-center gap-1.5">
-                                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                                </svg>
-                                                                                {{ __('ui.total') }}
-                                                                            </span>
-                                                                            <span class="font-bold text-emerald-600" x-text="formatCurrency(booking.total_amount)"></span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                <!-- Card Footer -->
-                                                                <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
-                                                                    <div class="flex justify-between items-center text-xs">
-                                                                        <div class="flex items-center gap-1.5">
-                                                                            <span class="w-2 h-2 rounded-full"
-                                                                                :class="{
-                                                                                    'bg-amber-400 animate-pulse': booking.payment_status === 'unpaid',
-                                                                                    'bg-emerald-400': booking.payment_status === 'paid',
-                                                                                    'bg-yellow-400 animate-pulse': booking.payment_status === 'pending',
-                                                                                    'bg-red-400': booking.payment_status === 'failed'
-                                                                                }">
-                                                                            </span>
-                                                                            <span class="text-gray-600 capitalize font-medium" x-text="booking.payment_status"></span>
-                                                                        </div>
-                                                                        <span class="text-gray-400" x-text="booking.created_at"></span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                            </div>
-
-                                            <!-- Modal Footer -->
-                                            <div class="px-6 py-4 border-t border-gray-200 bg-white flex justify-between items-center">
-                                                <div class="text-sm text-gray-500">
-                                                    <span x-text="'{{ __('ui.showing_bookings', ['shown' => '\' + (selectedProperty.bookings ? selectedProperty.bookings.length : 0) + \'', 'total' => '\' + (selectedProperty.totalBookings || 0) + \'']) }}'.replace(':shown', selectedProperty.bookings ? selectedProperty.bookings.length : 0).replace(':total', selectedProperty.totalBookings || 0)"></span>
-                                                </div>
-                                                <button @click="modalOpenDetail = false"
-                                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                    {{ __('ui.close') }}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            @if ($upcomingCount > 0)
+                                <button
+                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition-all duration-200 font-medium text-sm ring-1 ring-inset ring-blue-200 hover:ring-blue-300"
+                                    type="button"
+                                    @click.prevent="$dispatch('open-room-booking-modal', { roomId: {{ $room->idrec }} })"
+                                    title="View upcoming bookings">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span>{{ $upcomingCount }} Upcoming</span>
+                                </button>
                             @else
                                 <span class="inline-flex items-center gap-1.5 text-sm text-gray-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
                                     </svg>
-                                    {{ __('ui.no_bookings') }}
+                                    No upcoming
                                 </span>
                             @endif
                         </td>

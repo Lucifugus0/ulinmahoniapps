@@ -363,7 +363,7 @@
                                 <div class="prose prose-lg max-w-none">
                                     <h3 class="text-xl font-semibold text-gray-900 mb-4">{{ __('properties.room_detail.room_description') }}</h3>
                                     <!-- Multi-language description with line break support -->
-                                    <div class="text-gray-600 leading-relaxed">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($room['descriptions'] ?? '', app()->getLocale()))) !!}</div>
+                                    <div class="text-gray-600 leading-relaxed">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
                                 </div>
                             </div>
 
@@ -757,6 +757,19 @@
     @include('components.homepage.footer')
 
     <script>
+        // Clamped month addition: avoids overflow when target month has fewer days
+        // e.g. Jan 31 + 1 month = Feb 28, Mar 31 + 1 month = Apr 30, Feb 29 + 1 month = Mar 29
+        function addMonthsClamped(date, months) {
+            const d = new Date(date);
+            const day = d.getDate();
+            d.setDate(1); // set to 1st to avoid overflow during setMonth
+            d.setMonth(d.getMonth() + months);
+            // clamp day to last day of target month
+            const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(day, maxDay));
+            return d;
+        }
+
         // --- Global variables ---
         let bookingForm, errorAlert, loadingOverlay, submitButton, monthInput, dateInputs, monthsSelect, rentTypeSelect;
         let checkInInput, checkOutInput, roomStatusSpan;
@@ -1361,8 +1374,7 @@
                     if (checkInMonthlyInput && checkOutInput) {
                         const checkInDate = new Date(checkInMonthlyInput.value);
                         const months = parseInt(monthsSelect.value, 10) || 1;
-                        const checkOutDate = new Date(checkInDate);
-                        checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                        const checkOutDate = addMonthsClamped(checkInDate, months);
                         checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                     }
 
@@ -1453,8 +1465,7 @@
                     // For monthly, update check-out based on months
                     const checkInDate = new Date(checkInInput.value);
                     const months = parseInt(monthsSelect.value, 10) || 1;
-                    const checkOutDate = new Date(checkInDate);
-                    checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                    const checkOutDate = addMonthsClamped(checkInDate, months);
                     checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                 } else {
                     // For daily, apply month boundary and 14-day limit
@@ -1536,8 +1547,7 @@
                         if (checkOutInput && monthsSelect) {
                             const checkInDate = new Date(checkInMonthlyInput.value);
                             const months = parseInt(monthsSelect.value, 10) || 1;
-                            const checkOutDate = new Date(checkInDate);
-                            checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                            const checkOutDate = addMonthsClamped(checkInDate, months);
                             checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                         }
 
@@ -1571,8 +1581,7 @@
                             if (checkInMonthlyInput && checkOutInput && checkInMonthlyInput.value) {
                                 const checkInDate = new Date(checkInMonthlyInput.value);
                                 const months = parseInt(monthsSelect.value, 10) || 1;
-                                const checkOutDate = new Date(checkInDate);
-                                checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                                const checkOutDate = addMonthsClamped(checkInDate, months);
                                 checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                             }
                         }
@@ -1884,8 +1893,7 @@
                         if (checkInMonthlyInput && checkOutInput && checkInMonthlyInput.value) {
                             const checkInDate = new Date(checkInMonthlyInput.value);
                             const months = parseInt(monthsSelect.value, 10) || 1;
-                            const checkOutDate = new Date(checkInDate);
-                            checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                            const checkOutDate = addMonthsClamped(checkInDate, months);
                             checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                         }
                     }

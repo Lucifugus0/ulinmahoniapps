@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Property;
+use App\Models\Refund;
+use App\Services\RefundCalculationService;
 
 class BookingController extends ApiController
 {
@@ -719,6 +721,9 @@ class BookingController extends ApiController
                 // DATES
                 'check_in' => $checkIn,
                 'check_out' => $checkOut,
+                // Preserve the day-of-month from check-in for renewal checkout calculation
+                // e.g. Jan 31 check-in → original_checkin_day = 31
+                'original_checkin_day' => Carbon::parse($checkIn)->day,
                 'expired_at' => $expiredAt,
             ];
 
@@ -1007,18 +1012,35 @@ class BookingController extends ApiController
 
             DB::beginTransaction();
 
-            // Set check-in time to 14:00:00 and check-out time to 12:00:00
-            // Use createFromFormat to avoid timezone issues with date-only strings
-            $checkInWithTime = Carbon::createFromFormat('Y-m-d', $request->check_in, config('app.timezone'))->setTime(14, 0, 0);
-            $checkOutWithTime = Carbon::createFromFormat('Y-m-d', $request->check_out, config('app.timezone'))->setTime(12, 0, 0);
+            // Preserve original check-in day across renewal chain.
+            // For renewals: copy from previous booking. For room changes: reset.
+            $originalCheckinDay = $originalTransaction->original_checkin_day
+                ?? Carbon::parse($originalTransaction->check_in)->day;
 
-            // Calculate pricing based on booking type
-            $bookingDays = null;
-            $bookingMonths = null;
-            $roomPrice = 0;
+            // Set check-in time to 14:00:00 and check-out time to 12:00:00
+            $checkInWithTime = Carbon::createFromFormat('Y-m-d', $request->check_in, config('app.timezone'))->setTime(14, 0, 0);
 
             // Determine booking type - prioritize explicit booking_type parameter
             $isDaily = $request->booking_type === 'daily';
+
+            // For monthly renewals: recalculate checkout using original check-in day
+            // to avoid losing days across renewals (e.g., Jan 31→Feb 28→Mar 31 not Mar 28)
+            $bookingMonths = null;
+            if (!$isDaily) {
+                $bookingMonths = $request->booking_months ?? 1;
+                $targetMonth = $checkInWithTime->month + $bookingMonths;
+                $targetYear = $checkInWithTime->year + intdiv($targetMonth - 1, 12);
+                $targetMonth = (($targetMonth - 1) % 12) + 1;
+                $maxDay = Carbon::create($targetYear, $targetMonth, 1)->daysInMonth;
+                $clampedDay = min($originalCheckinDay, $maxDay);
+                $checkOutWithTime = Carbon::create($targetYear, $targetMonth, $clampedDay, 12, 0, 0);
+            } else {
+                $checkOutWithTime = Carbon::createFromFormat('Y-m-d', $request->check_out, config('app.timezone'))->setTime(12, 0, 0);
+            }
+
+            // Calculate pricing based on booking type
+            $bookingDays = null;
+            $roomPrice = 0;
 
             if ($isDaily) {
                 // DAILY BOOKING
@@ -1147,6 +1169,8 @@ class BookingController extends ApiController
                 // DATES
                 'check_in' => $checkInWithTime,
                 'check_out' => $checkOutWithTime,
+                // Carry forward original check-in day for future renewals
+                'original_checkin_day' => $originalCheckinDay,
                 'expired_at' => $expiredAt,
                 // RENEWAL FLAG
                 'is_renewal' => $request->is_renewal ?? 1,
@@ -3056,6 +3080,261 @@ class BookingController extends ApiController
                 'success' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Preview refund calculation for a booking cancellation (without cancelling).
+     * Returns the refund breakdown so the user can decide before confirming.
+     *
+     * GET /api/v1/booking/{order_id}/cancel-preview
+     */
+    public function previewCancelRefund(Request $request, $order_id)
+    {
+        try {
+            // Find the transaction by order_id
+            $transaction = Transaction::where('order_id', $order_id)->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking not found',
+                ], 404);
+            }
+
+            $status = strtolower($transaction->transaction_status);
+
+            // For pending/waiting bookings, no refund needed — just show cancellation is free
+            if (in_array($status, ['pending', 'waiting'])) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Booking can be cancelled without refund',
+                    'data' => [
+                        'order_id' => $order_id,
+                        'transaction_status' => $status,
+                        'refund' => null,
+                    ],
+                ]);
+            }
+
+            // Only paid bookings (not yet checked-in) can be cancelled with refund
+            if ($status !== 'paid') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking cannot be cancelled. Status: ' . $status,
+                ], 400);
+            }
+
+            // Check if already checked in
+            $booking = Booking::where('order_id', $order_id)->where('status', '1')->first();
+            if ($booking && !is_null($booking->check_in_at)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot cancel a booking that has already been checked in',
+                ], 400);
+            }
+
+            // Calculate refund breakdown
+            $refundService = new RefundCalculationService();
+            $refundData = $refundService->calculate($transaction);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Refund preview calculated',
+                'data' => [
+                    'order_id' => $order_id,
+                    'transaction_status' => $status,
+                    'refund' => $refundData,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Cancel preview error: ' . $e->getMessage(), [
+                'order_id' => $order_id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to calculate refund preview',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Cancel a booking and create a refund record (for paid bookings).
+     * For pending/waiting bookings, simply cancels without refund.
+     *
+     * POST /api/v1/booking/{order_id}/cancel
+     */
+    public function cancelBooking(Request $request, $order_id)
+    {
+        try {
+            // Find the transaction by order_id
+            $transaction = Transaction::where('order_id', $order_id)->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking not found',
+                ], 404);
+            }
+
+            $status = strtolower($transaction->transaction_status);
+
+            // Validate the booking is cancellable
+            if (!in_array($status, ['pending', 'waiting', 'paid'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking cannot be cancelled. Status: ' . $status,
+                ], 400);
+            }
+
+            // For paid bookings, check not already checked in
+            if ($status === 'paid') {
+                $booking = Booking::where('order_id', $order_id)->where('status', '1')->first();
+                if ($booking && !is_null($booking->check_in_at)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Cannot cancel a booking that has already been checked in',
+                    ], 400);
+                }
+            }
+
+            $refundData = null;
+
+            DB::beginTransaction();
+
+            // For paid bookings: calculate refund and create refund record
+            if ($status === 'paid') {
+                $refundService = new RefundCalculationService();
+                $refundData = $refundService->calculate($transaction);
+
+                // If QRIS/VA, validate bank account details are provided
+                if ($refundData['requires_bank_account']) {
+                    $validator = Validator::make($request->all(), [
+                        'bank_name' => 'required|string|max:100',
+                        'account_no' => 'required|string|max:50',
+                        'account_holder' => 'required|string|max:100',
+                    ]);
+
+                    if ($validator->fails()) {
+                        DB::rollBack();
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Bank account details are required for QRIS/VA refunds',
+                            'errors' => $validator->errors(),
+                        ], 422);
+                    }
+                }
+
+                // Create refund record with breakdown
+                Refund::create([
+                    'id_booking' => $order_id,
+                    'status' => 'pending',
+                    'reason' => $request->input('reason', 'User-initiated cancellation'),
+                    'amount' => $refundData['total_refund'],
+                    'refund_type' => 'user',
+                    'requested_by' => $transaction->user_id,
+                    'room_refund' => $refundData['room_refund'],
+                    'deposit_refund' => $refundData['deposit_refund'],
+                    'other_refund' => $refundData['other_refund'],
+                    // Bank account for QRIS/VA refunds
+                    'refund_bank_name' => $request->input('bank_name'),
+                    'refund_account_no' => $request->input('account_no'),
+                    'refund_account_holder' => $request->input('account_holder'),
+                ]);
+            }
+
+            // Update transaction status to cancelled
+            DB::table('t_transactions')
+                ->where('order_id', $order_id)
+                ->update([
+                    'transaction_status' => 'cancelled',
+                    'cancel_at' => now(),
+                ]);
+
+            // Deactivate the booking record
+            DB::table('t_booking')
+                ->where('order_id', $order_id)
+                ->where('status', '1')
+                ->update([
+                    'status' => 0,
+                    'reason' => 'User-initiated cancellation',
+                ]);
+
+            // Release room — only if no other active bookings on this room
+            $otherActiveBookings = Booking::where('room_id', $transaction->room_id)
+                ->where('order_id', '!=', $order_id)
+                ->where('status', '1')
+                ->exists();
+
+            if (!$otherActiveBookings) {
+                DB::table('m_rooms')
+                    ->where('idrec', $transaction->room_id)
+                    ->update(['rental_status' => 0]);
+            }
+
+            // Release parking quota
+            if (!empty($transaction->parking_type)) {
+                $this->decrementParkingQuota($transaction->property_id, $transaction->parking_type);
+            }
+
+            // Update payment status
+            DB::table('t_payment')
+                ->where('order_id', $order_id)
+                ->update(['payment_status' => 'cancelled']);
+
+            DB::commit();
+
+            // Send push notifications (non-blocking — failures don't affect the response)
+            try {
+                $firebaseService = new FirebaseNotificationService();
+
+                $notifTitle = 'Booking Dibatalkan';
+                $notifBody = "Booking {$order_id} telah dibatalkan.";
+                if ($refundData) {
+                    $notifBody .= " Refund: Rp " . number_format($refundData['total_refund'], 0, ',', '.');
+                }
+                $notifData = [
+                    'type' => 'booking_cancelled',
+                    'order_id' => $order_id,
+                ];
+
+                // Notify the guest
+                $firebaseService->sendToUser($transaction->user_id, $notifTitle, $notifBody, $notifData);
+
+                // Notify admins of the property
+                $adminTitle = 'Pembatalan Booking';
+                $adminBody = "Booking {$order_id} ({$transaction->property_name}) dibatalkan oleh tamu.";
+                $firebaseService->sendToAdmins($adminTitle, $adminBody, $notifData);
+
+            } catch (\Exception $e) {
+                Log::warning('Failed to send cancellation notification: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Booking cancelled successfully',
+                'data' => [
+                    'order_id' => $order_id,
+                    'refund' => $refundData,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Cancel booking error: ' . $e->getMessage(), [
+                'order_id' => $order_id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to cancel booking',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

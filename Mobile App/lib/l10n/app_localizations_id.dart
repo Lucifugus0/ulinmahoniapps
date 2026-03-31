@@ -42,6 +42,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get promoDescription => 'Deskripsi Promo';
 
   @override
+  String get promoCodeLabel => 'Kode Promo';
+
+  @override
   String get noDescription => 'Tidak ada deskripsi';
 
   @override

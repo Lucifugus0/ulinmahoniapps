@@ -370,7 +370,7 @@
                     <!-- About -->
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ __('properties.sections.about_property') }}</h2>
                     <div class="prose max-w-none">
-                        <div class="text-gray-600">{!! nl2br(e(\App\Helpers\DescriptionHelper::get($villa['description'] ?? '', app()->getLocale()))) !!}</div>
+                        <div class="text-gray-600">{!! \App\Helpers\DescriptionHelper::getHtml($villa['description'] ?? '', app()->getLocale()) !!}</div>
                     </div>
 
                     <!-- Room Facilities -->

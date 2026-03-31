@@ -397,7 +397,7 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ __('properties.sections.about_property') }}</h2>
                     <div class="prose max-w-none">
                         <div class="text-gray-600">
-                            {!! nl2br(e(\App\Helpers\DescriptionHelper::get($house['description'] ?? '', app()->getLocale()))) !!}
+                            {!! \App\Helpers\DescriptionHelper::getHtml($house['description'] ?? '', app()->getLocale()) !!}
                         </div>
                     </div>
 

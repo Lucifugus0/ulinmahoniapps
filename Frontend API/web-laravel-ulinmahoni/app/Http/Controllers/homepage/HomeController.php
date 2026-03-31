@@ -48,11 +48,20 @@ class HomeController extends Controller {
     public function index()
     {
         // <!-- Fetch random active tagline from database, fallback to translation key -->
-        $taglineRow = DB::table('m_taglines')->where('status', 1)->inRandomOrder()->first();
+        // Wrapped in try-catch: m_taglines/m_hero_videos may not exist on local DB (imported from prod without migrations)
+        try {
+            $taglineRow = DB::table('m_taglines')->where('status', 1)->inRandomOrder()->first();
+        } catch (\Exception $e) {
+            $taglineRow = null;
+        }
         $heroTagline = $taglineRow ? $taglineRow->tagline : __('homepage.hero.subtitle');
 
         // <!-- Fetch active hero video from database, fallback to default bundled video -->
-        $activeVideo = DB::table('m_hero_videos')->where('status', 1)->first();
+        try {
+            $activeVideo = DB::table('m_hero_videos')->where('status', 1)->first();
+        } catch (\Exception $e) {
+            $activeVideo = null;
+        }
         $adminUrl = rtrim(env('ADMIN_URL', ''), '/');
         $heroMedia = [
             'type' => 'video',

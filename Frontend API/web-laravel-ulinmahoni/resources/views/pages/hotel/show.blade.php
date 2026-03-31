@@ -110,7 +110,7 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">About this property</h2>
                     <div class="prose max-w-none">
                         <div class="text-gray-600">
-                            {!! nl2br(e(\App\Helpers\DescriptionHelper::get($hotel['description'] ?? '', app()->getLocale()))) !!}
+                            {!! \App\Helpers\DescriptionHelper::getHtml($hotel['description'] ?? '', app()->getLocale()) !!}
                         </div>
                     </div>
 
