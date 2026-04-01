@@ -5,11 +5,9 @@ import '../../../../../core/layout/mainlayout.dart';
 import '../../../../../core/widgets/appbar.dart';
 import '../../provider/mybooking_provider.dart';
 import '../../controller/mybooking_controller.dart';
-import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
-import '../../../../../core/utils/app_logger.dart';
 
 class MyBookingPage extends ConsumerStatefulWidget {
   const MyBookingPage({super.key});
@@ -21,12 +19,10 @@ class MyBookingPage extends ConsumerStatefulWidget {
 class _MyBookingPageState extends ConsumerState<MyBookingPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
 
   @override
   void initState() {
     super.initState();
-    _authenticateBiometricsOnLoad();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.invalidate(userBookingsProvider);
@@ -37,18 +33,6 @@ class _MyBookingPageState extends ConsumerState<MyBookingPage>
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  Future<void> _authenticateBiometricsOnLoad() async {
-    if (!mounted) return;
-
-    final didAuthenticate = await _biometricAuthService.authenticateOnLoad(context);
-    if (!didAuthenticate) {
-      AppLogger.w('Biometric authentication failed, returning to home', 'BIOMETRIC');
-      context.go('/home');
-    } else {
-      AppLogger.s('Biometric authentication successful', 'BIOMETRIC');
-    }
   }
 
   Future<void> _onRefresh() async {

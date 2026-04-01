@@ -9,7 +9,6 @@ import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import 'package:ulinmahoniapps/features/mybooking/mybooking/provider/mybooking_provider.dart';
 import 'package:ulinmahoniapps/features/mybooking/mybooking/controller/mybooking_controller.dart';
 import 'package:ulinmahoniapps/features/mybooking/mybooking/model/mybooking_model.dart';
-import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/core/utils/app_logger.dart';
 import 'package:ulinmahoniapps/features/auth/login/provider/auth_provider.dart';
 import 'package:ulinmahoniapps/features/customerservice/provider/chat_provider.dart';

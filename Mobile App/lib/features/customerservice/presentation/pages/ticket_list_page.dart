@@ -5,8 +5,6 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/constants/appcolor_constants.dart';
 import '../../../../core/layout/mainlayout.dart';
 import '../../../../core/widgets/appbar.dart';
-import '../../../../core/widgets/biometric_auth.dart';
-import '../../../../core/utils/app_logger.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../features/auth/login/provider/auth_provider.dart';
 import '../../model/ticket_model.dart';
@@ -25,9 +23,6 @@ class TicketListPage extends ConsumerStatefulWidget {
 
 class _TicketListPageState extends ConsumerState<TicketListPage>
     with SingleTickerProviderStateMixin {
-  /// Biometric authentication service for secure access
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
-
   /// Tab controller for switching between "My Tickets" and "Broadcasts"
   late TabController _tabController;
 
@@ -35,31 +30,12 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _authenticateBiometricsOnLoad();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  /// Authenticate user with biometrics when page loads.
-  /// Redirects to home if authentication fails.
-  Future<void> _authenticateBiometricsOnLoad() async {
-    if (!mounted) return;
-
-    final didAuthenticate =
-        await _biometricAuthService.authenticateOnLoad(context);
-    if (!mounted) return;
-
-    if (!didAuthenticate) {
-      AppLogger.w(
-          'Biometric authentication failed, returning to home', 'BIOMETRIC');
-      context.go('/home');
-    } else {
-      AppLogger.s('Biometric authentication successful', 'BIOMETRIC');
-    }
   }
 
   /// Refresh ticket list by invalidating the provider

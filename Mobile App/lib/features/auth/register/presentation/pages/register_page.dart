@@ -13,7 +13,6 @@ import '../../../../../core/widgets/button/backbutton.dart';
 import '../../../../../core/constants/appcolor_constants.dart';
 import '../../../../../core/constants/appfontweight_constants.dart';
 import '../../../../../core/constants/app_asset_constants.dart';
-import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/core/widgets/languagedropdown.dart';
 import '../../../../../core/theme/theme_provider.dart';
 import '../../../../../core/widgets/dialog/notificationdialog.dart';
@@ -33,8 +32,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _phoneNumberController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
-
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -645,14 +642,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                 return;
                               }
 
-                              // BIOMETRIC
-                              final didAuthenticate =
-                                  await _biometricAuthService
-                                      .authenticateOnLoad(context);
-                              if (!didAuthenticate) {
-                                context.go('/login');
-                                return;
-                              }
+                              // Biometric removed — handled at login level only
 
                               // PROSES REGISTER
                               final String finalLastName;

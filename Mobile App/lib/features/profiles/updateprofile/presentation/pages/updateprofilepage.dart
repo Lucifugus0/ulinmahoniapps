@@ -15,7 +15,6 @@ import 'dart:typed_data';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:intl_phone_field/countries.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/utils/app_logger.dart';
 
@@ -60,7 +59,6 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
   final TextEditingController _phoneNumberController = TextEditingController();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
 
   final ImagePicker _picker = ImagePicker();
   Uint8List? _selectedImageBytes;
@@ -387,20 +385,15 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                                   onPressed: updateProfileState is UpdateProfileLoading
                                       ? null
                                       : () async {
-                                    final bool didAuthenticate = await _biometricAuthService.authenticateOnLoad(context);
-                                    if (didAuthenticate) {
-                                      final notifier = ref.read(updateProfileNotifierProvider.notifier);
-                                      await notifier.updateProfile(
-                                        username:_firstNameController.text.trim(),
-                                        email: _emailController.text.trim(),
-                                        phoneNumber: (_fullPhoneNumber ?? '').trim(),
-                                        firstName: _firstNameController.text.trim(),
-                                        lastName: _lastNameController.text.trim(),
-                                        profilePhotoBase64: _pickedImageBase64,
-                                      );
-                                    } else {
-                                      context.go('/profile');
-                                    }
+                                    final notifier = ref.read(updateProfileNotifierProvider.notifier);
+                                    await notifier.updateProfile(
+                                      username:_firstNameController.text.trim(),
+                                      email: _emailController.text.trim(),
+                                      phoneNumber: (_fullPhoneNumber ?? '').trim(),
+                                      firstName: _firstNameController.text.trim(),
+                                      lastName: _lastNameController.text.trim(),
+                                      profilePhotoBase64: _pickedImageBase64,
+                                    );
                                   },
                                   style: ElevatedButton.styleFrom(
                                     // Use primaryAdaptive for dark/light mode compatibility

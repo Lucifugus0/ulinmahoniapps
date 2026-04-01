@@ -7,7 +7,6 @@ import '../../../../auth/login/provider/auth_provider.dart';
 import '../../provider/updatepassword_provider.dart';
 import '../../../../../core/constants/app_asset_constants.dart';
 import '../widgets/passwordfield.dart';
-import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/widgets/dialog/notificationdialog.dart';
 import '../../../../../core/theme/theme_provider.dart';
@@ -24,7 +23,6 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmNewPasswordController = TextEditingController();
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
 
   bool _obscureOldPassword = true;
   bool _obscureNewPassword = true;
@@ -275,10 +273,7 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                         return;
                       }
 
-                      final bool didAuthenticate = await _biometricAuthService.authenticateOnLoad(context);
-                      if (!didAuthenticate) {
-                        return;
-                      }
+                      // Biometric removed — handled at login level only
 
                       final oldPassword = _oldPasswordController.text.trim();
                       final newPassword = _newPasswordController.text.trim();
