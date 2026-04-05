@@ -51,9 +51,9 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () {
-                    // Navigate to search page with all properties sorted by cheapest price
-                    context.push('/search');
-                    AppLogger.d('Navigating to /search to show all properties sorted by price', 'BESTSELLER');
+                    // Navigate to Available Now page — all properties sorted by most available rooms
+                    context.push('/available-now');
+                    AppLogger.d('Navigating to /available-now', 'BESTSELLER');
                   },
                   child: Text(
                     localizations.showAll,

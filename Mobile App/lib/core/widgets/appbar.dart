@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'button/backbutton.dart';
 import '../constants/appcolor_constants.dart';
 import '../constants/appfontweight_constants.dart';
+import '../theme/glass_theme.dart';
 import '../utils/formatdate.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -108,10 +110,34 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppBar(
-      backgroundColor: backgroundColor,
+      // Transparent so the glass flexibleSpace shows through
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      toolbarHeight: preferredSize.height, 
+      scrolledUnderElevation: 0,
+      // Liquid glass backdrop blur
+      flexibleSpace: ClipRect(
+        child: BackdropFilter(
+          filter: GlassTheme.standardBlur,
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1F2937).withValues(alpha: 0.45)
+                  : backgroundColor.withValues(alpha: 0.85),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? GlassTheme.glassBorderDark
+                      : GlassTheme.glassBorderLight,
+                  width: GlassTheme.borderWidth,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      toolbarHeight: preferredSize.height,
       leading: showBackButton
           ? CustomBackButton(
         iconColor: backButtonColor,

@@ -41,7 +41,8 @@ class SelectedRoomStatusFilterNotifier extends Notifier<String?> {
   SelectedRoomStatusFilterNotifier(this.propertyId);
 
   @override
-  String? build() => null;
+  // Default to '0' (available rooms only)
+  String? build() => '0';
 
   /// Update the selected room status filter value
   void update(String? value) => state = value;
@@ -189,6 +190,13 @@ class RoomTypeSection extends ConsumerWidget {
               if (selectedFilter != null && selectedFilter.isNotEmpty) {
                 availableRooms = availableRooms.where((room) => room.name == selectedFilter).toList();
               }
+
+              // Sort by room number ascending (numeric comparison for string room numbers)
+              availableRooms.sort((a, b) {
+                final numA = int.tryParse(a.no ?? '') ?? 999999;
+                final numB = int.tryParse(b.no ?? '') ?? 999999;
+                return numA.compareTo(numB);
+              });
 
               if (availableRooms.isEmpty) {
                 // Beri padding juga untuk text kosong

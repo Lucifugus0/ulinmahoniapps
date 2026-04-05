@@ -258,7 +258,7 @@ class _CancelBookingDialogState extends ConsumerState<CancelBookingDialog> {
                     const Divider(height: 24),
                     _buildRow('Total Refund',
                         _currencyFormat.format(_preview!.totalRefund), isDark,
-                        isBold: true, valueColor: AppColorConstants.primaryColor),
+                        isBold: true, valueColor: AppColors.primaryColor),
 
                     const SizedBox(height: 8),
                     Text(

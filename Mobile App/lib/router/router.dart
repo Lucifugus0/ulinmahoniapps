@@ -16,6 +16,8 @@ import 'package:ulinmahoniapps/features/mybooking/mybookingdetails/presentation/
 import 'package:ulinmahoniapps/features/book/payment/presentation/pages/paymentpage.dart';
 import 'package:ulinmahoniapps/features/profiles/updateprofile/presentation/pages/updateprofilepage.dart';
 import 'package:ulinmahoniapps/features/home/presentation/pages/homepage.dart';
+import 'package:ulinmahoniapps/features/home/presentation/pages/available_now_page.dart';
+import 'package:ulinmahoniapps/features/home/presentation/pages/near_you_page.dart';
 import 'package:ulinmahoniapps/features/mybooking/mybooking/presentation/pages/mybooking_page.dart';
 import 'package:ulinmahoniapps/features/profiles/viewprofile/presentation/pages/profilepage.dart';
 import 'package:ulinmahoniapps/features/propertytype/presentation/pages/propertytypepage.dart';
@@ -132,6 +134,16 @@ final GoRouter appRouter = GoRouter(
       path: RoutePaths.search,
       name: RouteNames.search,
       builder: (context, state) => SearchResult(),
+    ),
+    GoRoute(
+      path: RoutePaths.availableNow,
+      name: RouteNames.availableNow,
+      builder: (context, state) => const AvailableNowPage(),
+    ),
+    GoRoute(
+      path: RoutePaths.nearYou,
+      name: RouteNames.nearYou,
+      builder: (context, state) => const NearYouPage(),
     ),
     GoRoute(
       path: RoutePaths.detailProperty, // '/detailproperty/:id'

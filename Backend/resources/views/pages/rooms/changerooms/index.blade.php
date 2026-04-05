@@ -53,8 +53,8 @@
                                             </div>
                                         </div>
 
-                                        <!-- Booking Cards -->
-                                        <div class="space-y-3 max-h-96 overflow-y-auto" id="bookingResultsContainer">
+                                        <!-- Booking List -->
+                                        <div id="bookingResultsContainer">
                                             @include('pages.rooms.changerooms.partials.changeRoom_table', [
                                                 'bookings' => $bookings,
                                                 'per_page' => request('per_page', 3),
@@ -665,11 +665,13 @@
             document.getElementById('transferNotes').value = '';
             document.getElementById('newRoomSelect').value = '';
 
-            // Update card selection
+            // Update row selection
             document.querySelectorAll('.booking-card').forEach(card => {
-                card.classList.remove('border-indigo-500', 'bg-indigo-50');
+                card.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/30');
+                card.style.boxShadow = '';
             });
-            element.classList.add('border-indigo-500', 'bg-indigo-50');
+            element.classList.add('bg-indigo-50', 'dark:bg-indigo-900/30');
+            element.style.boxShadow = 'inset 3px 0 0 #6366f1';
 
             // Get booking data
             const bookingData = JSON.parse(element.getAttribute('data-booking'));

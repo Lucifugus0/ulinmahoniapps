@@ -44,10 +44,6 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '💰 ',
-                        style: const TextStyle(fontSize: 20),
-                      ),
                       Flexible(
                         child: Text(
                           localizations.budget,
@@ -62,9 +58,9 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () {
-                    // Navigate to search page with all properties sorted by cheapest price
-                    context.push('/search');
-                    AppLogger.d('Navigating to /search to show all properties sorted by price', 'BUDGET');
+                    // Navigate to Near You page — all properties sorted by GPS distance
+                    context.push('/near-you');
+                    AppLogger.d('Navigating to /near-you', 'BUDGET');
                   },
                   child: Text(
                     localizations.showAll,
@@ -119,8 +115,8 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
             error: err,
             stackTrace: stack,
           ),
-            data: (properties) {
-              if (properties.isEmpty) {
+            data: (propertiesWithDistance) {
+              if (propertiesWithDistance.isEmpty) {
                 return const ComingSoonWidget();
               }
               return LayoutBuilder(
@@ -131,10 +127,17 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: properties.length,
+                      itemCount: propertiesWithDistance.length,
                       itemBuilder: (context, index) {
-                        final item = properties[index];
+                        final pwd = propertiesWithDistance[index];
+                        final item = pwd.property;
                         AppLogger.d('Image: ${item.image}', 'BUDGET');
+
+                        // Format distance in km for display (e.g. "2.3 km")
+                        String? distanceLabel;
+                        if (pwd.distanceKm != null) {
+                          distanceLabel = '${pwd.distanceKm!.toStringAsFixed(1)} km';
+                        }
 
                         // Prioritas harga: monthly > daily
                         final monthlyPrice = double.tryParse(item.priceOriginalMonthly) ?? 0;
@@ -145,7 +148,7 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
 
                         return AnimatedListItem(
                           index: index,
-                          totalItems: properties.length,
+                          totalItems: propertiesWithDistance.length,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -153,7 +156,7 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
                                 image: item.thumbnail ?? item.image,
                                 title: item.name,
                                 location: '${item.subdistrict ?? ''}, ${item.city}'.trim().replaceAll(RegExp(r'^,\s*|,\s*$'), ''),
-                                detail: item.distance,
+                                detail: distanceLabel,
                                 type: item.tags,
                                 roomStatus: item.status,
                                 price: displayPrice > 0 ? '${formatCurrency(displayPrice.toString())}$priceLabel' : null,
@@ -164,7 +167,7 @@ class _BudgetSectionState extends ConsumerState<BudgetSection> {
                                   context.push('/detailproperty/${item.idrec}');
                                 },
                               ),
-                              if (index < properties.length - 1)
+                              if (index < propertiesWithDistance.length - 1)
                                 const SizedBox(width: 16),
                             ],
                           ),

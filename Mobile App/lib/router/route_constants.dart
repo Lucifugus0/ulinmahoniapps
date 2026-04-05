@@ -29,6 +29,8 @@ class RouteNames {
   // Standalone Routes
   static const String browseAll = 'BROWSE_ALL';
   static const String search = 'SEARCH';
+  static const String availableNow = 'AVAILABLE_NOW';
+  static const String nearYou = 'NEAR_YOU';
   static const String help = 'HELP';
 
   // Profile Related
@@ -75,6 +77,8 @@ class RoutePaths {
   static const String broadcastDetail = '/cs/broadcast/:broadcastId';
   static const String browseAll = '/browse-all';
   static const String search = '/search';
+  static const String availableNow = '/available-now';
+  static const String nearYou = '/near-you';
   static const String help = '/help';
   static const String updateProfile = '/updateprofile';
   static const String payment = '/payment';

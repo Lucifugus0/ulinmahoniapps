@@ -141,6 +141,26 @@ class AppTheme {
           borderRadius: BorderRadius.circular(20),
         ),
       ),
+
+      // -- DatePicker --
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: Colors.white,
+        headerBackgroundColor: AppColors.primaryColor,
+        headerForegroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          if (states.contains(WidgetState.disabled)) return Colors.grey.shade400;
+          return Colors.black87;
+        }),
+        dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return AppColors.primaryColor;
+          return null;
+        }),
+        todayForegroundColor: WidgetStateProperty.all(AppColors.primaryColor),
+        todayBorder: BorderSide(color: AppColors.primaryColor),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
     );
   }
 
@@ -278,6 +298,27 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
+      ),
+
+      // -- DatePicker (dark) --
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        headerBackgroundColor: AppColors.surfaceDarkElevated,
+        headerForegroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          if (states.contains(WidgetState.disabled)) return Colors.grey.shade700;
+          return Colors.white;
+        }),
+        dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return AppColors.primaryColorBright;
+          return null;
+        }),
+        todayForegroundColor: WidgetStateProperty.all(AppColors.primaryColorBright),
+        todayBorder: BorderSide(color: AppColors.primaryColorBright),
+        yearForegroundColor: WidgetStateProperty.all(Colors.white),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }

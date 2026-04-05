@@ -76,10 +76,18 @@ final availableNowPropertiesProvider = FutureProvider<List<PropertyModel>>((ref)
 });
 
 
+/// Data class pairing a property with its computed distance from the user (in km).
+class PropertyWithDistance {
+  final PropertyModel property;
+  final double? distanceKm;
+  PropertyWithDistance(this.property, this.distanceKm);
+}
+
 /// "Near You" section — properties sorted by GPS distance, fallback to city name.
 /// GPS permission is checked but never requested here (avoid blocking UI).
 /// Only uses location if already granted.
-final cheapestPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
+/// Returns PropertyWithDistance so the UI can display computed km values.
+final cheapestPropertiesProvider = FutureProvider<List<PropertyWithDistance>>((ref) async {
   final allProperties = await ref.watch(propertiesProvider('').future);
   final available = allProperties.where((p) => (p.availableRooms ?? 0) > 0).toList();
 
@@ -91,23 +99,31 @@ final cheapestPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) asy
         permission == LocationPermission.always) {
       // Use last known position (instant, no GPS wait)
       userPosition = await Geolocator.getLastKnownPosition();
+      // If no cached position, get current position with timeout
+      userPosition ??= await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
     }
   } catch (e) {
     AppLogger.w('GPS check failed: $e', 'PROPERTY-PROVIDER');
   }
 
   if (userPosition != null) {
-    available.sort((a, b) {
-      final distA = _calculateDistance(userPosition!, a.latitude, a.longitude);
-      final distB = _calculateDistance(userPosition!, b.latitude, b.longitude);
-      return distA.compareTo(distB);
-    });
+    // Compute distance for each property and sort ascending
+    final withDistance = available.map((p) {
+      final dist = _calculateDistance(userPosition!, p.latitude, p.longitude);
+      return PropertyWithDistance(p, dist == double.infinity ? null : dist);
+    }).toList()
+      ..sort((a, b) => (a.distanceKm ?? double.infinity).compareTo(b.distanceKm ?? double.infinity));
+    return withDistance.take(3).toList();
   } else {
-    // Fallback: sort by city name ascending
+    // Fallback: sort by city name ascending, no distance info
     available.sort((a, b) => a.city.toLowerCase().compareTo(b.city.toLowerCase()));
+    return available.take(3).map((p) => PropertyWithDistance(p, null)).toList();
   }
-
-  return available.take(3).toList();
 });
 
 /// Calculate distance in km between user position and property coordinates

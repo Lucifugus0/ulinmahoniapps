@@ -35,7 +35,7 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex flex-col">
                         <div class="text-sm font-medium text-gray-900">
-                            {{ $facility->facility }}
+                            {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                         </div>
                         <div class="text-sm text-gray-500 break-words whitespace-normal">
                             <!-- Display facility description, fallback to translation if null -->

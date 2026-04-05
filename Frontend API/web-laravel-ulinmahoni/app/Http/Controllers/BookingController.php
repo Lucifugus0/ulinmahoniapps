@@ -736,7 +736,7 @@ class BookingController extends Controller
         // Get all bookings for the user with relationships
         $bookings = Transaction::with(['user', 'room', 'property', 'booking'])
             ->where('user_id', $userId)
-            ->orderBy('created_at', 'desc')
+            ->orderBy('check_in', 'desc')
             ->get();
         
         // Debug: Log the query results
@@ -765,7 +765,11 @@ class BookingController extends Controller
 
         $validator = \Validator::make($request->all(), [
             'rent_type' => 'required|in:daily,monthly',
-            'check_in' => 'nullable|date|after_or_equal:today',
+            // Daily: check-in max 90 days from now. Monthly: max 14 days from now.
+            'check_in' => [
+                'nullable', 'date', 'after_or_equal:today',
+                'before_or_equal:' . ($request->rent_type === 'monthly' ? now()->addDays(14)->format('Y-m-d') : now()->addDays(90)->format('Y-m-d')),
+            ],
             'check_out' => 'nullable|date|after:check_in',
             'property_name' => 'required|string',
             'room_name' => 'nullable|string',

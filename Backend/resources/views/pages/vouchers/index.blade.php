@@ -530,6 +530,21 @@
             }
 
             // Filter functionality
+            // Sort state
+            let voucherSortBy = 'valid_to';
+            let voucherSortDir = 'desc';
+
+            // Called from table header onclick
+            window.voucherSort = function(column) {
+                if (voucherSortBy === column) {
+                    voucherSortDir = voucherSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    voucherSortBy = column;
+                    voucherSortDir = 'asc';
+                }
+                filterVouchers();
+            };
+
             let debounceTimer;
             $('#search, #status_filter, #per_page').on('change keyup', function() {
                 clearTimeout(debounceTimer);
@@ -547,7 +562,9 @@
                     data: {
                         search: search,
                         status: status,
-                        per_page: perPage
+                        per_page: perPage,
+                        sort_by: voucherSortBy,
+                        sort_dir: voucherSortDir
                     },
                     success: function(response) {
                         $('#vouchers-table-container').html(response.html);

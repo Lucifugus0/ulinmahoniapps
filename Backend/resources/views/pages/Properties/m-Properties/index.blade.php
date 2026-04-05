@@ -601,7 +601,7 @@
                                                                         @if (!empty($facility->icon))
                                                                             <span class="iconify text-lg" data-icon="{{ $facility->icon }}"></span>
                                                                         @endif
-                                                                        {{ $facility->facility }}
+                                                                        {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                                                                     </span>
                                                                     @if (!empty($facility->description))
                                                                         <span
@@ -658,7 +658,7 @@
                                                                         @if (!empty($facility->icon))
                                                                             <span class="iconify text-lg" data-icon="{{ $facility->icon }}"></span>
                                                                         @endif
-                                                                        {{ $facility->facility }}
+                                                                        {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                                                                     </span>
                                                                     @if (!empty($facility->description))
                                                                         <span
@@ -715,7 +715,7 @@
                                                                         @if (!empty($facility->icon))
                                                                             <span class="iconify text-lg" data-icon="{{ $facility->icon }}"></span>
                                                                         @endif
-                                                                        {{ $facility->facility }}
+                                                                        {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                                                                     </span>
                                                                     @if (!empty($facility->description))
                                                                         <span

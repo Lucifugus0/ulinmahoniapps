@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ulinmahoniapps/core/widgets/navbar.dart';
 import 'package:ulinmahoniapps/core/widgets/bottomnavbar.dart';
 import '../widgets/bottomcontactbar.dart';
+import '../widgets/leafy_background.dart';
 
 /// Main scaffold wrapper for all pages.
 /// Uses Theme.of(context) for background color so it responds to dark/light mode.
@@ -52,7 +53,14 @@ class MainLayout extends StatelessWidget {
 
       appBar: showNavBar ? const Navbar(initialLanguage: 'ID') : null,
 
-      body: child,
+      body: Stack(
+        children: [
+          // Leafy background overlay — decorative, non-interactive
+          const LeafyBackground(),
+          // Actual page content
+          child,
+        ],
+      ),
 
       // Theme wrapper to remove default white canvas behind bottom nav
       bottomNavigationBar: Theme(

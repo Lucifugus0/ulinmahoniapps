@@ -179,12 +179,16 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
   Future<void> _selectCheckInDate() async {
     final localizations = AppLocalizations.of(context)!;
     final now = DateTime.now();
-    final oneYearFromNow = DateTime(now.year + 1, now.month, now.day);
+    // Daily: max 14 days ahead. Monthly: max 90 days ahead.
+    final rentType = ref.read(roomDetailsProvider).value?['rentType'] as String?;
+    final isMonthly = rentType?.toLowerCase() == 'monthly';
+    final maxDaysAhead = isMonthly ? 90 : 14;
+    final maxCheckInDate = DateTime(now.year, now.month, now.day + maxDaysAhead);
     DateTime? picked = await showDatePicker(
       context: context,
       initialDate: ref.read(roomDetailsProvider).value?['checkInDate'] ?? now,
       firstDate: now,
-      lastDate: oneYearFromNow,
+      lastDate: maxCheckInDate,
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: Theme.of(context).copyWith(

@@ -1,5 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../theme/glass_theme.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -26,9 +28,31 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     // Dark mode detection — fallback defaults respect the current theme
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppBar(
-      backgroundColor: backgroundColor ?? (isDark ? const Color(0xFF1F2937) : Colors.white),
-      elevation: elevation ?? 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      // Transparent so the glass flexibleSpace shows through
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      // Liquid glass backdrop blur behind the app bar
+      flexibleSpace: ClipRect(
+        child: BackdropFilter(
+          filter: GlassTheme.standardBlur,
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1F2937).withValues(alpha: 0.45)
+                  : Colors.white.withValues(alpha: 0.45),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? GlassTheme.glassBorderDark
+                      : GlassTheme.glassBorderLight,
+                  width: GlassTheme.borderWidth,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       leading: IconButton(
         icon: Icon(
           Icons.arrow_back,

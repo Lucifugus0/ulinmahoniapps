@@ -1926,8 +1926,7 @@
             maxDate.setDate(today.getDate() + 365); // Allow booking up to 1 year ahead
 
             // Max check-in dates differ by booking type:
-            // Daily booking — up to 90 days from today
-            // Monthly booking — up to 14 days from today
+            // Daily booking — up to 90 days from today. Monthly — up to 14 days ahead.
             const maxCheckInDaily = new Date();
             maxCheckInDaily.setDate(today.getDate() + 90);
             const maxCheckInMonthly = new Date();

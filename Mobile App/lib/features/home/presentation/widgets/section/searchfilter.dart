@@ -137,27 +137,18 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
 
   Future<void> _selectCheckInDate() async {
     final now = DateTime.now();
-    final oneYearFromNow = DateTime(now.year + 1, now.month, now.day);
+    // Daily: check-in max 90 days from now. Monthly: check-in max 14 days from now.
+    final maxCheckIn = selectedRentType == 'Monthly'
+        ? now.add(const Duration(days: 14))
+        : now.add(const Duration(days: 90));
 
     DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: checkInDate ?? now,
+      initialDate: checkInDate != null && checkInDate!.isBefore(maxCheckIn)
+          ? checkInDate!
+          : now,
       firstDate: now,
-      lastDate: oneYearFromNow,
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF005F21),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
-            ),
-            dialogBackgroundColor: Colors.white,
-          ),
-          child: child!,
-        );
-      },
+      lastDate: maxCheckIn,
     );
 
     if (picked != null) {
@@ -379,7 +370,8 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                           IconButton(
                             onPressed: () {
                               final currentValue = durationRaw ?? 1;
-                              final maxValue = selectedRentType == 'Monthly' ? 12 : 31;
+                              // Monthly: max 12 months. Daily: max 60 days.
+                              final maxValue = selectedRentType == 'Monthly' ? 12 : 60;
                               if (currentValue < maxValue) {
                                 setState(() {
                                   durationRaw = currentValue + 1;

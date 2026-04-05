@@ -10,6 +10,7 @@ import '../../../../features/auth/login/provider/auth_provider.dart';
 import '../../model/ticket_model.dart';
 import '../../model/broadcast_model.dart';
 import '../../provider/ticket_provider.dart';
+import '../../../../core/utils/app_logger.dart';
 
 /// TicketListPage — Main customer service page with two tabs: "My Tickets" and "Broadcasts".
 /// Shows a list of user's support tickets and broadcast announcements.

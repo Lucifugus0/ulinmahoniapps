@@ -386,7 +386,8 @@ class BookingController extends ApiController
         $validator = \Validator::make($request->all(), [
             'property_id' => 'required|integer|exists:m_properties,idrec',
             'room_id' => 'required|integer|exists:m_rooms,idrec',
-            'check_in' => 'required|date|after_or_equal:today',
+            // Daily: check-in max 90 days. Monthly: check-in max 14 days.
+            'check_in' => 'required|date|after_or_equal:today|before_or_equal:' . now()->addDays(90)->format('Y-m-d'),
             'check_out' => 'required|date|after:check_in',
             'is_renewal' => 'nullable|integer|in:0,1',
         ]);
@@ -537,12 +538,16 @@ class BookingController extends ApiController
             'room_name' => 'required|string|max:255',
             'room_id' => 'nullable|integer',
             'booking_type' => 'nullable',
-            'check_in' => 'required|date|after_or_equal:today',
+            // Daily: check-in max 90 days from now. Monthly: max 14 days from now.
+            'check_in' => [
+                'required', 'date', 'after_or_equal:today',
+                'before_or_equal:' . ($request->booking_months ? now()->addDays(14)->format('Y-m-d') : now()->addDays(90)->format('Y-m-d')),
+            ],
             'check_out' => 'required|date|after:check_in',
             'daily_price' => 'nullable|numeric|min:0',
             'monthly_price' => 'nullable|numeric|min:0',
-            'booking_days' => 'nullable|integer|required_without:booking_months',
-            'booking_months' => 'nullable|integer|required_without:booking_days',
+            'booking_days' => 'nullable|integer|required_without:booking_months|max:60',
+            'booking_months' => 'nullable|integer|required_without:booking_days|max:12',
             'voucher_code' => 'nullable|string|min:8|max:20',
             // DEPOSIT & PARKING
             'deposit_fee' => 'nullable|numeric|min:0',

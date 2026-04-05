@@ -45,10 +45,10 @@ class BottomContactBar extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
           decoration: BoxDecoration(
-            // Glass surface color
+            // Liquid glass transparent surface — low opacity so content shows through
             color: isDark
-                ? GlassTheme.glassSurfaceDarkOpaque
-                : GlassTheme.glassSurfaceLightOpaque,
+                ? const Color(0xFF1F2937).withValues(alpha: 0.45)
+                : Colors.white.withValues(alpha: 0.45),
             border: Border(
               top: BorderSide(
                 color: isDark
@@ -89,13 +89,14 @@ class BottomContactBar extends ConsumerWidget {
                       text: TextSpan(
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: isDark ? AppColors.fontColorDark : Colors.black,
-                          fontSize: 12,
+                          fontSize: 18,
                         ),
                         children: [
                           TextSpan(
                             text: priceText,
-                            style: const TextStyle(
-                              color: AppColors.secondaryColor,
+                            style: TextStyle(
+                              // Bright orange for readability on dark/glass backgrounds
+                              color: isDark ? const Color(0xFFFF9500) : AppColors.primaryColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -104,41 +105,10 @@ class BottomContactBar extends ConsumerWidget {
                               text: " / $durationType",
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
+                                fontSize: 14,
                                 color: isDark ? AppColors.fontColorDark : Colors.black,
                               ),
                             ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.only(top: 6),
-                      decoration: BoxDecoration(
-                        // Use primaryAdaptive so border and fill adapt to dark/light mode
-                        color: AppColors.primaryAdaptive(context).withValues(alpha: isDark ? 0.3 : 0.2),
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(color: AppColors.primaryAdaptive(context), width: 1),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.local_offer,
-                            color: isDark ? AppColors.accentGreen : AppColors.primaryAdaptive(context),
-                            size: Theme.of(context).iconTheme.size ?? 16,
-                          ),
-                          const SizedBox(width: 2),
-                          Flexible(
-                            child: Text(
-                              localizations.contactBarSafetyLabel,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: isDark ? AppColors.accentGreen : AppColors.primaryAdaptive(context),
-                                fontSize: 10,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
                         ],
                       ),
                     ),

@@ -248,6 +248,47 @@
                             </div>
                         </div>
 
+                        <!-- Parking Availability -->
+                        @if(!empty($house['parking_fees']))
+                        <div class="mb-6 mt-6">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">
+                                <i class="fas fa-parking mr-2 text-teal-600"></i>Parking Availability
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                @foreach($house['parking_fees'] as $parking)
+                                @php
+                                    $available = max(0, ($parking['capacity'] ?? 0) - ($parking['quota_used'] ?? 0));
+                                    $total = $parking['capacity'] ?? 0;
+                                    $isFull = $available <= 0;
+                                    $type = $parking['parking_type'] ?? 'unknown';
+                                    $icon = $type === 'car' ? 'fa-car' : 'fa-motorcycle';
+                                    $label = $type === 'car' ? 'Car' : 'Motorcycle';
+                                    $fee = $parking['fee'] ?? 0;
+                                @endphp
+                                <div class="flex items-center justify-between p-3 rounded-lg border {{ $isFull ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-900/20' }}">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $isFull ? 'bg-red-100 dark:bg-red-900/40' : 'bg-teal-100 dark:bg-teal-900/40' }}">
+                                            <i class="fas {{ $icon }} {{ $isFull ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400' }}"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $label }}</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">Rp {{ number_format($fee, 0, ',', '.') }}/month</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        @if($isFull)
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Full</span>
+                                        @else
+                                            <span class="text-lg font-bold {{ $available <= 3 ? 'text-orange-600' : 'text-teal-600 dark:text-teal-400' }}">{{ $available }}</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">/{{ $total }} available</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- Action Buttons -->
                         <div class="flex flex-col sm:flex-row gap-3 mt-8">
                             <button onclick="scrollToRooms()" class="flex-1 bg-teal-600 text-white py-3 px-6 rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center">

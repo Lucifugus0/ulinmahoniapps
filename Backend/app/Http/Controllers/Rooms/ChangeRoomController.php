@@ -49,7 +49,7 @@ class ChangeRoomController extends Controller
                 });
             })
             ->orderByRaw('check_in_at IS NULL DESC, check_in_at DESC')
-            ->paginate(3);
+            ->paginate(15);
 
         // Check if this is an AJAX request for live search
         if ($request->ajax() || $request->get('ajax')) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../../core/widgets/html_description.dart';
@@ -35,6 +36,8 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
   late PageController _pageController;
   Timer? _timer;
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
+  // Key to locate the rooms section for scroll-to-rooms
+  final GlobalKey _roomsSectionKey = GlobalKey();
 
   @override
   void initState() {
@@ -431,7 +434,15 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
       showNavBar: false,
       showBottomNav: false,
       showContactBar: true,
-      bottomcontactbar_pesansekarang: false,
+      // Show "Pesan Sekarang" (Book Now) button in the bottom bar
+      bottomcontactbar_pesansekarang: true,
+      bottomcontactbar_buttonpressed: () {
+        // Scroll to rooms section so user can pick a room to book
+        final ctx = _roomsSectionKey.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+        }
+      },
       bottomcontactbar_price: priceToDisplay != null
           ? formatCurrency(priceToDisplay)
           : localizations.bottomBarContactCustomerService,
@@ -448,11 +459,14 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
           });
 
           return Scaffold(
-            backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
+            backgroundColor: Colors.transparent,
+            extendBodyBehindAppBar: true,
             appBar: CustomAppBar(
               title: localizations.detailPropertyPageTitle,
             ),
             body: SafeArea(
+              top: false,
+              bottom: false,
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
                 child: _buildDetailHouseContent(context, property),
@@ -885,7 +899,10 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
               margin: EdgeInsets.symmetric(horizontal: contentMarginHorizontal),
               padding: EdgeInsets.all(contentPaddingAll),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1F2937) : Colors.white,
+                // 10% transparent (90% opacity) so leafy background shows through
+                color: isDark
+                    ? const Color(0xFF1F2937).withValues(alpha: 0.90)
+                    : Colors.white.withValues(alpha: 0.90),
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
@@ -1094,11 +1111,46 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 RoomTypeSection(
+                  key: _roomsSectionKey,
                   propertyData: property,
                 ),
               ],
             ),
           ),
+          // "Properti Lainnya" button below the rooms section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  context.push('/browse-all');
+                },
+                icon: const Icon(Icons.house, color: Colors.white),
+                label: Text(
+                  AppLocalizations.of(context)!.contactBarOtherPropertiesButton,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: AppColors.primaryAdaptive(context),
+                    width: 1.5,
+                  ),
+                  backgroundColor: AppColors.primaryAdaptive(context).withValues(alpha: 0.2),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Extra padding so content can scroll behind the glass bottom bar
+          const SizedBox(height: 80),
         ],
       ),
     );

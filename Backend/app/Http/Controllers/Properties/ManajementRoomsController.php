@@ -446,27 +446,41 @@ class ManajementRoomsController extends Controller
 
 
     /**
-     * Check if a room has active (status=1) or future bookings
+     * Check if a room has active or future bookings
      * that would prevent changing the booking type.
+     *
+     * Only blocks if there are:
+     * - Currently checked-in bookings (check_in_at set, check_out_at null)
+     * - Future paid bookings (check_out >= today, transaction paid/completed)
+     * Does NOT block for:
+     * - Already checked-out bookings (even if status=1)
+     * - Expired/cancelled/pending transactions
      */
     public function checkRoomBookings(Request $request)
     {
         $roomId = $request->input('room_id');
+        $today = Carbon::now();
 
-        // Check for active bookings (status=1) or future bookings via transactions
-        $hasBookings = \App\Models\Booking::where('room_id', $roomId)
-            ->where('status', 1)
+        // Check for currently checked-in bookings (not yet checked out)
+        $hasCurrentOccupant = \App\Models\Booking::where('room_id', $roomId)
+            ->whereNotNull('check_in_at')
+            ->whereNull('check_out_at')
+            ->whereHas('transaction', function ($q) {
+                $q->whereIn('transaction_status', ['paid', 'completed']);
+            })
             ->exists();
 
-        if (!$hasBookings) {
-            // Also check transactions with future check_out dates
-            $hasBookings = \App\Models\Transaction::where('room_id', $roomId)
-                ->where('check_out', '>=', Carbon::now())
-                ->exists();
-        }
+        // Check for future paid bookings whose booking hasn't been checked out yet
+        $hasFutureBookings = \App\Models\Booking::where('room_id', $roomId)
+            ->whereNull('check_out_at')  // not yet checked out
+            ->whereHas('transaction', function ($q) use ($today) {
+                $q->where('check_out', '>=', $today)
+                  ->whereIn('transaction_status', ['paid', 'completed']);
+            })
+            ->exists();
 
         return response()->json([
-            'has_bookings' => $hasBookings,
+            'has_bookings' => $hasCurrentOccupant || $hasFutureBookings,
         ]);
     }
 

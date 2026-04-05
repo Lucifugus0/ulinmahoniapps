@@ -217,10 +217,10 @@ class RoomInputSection extends StatelessWidget {
     final safeRentType = rentType?.toLowerCase();
 
     if (safeRentType == 'daily') {
-      maxDuration = 31;
+      maxDuration = 60;  // Max 60 days, matching frontend web
       labelText = localizations.dailyDurationLabel;
     } else if (safeRentType == 'monthly') {
-      maxDuration = 12;
+      maxDuration = 12;  // Max 12 months, matching frontend web
       labelText = localizations.monthlyDurationLabel;
     }
 

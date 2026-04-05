@@ -144,7 +144,7 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$greeting 👋',
+                '$greeting',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -174,10 +174,6 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
         Stack(
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
               child: SizedBox(
                 width: double.infinity,
                 child: AspectRatio(
