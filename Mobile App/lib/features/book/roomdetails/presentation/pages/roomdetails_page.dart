@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,9 +16,11 @@ import '../widgets/roomfacility_iconify_section.dart';
 import '../../model/rooms_model.dart';
 import '../../../detailproperty/model/detailproperty_model.dart';
 import '../widgets/inputform_section.dart';
+import '../widgets/daily_price_breakdown.dart';
 import '../../../../../core/utils/formatcurrency.dart';
 import '../../../../../core/constants/app_asset_constants.dart';
 import '../../../../../core/constants/appcolor_constants.dart';
+import '../../../../../core/theme/glass_theme.dart';
 import '../../provider/checkavaibilty_provider.dart';
 import '../../../../auth/login/provider/auth_provider.dart';
 import '../../../../../core/widgets/dialog/notificationdialog.dart';
@@ -179,10 +182,10 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
   Future<void> _selectCheckInDate() async {
     final localizations = AppLocalizations.of(context)!;
     final now = DateTime.now();
-    // Daily: max 14 days ahead. Monthly: max 90 days ahead.
+    // Daily: up to 90 days ahead. Monthly: up to 14 days ahead (matching frontend web)
     final rentType = ref.read(roomDetailsProvider).value?['rentType'] as String?;
     final isMonthly = rentType?.toLowerCase() == 'monthly';
-    final maxDaysAhead = isMonthly ? 90 : 14;
+    final maxDaysAhead = isMonthly ? 14 : 90;
     final maxCheckInDate = DateTime(now.year, now.month, now.day + maxDaysAhead);
     DateTime? picked = await showDatePicker(
       context: context,
@@ -676,36 +679,44 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
           'roomImage': _roomData.roomimageshow,
           'depositFee': _roomData.depositFee,
           'parkingFees': _roomData.parkingFees,
+          // Pass daily pricing breakdown to payment page
+          'multiTierBreakdown': data['multiTierBreakdown'] as List? ?? [],
+          'multiTierTotalPrice': data['multiTierTotalPrice'] as double?,
         };
 
-        // Calculate subtotal (duration × price)
+        // Calculate subtotal — use multi-tier total from API when available
         String displayPrice = "N/A";
         String? displayRentType;
-        double basePrice = 0;
+        double subtotal = 0;
+
+        // Daily Multi Tier Pricing: prefer API-calculated total over flat rate
+        final multiTierTotal = data['multiTierTotalPrice'] as double?;
 
         if (_rentType == 'Daily') {
-          if (_isPriceValid(_roomData.priceOriginalDaily)) {
-            basePrice = double.tryParse(_roomData.priceOriginalDaily ?? "0") ?? 0;
-            displayRentType = localizations.roomDetailsDaily;
+          displayRentType = localizations.roomDetailsDaily;
+          if (multiTierTotal != null && multiTierTotal > 0) {
+            // Use per-date pricing total from price-preview API
+            subtotal = multiTierTotal;
+          } else if (_isPriceValid(_roomData.priceOriginalDaily)) {
+            // Fallback to flat rate if API hasn't responded yet
+            subtotal = (double.tryParse(_roomData.priceOriginalDaily ?? "0") ?? 0) * (_duration ?? 1);
           }
         } else if (_rentType == 'Monthly') {
+          displayRentType = localizations.roomDetailsMonthly;
           if (_isPriceValid(_roomData.priceOriginalMonthly)) {
-            basePrice = double.tryParse(_roomData.priceOriginalMonthly ?? "0") ?? 0;
-            displayRentType = localizations.roomDetailsMonthly;
+            subtotal = (double.tryParse(_roomData.priceOriginalMonthly ?? "0") ?? 0) * (_duration ?? 1);
           }
         } else {
           // Fallback if rentType not selected
           if (_isPriceValid(_roomData.priceOriginalDaily)) {
-            basePrice = double.tryParse(_roomData.priceOriginalDaily ?? "0") ?? 0;
+            subtotal = (double.tryParse(_roomData.priceOriginalDaily ?? "0") ?? 0) * (_duration ?? 1);
             displayRentType = localizations.roomDetailsDaily;
           } else if (_isPriceValid(_roomData.priceOriginalMonthly)) {
-            basePrice = double.tryParse(_roomData.priceOriginalMonthly ?? "0") ?? 0;
+            subtotal = (double.tryParse(_roomData.priceOriginalMonthly ?? "0") ?? 0) * (_duration ?? 1);
             displayRentType = localizations.roomDetailsMonthly;
           }
         }
 
-        // Calculate subtotal: price × duration
-        double subtotal = basePrice * (_duration ?? 1);
         displayPrice = formatCurrency(subtotal.toStringAsFixed(0));
 
         final List<ImageProvider> sliderImageProviders = _getValidImageProvidersForSlider(_roomData);
@@ -788,10 +799,15 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
           },
           child: Scaffold(
             backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
+            // Extend body behind appbar and bottom bar for glass blur effect
+            extendBodyBehindAppBar: true,
+            extendBody: true,
             appBar: CustomAppBar(
               title: localizations.roomDetailsPageTitle,
             ),
             body: SafeArea(
+              top: false,
+              bottom: false,
               child: RefreshIndicator(
                 onRefresh: _refreshRoomData,
                 child: SingleChildScrollView(
@@ -844,19 +860,29 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                       ),
                       Transform.translate(
                         offset: const Offset(0, -50),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                        // Liquid glass card for room description
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: BackdropFilter(
+                            filter: GlassTheme.standardBlur,
+                            child: Container(
                           padding: const EdgeInsets.all(16.0),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1F2937) : Colors.white,
+                            color: isDark
+                                ? GlassTheme.glassSurfaceDark
+                                : GlassTheme.glassSurfaceLight,
                             borderRadius: BorderRadius.circular(15),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.12),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            border: Border.all(
+                              color: isDark
+                                  ? GlassTheme.glassBorderDark
+                                  : GlassTheme.glassBorderLight,
+                              width: GlassTheme.borderWidth,
+                            ),
+                            boxShadow: isDark
+                                ? GlassTheme.glassShadowDark
+                                : GlassTheme.glassShadowLight,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -900,11 +926,33 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                           // Multi-language: resolve room description by current locale with fallback chain
                           Builder(builder: (context) {
                             final locale = Localizations.localeOf(context).languageCode;
-                            final description = _roomData.descriptionsParsed?[locale]
+                            String description = _roomData.descriptionsParsed?[locale]
                                 ?? _roomData.descriptionsParsed?['en']
                                 ?? _roomData.descriptionsParsed?['id']
-                                ?? _roomData.descriptions
                                 ?? '';
+                            // Fallback: parse XML-tagged description if descriptions_parsed is null
+                            if (description.isEmpty && _roomData.descriptions != null && _roomData.descriptions!.isNotEmpty) {
+                              final raw = _roomData.descriptions!;
+                              final localeTag = locale.toUpperCase(); // ID, EN, ZH
+                              final tagPattern = RegExp('<$localeTag>(.*?)(?=<[A-Z]{2}>|\$)', dotAll: true);
+                              final match = tagPattern.firstMatch(raw);
+                              if (match != null) {
+                                description = match.group(1)?.trim() ?? '';
+                              }
+                              // Fallback to EN then ID if current locale not found
+                              if (description.isEmpty && localeTag != 'EN') {
+                                final enMatch = RegExp('<EN>(.*?)(?=<[A-Z]{2}>|\$)', dotAll: true).firstMatch(raw);
+                                description = enMatch?.group(1)?.trim() ?? '';
+                              }
+                              if (description.isEmpty && localeTag != 'ID') {
+                                final idMatch = RegExp('<ID>(.*?)(?=<[A-Z]{2}>|\$)', dotAll: true).firstMatch(raw);
+                                description = idMatch?.group(1)?.trim() ?? '';
+                              }
+                              // Final fallback: raw text without tags
+                              if (description.isEmpty) {
+                                description = raw.replaceAll(RegExp(r'<[A-Z]{2}>'), '').trim();
+                              }
+                            }
                             if (description.isNotEmpty) {
                               return HtmlDescription(
                                 html: description,
@@ -969,7 +1017,32 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                   ],
                                 ),
 
-                              // Biaya Tambahan Section (dipindahkan ke atas Informasi Pesanan)
+                              // Fasilitas Ruangan Section (moved above Biaya Tambahan)
+                              const SizedBox(height: 24),
+                              Text(
+                                localizations.roomDetailsFacilitiesTitle,
+                                style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 16),
+                              // Use new format with icons if available, otherwise fallback to old format
+                              if (_roomData.facilities != null && _roomData.facilities!.isNotEmpty)
+                                Center(
+                                  child: RoomFacilitiesIconifyGrid(facilities: _roomData.facilities!),
+                                )
+                              else if (roomFacility.isNotEmpty)
+                                Center(
+                                  child: RoomFacilitiesTextGrid(facilities: roomFacility),
+                                )
+                              else
+                                Text(
+                                  localizations.roomDetailsNoFacilities,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+
+                              // Biaya Tambahan Section
                               const SizedBox(height: 24),
                               Text(
                                 localizations.roomDetailsAdditionalFeesTitle,
@@ -1100,33 +1173,44 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
                                 onSelectCheckInDate: _selectCheckInDate,
                                 availableRentTypes: availableRentTypes,
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                localizations.roomDetailsFacilitiesTitle,
-                                style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 16),
-                              // Use new format with icons if available, otherwise fallback to old format
-                              if (_roomData.facilities != null && _roomData.facilities!.isNotEmpty)
-                                Center(
-                                  child: RoomFacilitiesIconifyGrid(facilities: _roomData.facilities!),
-                                )
-                              else if (roomFacility.isNotEmpty)
-                                Center(
-                                  child: RoomFacilitiesTextGrid(facilities: roomFacility),
-                                )
-                              else
+
+                              // Daily pricing breakdown — show per-date prices for daily bookings
+                              if (_rentType == 'Daily' || _rentType == 'daily') ...[
+                                const SizedBox(height: 24),
                                 Text(
-                                  localizations.roomDetailsNoFacilities,
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: Colors.grey[600],
-                                  ),
+                                  localizations.roomDetailsDailyPricing,
+                                  style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                                 ),
+                                const SizedBox(height: 8),
+                                Builder(builder: (context) {
+                                  final breakdown = data['multiTierBreakdown'] as List? ?? [];
+                                  final multiTierTotal = data['multiTierTotalPrice'] as double?;
+                                  if (breakdown.isNotEmpty && multiTierTotal != null) {
+                                    return DailyPriceBreakdown(
+                                      breakdown: breakdown,
+                                      totalPrice: multiTierTotal,
+                                    );
+                                  }
+                                  // Show loading or flat rate info while API fetches
+                                  return Text(
+                                    localizations.roomDetailsDailyPricingLoading,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey[500],
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  );
+                                }),
+                              ],
+
+                              // Bottom padding so content isn't hidden behind glass bottom bar
+                              const SizedBox(height: 100),
                             ],
                           ),
                         ),
-                      ),
+                      ),  // Close BackdropFilter
+                      ),  // Close ClipRRect
+                      ),  // Close Padding
+                      ),  // Close Transform.translate
                     ],
                   ),
                 ),

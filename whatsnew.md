@@ -132,6 +132,11 @@
 | 2026-03-26 | Auth Provider | Added FCM token sync after successful login, FCM token cleanup on logout (was commented out). |
 | 2026-03-27 | Ticket List Page (`/cs`) | Fixed "New Ticket" FAB hidden behind bottom nav bar. Added bottom margin (100px) to account for ShellRoute's BottomNavBar with `extendBody:true`. |
 | 2026-03-27 | Register Page (signup) | Phone number input now follows frontend signup rules: strips leading zeros (matching frontend `replace(/^0+/, '')`), removed artificial "/15" max length counter, updated placeholder to "8123456789". |
+| 2026-04-06 | Home Page | Fixed glass navbar transparency — disabled top SafeArea so content scrolls behind the navbar, enabling BackdropFilter blur effect to work. Added top padding in VideoSearchBanner so greeting text appears below navbar. |
+| 2026-04-06 | Room Detail Page | Moved "Fasilitas Ruangan" section above "Biaya Tambahan" for better layout flow. |
+| 2026-04-06 | Room Detail Page | Fixed daily pricing: subtotal now uses `multiTierTotalPrice` from price-preview API (per-date weekday/weekend/holiday rates) instead of flat rate × duration. |
+| 2026-04-06 | Room Detail Page | Added daily pricing breakdown section under "Informasi Pemesanan" showing per-date prices with day type badges (weekday/weekend/holiday/seasonal). |
+| 2026-04-06 | Payment Page | Replaced "Harga Harian" single line with per-day pricing breakdown table for daily bookings. Monthly bookings retain the original layout. |
 | 2026-03-29 | Dependencies | Ran `flutter pub upgrade` — updated 50 packages (minor/patch). Key updates: dio 5.9.2, camera 0.11.4, shared_preferences 2.5.5, video_player 2.11.1, flutter_svg 2.2.4, google_sign_in_ios 6.3.0, logger 2.7.0. |
 | 2026-03-29 | Payment Providers | Migrated `DokuCCNotifier`, `DokuQRISNotifier`, `DokuVANotifier`, `PaymentNotifier`, `VoucherNotifier` from `StateNotifier`/`StateNotifierProvider` to Riverpod 3.x `Notifier`/`NotifierProvider`. |
 | 2026-03-29 | Room Details Providers | Migrated `RoomDetailsNotifier`, `AvailabilityCheckNotifier` from `StateNotifier`/`StateNotifierProvider` to Riverpod 3.x `Notifier`/`NotifierProvider`. |

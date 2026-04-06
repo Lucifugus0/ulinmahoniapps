@@ -25,8 +25,8 @@ class GlassTheme {
   static Color glassSurfaceLightOpaque = Colors.white.withValues(alpha: 0.80);
 
   // -- Glass surface colors (dark mode) --
-  /// Dark mode glass surface fill
-  static Color glassSurfaceDark = const Color(0xFF1F2937).withValues(alpha: 0.70);
+  /// Dark mode glass surface fill — low opacity for visible blur-through
+  static Color glassSurfaceDark = const Color(0xFF1F2937).withValues(alpha: 0.35);
 
   /// Dark mode glass surface fill (more opaque, for cards)
   static Color glassSurfaceDarkOpaque = const Color(0xFF1F2937).withValues(alpha: 0.85);

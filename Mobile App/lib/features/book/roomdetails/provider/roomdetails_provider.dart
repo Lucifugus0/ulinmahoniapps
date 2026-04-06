@@ -209,11 +209,14 @@ class RoomDetailsNotifier extends Notifier<AsyncValue<Map<String, dynamic>>> {
 
             /* Update state with modified room — payment will use this effective rate */
             if (state.value != null) {
+              // Store per-date breakdown from API for display in room detail and payment pages
+              final breakdown = data['breakdown'] as List? ?? [];
               state = AsyncValue.data({
                 ...state.value!,
                 'room': updatedRoom,
                 'multiTierTotalPrice': totalPrice,
                 'multiTierIsFlatRate': isFlatRate,
+                'multiTierBreakdown': breakdown,
               });
               AppLogger.i(
                 'Daily price override: total=$totalPrice, days=$totalDays, '

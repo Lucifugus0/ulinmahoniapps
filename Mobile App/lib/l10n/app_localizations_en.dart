@@ -913,6 +913,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roomDetailsFacilitiesTitle => 'Room Facilities';
 
   @override
+  String get roomDetailsDailyPricing => 'Daily Pricing';
+
+  @override
+  String get roomDetailsDailyPricingLoading =>
+      'Calculating per-date pricing...';
+
+  @override
   String get roomDetailsNoFacilities => 'No facilities available';
 
   @override
@@ -1242,16 +1249,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentWarningCompleteData => 'Complete all data to continue';
 
   @override
-  String get paymentTermsAgreePrefix => 'I agree to the ';
+  String get paymentTermsAgreePrefix =>
+      'I declare that I have read, understood, and agree to the data, information and transaction details above, as well as the ';
 
   @override
-  String get paymentTermsAnd => ' and ';
+  String get paymentTermsAnd => ', ';
 
   @override
-  String get paymentTermsConditions => 'Terms and Conditions';
+  String get paymentTermsConditions => 'T&C';
 
   @override
   String get paymentPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get paymentTermsAndRental => ', and ';
+
+  @override
+  String get paymentRentalAgreement => 'Rental Agreement';
 
   @override
   String get vaGenerationFailedTitle => 'VA Generation Failed';

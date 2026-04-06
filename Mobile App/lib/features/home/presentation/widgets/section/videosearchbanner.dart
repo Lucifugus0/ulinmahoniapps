@@ -137,9 +137,9 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
         ? Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Greeting text (adapts to dark/light mode)
+        // Greeting text — top padding accounts for navbar overlap since SafeArea top is off
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+          padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 16, 24, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -182,31 +182,7 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                 ),
               ),
             ),
-            // Dark shadow gradient at bottom of video
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 250,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.4),
-                      Colors.black.withOpacity(0.75),
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
-                ),
-              ),
-            ),
+            // Dark shadow gradient removed — video plays without overlay
             // Tagline removed from video overlay — now shown above video in greeting section
             // Glass-style search bar at bottom
             Positioned(
@@ -221,15 +197,24 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                     height: 50,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.transparent
+                          ? Colors.white.withValues(alpha: 0.12)
                           : Colors.white.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(25),
-                      border: isDark
-                          ? null
-                          : Border.all(
-                              color: Colors.white.withValues(alpha: 0.4),
-                              width: 0.5,
-                            ),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.4),
+                        width: isDark ? 1.0 : 0.5,
+                      ),
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
@@ -282,9 +267,9 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Greeting skeleton
+          // Greeting skeleton — top padding accounts for navbar overlap
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+            padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 16, 24, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

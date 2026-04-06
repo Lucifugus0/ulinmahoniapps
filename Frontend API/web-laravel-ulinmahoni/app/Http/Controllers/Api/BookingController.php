@@ -452,7 +452,8 @@ class BookingController extends ApiController
             ->whereNotIn('t_transactions.transaction_status', [
                 'cancelled',
                 'expired',
-                'checked_out'
+                'checked_out',
+                'rejected',
             ])
             ->where('t_transactions.check_in', '<', $checkOut)
             ->where('t_transactions.check_out', '>', $checkIn)

@@ -39,7 +39,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // SafeArea top is disabled so content scrolls behind the glass navbar
     return SafeArea(
+      top: false,
       bottom: false,
       child: RefreshIndicator(
         onRefresh: _onRefresh,

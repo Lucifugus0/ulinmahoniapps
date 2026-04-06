@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../model/facility_model.dart';
 import '../../../../../core/utils/facility_icon_mapper.dart';
 
-/// Widget untuk menampilkan facilities dengan icon
-/// Mendukung format baru dengan icon field yang di-mapping ke Material Icons
+/// Room facilities with icons in a 2-column layout.
+/// Uses Column+Row instead of GridView to avoid excess vertical whitespace.
 class RoomFacilitiesIconifyGrid extends StatelessWidget {
   final List<FacilityModel> facilities;
 
@@ -18,56 +18,50 @@ class RoomFacilitiesIconifyGrid extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    const int crossAxisCount = 2;
-    final double mainAxisSpacing = 16.0;
-    final double crossAxisSpacing = 16.0;
-    const double childAspectRatio = 4.5; // Increased height for better visibility
+    final List<Widget> rows = [];
+    for (int i = 0; i < facilities.length; i += 2) {
+      rows.add(Row(
+        children: [
+          Expanded(child: _buildItem(context, facilities[i])),
+          if (i + 1 < facilities.length)
+            Expanded(child: _buildItem(context, facilities[i + 1]))
+          else
+            const Expanded(child: SizedBox.shrink()),
+        ],
+      ));
+    }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: crossAxisSpacing,
-        mainAxisSpacing: mainAxisSpacing,
-        childAspectRatio: childAspectRatio,
-      ),
-      itemCount: facilities.length,
-      itemBuilder: (context, index) {
-        final facility = facilities[index];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: rows,
+    );
+  }
 
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon mapped from string
-              Icon(
-                facility.icon.isNotEmpty
-                    ? FacilityIconMapper.getIcon(facility.icon)
-                    : Icons.check_circle_outline,
-                size: 24, // Increased from 20 to 24
-                color: const Color(0xFF134E3A), // Dark green for all icons
-              ),
-              const SizedBox(width: 10), // Increased from 8 to 10
-
-              // <!-- Multi-language: show facility name in app's current locale -->
-              Flexible(
-                child: Text(
-                  facility.getLocalizedName(Localizations.localeOf(context).languageCode),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 15,
-                  ),
-                  softWrap: true,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-              ),
-            ],
+  Widget _buildItem(BuildContext context, FacilityModel facility) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            facility.icon.isNotEmpty
+                ? FacilityIconMapper.getIcon(facility.icon)
+                : Icons.check_circle_outline,
+            size: 24,
+            color: const Color(0xFF134E3A),
           ),
-        );
-      },
+          const SizedBox(width: 10),
+          // Multi-language: show facility name in app's current locale
+          Flexible(
+            child: Text(
+              facility.getLocalizedName(Localizations.localeOf(context).languageCode),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

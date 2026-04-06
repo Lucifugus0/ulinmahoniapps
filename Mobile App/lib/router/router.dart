@@ -218,6 +218,9 @@ final GoRouter appRouter = GoRouter(
           duration: duration,
           checkInDate: checkInDate,
           checkOutDate: checkOutDate,
+          // Pass daily pricing breakdown from room detail page
+          multiTierBreakdown: extra['multiTierBreakdown'] as List?,
+          multiTierTotalPrice: (extra['multiTierTotalPrice'] as num?)?.toDouble(),
         );
       },
     ),

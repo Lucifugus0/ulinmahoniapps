@@ -28,6 +28,7 @@ import '../../provider/doku_cc_provider.dart';
 import '../widgets/va_result_dialog.dart';
 import '../widgets/qris_result_dialog.dart';
 import '../../../../mybooking/mybookingdetails/provider/renew_booking_provider.dart';
+import '../../../roomdetails/presentation/widgets/daily_price_breakdown.dart';
 import '../../../../mybooking/mybooking/provider/mybooking_provider.dart';
 import '../../../../../core/utils/payment_cache_utils.dart';
 
@@ -55,6 +56,10 @@ class PaymentPage extends ConsumerStatefulWidget {
   final double? dailyPrice;
   final double? monthlyPrice;
 
+  // Daily multi-tier pricing breakdown from price-preview API
+  final List<dynamic>? multiTierBreakdown;
+  final double? multiTierTotalPrice;
+
   const PaymentPage({
     super.key,
     this.room,
@@ -76,6 +81,8 @@ class PaymentPage extends ConsumerStatefulWidget {
     this.bookingType,
     this.dailyPrice,
     this.monthlyPrice,
+    this.multiTierBreakdown,
+    this.multiTierTotalPrice,
   });
 
   @override
@@ -87,19 +94,19 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     final localizations = AppLocalizations.of(context)!;
     return [
       {
-        'iconUrl': 'https://dashboard.doku.com/docs/img/logo.png',
+        'iconAsset': 'assets/images/payment/doku_va.png',
         'title': localizations.paymentGenerateTransferVA,
         'subtitle': localizations.paymentVirtualAccountSelectBank,
         'value': 'Transfer VA'
       },
       {
-        'iconUrl': 'https://upload.wikimedia.org/wikipedia/commons/e/e1/QRIS_logo.svg',
+        'iconAsset': 'assets/images/payment/qris.png',
         'title': localizations.paymentQRIS,
         'subtitle': localizations.paymentQRISSubtitle,
         'value': 'QRIS'
       },
       {
-        'iconUrl': 'https://img.freepik.com/free-vector/credit-cards-multiple-colours-set_78370-9361.jpg?semt=ais_hybrid&w=740&q=80',
+        'iconAsset': 'assets/images/payment/mastercard.png',
         'title': localizations.paymentCreditCard,
         'subtitle': localizations.paymentCreditCardSubtitle,
         'value': 'CREDITCARD'
@@ -1671,67 +1678,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                       const SizedBox(height: 16),
                                       ],
 
-                                      RichText(
-                                        text: TextSpan(
-                                          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                                          children: [
-                                            TextSpan(text: localizations.paymentMethodTitle),
-                                            const TextSpan(
-                                              text: ' *',
-                                              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Column(
-                                        children: [
-                                          ...List.generate(paymentMethods.length, (index) {
-                                            final method = paymentMethods[index];
-                                            final isTransferVA = method['value'] == 'Transfer VA';
-
-                                            return Column(
-                                              children: [
-                                                PaymentMethodItem(
-                                                  iconUrl: method['iconUrl'],
-                                                  title: method['title'],
-                                                  subtitle: method['subtitle'] ?? '',
-                                                  isSelected: _selectedPaymentMethodIndex == index,
-                                                  onTap: () {
-                                                    setState(() {
-                                                      _selectedPaymentMethodIndex = index;
-                                                      _selectedTransactionValue = method['value'];
-                                                    });
-                                                  },
-                                                ),
-
-                                                // Show bank selection when Transfer VA is selected
-                                                if (isTransferVA && _selectedPaymentMethodIndex == index) ...[
-                                                  const SizedBox(height: 8),
-                                                  Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                                    child: Consumer(
-                                                      builder: (context, ref, child) {
-                                                        final dokuVAState = ref.watch(dokuVANotifierProvider);
-                                                        return BankSelectionWidget(
-                                                          selectedBank: dokuVAState.selectedBank,
-                                                          onBankSelected: (bank) {
-                                                            ref.read(dokuVANotifierProvider.notifier).selectBank(bank);
-                                                          },
-                                                        );
-                                                      },
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                ],
-                                              ],
-                                            );
-                                          }),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 16),
-
                                       // Voucher Section
                                       Text(
                                         localizations.paymentVoucherTitle,
@@ -1840,75 +1786,68 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                       ),
                                       const SizedBox(height: 8),
 
-                                      // 1. Harga Bulanan/Harian
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily'
-                                                  ? localizations.paymentDailyPrice
-                                                  : localizations.paymentMonthlyPrice,
-                                              style: textTheme.bodyLarge,
-                                            ),
-                                            Text(
-                                              getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily'
-                                                  ? formatCurrency(roomData['daily_price'] ?? 0.0)
-                                                  : formatCurrency(roomData['monthly_price'] ?? 0.0),
-                                              style: textTheme.bodyLarge,
-                                            ),
-                                          ],
+                                      // Daily pricing: show per-day breakdown if available
+                                      if ((getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily')
+                                          && widget.multiTierBreakdown != null
+                                          && widget.multiTierBreakdown!.isNotEmpty
+                                          && widget.multiTierTotalPrice != null) ...[
+                                        DailyPriceBreakdown(
+                                          breakdown: widget.multiTierBreakdown!,
+                                          totalPrice: widget.multiTierTotalPrice!,
                                         ),
-                                      ),
-
-                                      // 2. Durasi
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              localizations.confirmationDialogDuration,
-                                              style: textTheme.bodyLarge,
-                                            ),
-                                            Text(
-                                              '${getDuration(roomData)} $durationUnit',
-                                              style: textTheme.bodyLarge,
-                                            ),
-                                          ],
+                                      ] else ...[
+                                        // Monthly or flat rate fallback: show single price + duration
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily'
+                                                    ? localizations.paymentDailyPrice
+                                                    : localizations.paymentMonthlyPrice,
+                                                style: textTheme.bodyLarge,
+                                              ),
+                                              Text(
+                                                getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily'
+                                                    ? formatCurrency(roomData['daily_price'] ?? 0.0)
+                                                    : formatCurrency(roomData['monthly_price'] ?? 0.0),
+                                                style: textTheme.bodyLarge,
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-
-                                      const Divider(height: 20, thickness: 0.5, color: Colors.grey),
-
-                                      // 3. Subtotal
-                                      Builder(
-                                        builder: (context) {
-                                          final basePrice = widget.rentType == 'daily' || widget.rentType == 'Daily'
-                                              ? roomData['daily_price'] ?? 0.0
-                                              : roomData['monthly_price'] ?? 0.0;
-                                          final duration = getDuration(roomData);
-                                          final subtotal = basePrice * duration;
-
-                                          return Padding(
-                                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Text(
-                                                  'Subtotal',
-                                                  style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-                                                ),
-                                                Text(
-                                                  formatCurrency(subtotal),
-                                                  style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(localizations.confirmationDialogDuration, style: textTheme.bodyLarge),
+                                              Text('${getDuration(roomData)} $durationUnit', style: textTheme.bodyLarge),
+                                            ],
+                                          ),
+                                        ),
+                                        const Divider(height: 20, thickness: 0.5, color: Colors.grey),
+                                        Builder(
+                                          builder: (context) {
+                                            final basePrice = widget.rentType == 'daily' || widget.rentType == 'Daily'
+                                                ? roomData['daily_price'] ?? 0.0
+                                                : roomData['monthly_price'] ?? 0.0;
+                                            final duration = getDuration(roomData);
+                                            final subtotal = basePrice * duration;
+                                            return Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text('Subtotal', style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                                                  Text(formatCurrency(subtotal), style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
 
                                       // 4. Voucher Discount (if applied)
                                       if (voucherNotifier.hasAppliedVoucher && voucherNotifier.currentDiscount > 0)
@@ -2019,11 +1958,74 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             ),
                                             style: textTheme.titleLarge?.copyWith(
                                               fontWeight: FontWeight.bold,
-                                              color: AppColors.secondaryColor,
+                                              // Bright orange in dark mode for readability, red in light mode
+                                              color: isDark ? const Color(0xFFFF9500) : AppColors.secondaryColor,
                                             ),
                                           ),
                                         ],
                                       ),
+                                      const SizedBox(height: 24),
+
+                                      // Metode Pembayaran Section (moved below Total Harga)
+                                      RichText(
+                                        text: TextSpan(
+                                          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                          children: [
+                                            TextSpan(text: localizations.paymentMethodTitle),
+                                            const TextSpan(
+                                              text: ' *',
+                                              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Column(
+                                        children: [
+                                          ...List.generate(paymentMethods.length, (index) {
+                                            final method = paymentMethods[index];
+                                            final isTransferVA = method['value'] == 'Transfer VA';
+
+                                            return Column(
+                                              children: [
+                                                PaymentMethodItem(
+                                                  iconAsset: method['iconAsset'],
+                                                  title: method['title'],
+                                                  subtitle: method['subtitle'] ?? '',
+                                                  isSelected: _selectedPaymentMethodIndex == index,
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _selectedPaymentMethodIndex = index;
+                                                      _selectedTransactionValue = method['value'];
+                                                    });
+                                                  },
+                                                ),
+
+                                                // Show bank selection when Transfer VA is selected
+                                                if (isTransferVA && _selectedPaymentMethodIndex == index) ...[
+                                                  const SizedBox(height: 8),
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                                    child: Consumer(
+                                                      builder: (context, ref, child) {
+                                                        final dokuVAState = ref.watch(dokuVANotifierProvider);
+                                                        return BankSelectionWidget(
+                                                          selectedBank: dokuVAState.selectedBank,
+                                                          onBankSelected: (bank) {
+                                                            ref.read(dokuVANotifierProvider.notifier).selectBank(bank);
+                                                          },
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                ],
+                                              ],
+                                            );
+                                          }),
+                                        ],
+                                      ),
+
                                       const SizedBox(height: 24),
                                       // Terms and Conditions Checkbox
                                       Container(
@@ -2119,6 +2121,32 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                           ),
                                                         ),
                                                       ),
+                                                      // ", dan " / ", and "
+                                                      TextSpan(text: localizations.paymentTermsAndRental),
+                                                      // "Perjanjian Sewa" link
+                                                      WidgetSpan(
+                                                        child: GestureDetector(
+                                                          onTap: () async {
+                                                            await showDialog<bool>(
+                                                              context: context,
+                                                              builder: (BuildContext context) {
+                                                                return const TermsAndConditionsDialog(isTerms: true, isPrivacy: false);
+                                                              },
+                                                            );
+                                                          },
+                                                          child: Text(
+                                                            localizations.paymentRentalAgreement,
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              color: AppColors.primaryAdaptive(context),
+                                                              fontWeight: FontWeight.bold,
+                                                              decoration: TextDecoration.underline,
+                                                              decorationColor: AppColors.primaryAdaptive(context),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const TextSpan(text: '.'),
                                                     ],
                                                   ),
                                                 ),

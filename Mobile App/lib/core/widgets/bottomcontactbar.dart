@@ -45,10 +45,10 @@ class BottomContactBar extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
           decoration: BoxDecoration(
-            // Liquid glass transparent surface — low opacity so content shows through
+            // Glass surface — higher opacity in light mode for readability
             color: isDark
                 ? const Color(0xFF1F2937).withValues(alpha: 0.45)
-                : Colors.white.withValues(alpha: 0.45),
+                : Colors.white.withValues(alpha: 0.85),
             border: Border(
               top: BorderSide(
                 color: isDark

@@ -535,7 +535,7 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 100, color: Colors.grey.shade300),
+              Icon(icon, size: 100, color: isDark ? Colors.grey[700] : Colors.grey.shade300),
               const SizedBox(height: 24),
               Text(
                 title,
@@ -595,7 +595,7 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
                       width: 120,
                       height: 14,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: isDark ? Colors.grey[700] : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -603,7 +603,7 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
                       width: 60,
                       height: 20,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: isDark ? Colors.grey[700] : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -641,7 +641,7 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
                       width: 100,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: isDark ? Colors.grey[700] : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -649,7 +649,7 @@ class _TicketListPageState extends ConsumerState<TicketListPage>
                       width: 60,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: isDark ? Colors.grey[700] : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),

@@ -84,7 +84,7 @@ class _BookingCardState extends ConsumerState<BookingCard> {
                 width: 110,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[200],
+                  color: isDark ? Colors.grey[800] : Colors.grey[200],
                 ),
                 clipBehavior: Clip.hardEdge,
                 child: propertyImagesAsync.when(

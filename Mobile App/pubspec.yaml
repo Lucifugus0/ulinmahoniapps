@@ -112,6 +112,7 @@ flutter:
     - assets/images/ulinhouse.jpg
     - assets/images/ulinmahonilogo.png
     - assets/images/house.png
+    - assets/images/payment/
     - assets/golden-leaves-bg.jpg
     - assets/fonts/
 

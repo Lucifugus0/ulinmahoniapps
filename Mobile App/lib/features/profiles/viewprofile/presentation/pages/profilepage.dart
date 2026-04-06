@@ -319,7 +319,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -485,7 +486,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -825,7 +827,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icons.receipt_long_outlined,
                               text: localizations.profileOrderHistoryTitle,
                               subText: localizations.profileOrderHistorySubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 context.push('/mybooking');
                               },
@@ -835,7 +837,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icons.badge_outlined,
                               text: localizations.profileUploadIdTitle,
                               subText: localizations.profileUploadIdSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: _uploadIdDocument,
                             ),
                             Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
@@ -843,7 +845,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icons.language_outlined,
                               text: localizations.profileLanguageTitle,
                               subText: localizations.profileLanguageSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: _showLanguageDialog,
                             ),
                             Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
@@ -862,8 +864,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     activeTrackColor: AppColors.primaryAdaptive(context),
                                     activeThumbColor: Colors.white,
                                     // In light mode the inactive thumb is white by default — make it visible
-                                    inactiveThumbColor: Colors.grey[600],
-                                    inactiveTrackColor: Colors.grey[300],
+                                    inactiveThumbColor: isDark ? Colors.grey[400] : Colors.grey[600],
+                                    inactiveTrackColor: isDark ? Colors.grey[700] : Colors.grey[300],
                                     onChanged: (value) {
                                       ref.read(themeProvider.notifier).toggle();
                                     },
@@ -881,7 +883,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 icon: Icons.swap_horiz_outlined,
                                 text: 'Switch Apple Account',
                                 subText: 'Switch between multiple Apple accounts',
-                                trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                                trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                                 onTap: _switchAppleAccount,
                               ),
                             ],
@@ -913,7 +915,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             MenuItem(
                               icon: Icons.phone_outlined,
                               text: localizations.profileContactUsMenu,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 showContactDialog(context);
                               },
@@ -922,7 +924,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             MenuItem(
                               icon: Icons.shield_outlined,
                               text: localizations.profilePrivacyPolicyTitle,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 _launchURL('https://web.ulinmahoni.com/privacy-policy');
                               },
@@ -931,7 +933,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             MenuItem(
                               icon: Icons.description_outlined,
                               text: localizations.profileTermsConditionsTitle,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 _launchURL('https://web.ulinmahoni.com/terms-of-services');
                               },
@@ -941,7 +943,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icons.lock_outline,
                               text: localizations.changePasswordTitle,
                               subText: localizations.changePasswordSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 context.push('/updatepassword');
                               },
@@ -951,7 +953,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icons.person_remove_outlined,
                               text: localizations.profileDeactivateAccountTitle,
                               subText: localizations.profileDeactivateAccountSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: _deactivateAccount,
                             ),
                             Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
@@ -959,7 +961,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icons.logout_outlined,
                               text: localizations.logoutTitle,
                               subText: localizations.logoutSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () async {
                                 final bool? confirmLogout = await showErrorDialog(
                                   context,

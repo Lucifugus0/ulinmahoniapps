@@ -317,21 +317,6 @@
 			shellPath = /bin/sh;
 			shellScript = "# Fix Xcode 26: strip com.apple.provenance xattrs that break codesigning\nfind \"${BUILT_PRODUCTS_DIR}\" -name '*.framework' -exec xattr -cr {} \\; 2>/dev/null || true\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
-		A1B2C3D4E5F6789012345678 /* [Xcode 26 Fix] Strip Provenance */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[Xcode 26 Fix] Strip Provenance";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Strip com.apple.provenance xattrs that cause codesigning failures on Xcode 26\nfind \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\" -exec xattr -d com.apple.provenance {} \\; 2>/dev/null || true\n";
-		};
 		41D3A382096B77FDD673CE6F /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -402,6 +387,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		A1B2C3D4E5F6789012345678 /* [Xcode 26 Fix] Strip Provenance */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[Xcode 26 Fix] Strip Provenance";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Strip com.apple.provenance xattrs that cause codesigning failures on Xcode 26\nfind \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\" -exec xattr -d com.apple.provenance {} \\; 2>/dev/null || true\nfind \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\" -exec xattr -d com.apple.FinderInfo {} \\; 2>/dev/null || true\n# Also strip from Flutter build output to fix re-codesign on copy\nif [ -d \"${SOURCE_ROOT}/../build/ios/Debug-iphonesimulator/${PRODUCT_NAME}.app\" ]; then\n  find \"${SOURCE_ROOT}/../build/ios/Debug-iphonesimulator/${PRODUCT_NAME}.app\" -exec xattr -cr {} \\; 2>/dev/null || true\nfi\nif [ -d \"${SOURCE_ROOT}/../build/ios/Release-iphoneos/${PRODUCT_NAME}.app\" ]; then\n  find \"${SOURCE_ROOT}/../build/ios/Release-iphoneos/${PRODUCT_NAME}.app\" -exec xattr -cr {} \\; 2>/dev/null || true\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

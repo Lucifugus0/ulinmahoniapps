@@ -48,8 +48,9 @@ class MainLayout extends StatelessWidget {
     return Scaffold(
       backgroundColor: bgColor,
 
-      // Allow body to extend behind navbar for glass blur effect
+      // Allow body to extend behind navbar and appbar for glass blur effect
       extendBody: true,
+      extendBodyBehindAppBar: showNavBar,
 
       appBar: showNavBar ? const Navbar(initialLanguage: 'ID') : null,
 

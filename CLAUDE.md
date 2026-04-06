@@ -128,6 +128,15 @@ Note: Direct MySQL connection fails due to MariaDB 10.11 (server) vs MySQL 9.6 (
 ### Daily Room Pricing
 All 5 pricing categories are required at daily room creation: `weekday_price`, `weekend_price`, `holiday_price`, `high_season_price`, `low_season_price`. Priority: high_season > low_season > holiday > weekend > weekday. Manual price overrides are preserved. Service: `RoomPriceGeneratorService.php`.
 
+### Booking Constraints
+
+| | Max Check-in Date | Max Stay Duration |
+|---|---|---|
+| **Daily** | 90 days from today | 60 days |
+| **Monthly** | 14 days from today | 12 months |
+
+These limits are enforced in both Frontend API (web datepicker) and Mobile App (date picker + duration stepper).
+
 ### Booking Flow
 
 pending → waiting → paid → completed/cancelled/expired

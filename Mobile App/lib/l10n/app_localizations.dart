@@ -1798,6 +1798,18 @@ abstract class AppLocalizations {
   /// **'Fasilitas Ruangan'**
   String get roomDetailsFacilitiesTitle;
 
+  /// No description provided for @roomDetailsDailyPricing.
+  ///
+  /// In id, this message translates to:
+  /// **'Rincian Harga Harian'**
+  String get roomDetailsDailyPricing;
+
+  /// No description provided for @roomDetailsDailyPricingLoading.
+  ///
+  /// In id, this message translates to:
+  /// **'Menghitung harga per tanggal...'**
+  String get roomDetailsDailyPricingLoading;
+
   /// No description provided for @roomDetailsNoFacilities.
   ///
   /// In id, this message translates to:
@@ -2425,19 +2437,19 @@ abstract class AppLocalizations {
   /// No description provided for @paymentTermsAgreePrefix.
   ///
   /// In id, this message translates to:
-  /// **'Saya menyetujui '**
+  /// **'Saya menyatakan telah membaca, mengerti, memahami dan menyetujui data, informasi dan rincian transaksi di atas, serta '**
   String get paymentTermsAgreePrefix;
 
   /// No description provided for @paymentTermsAnd.
   ///
   /// In id, this message translates to:
-  /// **' serta '**
+  /// **', '**
   String get paymentTermsAnd;
 
   /// No description provided for @paymentTermsConditions.
   ///
   /// In id, this message translates to:
-  /// **'Syarat dan Ketentuan'**
+  /// **'S&K'**
   String get paymentTermsConditions;
 
   /// No description provided for @paymentPrivacyPolicy.
@@ -2445,6 +2457,18 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Kebijakan Privasi'**
   String get paymentPrivacyPolicy;
+
+  /// No description provided for @paymentTermsAndRental.
+  ///
+  /// In id, this message translates to:
+  /// **', dan '**
+  String get paymentTermsAndRental;
+
+  /// No description provided for @paymentRentalAgreement.
+  ///
+  /// In id, this message translates to:
+  /// **'Perjanjian Sewa'**
+  String get paymentRentalAgreement;
 
   /// No description provided for @vaGenerationFailedTitle.
   ///

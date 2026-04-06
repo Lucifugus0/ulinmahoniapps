@@ -915,6 +915,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get roomDetailsFacilitiesTitle => 'Fasilitas Ruangan';
 
   @override
+  String get roomDetailsDailyPricing => 'Rincian Harga Harian';
+
+  @override
+  String get roomDetailsDailyPricingLoading =>
+      'Menghitung harga per tanggal...';
+
+  @override
   String get roomDetailsNoFacilities => 'Tidak ada fasilitas tersedia';
 
   @override
@@ -1249,16 +1256,23 @@ class AppLocalizationsId extends AppLocalizations {
       'Lengkapi semua data untuk melanjutkan';
 
   @override
-  String get paymentTermsAgreePrefix => 'Saya menyetujui ';
+  String get paymentTermsAgreePrefix =>
+      'Saya menyatakan telah membaca, mengerti, memahami dan menyetujui data, informasi dan rincian transaksi di atas, serta ';
 
   @override
-  String get paymentTermsAnd => ' serta ';
+  String get paymentTermsAnd => ', ';
 
   @override
-  String get paymentTermsConditions => 'Syarat dan Ketentuan';
+  String get paymentTermsConditions => 'S&K';
 
   @override
   String get paymentPrivacyPolicy => 'Kebijakan Privasi';
+
+  @override
+  String get paymentTermsAndRental => ', dan ';
+
+  @override
+  String get paymentRentalAgreement => 'Perjanjian Sewa';
 
   @override
   String get vaGenerationFailedTitle => 'Gagal Membuat VA';

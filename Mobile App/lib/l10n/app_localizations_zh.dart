@@ -879,6 +879,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get roomDetailsFacilitiesTitle => '房间设施';
 
   @override
+  String get roomDetailsDailyPricing => '每日价格明细';
+
+  @override
+  String get roomDetailsDailyPricingLoading => '正在计算每日价格...';
+
+  @override
   String get roomDetailsNoFacilities => '无可用设施';
 
   @override
@@ -1200,16 +1206,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paymentWarningCompleteData => '请完成所有数据以继续';
 
   @override
-  String get paymentTermsAgreePrefix => '我同意';
+  String get paymentTermsAgreePrefix => '本人声明已阅读、理解并同意上述数据、信息和交易详情，以及';
 
   @override
-  String get paymentTermsAnd => '和';
+  String get paymentTermsAnd => '、';
 
   @override
   String get paymentTermsConditions => '条款和条件';
 
   @override
   String get paymentPrivacyPolicy => '隐私政策';
+
+  @override
+  String get paymentTermsAndRental => '和';
+
+  @override
+  String get paymentRentalAgreement => '租赁协议';
 
   @override
   String get vaGenerationFailedTitle => '虚拟账户生成失败';

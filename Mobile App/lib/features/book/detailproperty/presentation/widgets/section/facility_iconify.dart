@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../roomdetails/model/facility_model.dart';
 import '../../../../../../core/utils/facility_icon_mapper.dart';
 
-/// Widget untuk menampilkan property facilities dengan icon
-/// Mendukung format baru dengan icon field yang di-mapping ke Material Icons
+/// Widget untuk menampilkan property facilities dengan icon in a 2-column layout.
+/// Uses Column+Row instead of GridView to avoid excess vertical whitespace.
 class PropertyFacilitiesIconifyGrid extends StatelessWidget {
-  // Terima 3 list terpisah sesuai model baru
   final List<FacilityModel>? general;
   final List<FacilityModel>? security;
   final List<FacilityModel>? amenities;
@@ -19,68 +18,61 @@ class PropertyFacilitiesIconifyGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Gabungkan semua facilities
     final List<FacilityModel> allFacilities = [
       ...?general,
       ...?security,
       ...?amenities,
     ];
 
-    // Cek jika gabungan kosong
     if (allFacilities.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    const int crossAxisCount = 2;
-    final double mainAxisSpacing = 16.0;
-    final double crossAxisSpacing = 16.0;
-    const double childAspectRatio = 4.5; // Same as room details for consistency
+    // Build rows of 2 items each
+    final List<Widget> rows = [];
+    for (int i = 0; i < allFacilities.length; i += 2) {
+      rows.add(Row(
+        children: [
+          Expanded(child: _buildItem(context, allFacilities[i])),
+          if (i + 1 < allFacilities.length)
+            Expanded(child: _buildItem(context, allFacilities[i + 1]))
+          else
+            const Expanded(child: SizedBox.shrink()),
+        ],
+      ));
+    }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: crossAxisSpacing,
-        mainAxisSpacing: mainAxisSpacing,
-        childAspectRatio: childAspectRatio,
-      ),
-      itemCount: allFacilities.length,
-      itemBuilder: (context, index) {
-        final facility = allFacilities[index];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: rows,
+    );
+  }
 
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon mapped from string
-              Icon(
-                facility.icon.isNotEmpty
-                    ? FacilityIconMapper.getIcon(facility.icon)
-                    : Icons.check_circle_outline,
-                size: 24, // Same as room details
-                color: const Color(0xFF134E3A), // Dark green for all icons
-              ),
-              const SizedBox(width: 10),
-
-              // <!-- Multi-language: show facility name in app's current locale -->
-              Flexible(
-                child: Text(
-                  facility.getLocalizedName(Localizations.localeOf(context).languageCode),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 15, // Consistent with room details
-                  ),
-                  softWrap: true,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-              ),
-            ],
+  Widget _buildItem(BuildContext context, FacilityModel facility) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            facility.icon.isNotEmpty
+                ? FacilityIconMapper.getIcon(facility.icon)
+                : Icons.check_circle_outline,
+            size: 24,
+            color: const Color(0xFF134E3A),
           ),
-        );
-      },
+          const SizedBox(width: 10),
+          // Multi-language: show facility name in app's current locale
+          Flexible(
+            child: Text(
+              facility.getLocalizedName(Localizations.localeOf(context).languageCode),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

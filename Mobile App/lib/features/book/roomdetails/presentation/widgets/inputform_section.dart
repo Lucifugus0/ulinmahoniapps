@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
+import 'package:ulinmahoniapps/core/theme/glass_theme.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 
 class RoomInputSection extends StatelessWidget {
@@ -77,7 +78,10 @@ class RoomInputSection extends StatelessWidget {
       suffixIcon: suffixIcon != null
           ? Icon(suffixIcon, color: Colors.grey.shade400, size: 20)
           : null,
-      fillColor: isDark ? const Color(0xFF374151) : Colors.white,
+      // Glass-style semi-transparent fill
+      fillColor: isDark
+          ? const Color(0xFF374151).withValues(alpha: 0.6)
+          : Colors.white.withValues(alpha: 0.7),
       filled: true,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -192,10 +196,14 @@ class RoomInputSection extends StatelessWidget {
             value: item,
             child: Text(item, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
           )).toList(),
-          icon: const SizedBox.shrink(), // Sembunyikan ikon default dropdown (kita pakai decoration)
+          icon: const SizedBox.shrink(),
+          // Glass-style dropdown menu background
+          dropdownColor: isDark
+              ? const Color(0xFF1F2937).withValues(alpha: 0.92)
+              : Colors.white.withValues(alpha: 0.92),
           decoration: _buildInputDecoration(
             hintText: "Select Type",
-            suffixIcon: Icons.keyboard_arrow_down_rounded, // Custom arrow icon
+            suffixIcon: Icons.keyboard_arrow_down_rounded,
             isDark: isDark,
             context: context,
           ),
@@ -232,7 +240,10 @@ class RoomInputSection extends StatelessWidget {
         _buildLabel(labelText, isDark),
         Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF374151) : Colors.white,
+            // Glass-style semi-transparent fill
+            color: isDark
+                ? const Color(0xFF374151).withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: isDark ? Colors.grey.shade600 : Colors.grey.shade300, width: 1),
           ),
