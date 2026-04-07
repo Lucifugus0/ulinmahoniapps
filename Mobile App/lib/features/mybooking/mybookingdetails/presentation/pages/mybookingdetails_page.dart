@@ -1089,23 +1089,23 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                     final isPaid = _isTransactionPaid(bookingData.transactionStatus);
                                     final hasCheckedIn = bookingData.checked_in_at != null && bookingData.checked_in_at!.isNotEmpty;
 
-                                    // Check if today is between check-in and checkout
+                                    // Check if today is still before checkout.
+                                    // Lower bound (check-in date) is intentionally NOT checked here
+                                    // because admin may check guests in earlier than the scheduled date.
+                                    // Since hasCheckedIn already confirms the guest is in the room,
+                                    // we only need to ensure they haven't passed their checkout date.
                                     bool isWithinRenewPeriod = false;
-                                    if (bookingData.checkIn != null && bookingData.checkIn!.isNotEmpty &&
-                                        bookingData.checkOut != null && bookingData.checkOut!.isNotEmpty) {
+                                    if (bookingData.checkOut != null && bookingData.checkOut!.isNotEmpty) {
                                       try {
-                                        final checkInDate = DateTime.parse(bookingData.checkIn!);
                                         final checkoutDate = DateTime.parse(bookingData.checkOut!);
                                         final today = DateTime.now();
                                         final todayDate = DateTime(today.year, today.month, today.day);
-                                        final checkInDateOnly = DateTime(checkInDate.year, checkInDate.month, checkInDate.day);
                                         final checkoutDateOnly = DateTime(checkoutDate.year, checkoutDate.month, checkoutDate.day);
 
-                                        // Show button if today is between check-in and checkout (inclusive)
-                                        isWithinRenewPeriod = (todayDate.isAfter(checkInDateOnly) || todayDate.isAtSameMomentAs(checkInDateOnly)) &&
-                                                             (todayDate.isBefore(checkoutDateOnly) || todayDate.isAtSameMomentAs(checkoutDateOnly));
+                                        // Allow renewal as long as today has not passed the checkout date
+                                        isWithinRenewPeriod = todayDate.isBefore(checkoutDateOnly) || todayDate.isAtSameMomentAs(checkoutDateOnly);
                                       } catch (e) {
-                                        AppLogger.e('Error parsing dates: $e', 'MYBOOKING-DETAIL');
+                                        AppLogger.e('Error parsing checkout date: $e', 'MYBOOKING-DETAIL');
                                       }
                                     }
 
@@ -1300,7 +1300,7 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                     return const SizedBox.shrink();
                                   },
                                 ),
-                                // Cancel Booking section — shows for pending/waiting/paid (not checked-in)
+                                // Cancel Booking section
                                 Builder(
                                   builder: (context) {
                                     final status = bookingData.transactionStatus?.toLowerCase().trim() ?? '';

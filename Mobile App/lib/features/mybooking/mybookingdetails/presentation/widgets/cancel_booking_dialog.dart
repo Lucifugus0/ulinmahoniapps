@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../../core/constants/app_asset_constants.dart';
 import '../../../../../core/constants/appcolor_constants.dart';
 import '../../../../../core/constants/appfontweight_constants.dart';
+import '../../../../../core/utils/app_logger.dart';
 import '../../model/cancel_refund_model.dart';
 import '../../provider/cancel_booking_provider.dart';
 import '../../../../mybooking/mybooking/provider/mybooking_provider.dart';
@@ -101,6 +103,9 @@ class _CancelBookingDialogState extends ConsumerState<CancelBookingDialog> {
       _errorMessage = null;
     });
 
+    AppLogger.d('Starting cancel booking: ${widget.orderId}', 'CANCEL-DIALOG');
+
+    // Use ref.read to get notifier — provider is kept alive via ref.watch in build()
     final notifier = ref.read(cancelBookingProvider.notifier);
     final result = await notifier.cancelBooking(
       orderId: widget.orderId,
@@ -109,38 +114,110 @@ class _CancelBookingDialogState extends ConsumerState<CancelBookingDialog> {
       accountHolder: _preview?.requiresBankAccount == true ? _accountHolderController.text.trim() : null,
     );
 
+    AppLogger.d('Cancel result: ${result != null ? "SUCCESS (orderId=${result.orderId})" : "NULL (provider may have been disposed)"}', 'CANCEL-DIALOG');
+
     if (!mounted) return;
 
     if (result != null) {
+      AppLogger.i('Cancel confirmed — showing success popup', 'CANCEL-DIALOG');
+
       // Invalidate booking providers to refresh the list
       ref.invalidate(userBookingsProvider);
       ref.invalidate(myBookingByIdProvider(widget.idrec));
 
-      Navigator.of(context).pop(true); // true = successfully cancelled
-
-      // Show success snackbar
+      // Show success popup BEFORE closing cancel dialog so context is still mounted.
+      // OK button closes both: the success popup then the cancel dialog (returning true).
       final totalRefund = result.refund?.totalRefund;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            totalRefund != null && totalRefund > 0
-                ? 'Booking dibatalkan. Refund ${_currencyFormat.format(totalRefund)} akan diproses.'
-                : 'Booking berhasil dibatalkan.',
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      final message = totalRefund != null && totalRefund > 0
+          ? 'Booking berhasil dibatalkan.\n\nRefund sebesar ${_currencyFormat.format(totalRefund)} akan diproses dalam 14-30 hari kerja.'
+          : 'Booking berhasil dibatalkan.';
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Ulin Mahoni logo
+                  Image.asset(
+                    AppImage.logo,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Berhasil',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Close success popup, then close cancel dialog with true
+                        Navigator.of(ctx).pop();
+                        Navigator.of(context).pop(true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('OK'),
+                    ),
+                  ),
+                ],
+              ),
+              ),
+            );
+          },
+        );
     } else {
+      // result is null — either provider was disposed (autoDispose race condition)
+      // or the API returned an error. Check provider state for the actual error message.
+      final cancelState = ref.read(cancelBookingProvider);
+      final errorMsg = cancelState.hasError
+          ? cancelState.error.toString()
+          : 'Gagal membatalkan booking. Silakan coba lagi.';
+
+      AppLogger.e('Cancel failed — provider state: $cancelState', errorMsg, null, 'CANCEL-DIALOG');
+
       setState(() {
         _isCancelling = false;
-        _errorMessage = 'Gagal membatalkan booking. Silakan coba lagi.';
+        _errorMessage = errorMsg;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Watch the provider to keep the autoDispose provider alive while the dialog
+    // is open — prevents it from being disposed during the async cancelBooking() call.
+    ref.watch(cancelBookingProvider);
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(

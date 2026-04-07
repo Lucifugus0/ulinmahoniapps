@@ -91,14 +91,24 @@ class CancelBookingRepository {
       AppLogger.d('Cancelling booking: $orderId', 'CANCEL-BOOKING-REPO');
 
       final response = await http.post(url, headers: _headers(token), body: jsonEncode(body));
-      AppLogger.d('Cancel status: ${response.statusCode}', 'CANCEL-BOOKING-REPO');
+      // Log full response for debugging — remove once cancel bug is resolved
+      AppLogger.d('Cancel status: ${response.statusCode} | body: ${response.body}', 'CANCEL-BOOKING-REPO');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        return Success(CancelBookingResponse.fromJson(json));
+        try {
+          final json = jsonDecode(response.body) as Map<String, dynamic>;
+          final parsed = CancelBookingResponse.fromJson(json);
+          AppLogger.d('Cancel parsed OK — orderId: ${parsed.orderId}, status: ${parsed.status}', 'CANCEL-BOOKING-REPO');
+          return Success(parsed);
+        } catch (parseErr, parseSt) {
+          // Parsing failed even though HTTP was 200 — log raw body so we can debug
+          AppLogger.e('Cancel parse error (HTTP 200 but JSON parse failed)', parseErr, parseSt, 'CANCEL-BOOKING-REPO');
+          return Failure(errorType: ApiErrorType.unknown, message: 'Gagal memproses respons server: $parseErr', originalError: parseErr);
+        }
       } else {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         final msg = json['message'] as String? ?? 'Gagal membatalkan booking';
+        AppLogger.w('Cancel rejected — HTTP ${response.statusCode}: $msg', 'CANCEL-BOOKING-REPO');
         return Failure(
           errorType: _errorType(response.statusCode),
           message: msg,

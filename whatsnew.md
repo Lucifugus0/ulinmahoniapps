@@ -142,6 +142,10 @@
 | 2026-04-06 | Room Detail Page | Fixed daily pricing: subtotal now uses `multiTierTotalPrice` from price-preview API (per-date weekday/weekend/holiday rates) instead of flat rate × duration. |
 | 2026-04-06 | Room Detail Page | Added daily pricing breakdown section under "Informasi Pemesanan" showing per-date prices with day type badges (weekday/weekend/holiday/seasonal). |
 | 2026-04-06 | Payment Page | Replaced "Harga Harian" single line with per-day pricing breakdown table for daily bookings. Monthly bookings retain the original layout. |
+| 2026-04-07 | Payment Page | Fixed DOKU gateway (VA/QRIS/CC) receiving flat rate × duration instead of multi-tier total. All payment method calls now use `_confirmedTotal` (set from `displayedTotal` at Bayar tap). |
+| 2026-04-07 | Payment Page (renewal) | Fixed renewal DOKU amount — was using backend's flat `grandTotal`. Now uses `_renewalMultiTierTotalPrice` from price-preview API in `displayedTotal`. |
+| 2026-04-07 | Renew Booking Dialog | Added per-day price breakdown (DailyPriceBreakdown widget) and subtotal for daily bookings. Breakdown is fetched from price-preview API when dates change. |
+| 2026-04-07 | Cancel Booking Dialog | Fixed "gagal membatalkan booking" false error after successful cancel — autoDispose provider was disposed during async API call (no listener). Fixed by watching provider in build(). Added AppLogger tracing throughout cancel flow. |
 | 2026-03-29 | Dependencies | Ran `flutter pub upgrade` — updated 50 packages (minor/patch). Key updates: dio 5.9.2, camera 0.11.4, shared_preferences 2.5.5, video_player 2.11.1, flutter_svg 2.2.4, google_sign_in_ios 6.3.0, logger 2.7.0. |
 | 2026-03-29 | Payment Providers | Migrated `DokuCCNotifier`, `DokuQRISNotifier`, `DokuVANotifier`, `PaymentNotifier`, `VoucherNotifier` from `StateNotifier`/`StateNotifierProvider` to Riverpod 3.x `Notifier`/`NotifierProvider`. |
 | 2026-03-29 | Room Details Providers | Migrated `RoomDetailsNotifier`, `AvailabilityCheckNotifier` from `StateNotifier`/`StateNotifierProvider` to Riverpod 3.x `Notifier`/`NotifierProvider`. |
