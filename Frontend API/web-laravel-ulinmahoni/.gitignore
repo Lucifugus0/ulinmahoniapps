@@ -38,3 +38,6 @@ storage/app/firebase-credentials.json
 
 /tests
 /docs
+
+/.agents
+/skills-lock.json

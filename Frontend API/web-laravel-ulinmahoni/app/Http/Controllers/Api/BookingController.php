@@ -3275,6 +3275,14 @@ class BookingController extends ApiController
                 ]);
             }
 
+            // Restore voucher usage count if a voucher was applied
+            if ($transaction->voucher_id) {
+                $voucher = \App\Models\Voucher::find($transaction->voucher_id);
+                if ($voucher && $voucher->current_usage_count > 0) {
+                    $voucher->decrement('current_usage_count');
+                }
+            }
+
             // Update transaction status to cancelled
             DB::table('t_transactions')
                 ->where('order_id', $order_id)
@@ -3283,27 +3291,58 @@ class BookingController extends ApiController
                     'cancel_at' => now(),
                 ]);
 
-            // If this is a renewal booking, reset the original booking so the user can renew again:
-            // 1. Set original transaction's renewal_status to 0
-            // 2. Clear original booking's check_out_at (was set when renewal was created)
+            // Renewal rollback — find the most recent previous PAID/CONFIRMED transaction
+            // for the same room + user using idrec and created_at ordering (more reliable
+            // than matching check_out = check_in which can fail on edge-case renewals).
+            $txRoomId    = (int)    $transaction->getAttribute('room_id');
+            $txUserId    = (int)    $transaction->getAttribute('user_id');
+            $txIdrec     = (int)    $transaction->getAttribute('idrec');
+            $txCreatedAt = (string) $transaction->getAttribute('created_at');
+
             if ($transaction->is_renewal == 1) {
-                $originalTransaction = DB::table('t_transactions')
-                    ->where('room_id', $transaction->room_id)
-                    ->where('user_id', $transaction->user_id)
-                    ->where('order_id', '!=', $order_id)
-                    ->where('renewal_status', 1)
-                    ->where('check_out', $transaction->check_in)
+                $previousTransaction = DB::table('t_transactions')
+                    ->where('room_id', $txRoomId)
+                    ->where('user_id', $txUserId)
+                    ->where('idrec', '!=', $txIdrec)
+                    ->whereRaw('UPPER(transaction_status) IN (?, ?)', ['PAID', 'CONFIRMED'])
+                    ->where('created_at', '<', $txCreatedAt)
+                    ->orderBy('created_at', 'desc')
                     ->first();
 
-                if ($originalTransaction) {
+                if ($previousTransaction) {
+                    $prevIdrec   = (int) $previousTransaction->idrec;
+                    $prevOrderId = (string) $previousTransaction->order_id;
+
+                    $previousBooking = DB::table('t_booking')->where('order_id', $prevOrderId)->first();
+
+                    // Capture before nullifying — used to decide rental_status restoration
+                    $hadCheckOut = $previousBooking && $previousBooking->check_out_at !== null;
+
+                    // Rollback renewal_status so the previous booking can be renewed again
                     DB::table('t_transactions')
-                        ->where('order_id', $originalTransaction->order_id)
+                        ->where('idrec', $prevIdrec)
                         ->update(['renewal_status' => 0]);
 
+                    // Restore previous booking as active (clear the check_out_at set during renewal)
                     DB::table('t_booking')
-                        ->where('order_id', $originalTransaction->order_id)
-                        ->where('status', 1)
+                        ->where('order_id', $prevOrderId)
                         ->update(['check_out_at' => null]);
+
+                    // Restore rental_status for monthly-only rooms:
+                    // 1 if previous booking had already set check_out_at (was mid-renewal), else 0
+                    $cancelledRoom = DB::table('m_rooms')->where('idrec', $txRoomId)->first();
+                    if ($cancelledRoom && !$cancelledRoom->periode_daily) {
+                        DB::table('m_rooms')
+                            ->where('idrec', $txRoomId)
+                            ->update(['rental_status' => $hadCheckOut ? 1 : 0]);
+                    }
+
+                    Log::info('Renewal rollback on cancellation', [
+                        'cancelled_transaction_id' => $txIdrec,
+                        'previous_transaction_id'  => $prevIdrec,
+                        'previous_order_id'        => $prevOrderId,
+                        'had_check_out'            => $hadCheckOut,
+                    ]);
                 }
             }
 
