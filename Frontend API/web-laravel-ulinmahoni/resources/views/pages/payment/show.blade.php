@@ -686,6 +686,107 @@
             </div>
         </section>
 
+        <!-- Payment Confirmation Modal — matches mockup: left=details+checkbox, right=pricing card+buttons -->
+        <div id="confirmPaymentModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 p-4" style="display:none; align-items:center; justify-content:center;">
+            <div class="relative w-11/12 md:w-[780px] max-h-[90vh] overflow-y-auto p-6 shadow-2xl rounded-xl bg-gray-900 text-white">
+                <h3 class="text-xl font-bold mb-5">{{ __('properties.payment.confirm_title') }}</h3>
+
+                {{-- 2-column grid: left = details + checkbox, right = pricing card + buttons --}}
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;" class="confirm-grid">
+                    {{-- Left column: property, guest, transaction, duration, checkbox --}}
+                    <div class="text-sm space-y-4">
+                        {{-- Property details --}}
+                        <div>
+                            <p class="text-gray-400 text-xs mb-0.5">{{ __('properties.payment.property_details') }}</p>
+                            <p class="font-semibold">{{ $booking->property_name }} - {{ $booking->room_name }}@if($booking->room?->no) - No. {{ $booking->room->no }}@endif</p>
+                        </div>
+
+                        {{-- Guest details --}}
+                        <div>
+                            <p class="text-gray-400 text-xs mb-0.5">{{ __('properties.payment.guest_details') }}</p>
+                            <p>{{ $booking->user_email }}</p>
+                            <p>{{ $booking->user_phone_number }}</p>
+                        </div>
+
+                        {{-- Transaction details --}}
+                        <div>
+                            <p class="text-gray-400 text-xs mb-0.5">{{ __('properties.payment.transaction_details') }}</p>
+                            <p>Order ID: {{ $booking->order_id }}</p>
+                            <p>{{ __('properties.payment.date') }} {{ $booking->created_at->format('d M Y H:i') }}</p>
+                        </div>
+
+                        {{-- Duration --}}
+                        <div>
+                            <p class="text-gray-400 text-xs mb-0.5">{{ __('properties.payment.duration') }}</p>
+                            <p>Check-in : {{ $booking->check_in->format('d M Y') }}</p>
+                            <p>Check-out : {{ $booking->check_out->format('d M Y') }}</p>
+                            <p class="mt-1 inline-block bg-teal-600 text-white text-xs font-semibold px-2 py-0.5 rounded">
+                                Durasi Sewa: @if($booking->booking_months > 0){{ $booking->booking_months }} bulan @elseif($booking->booking_days > 0){{ $booking->booking_days }} hari @endif
+                            </p>
+                        </div>
+
+                        {{-- Single agreement checkbox --}}
+                        <label class="flex items-start gap-2 cursor-pointer text-sm pt-2">
+                            <input type="checkbox" class="confirm-checkbox mt-0.5 rounded border-gray-500 text-teal-600 focus:ring-teal-500 bg-gray-700" />
+                            <span class="text-gray-300">Saya menyatakan telah membaca, mengerti, memahami dan menyetujui data, informasi dan rincian transaksi di atas, serta S&K, Kebijakan Privasi, dan Perjanjian Sewa.</span>
+                        </label>
+                    </div>
+
+                    {{-- Right column: pricing card + buttons --}}
+                    <div class="flex flex-col">
+                        {{-- Pricing card --}}
+                        <div class="bg-gray-800 rounded-lg p-4 text-sm space-y-2.5 border border-gray-700">
+                            <p class="text-teal-400 font-semibold text-xs mb-2">Rincian Pembayaran</p>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Harga sewa</span>
+                                <span class="font-medium">Rp <span id="confirmRoomPrice">{{ number_format($booking->room_price, 0, ',', '.') }}</span></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Biaya Layanan</span>
+                                <span class="font-medium">Rp <span id="confirmServiceFee">{{ number_format($booking->service_fees, 0, ',', '.') }}</span></span>
+                            </div>
+                            <div id="confirmParkingRow" class="hidden flex justify-between">
+                                <span class="text-gray-300">Biaya Parkir</span>
+                                <span class="font-medium">Rp <span id="confirmParkingAmount">0</span></span>
+                            </div>
+                            {{-- Hidden parking type holder --}}
+                            <span id="confirmParkingType" class="hidden">-</span>
+                            <div id="confirmDepositRow" class="hidden flex justify-between">
+                                <span class="text-gray-300">Deposit</span>
+                                <span class="font-medium">Rp <span id="confirmDepositAmount">0</span></span>
+                            </div>
+                            <div id="confirmDiscountRow" class="hidden flex justify-between text-green-400">
+                                <span>Diskon Voucher</span>
+                                <span class="font-medium">-Rp <span id="confirmDiscountAmount">0</span></span>
+                            </div>
+                            {{-- Total --}}
+                            <div class="flex justify-between pt-2 border-t border-gray-600 font-bold">
+                                <span>Total</span>
+                                <span class="text-teal-400">Rp <span id="confirmTotal">{{ number_format($booking->grandtotal_price, 0, ',', '.') }}</span></span>
+                            </div>
+                        </div>
+                        <p class="font-semibold text-sm mt-2" id="confirmPaymentMethod"></p>
+
+                        {{-- Action buttons at bottom of right column --}}
+                        <div class="mt-auto pt-4 flex gap-3">
+                            <button id="confirmCancelBtn" class="px-5 py-2.5 border border-gray-500 rounded-lg text-gray-300 font-medium hover:bg-gray-800 transition-colors">
+                                {{ __('properties.payment.confirm_cancel') }}
+                            </button>
+                            <button id="confirmProceedBtn" disabled class="flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                                Konfirmasi & Bayar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{-- Responsive: single column on mobile --}}
+        <style>
+            @media (max-width: 767px) {
+                .confirm-grid { grid-template-columns: 1fr !important; }
+            }
+        </style>
+
         <!-- Success Modal (Virtual Account) -->
         <div id="successModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div class="relative top-20 mx-auto p-5 border border-gray-200 w-11/12 md:w-96 shadow-lg rounded-md bg-white">
@@ -1194,7 +1295,70 @@
             });
         });
         
-        // Handle form submission
+        // --- Confirmation Modal Logic ---
+        const confirmModal = document.getElementById('confirmPaymentModal');
+        const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+        const confirmProceedBtn = document.getElementById('confirmProceedBtn');
+        const confirmCheckboxes = document.querySelectorAll('.confirm-checkbox');
+        let pendingSubmitEvent = null;
+
+        // Enable proceed button only when all checkboxes are checked
+        confirmCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const allChecked = [...confirmCheckboxes].every(c => c.checked);
+                confirmProceedBtn.disabled = !allChecked;
+            });
+        });
+
+        confirmCancelBtn.addEventListener('click', () => {
+            confirmModal.style.display = 'none';
+            confirmCheckboxes.forEach(cb => cb.checked = false);
+            confirmProceedBtn.disabled = true;
+        });
+
+        confirmProceedBtn.addEventListener('click', () => {
+            confirmModal.style.display = 'none';
+            // Proceed with actual payment submission
+            processPayment();
+        });
+
+        function showConfirmModal() {
+            // Sync dynamic pricing values from summary sidebar to confirmation modal
+            document.getElementById('confirmRoomPrice').textContent = document.getElementById('summaryRoomPrice').textContent;
+            document.getElementById('confirmServiceFee').textContent = document.getElementById('summaryServiceFee').textContent;
+            document.getElementById('confirmTotal').textContent = document.getElementById('summaryTotal').textContent;
+
+            // Deposit row
+            const depRow = document.getElementById('summaryDepositRow');
+            if (depRow && !depRow.classList.contains('hidden')) {
+                document.getElementById('confirmDepositRow').classList.remove('hidden');
+                document.getElementById('confirmDepositAmount').textContent = document.getElementById('summaryDepositAmount').textContent;
+            }
+            // Parking row
+            const parkRow = document.getElementById('summaryParkingRow');
+            if (parkRow && !parkRow.classList.contains('hidden')) {
+                document.getElementById('confirmParkingRow').classList.remove('hidden');
+                document.getElementById('confirmParkingType').textContent = document.getElementById('summaryParkingType').textContent;
+                document.getElementById('confirmParkingAmount').textContent = document.getElementById('summaryParkingAmount').textContent;
+            }
+            // Discount row
+            const discRow = document.getElementById('summaryDiscountRow');
+            if (discRow && !discRow.classList.contains('hidden')) {
+                document.getElementById('confirmDiscountRow').classList.remove('hidden');
+                document.getElementById('confirmDiscountAmount').textContent = document.getElementById('summaryDiscountAmount').textContent;
+            }
+
+            // Show selected payment method
+            document.getElementById('confirmPaymentMethod').textContent = submitText.textContent;
+
+            // Reset checkboxes
+            confirmCheckboxes.forEach(cb => cb.checked = false);
+            confirmProceedBtn.disabled = true;
+            // Show modal with flex display for centering
+            confirmModal.style.display = 'flex';
+        }
+
+        // Handle form submission — show confirmation modal first
         paymentForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -1204,6 +1368,14 @@
                 alert(translations.please_select_payment);
                 return;
             }
+
+            // Show confirmation modal instead of proceeding directly
+            showConfirmModal();
+        });
+
+        // Actual payment processing (called after user confirms)
+        async function processPayment() {
+            if (isSubmitting) return;
 
             // Show loading state
             isSubmitting = true;
@@ -1445,7 +1617,7 @@
                 submitText.textContent = 'Lanjutkan Pembayaran';
                 loadingSpinner.classList.add('hidden');
             }
-        });
+        }
 
         // Helper function to update booking payment
         async function updateBookingPayment(params) {

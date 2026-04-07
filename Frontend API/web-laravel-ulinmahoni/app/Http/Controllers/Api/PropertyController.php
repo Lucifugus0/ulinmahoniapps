@@ -100,13 +100,10 @@ class PropertyController extends ApiController
                 // Get total rooms count
                 $totalRooms = $property->rooms()->where('status', 1)->count();
 
-                // Get available rooms count (status = 1 and rental_status != 1)
+                /* Availability: daily rooms always available, monthly-only rooms check active bookings */
                 $availableRooms = $property->rooms()
                     ->where('status', 1)
-                    ->where(function($query) {
-                        $query->where('rental_status', '!=', 1)
-                              ->orWhereNull('rental_status');
-                    })
+                    ->availableRooms()
                     ->count();
 
                 $propertyArray['total_rooms'] = $totalRooms;
@@ -127,7 +124,7 @@ class PropertyController extends ApiController
 
                 return $propertyArray;
             })->values();
-            
+
             // Handle pagination if requested
             if ($request->has('limit') && $request->has('page')) {
                 $page = $request->page;
@@ -217,13 +214,10 @@ class PropertyController extends ApiController
                 // Get total rooms count
                 $totalRooms = $property->rooms()->where('status', 1)->count();
 
-                // Get available rooms count (status = 1 and rental_status != 1)
+                /* Availability: daily rooms always available, monthly-only rooms check active bookings */
                 $availableRooms = $property->rooms()
                     ->where('status', 1)
-                    ->where(function($query) {
-                        $query->where('rental_status', '!=', 1)
-                              ->orWhereNull('rental_status');
-                    })
+                    ->availableRooms()
                     ->count();
 
                 $propertyArray['total_rooms'] = $totalRooms;

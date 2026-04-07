@@ -410,7 +410,7 @@
                             </div>
                             <div class="text-right">
                                 <!-- Room Status — green for available, gray for unavailable, with dark mode variants -->
-                                @if($room['rental_status'] == 1)
+                                @if(!($room['is_available'] ?? ($room['rental_status'] != 1)))
                                     <span id="roomStatus" class="px-4 py-2 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
                                         {{ __('properties.status.unavailable') }}
                                     </span>
@@ -695,7 +695,7 @@
                                         </div>
                                         <div class="ml-3 text-sm">
                                             <label for="agreementCheckbox" class="text-gray-700">
-                                                {{ __('properties.booking.rental_agreement') }} <a href="/rental-agreement" target="_blank" class="text-teal-600 hover:text-teal-700 underline">{{ __('properties.booking.rental_agreement_link') }}</a>
+                                                {{ __('properties.booking.rental_agreement') }}
                                             </label>
                                         </div>
                                     </div>
@@ -716,7 +716,7 @@
                                     </button>
                                     <p class="text-sm text-gray-500 text-center mt-2">{{ __('properties.booking.please_login') }}</p>
                                 @else
-                                    @if($room['rental_status'] == 1)
+                                    @if(!($room['is_available'] ?? ($room['rental_status'] != 1)))
                                         <button type="button" id="checkAvailabilityButton"
                                             class="w-full bg-gray-400 text-white py-4 px-6 rounded-lg text-lg font-medium cursor-not-allowed"
                                             disabled>
@@ -776,11 +776,11 @@
         let availabilityCheckTimeout;
 
         // --- Global Room Availability Function ---
-        const rentalStatus = {{ $room['rental_status'] ?? 0 }};
+        const isAvailable = {{ ($room['is_available'] ?? ($room['rental_status'] != 1)) ? 'true' : 'false' }};
 
         async function checkRoomAvailability() {
-            // Skip availability check if room is already rented (rental_status = 1)
-            if (rentalStatus == 1) {
+            // Skip availability check if room is not available
+            if (!isAvailable) {
                 showAvailabilityStatus('unavailable', 'Kamar sedang disewa');
                 updateSubmitButton(false, 'Tidak Tersedia');
                 return;
@@ -987,7 +987,7 @@
 
         function resetAvailabilityStatus() {
             if (!roomStatusSpan) return;
-            const isAvailable = {{ $room['status'] == 1 && $room['rental_status'] != 1 ? 'true' : 'false' }};
+            const isRoomAvailable = {{ $room['status'] == 1 && ($room['is_available'] ?? ($room['rental_status'] != 1)) ? 'true' : 'false' }};
             const isDark = document.documentElement.classList.contains('dark');
             if (isAvailable) {
                 roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200');
@@ -1109,7 +1109,7 @@
 
             function resetAvailabilityStatus() {
                 if (!roomStatusSpan) return;
-                const isAvailable = {{ $room['status'] == 1 && $room['rental_status'] != 1 ? 'true' : 'false' }};
+                const isRoomAvailable = {{ $room['status'] == 1 && ($room['is_available'] ?? ($room['rental_status'] != 1)) ? 'true' : 'false' }};
                 const isDark = document.documentElement.classList.contains('dark');
                 if (isAvailable) {
                     roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200');

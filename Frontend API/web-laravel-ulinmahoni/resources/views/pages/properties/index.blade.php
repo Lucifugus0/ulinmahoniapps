@@ -682,7 +682,7 @@
                                 <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500">
                                     <span class="flex items-center gap-1">
                                         <i class="fas fa-door-open"></i>
-                                        <span>${property.available_rooms.filter(r => r.status === 1 && r.rental_status !== 1).length} kamar tersedia</span>
+                                        <span>${property.available_rooms.filter(r => r.status === 1 && (r.is_available !== undefined ? r.is_available : r.rental_status !== 1)).length} kamar tersedia</span>
                                     </span>
                                     <!-- Daily Multi Tier Pricing: show total price at property level when dates selected -->
                                     ${property.lowest_total_price ? `
@@ -710,7 +710,7 @@
                     </div>
                     <div class="p-5 bg-gray-50">
                         ${(() => {
-                            const availableRooms = property.available_rooms.filter(room => room.status === 1 && room.rental_status !== 1);
+                            const availableRooms = property.available_rooms.filter(room => room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1));
                             if (availableRooms.length === 0) {
                                 return `<p class="text-center text-gray-500 py-3 text-sm">{{ __('properties.room.no_rooms') }}</p>`;
                             }
@@ -762,7 +762,7 @@
                                     <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500">
                                         <span class="flex items-center gap-1">
                                             <i class="fas fa-door-open"></i>
-                                            <span>${property.available_rooms.filter(r => r.status === 1 && r.rental_status !== 1).length} ${translations.rooms_available}</span>
+                                            <span>${property.available_rooms.filter(r => r.status === 1 && (r.is_available !== undefined ? r.is_available : r.rental_status !== 1)).length} ${translations.rooms_available}</span>
                                         </span>
                                         <!-- Daily Multi Tier Pricing: show total price when dates selected -->
                                         ${property.lowest_total_price ? `
@@ -794,7 +794,7 @@
                         <!-- Available Rooms Grid -->
                         <div class="p-5 bg-gray-50">
                             ${(() => {
-                                const availableRooms = property.available_rooms.filter(room => room.status === 1 && room.rental_status !== 1);
+                                const availableRooms = property.available_rooms.filter(room => room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1));
                                 if (availableRooms.length === 0) {
                                     return `<p class="text-center text-gray-500 py-3 text-sm">{{ __('properties.room.no_rooms') }}</p>`;
                                 }
@@ -820,7 +820,7 @@
                 const propertyRoute = getPropertyRoute(property);
                 const thumbnail = getPropertyThumbnail(property);
 
-                const availableRooms = property.available_rooms.filter(room => room.status === 1 && room.rental_status !== 1);
+                const availableRooms = property.available_rooms.filter(room => room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1));
                 availableRooms.forEach(room => {
                     const roomRoute = `/rooms/${room.slug || room.id}`;
                     const roomThumbnail = getRoomThumbnail(room, property);
@@ -848,7 +848,7 @@
                                         ` : ''}
 
                                         <!-- Availability Badge -->
-                                        ${room.status === 1 && room.rental_status !== 1 ? `
+                                        ${room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1) ? `
                                             <span class="absolute bottom-3 left-3 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white shadow-sm">
                                                 ${translations.status_available}
                                             </span>
@@ -964,7 +964,7 @@
                             ` : ''}
 
                             <!-- Availability Badge -->
-                            ${room.status === 1 && room.rental_status !== 1 ? `
+                            ${room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1) ? `
                                 <span class="absolute bottom-2 left-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white shadow-sm">
                                     ${translations.status_available}
                                 </span>

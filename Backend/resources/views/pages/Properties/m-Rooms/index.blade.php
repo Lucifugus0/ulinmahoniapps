@@ -140,8 +140,9 @@
 
                         <!-- Modal content -->
                         <div class="flex-1 overflow-y-auto px-6 py-6">
+                            <!-- novalidate: browser validation disabled — JS validateStep() handles it -->
                             <form id="roomForm" method="POST" action="{{ route('rooms.store') }}"
-                                enctype="multipart/form-data" @submit.prevent="submitForm">
+                                enctype="multipart/form-data" @submit.prevent="submitForm" novalidate>
                                 @csrf
 
                                 <!-- Step 1 - Basic Information -->
@@ -782,7 +783,7 @@
                 modalOpen: false,
                 step: 1,
                 images: [],
-                maxImages: 5,
+                maxImages: 20,
                 minImages: 3,
                 priceType: '',
                 dailyPrice: 0,
@@ -1816,7 +1817,7 @@
                 editNewImages: [],
                 editDeletedImageIds: [],
                 editThumbnailIndex: null,
-                editMaxImages: 5,
+                editMaxImages: 20,
 
                 // COMPUTED PROPERTIES FOR IMAGES
                 get editAllImages() {

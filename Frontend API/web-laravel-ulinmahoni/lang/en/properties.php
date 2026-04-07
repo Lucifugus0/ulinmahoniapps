@@ -95,6 +95,7 @@ return [
     'room' => [
         'rooms_count' => 'rooms',
         'available_count' => 'available',
+        'show_all_rooms' => 'Show all rooms',
         'room_facilities' => 'Room Facilities:',
         'period_price' => 'Rental Period & Price:',
         'no_facilities' => 'No Facilities Available',
@@ -152,9 +153,9 @@ return [
         'last_name' => 'Last Name',
         'full_name' => 'Full Name',
         'phone_number' => 'Phone Number',
-        'rental_agreement' => 'I agree to the',
+        'rental_agreement' => 'I agree to the Terms & Conditions, Data Privacy Policy, and Rental Agreement',
         'rental_agreement_link' => 'Rental Agreement',
-        'must_agree' => 'You must agree to the Rental Agreement to proceed.',
+        'must_agree' => 'You must agree to the Terms & Conditions to proceed.',
         'login_to_book' => 'Login to book',
         'please_login' => 'Please login or register to make a booking',
         'check_availability' => 'Check Room Availability',
@@ -228,6 +229,12 @@ return [
         'pay_with_bank' => 'Pay with {bank}',
         'please_select_bank' => 'Please select a bank',
         'voucher_applied' => 'Voucher successfully applied!',
+        'confirm_title' => 'Payment Confirmation',
+        'confirm_data_correct' => 'I hereby declare that all information provided above is true and accurate. I accept full responsibility for the accuracy of the data.',
+        'confirm_read_agreed' => 'I have read, fully understood, and agreed to all transaction details as stated above.',
+        'confirm_rental_agreement' => 'I confirm that I agree to and shall be bound by the Ulin Mahoni Rental Agreement.',
+        'confirm_proceed' => 'Agree & Proceed to Payment',
+        'confirm_cancel' => 'Cancel',
     ],
 
     'index' => [

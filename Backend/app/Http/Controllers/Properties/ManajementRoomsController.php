@@ -163,7 +163,7 @@ class ManajementRoomsController extends Controller
                 'low_season_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
                 'general_facilities' => 'nullable|array',
                 'general_facilities.*' => 'numeric', // Ubah dari string ke numeric karena value adalah idrec
-                'room_images' => 'required|array|min:3|max:5',
+                'room_images' => 'required|array|min:3|max:20',
                 'room_images.*' => [
                     'image',
                     'mimes:jpeg,png,jpg,gif,webp',
@@ -512,7 +512,7 @@ class ManajementRoomsController extends Controller
             'general_facilities' => 'nullable|array',
             'general_facilities.*' => 'numeric',
             'periode' => 'nullable|string',
-            'room_images' => 'nullable|array|max:5',
+            'room_images' => 'nullable|array|max:20',
             'room_images.*' => [
                 'image',
                 'mimes:jpeg,png,jpg,gif,webp',
@@ -583,13 +583,13 @@ class ManajementRoomsController extends Controller
                 ], 422);
             }
 
-            // Validate maximum 5 images
-            if ($totalImages > 5) {
+            // Validate maximum 20 images
+            if ($totalImages > 20) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Validasi gagal',
                     'errors' => [
-                        'room_images' => ['Maksimal 5 foto yang dapat diupload. Saat ini ada ' . $totalImages . ' foto.']
+                        'room_images' => ['Maksimal 20 foto yang dapat diupload. Saat ini ada ' . $totalImages . ' foto.']
                     ]
                 ], 422);
             }

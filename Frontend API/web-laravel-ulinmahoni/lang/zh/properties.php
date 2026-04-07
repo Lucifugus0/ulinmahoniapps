@@ -95,6 +95,7 @@ return [
     'room' => [
         'rooms_count' => '间房',
         'available_count' => '可用',
+        'show_all_rooms' => '显示所有房间',
         'room_facilities' => '房间设施：',
         'period_price' => '租期与价格：',
         'no_facilities' => '暂无设施信息',
@@ -152,9 +153,9 @@ return [
         'last_name' => '姓',
         'full_name' => '全名',
         'phone_number' => '电话号码',
-        'rental_agreement' => '我同意',
+        'rental_agreement' => '我同意条款和条件、数据隐私政策和租赁协议',
         'rental_agreement_link' => '租赁协议',
-        'must_agree' => '您必须同意租赁协议才能继续。',
+        'must_agree' => '您必须同意条款和条件才能继续。',
         'login_to_book' => '登录后预订',
         'please_login' => '请登录或注册以进行预订',
         'check_availability' => '查看房间可用性',
@@ -228,6 +229,12 @@ return [
         'pay_with_bank' => '使用 {bank} 支付',
         'please_select_bank' => '请选择银行',
         'voucher_applied' => '优惠券已成功使用！',
+        'confirm_title' => '付款确认',
+        'confirm_data_correct' => '本人声明以上所有信息均真实准确。本人对数据的准确性承担全部责任。',
+        'confirm_read_agreed' => '本人已阅读、完全理解并同意上述所有交易详情。',
+        'confirm_rental_agreement' => '本人确认同意并遵守 Ulin Mahoni 租赁协议。',
+        'confirm_proceed' => '同意并继续付款',
+        'confirm_cancel' => '取消',
     ],
 
     'index' => [

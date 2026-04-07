@@ -287,7 +287,7 @@ class ManajementPropertiesController extends Controller
             'description' => 'nullable|string',
             'latitude' => 'required',
             'longitude' => 'required',
-            'property_images' => 'required|array|min:3|max:10', // Minimal 3 foto
+            'property_images' => 'required|array|min:3|max:30', // Minimal 3 foto
             'property_images.*' => 'required|image|mimes:jpeg,jpg,png|max:5120',
             'facilities' => 'nullable|array',
             'thumbnail_index' => 'required|integer',

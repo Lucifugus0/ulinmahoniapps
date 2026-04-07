@@ -558,7 +558,12 @@
                                                 $isCheckedOut = $booking->booking && $booking->booking->check_out_at;
                                                 $isAlreadyRenewed = $booking->renewal_status == 1;
                                             @endphp
-                                            @if($isAlreadyRenewed)
+                                            {{-- Cancelled/expired checked first — overrides check-in/check-out state --}}
+                                            @if(in_array($status, ['cancelled', 'canceled']))
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700"><span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>{{ __('booking.index.labels.cancelled') }}</span>
+                                            @elseif($status === 'expired')
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"><span class="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1.5"></span>{{ __('booking.index.labels.expired') }}</span>
+                                            @elseif($isAlreadyRenewed)
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"><i class="fas fa-redo mr-1"></i>  {{ __('booking.index.labels.renewed') }}</span>
                                             @elseif($isCheckedOut)
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>{{ __('booking.index.labels.checked_out') }}</span>
@@ -568,10 +573,6 @@
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>{{ __('booking.index.labels.paid') }}</span>
                                             @elseif($status === 'pending')
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500 mr-1.5"></span>{{ __('booking.index.labels.pending') }}</span>
-                                            @elseif($status === 'expired')
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"><span class="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1.5"></span>{{ __('booking.index.labels.expired') }}</span>
-                                            @elseif(in_array($status, ['cancelled', 'canceled']))
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700"><span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>{{ __('booking.index.labels.cancelled') }}</span>
                                             @else
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{{ ucfirst($status) }}</span>
                                             @endif
@@ -704,7 +705,12 @@
                                                 $isCheckedIn = $booking->booking && $booking->booking->check_in_at;
                                                 $isAlreadyRenewed = $booking->renewal_status == 1;
                                             @endphp
-                                            @if($isAlreadyRenewed)
+                                            {{-- Cancelled/expired checked first — overrides check-in state --}}
+                                            @if(in_array(strtolower($booking->transaction_status), ['cancelled', 'canceled']))
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span> {{ __('booking.index.labels.cancelled') }}
+                                                </span>
+                                            @elseif($isAlreadyRenewed)
                                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
                                                     <i class="fas fa-redo mr-1.5 text-xs"></i> {{ __('booking.index.labels.renewed') }}
                                                 </span>
@@ -1884,7 +1890,7 @@
             if (cancelRes.ok) {
                 const totalRefund = cancelData.data?.refund?.total_refund;
                 const successMsg = totalRefund
-                    ? '{{ __("booking.js.cancel_refund_success") }}'.replace(':amount', fmt(totalRefund))
+                    ? '{!! __("booking.js.cancel_refund_success") !!}'.replace(':amount', fmt(totalRefund))
                     : cancelData.message;
                 await Swal.fire({
                     icon: 'success',

@@ -169,11 +169,11 @@
                                     <select id="edit_room_name" name="room_name" required
                                         class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         x-model="roomData.room_name">
+                                        {{-- Room type dropdown — populated from m_room_name_types master table --}}
                                         <option value="">{{ __('ui.room_select_type') }}</option>
-                                        <option value="Standar">Standar</option>
-                                        <option value="Superior">Superior</option>
-                                        <option value="Deluxe">Deluxe</option>
-                                        <option value="Suite">Suite</option>
+                                        @foreach($roomNameTypes as $type)
+                                            <option value="{{ $type->name }}">{{ $type->name }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
 
@@ -423,7 +423,7 @@
                                         <svg class="w-12 h-12 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
-                                        <p class="text-sm text-green-600 font-medium">5 {{ __('ui.photos_uploaded') }}!</p>
+                                        <p class="text-sm text-green-600 font-medium" x-text="editAllImages.length + ' {{ __('ui.photos_uploaded') }}!'"></p>
                                         <p class="text-xs text-green-500">{{ __('ui.max_photos_reached') }}</p>
                                     </div>
                                 </div>

@@ -16,6 +16,19 @@
             html.dark .cal-high-season { background-color: rgba(248, 113, 113, 0.45) !important; }
             html.dark .cal-low-season { background-color: rgba(74, 222, 128, 0.45) !important; }
             html.dark .cal-holiday { background-color: rgba(251, 146, 60, 0.50) !important; }
+            /* Entry list text — dark in light mode, white in dark mode */
+            .entry-text { color: #1f2937; }
+            .entry-text-secondary { color: rgba(31, 41, 55, 0.7); }
+            .entry-btn-deactivate { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+            .entry-btn-deactivate:hover { background: rgba(239, 68, 68, 0.25); }
+            .entry-btn-activate { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+            .entry-btn-activate:hover { background: rgba(34, 197, 94, 0.25); }
+            html.dark .entry-text { color: #ffffff; }
+            html.dark .entry-text-secondary { color: rgba(255, 255, 255, 0.7); }
+            html.dark .entry-btn-deactivate { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+            html.dark .entry-btn-deactivate:hover { background: rgba(239, 68, 68, 0.5); }
+            html.dark .entry-btn-activate { background: rgba(34, 197, 94, 0.3); color: #86efac; }
+            html.dark .entry-btn-activate:hover { background: rgba(34, 197, 94, 0.5); }
         </style>
 
         <!-- Header -->
@@ -103,25 +116,25 @@
                             }">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
-                                    <span class="font-semibold text-white" x-text="entry.label || entry.date_type.replace('_', ' ')"></span>
-                                    <span class="text-xs text-white/80" x-text="entry.dateRange"></span>
+                                    <span class="font-semibold entry-text" x-text="entry.label || entry.date_type.replace('_', ' ')"></span>
+                                    <span class="text-xs entry-text-secondary" x-text="entry.dateRange"></span>
                                     <span x-show="!entry.isActive" class="text-xs bg-red-500/80 text-white px-1.5 py-0.5 rounded">({{ __('ui.calendar_inactive') }})</span>
                                 </div>
                                 {{-- Toggle active/inactive button for each entry --}}
                                 <button @click.stop="toggleEntryStatus(entry)"
                                     class="text-xs px-2.5 py-1 rounded-md font-medium transition-colors"
                                     :class="entry.isActive
-                                        ? 'bg-red-500/30 text-red-200 hover:bg-red-500/50'
-                                        : 'bg-green-500/30 text-green-200 hover:bg-green-500/50'"
-                                    x-text="entry.isActive ? '{{ __('ui.deactivate') ?? 'Nonaktifkan' }}' : '{{ __('ui.activate') ?? 'Aktifkan' }}'">
+                                        ? 'entry-btn-deactivate'
+                                        : 'entry-btn-activate'"
+                                    x-text="entry.isActive ? '{{ __('ui.deactivate') }}' : '{{ __('ui.activate') }}'">
                                 </button>
                             </div>
                             {{-- Created by + date --}}
-                            <div class="text-xs text-white/70 mt-1">
+                            <div class="text-xs entry-text-secondary mt-1">
                                 <span x-text="'{{ __('ui.calendar_created_by') }}: ' + entry.createdBy + (entry.createdDate ? ' — ' + entry.createdDate : '')"></span>
                             </div>
                             {{-- Deactivated by + date (only for inactive entries) --}}
-                            <div x-show="!entry.isActive && entry.updatedBy" class="text-xs text-red-300 mt-0.5">
+                            <div x-show="!entry.isActive && entry.updatedBy" class="text-xs entry-text-secondary mt-0.5">
                                 <span x-text="'{{ __('ui.calendar_deactivated_by') }}: ' + entry.updatedBy + (entry.updatedDate ? ' — ' + entry.updatedDate : '')"></span>
                             </div>
                         </div>

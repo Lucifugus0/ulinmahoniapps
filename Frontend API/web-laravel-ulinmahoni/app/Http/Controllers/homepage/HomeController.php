@@ -251,13 +251,10 @@ class HomeController extends Controller {
         // Get total rooms count
         $totalRooms = $property->rooms()->where('status', 1)->count();
 
-        // Get available rooms count (status = 1 and rental_status != 1)
+        /* Availability: daily rooms always available, monthly-only rooms check active bookings */
         $availableRooms = $property->rooms()
             ->where('status', 1)
-            ->where(function($query) {
-                $query->where('rental_status', '!=', 1)
-                      ->orWhereNull('rental_status');
-            })
+            ->availableRooms()
             ->count();
 
         // Get price data (already cast to array by the model)

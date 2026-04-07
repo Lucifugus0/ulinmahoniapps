@@ -21,7 +21,7 @@ class AvailableNowPage extends ConsumerWidget {
     return MainLayout(
       currentIndex: 0,
       showNavBar: false,
-      showBottomNav: false,
+      showBottomNav: true,
       showContactBar: false,
       child: Scaffold(
         backgroundColor: Colors.transparent,

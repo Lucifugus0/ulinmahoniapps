@@ -310,7 +310,9 @@ class HouseController extends Controller {
                 'price_discounted_daily' => $room->price_discounted_daily,
                 'price_discounted_monthly' => $room->price_discounted_monthly,
                 'status' => $room->status,
-                'rental_status'=>$room->rental_status
+                'rental_status'=>$room->rental_status,
+                /* Computed availability: daily rooms always available, monthly checks active bookings */
+                'is_available' => \App\Models\Room::computeAvailability($room->idrec, $room->periode_daily)
             ];
         })->toArray();
     }

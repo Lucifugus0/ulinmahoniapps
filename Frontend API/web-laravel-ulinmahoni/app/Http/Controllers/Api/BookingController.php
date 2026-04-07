@@ -408,23 +408,37 @@ class BookingController extends ApiController
         $checkOut = Carbon::parse($request->check_out . ' 12:00:00');
         $isRenewal = $request->is_renewal == 1;
 
-        // Check if room rental_status is 1 (already rented)
-        // Skip this check if is_renewal = 1 (renewals are allowed for currently rented rooms)
+        // Check room availability based on rental type:
+        // Daily rooms (periode_daily=1) are always available.
+        // Monthly-only rooms check active bookings for date overlap.
         $room = DB::table('m_rooms')->where('idrec', $roomId)->first();
-        if (!$isRenewal && $room && $room->rental_status == 1) {
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'is_available' => false,
-                    'reason' => 'Room is currently rented',
-                    'conflicting_bookings' => [],
-                    'check_in' => $checkIn->format('Y-m-d H:i:s'),
-                    'check_out' => $checkOut->format('Y-m-d H:i:s'),
-                    'property_id' => $propertyId,
-                    'room_id' => $roomId,
-                    'user_info' => null,
-                ]
-            ]);
+        if (!$isRenewal && $room && !$room->periode_daily) {
+            // Monthly-only room: check if there's a conflicting active booking
+            $hasConflict = DB::table('t_booking')
+                ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+                ->where('t_booking.room_id', $roomId)
+                ->where('t_booking.status', 1)
+                ->whereNull('t_booking.check_out_at')
+                ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired', 'checked_out', 'rejected'])
+                ->where('t_transactions.check_in', '<', $checkOut)
+                ->where('t_transactions.check_out', '>', $checkIn)
+                ->exists();
+
+            if ($hasConflict) {
+                return response()->json([
+                    'status' => 'success',
+                    'data' => [
+                        'is_available' => false,
+                        'reason' => 'Room is currently rented',
+                        'conflicting_bookings' => [],
+                        'check_in' => $checkIn->format('Y-m-d H:i:s'),
+                        'check_out' => $checkOut->format('Y-m-d H:i:s'),
+                        'property_id' => $propertyId,
+                        'room_id' => $roomId,
+                        'user_info' => null,
+                    ]
+                ]);
+            }
         }
 
         // Check for conflicting bookings using simplified query
@@ -786,10 +800,14 @@ class BookingController extends ApiController
             // Booking will be automatically expired by scheduled task if not paid within 1 hour
             Log::info("Booking created with expiration time: {$expiredAt} for order_id: {$order_id}");
 
-            // Update room rental_status to 1 (room is booked/rented)
-            DB::table('m_rooms')
-                ->where('idrec', $request->room_id)
-                ->update(['rental_status' => 1]);
+            // Update room rental_status to 1 only for monthly-only rooms.
+            // Daily rooms (periode_daily=1) are always considered available.
+            $bookedRoom = DB::table('m_rooms')->where('idrec', $request->room_id)->first();
+            if ($bookedRoom && !$bookedRoom->periode_daily) {
+                DB::table('m_rooms')
+                    ->where('idrec', $request->room_id)
+                    ->update(['rental_status' => 1]);
+            }
 
             // Increment parking quota if parking is used (only for new bookings, not renewals)
             if ($request->is_renewal != 1 && $parkingFee > 0 && $parkingType) {
@@ -1251,10 +1269,14 @@ class BookingController extends ApiController
             // Update original transaction's renewal_status to 1 (already renewed)
             $originalTransaction->update(['renewal_status' => 1]);
 
-            // Ensure room rental_status stays 1 (room remains occupied by renewed booking)
-            DB::table('m_rooms')
-                ->where('idrec', $request->room_id)
-                ->update(['rental_status' => 1]);
+            // Ensure room rental_status stays 1 for monthly-only rooms (room remains occupied by renewed booking).
+            // Daily rooms (periode_daily=1) are always considered available.
+            $renewedRoom = DB::table('m_rooms')->where('idrec', $request->room_id)->first();
+            if ($renewedRoom && !$renewedRoom->periode_daily) {
+                DB::table('m_rooms')
+                    ->where('idrec', $request->room_id)
+                    ->update(['rental_status' => 1]);
+            }
 
             // Note: Do NOT increment parking quota for renewals - user is extending existing parking slot
 
@@ -3261,6 +3283,30 @@ class BookingController extends ApiController
                     'cancel_at' => now(),
                 ]);
 
+            // If this is a renewal booking, reset the original booking so the user can renew again:
+            // 1. Set original transaction's renewal_status to 0
+            // 2. Clear original booking's check_out_at (was set when renewal was created)
+            if ($transaction->is_renewal == 1) {
+                $originalTransaction = DB::table('t_transactions')
+                    ->where('room_id', $transaction->room_id)
+                    ->where('user_id', $transaction->user_id)
+                    ->where('order_id', '!=', $order_id)
+                    ->where('renewal_status', 1)
+                    ->where('check_out', $transaction->check_in)
+                    ->first();
+
+                if ($originalTransaction) {
+                    DB::table('t_transactions')
+                        ->where('order_id', $originalTransaction->order_id)
+                        ->update(['renewal_status' => 0]);
+
+                    DB::table('t_booking')
+                        ->where('order_id', $originalTransaction->order_id)
+                        ->where('status', 1)
+                        ->update(['check_out_at' => null]);
+                }
+            }
+
             // Deactivate the booking record
             DB::table('t_booking')
                 ->where('order_id', $order_id)
@@ -3270,16 +3316,20 @@ class BookingController extends ApiController
                     'reason' => 'User-initiated cancellation',
                 ]);
 
-            // Release room — only if no other active bookings on this room
-            $otherActiveBookings = Booking::where('room_id', $transaction->room_id)
-                ->where('order_id', '!=', $order_id)
-                ->where('status', '1')
-                ->exists();
+            // Release room — only for monthly-only rooms and only if no other active bookings.
+            // Daily rooms (periode_daily=1) are always considered available.
+            $cancelledRoom = DB::table('m_rooms')->where('idrec', $transaction->room_id)->first();
+            if ($cancelledRoom && !$cancelledRoom->periode_daily) {
+                $otherActiveBookings = Booking::where('room_id', $transaction->room_id)
+                    ->where('order_id', '!=', $order_id)
+                    ->where('status', '1')
+                    ->exists();
 
-            if (!$otherActiveBookings) {
-                DB::table('m_rooms')
-                    ->where('idrec', $transaction->room_id)
-                    ->update(['rental_status' => 0]);
+                if (!$otherActiveBookings) {
+                    DB::table('m_rooms')
+                        ->where('idrec', $transaction->room_id)
+                        ->update(['rental_status' => 0]);
+                }
             }
 
             // Release parking quota
@@ -3308,8 +3358,11 @@ class BookingController extends ApiController
                     'order_id' => $order_id,
                 ];
 
-                // Notify the guest
-                $firebaseService->sendToUser($transaction->user_id, $notifTitle, $notifBody, $notifData);
+                // Notify the guest — sendToUser expects a User model, not an int
+                $guest = \App\Models\User::find($transaction->user_id);
+                if ($guest) {
+                    $firebaseService->sendToUser($guest, $notifTitle, $notifBody, $notifData);
+                }
 
                 // Notify admins of the property
                 $adminTitle = 'Pembatalan Booking';

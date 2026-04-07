@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ulinmahoniapps/core/widgets/card/propertycard.dart';
-import 'package:ulinmahoniapps/features/home/model/properties_model.dart';
+import 'package:ulinmahoniapps/features/home/provider/property_provider.dart';
 import 'package:ulinmahoniapps/core/utils/formatcurrency.dart';
 import 'package:ulinmahoniapps/features/searchresult/model/searchfilter_model.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../core/utils/app_logger.dart';
 
 class SearchResultGrid extends StatelessWidget {
-  final List<PropertyModel> properties;
+  final List<PropertyWithDistance> properties;
   final SearchFilter currentFilter;
 
   const SearchResultGrid({
@@ -40,11 +40,12 @@ class SearchResultGrid extends StatelessWidget {
       children: [
         Expanded(
           child: ListView.builder(
-            scrollDirection: Axis.vertical, 
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0), 
+            scrollDirection: Axis.vertical,
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
             itemCount: properties.length,
             itemBuilder: (context, index) {
-              final property = properties[index];
+              final pwd = properties[index];
+              final property = pwd.property;
 
               /* Daily Multi Tier Pricing: show total price when daily search with dates */
               /* Otherwise fall back to existing logic: monthly first, then daily */
@@ -66,15 +67,23 @@ class SearchResultGrid extends StatelessWidget {
                 priceLabel = localizations.roomDetailsPerDay;
               }
 
+              // Format distance as "X.X km" badge text
+              final String? distanceText = pwd.distanceKm != null
+                  ? '${pwd.distanceKm!.toStringAsFixed(1)} km'
+                  : null;
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 20.0),
                 child: PropertyCard(
                   image: property.image,
                   title: property.name,
                   location: '${property.subdistrict ?? ''}, ${property.city}'.trim().replaceAll(RegExp(r'^,\s*|,\s*$'), ''),
-                  detail: property.distance,
+                  detail: distanceText,
                   price: displayPrice > 0 ? '${formatCurrency(displayPrice.toString())}$priceLabel' : null,
                   imageHeight: 200,
+                  availableRooms: property.availableRooms,
+                  totalRooms: property.totalRooms,
+                  gender: property.gender,
                   onTap: () {
                     context.push('/detailproperty/${property.idrec}');
                   },

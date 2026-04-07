@@ -95,6 +95,7 @@ return [
     'room' => [
         'rooms_count' => 'kamar',
         'available_count' => 'tersedia',
+        'show_all_rooms' => 'Tampilkan semua kamar',
         'room_facilities' => 'Fasilitas Kamar:',
         'period_price' => 'Periode Sewa & Harga:',
         'no_facilities' => 'Fasilitas Tidak Tersedia',
@@ -152,9 +153,9 @@ return [
         'last_name' => 'Nama Belakang',
         'full_name' => 'Nama Lengkap',
         'phone_number' => 'Nomor Telepon',
-        'rental_agreement' => 'Saya setuju dengan',
+        'rental_agreement' => 'Saya menyetujui Syarat & Ketentuan, Kebijaksanaan Privasi Data dan Perjanjian Sewa',
         'rental_agreement_link' => 'Perjanjian Sewa Menyewa',
-        'must_agree' => 'Anda harus menyetujui Perjanjian Sewa Menyewa untuk melanjutkan.',
+        'must_agree' => 'Anda harus menyetujui Syarat & Ketentuan untuk melanjutkan.',
         'login_to_book' => 'Masuk untuk memesan',
         'please_login' => 'Mohon login atau register untuk membuat pemesanan',
         'check_availability' => 'Cek Ketersediaan Kamar',
@@ -228,6 +229,12 @@ return [
         'pay_with_bank' => 'Bayar dengan {bank}',
         'please_select_bank' => 'Silakan pilih bank',
         'voucher_applied' => 'Voucher berhasil diterapkan!',
+        'confirm_title' => 'Konfirmasi Pembayaran',
+        'confirm_data_correct' => 'Saya menyatakan bahwa seluruh data yang tercantum di atas adalah benar dan akurat. Saya bertanggung jawab penuh atas kebenaran data tersebut.',
+        'confirm_read_agreed' => 'Saya telah membaca, memahami sepenuhnya, dan menyetujui seluruh rincian transaksi sebagaimana tercantum di atas.',
+        'confirm_rental_agreement' => 'Saya menyatakan setuju dan tunduk pada Perjanjian Sewa Ulin Mahoni yang berlaku.',
+        'confirm_proceed' => 'Setuju & Lanjutkan Pembayaran',
+        'confirm_cancel' => 'Batal',
     ],
 
     'index' => [

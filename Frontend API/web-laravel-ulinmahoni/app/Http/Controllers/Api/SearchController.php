@@ -25,10 +25,8 @@ class SearchController extends ApiController
             $query = Room::query()
                 ->join('m_properties', 'm_rooms.property_id', '=', 'm_properties.idrec')
                 ->where('m_rooms.status', 1)
-                ->where(function($q) {
-                    $q->where('m_rooms.rental_status', '!=', 1)
-                      ->orWhereNull('m_rooms.rental_status');
-                })
+                /* Availability: daily rooms always available, monthly-only rooms check active bookings */
+                ->availableRooms()
                 ->where('m_properties.status', 1)
                 ->select('m_rooms.*');
 
@@ -206,6 +204,8 @@ class SearchController extends ApiController
                         'price_monthly' => $room->price_original_monthly,
                         'status' => $room->status,
                         'rental_status' => $room->rental_status,
+                        /* Computed availability: daily rooms always available, monthly checks active bookings */
+                        'is_available' => Room::computeAvailability($room->idrec, $room->periode_daily),
                         /* Daily Multi Tier Pricing: per-date total fields (null when monthly or no dates) */
                         'total_price' => $roomTotal,
                         'total_days' => $roomTotalDays,

@@ -236,7 +236,7 @@
                                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                                 x-transition:leave-end="opacity-0 translate-y-4 scale-95" x-cloak>
 
-                                <div class="bg-white dark:bg-gray-800 rounded shadow-lg overflow-auto w-3/4 max-h-full flex flex-col text-left"
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-auto w-3/4 max-h-full flex flex-col text-left"
                                     @click.outside="editModalOpen = false"
                                     @keydown.escape.window="editModalOpen = false">
 

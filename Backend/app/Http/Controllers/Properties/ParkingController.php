@@ -148,8 +148,8 @@ class ParkingController extends Controller
 
             // Skip quota check only when:
             // - Booking is a renewal (is_renewal=1) AND
-            // - User already has active paid parking at this property (vehicle still occupies the spot)
-            // Note: cek dari ParkingFeeTransaction (PP) ATAU dari t_parking management_only=1 milik user ini
+            // - User already has active paid parking of the SAME TYPE at this property
+            // Checks all 3 sources: ParkingFeeTransaction (PP), t_transactions (booking), t_parking (management)
             $isRenewal = $isRenewalBooking
                 ? (
                     ParkingFeeTransaction::where('user_id', $bookingTransaction->user_id)
@@ -158,10 +158,18 @@ class ParkingController extends Controller
                         ->where('transaction_status', 'paid')
                         ->exists()
                     ||
+                    \App\Models\Transaction::where('user_id', $bookingTransaction->user_id)
+                        ->where('property_id', $bookingTransaction->property_id)
+                        ->where('transaction_status', 'paid')
+                        ->where('parking_type', $request->parking_type)
+                        ->where('parking_fee', '>', 0)
+                        ->whereNotNull('parking_duration')
+                        ->where('order_id', '!=', $bookingTransaction->order_id)
+                        ->exists()
+                    ||
                     Parking::where('user_id', $bookingTransaction->user_id)
                         ->where('property_id', $bookingTransaction->property_id)
                         ->where('parking_type', $request->parking_type)
-                        ->where('management_only', 1)
                         ->where('status', 1)
                         ->exists()
                 )

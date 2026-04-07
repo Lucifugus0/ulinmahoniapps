@@ -518,7 +518,7 @@
                                                         @endif
 
                                                         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent h-16">
-                                                            @if($room['status'] === 1 && $room['rental_status'] !== 1)
+                                                            @if($room['status'] === 1 && ($room['is_available'] ?? ($room['rental_status'] !== 1)))
                                                                 <span class="absolute bottom-2 left-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white shadow-sm">
                                                                     {{ __('properties.status.available') }}
                                                                 </span>

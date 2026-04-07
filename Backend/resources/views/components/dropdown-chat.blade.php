@@ -261,25 +261,10 @@ function dropdownChat() {
         newMessage: '',
         searchQuery: '',
         totalUnread: 0,
-        pollInterval: null,
         previousUnreadCounts: {},
         notifInitialized: false,
 
         init() {
-            this.loadConversations();
-            // Poll for new messages every 15 seconds
-            this.pollInterval = setInterval(() => {
-                this.loadConversations();
-                if (this.open && this.chatWindowOpen && this.currentConversation) {
-                    this.loadMessages(this.currentConversation.id);
-                }
-            }, 15000);
-
-            // Request notification permission after a delay
-            if ('Notification' in window && Notification.permission === 'default') {
-                // Will be requested when user interacts with chat
-            }
-
             // Make openChat globally available
             window.openChat = (id) => {
                 this.open = true;
@@ -346,7 +331,10 @@ function dropdownChat() {
                     this.totalUnread = data.total_unread || this.conversations.reduce((sum, c) => sum + c.unread_count, 0);
                 }
             } catch (error) {
-                console.error('Error loading conversations:', error);
+                // Ignore abort errors (e.g. page navigation during fetch)
+                if (error.name !== 'AbortError') {
+                    console.error('Error loading conversations:', error);
+                }
             } finally {
                 this.loading = false;
             }

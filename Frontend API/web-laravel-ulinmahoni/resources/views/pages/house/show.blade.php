@@ -637,19 +637,21 @@
                         <h2 class="text-2xl font-bold text-gray-900 mb-6">{{ __('properties.sections.available_rooms') }}</h2>
 
                         @php
-                            // Group rooms by name
-                            $groupedRooms = collect($house['rooms'])->groupBy('name');
+                            // Group rooms by name, sort each group by room number ascending
+                            $groupedRooms = collect($house['rooms'])->groupBy('name')->map(function($rooms) {
+                                return $rooms->sortBy('no', SORT_NATURAL);
+                            });
                         @endphp
 
                         @forelse($groupedRooms as $roomName => $rooms)
                             @php
                                 // Count available rooms in this category (status=1 and rental_status!=1)
                                 $availableInCategory = $rooms->filter(function($r) {
-                                    return $r['status'] === 1 && $r['rental_status'] !== 1;
+                                    return $r['status'] === 1 && ($r['is_available'] ?? ($r['rental_status'] !== 1));
                                 })->count();
                             @endphp
-                            <!-- Room Category Section — collapsed by default -->
-                            <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" x-data="{ isOpen: false }">
+                            <!-- Room Category Section — collapsed by default, filters to available rooms -->
+                            <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" x-data="{ isOpen: false, showAll: false }">
                                 <!-- Accordion Header -->
                                 <button
                                     @click="isOpen = !isOpen"
@@ -682,9 +684,20 @@
                                     x-transition:leave-end="opacity-0 transform -translate-y-2"
                                     class="p-6 bg-gray-100 dark:bg-gray-900"
                                 >
+                                    <!-- Show all rooms checkbox filter -->
+                                    <div class="flex items-center mb-4">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" x-model="showAll" class="w-4 h-4 text-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-teal-500 dark:bg-gray-700 dark:border-gray-600">
+                                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ __('properties.room.show_all_rooms') }}</span>
+                                        </label>
+                                    </div>
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     @foreach($rooms as $room)
-                                        <a href="{{ route('rooms.show', $room['slug']) }}" class="group">
+                                        @php
+                                            $roomIsAvailable = $room['status'] === 1 && ($room['is_available'] ?? ($room['rental_status'] !== 1));
+                                        @endphp
+                                        <!-- Room card: hidden when unavailable unless showAll is checked -->
+                                        <a href="{{ route('rooms.show', $room['slug']) }}" class="group" x-show="showAll || {{ $roomIsAvailable ? 'true' : 'false' }}">
                                             <!-- Room card — white card with rounded corners and shadow -->
                             <div class="overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md transition-shadow group-hover:ring-2 group-hover:ring-teal-500">
                                             <div class="relative pb-[56.25%] h-48">
@@ -719,7 +732,7 @@
                                                     <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent h-16">
                                                     
                                                         <!-- Availability Status Overlay -->
-                                                        @if($room['status'] === 1 && $room['rental_status'] !== 1)
+                                                        @if($room['status'] === 1 && ($room['is_available'] ?? ($room['rental_status'] !== 1)))
                                                             <span class="absolute bottom-2 left-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white shadow-sm">
                                                                 
                                                                 {{ __('properties.status.available') }}

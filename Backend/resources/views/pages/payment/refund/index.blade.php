@@ -14,8 +14,8 @@
 
         <!-- Bagian Pencarian dan Filter -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
-            <form method="GET" action="{{ route('admin.payments.filter') }}"
-                onsubmit="event.preventDefault(); fetchFilteredBookings();"
+            <!-- Search form — submits via GET to reload page with filters -->
+            <form method="GET" action="{{ route('admin.refunds.index') }}"
                 class="flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
 
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
@@ -224,7 +224,7 @@
                                                     <div
                                                         class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                                                         <h3 class="text-lg font-semibold text-gray-800">
-                                                            {{ __('ui.refund_proof') }} #{{ $refund->id_booking }}<span x-text="orderId"></span>
+                                                            {{ __('ui.refund_proof') }} #{{ $refund->id_booking }}<span x-text="orderIdDisplay"></span>
                                                         </h3>
                                                         <button @click="closeModal"
                                                             class="text-gray-500 hover:text-gray-700">
@@ -239,14 +239,14 @@
 
                                                     <!-- Modal content -->
                                                     <div class="overflow-y-auto flex-1 p-6">
-                                                        <form :id="'refund-form-' + orderId" method="POST"
+                                                        <form :id="'refund-form-' + idBooking" method="POST"
                                                             action="{{ route('admin.refunds.store') }}"
                                                             enctype="multipart/form-data">
                                                             @csrf
 
                                                             <!-- Input hidden untuk order_id -->
                                                             <input type="hidden" name="order_id"
-                                                                x-bind:value="orderId">
+                                                                x-bind:value="idBooking">
 
                                                             <div class="mb-6">
                                                                 <label
@@ -271,10 +271,10 @@
                                                                         </svg>
                                                                         <div
                                                                             class="flex text-sm text-gray-600 justify-center">
-                                                                            <label :for="'refund_image-' + orderId"
+                                                                            <label :for="'refund_image-' + idBooking"
                                                                                 class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
                                                                                 <span>{{ __('ui.upload_photo') }}</span>
-                                                                                <input :id="'refund_image-' + orderId"
+                                                                                <input :id="'refund_image-' + idBooking"
                                                                                     name="refund_image" type="file"
                                                                                     accept="image/*"
                                                                                     @change="handleFileSelect($event)"
@@ -583,7 +583,7 @@
 
                     this.isLoading = true;
 
-                    const form = document.getElementById('refund-form-' + this.modalId);
+                    const form = document.getElementById('refund-form-' + this.idBooking);
                     const formData = new FormData();
 
                     // Tambahkan data ke FormData

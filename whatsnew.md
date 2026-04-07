@@ -72,6 +72,11 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-04-07 | Room Availability (API + Views) | Changed availability logic: daily rooms (`periode_daily=1`) are always shown as "Tersedia" (available). Monthly-only rooms compute availability dynamically by checking `t_booking` + `t_transactions` for active bookings instead of the static `rental_status` flag. New `is_available` field added to API responses alongside existing `rental_status` for backward compatibility. Affected: SearchController, BookingController, PropertyController, HomeController, HouseController, ApartController, RoomController, and all property/room blade templates. |
+| 2026-04-07 | Property Detail (`/houses/{id}`) | Room category accordions now default to showing only available rooms. Added "Show all rooms" checkbox inside each category to reveal unavailable rooms. Uses Alpine.js `x-show` filtering. Translated in ID/EN/ZH. |
+
+| Date | Page/Screen | Description |
+|------|-------------|-------------|
 | 2026-03-31 | My Bookings (`/bookings`) | User-initiated booking cancellation — "Batalkan" button on Upcoming tab (pending/waiting) and Completed tab (paid, not checked-in). SweetAlert2 modal shows refund breakdown preview, bank account form for QRIS/VA, and confirmation. |
 | 2026-03-31 | Cancel API (`/api/v1/booking/{order_id}/cancel`) | New POST endpoint for cancelling bookings. Creates refund record, releases room and parking, sends FCM notifications. |
 | 2026-03-31 | Cancel Preview API (`/api/v1/booking/{order_id}/cancel-preview`) | New GET endpoint returning refund breakdown calculation without cancelling. |
