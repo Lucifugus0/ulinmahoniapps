@@ -76,6 +76,8 @@ class PaymentNotifier extends Notifier<PaymentState> {
     required DateTime checkInDate,
     required DateTime checkOutDate,
     required AppLocalizations localizations,
+    // Multi-tier total from price-preview API (weekday/weekend/holiday rates)
+    double? multiTierTotalPrice,
   }) async {
     state = state.copyWith(paymentCalculationData: const AsyncValue.loading());
     try {
@@ -99,7 +101,7 @@ class PaymentNotifier extends Notifier<PaymentState> {
         // Multi-Tier Pricing: use per-date sum from price-preview API if available
         // The server calculates the correct total based on weekday/weekend/holiday/season rules
         // Fallback to flat rate if API fails or room has no per-date prices
-        originalTotal = originalDailyPrice * duration;
+        originalTotal = multiTierTotalPrice ?? (originalDailyPrice * duration);
         dailyDurationCalculated = duration;
         finalBookingDays = duration;
         finalDailyPrice = originalDailyPrice;
@@ -195,6 +197,8 @@ class PaymentNotifier extends Notifier<PaymentState> {
     required DateTime checkInDate,
     required DateTime checkOutDate,
     required AppLocalizations localizations,
+    // Multi-tier total from price-preview API (weekday/weekend/holiday rates)
+    double? multiTierTotalPrice,
   }) async {
     state = state.copyWith(paymentCalculationData: const AsyncValue.loading());
     try {
@@ -206,7 +210,8 @@ class PaymentNotifier extends Notifier<PaymentState> {
       double taxAmount = 30000;
 
       if (rentType == 'daily' || rentType == 'Daily') {
-        originalTotal = dailyPrice * duration;
+        // Use multi-tier total if available, fallback to flat rate
+        originalTotal = multiTierTotalPrice ?? (dailyPrice * duration);
         finalBookingDays = duration;
         finalBookingMonths = null;
       } else if (rentType == 'monthly' || rentType == 'Monthly') {

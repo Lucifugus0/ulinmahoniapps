@@ -9,7 +9,7 @@ final cancelBookingRepositoryProvider = Provider<CancelBookingRepository>((ref) 
   return CancelBookingRepository();
 });
 
-/// Notifier for cancel booking state — Riverpod 3.x Notifier with autoDispose.
+/// Notifier for cancel booking state — Riverpod 3.x Notifier (non-autoDispose).
 class CancelBookingNotifier extends Notifier<AsyncValue<CancelBookingResponse?>> {
   late final CancelBookingRepository _repository;
 
@@ -66,16 +66,18 @@ class CancelBookingNotifier extends Notifier<AsyncValue<CancelBookingResponse?>>
       switch (result) {
         case Success(:final data):
           AppLogger.i('Booking cancelled successfully', 'CANCEL-BOOKING-PROVIDER');
-          state = AsyncData(data);
+          // Update state only if provider is still alive — but ALWAYS return data
+          // so the caller (dialog) can show success regardless of autoDispose status.
+          if (ref.mounted) state = AsyncData(data);
           return data;
         case Failure(:final message):
           AppLogger.e('Cancel booking failed', message, null, 'CANCEL-BOOKING-PROVIDER');
-          state = AsyncError(message, StackTrace.current);
+          if (ref.mounted) state = AsyncError(message, StackTrace.current);
           return null;
       }
     } catch (e, st) {
       AppLogger.e('Error cancelling booking', e, st, 'CANCEL-BOOKING-PROVIDER');
-      state = AsyncError(e, st);
+      if (ref.mounted) state = AsyncError(e, st);
       return null;
     }
   }
@@ -86,7 +88,9 @@ class CancelBookingNotifier extends Notifier<AsyncValue<CancelBookingResponse?>>
 }
 
 /// Provider for cancel booking state.
+/// Not autoDispose — keeps provider alive so ref.mounted stays true
+/// during the async cancel API call (prevents false-null return).
 final cancelBookingProvider =
-    NotifierProvider.autoDispose<CancelBookingNotifier, AsyncValue<CancelBookingResponse?>>(
+    NotifierProvider<CancelBookingNotifier, AsyncValue<CancelBookingResponse?>>(
   CancelBookingNotifier.new,
 );

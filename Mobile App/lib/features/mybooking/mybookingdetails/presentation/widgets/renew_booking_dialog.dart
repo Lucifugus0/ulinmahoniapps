@@ -7,6 +7,9 @@ import '../../../mybooking/model/mybooking_model.dart';
 import '../../../../book/roomdetails/provider/rooms_provider.dart';
 import '../../../../book/roomdetails/provider/checkavaibilty_provider.dart';
 import '../../../../../l10n/app_localizations.dart';
+import '../../../../../core/network/dio_client.dart';
+import '../../../../../core/constants/api_constants.dart';
+import '../../../../book/roomdetails/presentation/widgets/daily_price_breakdown.dart';
 
 class RenewBookingDialog extends ConsumerStatefulWidget {
   final MyBookingModel bookingData;
@@ -26,6 +29,11 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
   int _duration = 1;
   bool _periodeLoaded = false;
   bool _showPeriodeSelector = false;
+
+  // Per-date price breakdown for daily bookings
+  List<dynamic>? _priceBreakdown;
+  double? _priceTotal;
+  bool _isPriceFetching = false;
 
   @override
   void initState() {
@@ -88,6 +96,38 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
       checkOutDate: DateFormat('yyyy-MM-dd').format(checkOut),
       isRenewal: true,
     );
+    // Also fetch price breakdown for daily bookings
+    if (_rentType == 'daily') _fetchPriceBreakdown();
+  }
+
+  /// Fetch per-date price breakdown from price-preview API (daily bookings only)
+  Future<void> _fetchPriceBreakdown() async {
+    if (_checkInDate == null || _rentType != 'daily') return;
+    final checkIn = DateFormat('yyyy-MM-dd').format(_checkInDate!);
+    final checkOut = DateFormat('yyyy-MM-dd').format(_calcCheckOut());
+    setState(() => _isPriceFetching = true);
+    try {
+      final dioClient = DioClient();
+      final url = ApiConfig.roomPricePreview(widget.bookingData.roomId.toString())
+          .replaceFirst(ApiConfig.baseUrl, '');
+      final response = await dioClient.get(url, queryParameters: {
+        'check_in': checkIn,
+        'check_out': checkOut,
+      });
+      if (!mounted) return;
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final data = response.data['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          setState(() {
+            _priceBreakdown = data['breakdown'] as List? ?? [];
+            _priceTotal = (data['total_price'] as num?)?.toDouble();
+            _isPriceFetching = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isPriceFetching = false);
   }
 
   String _formatDate(DateTime? date) {
@@ -455,6 +495,20 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                 ),
 
                 const SizedBox(height: 20),
+
+                // --- Per-date Price Breakdown (daily only) ---
+                if (_rentType == 'daily') ...[
+                  const Divider(height: 1, thickness: 0.5),
+                  const SizedBox(height: 10),
+                  if (_isPriceFetching)
+                    const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)))
+                  else if (_priceBreakdown != null && _priceBreakdown!.isNotEmpty && _priceTotal != null)
+                    DailyPriceBreakdown(
+                      breakdown: _priceBreakdown!,
+                      totalPrice: _priceTotal!,
+                    ),
+                  const SizedBox(height: 10),
+                ],
 
                 // --- Availability Status ---
                 isAvailable.when(

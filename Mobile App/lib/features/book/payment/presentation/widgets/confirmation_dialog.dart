@@ -18,6 +18,8 @@ class ConfirmationDialog extends StatefulWidget {
   final double? parkingFee;
   final String? parkingType;
   final int? parkingDuration;
+  // Multi-tier subtotal from price-preview API (weekday/weekend/holiday rates)
+  final double? multiTierSubtotal;
 
   const ConfirmationDialog({
     super.key,
@@ -34,6 +36,7 @@ class ConfirmationDialog extends StatefulWidget {
     this.parkingFee,
     this.parkingType,
     this.parkingDuration,
+    this.multiTierSubtotal,
   });
 
   @override
@@ -134,40 +137,15 @@ class _ConfirmationDialogState extends State<ConfirmationDialog> {
                 ),
                 const SizedBox(height: 8),
 
-                // 1. Harga Bulanan/Harian
-                _buildPriceRow(
-                  widget.rentType == 'daily' || widget.rentType == 'Daily'
-                      ? localizations.confirmationDialogDailyPrice
-                      : localizations.confirmationDialogMonthlyPrice,
-                  widget.rentType == 'daily' || widget.rentType == 'Daily'
-                      ? widget.roomData['daily_price'] ?? 0.0
-                      : widget.roomData['monthly_price'] ?? 0.0,
-                ),
-
-                // 2. Durasi
-                _buildDetailRow(
-                  localizations.confirmationDialogDuration,
-                  localizations.paymentDurationValue(
-                    widget.duration,
-                    widget.rentType == 'daily' || widget.rentType == 'Daily' ? 'daily' : 'monthly',
-                  ),
-                ),
-
-                const Divider(height: 16, thickness: 0.5, color: Colors.grey),
-
-                // 3. Subtotal
+                // 1. Subtotal: use multi-tier total for daily, flat rate × duration for monthly
                 Builder(
                   builder: (context) {
-                    final basePrice = widget.rentType == 'daily' || widget.rentType == 'Daily'
+                    final isDailyRent = widget.rentType == 'daily' || widget.rentType == 'Daily';
+                    final basePrice = isDailyRent
                         ? widget.roomData['daily_price'] ?? 0.0
                         : widget.roomData['monthly_price'] ?? 0.0;
-                    final subtotal = basePrice * widget.duration;
-
-                    return _buildPriceRow(
-                      'Subtotal',
-                      subtotal,
-                      isBold: true,
-                    );
+                    final subtotal = widget.multiTierSubtotal ?? (basePrice * widget.duration);
+                    return _buildPriceRow('Subtotal', subtotal, isBold: true);
                   },
                 ),
 
@@ -198,10 +176,8 @@ class _ConfirmationDialogState extends State<ConfirmationDialog> {
                   );
                 }),
 
-                // 6. Deposit Fee (only for monthly bookings)
-                if ((widget.rentType.toLowerCase() == 'monthly') &&
-                    widget.depositFee != null &&
-                    widget.depositFee! > 0) ...[
+                // 6. Deposit Fee — show for any rent type when deposit > 0
+                if (widget.depositFee != null && widget.depositFee! > 0) ...[
                   _buildPriceRow(
                     'Deposit',
                     widget.depositFee!.toDouble(),

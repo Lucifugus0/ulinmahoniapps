@@ -49,49 +49,62 @@ class DailyPriceBreakdown extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: Row(
               children: [
-                // Date + day name
-                SizedBox(
-                  width: 80,
+                // Kolom tanggal — lebar tetap proporsional
+                Expanded(
+                  flex: 3,
                   child: Text(
                     formattedDate,
                     style: textTheme.bodySmall?.copyWith(
                       color: isDark ? Colors.grey[400] : Colors.grey[600],
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Day name
-                SizedBox(
-                  width: 40,
+                // Kolom hari singkat
+                Expanded(
+                  flex: 2,
                   child: Text(
                     _getShortDayName(dayName),
                     style: textTheme.bodySmall?.copyWith(
                       color: isDark ? Colors.grey[400] : Colors.grey[600],
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Price type badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: badgeColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: badgeColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                // Kolom badge — selalu di posisi yang sama
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        badgeText,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: badgeColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ),
-                const Spacer(),
-                // Price
-                Text(
-                  formatCurrency(price),
-                  style: textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white : Colors.black87,
+                // Kolom harga — selalu di kanan
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    formatCurrency(price),
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

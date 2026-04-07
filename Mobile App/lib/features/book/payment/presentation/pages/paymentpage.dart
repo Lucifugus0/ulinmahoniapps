@@ -31,6 +31,8 @@ import '../../../../mybooking/mybookingdetails/provider/renew_booking_provider.d
 import '../../../roomdetails/presentation/widgets/daily_price_breakdown.dart';
 import '../../../../mybooking/mybooking/provider/mybooking_provider.dart';
 import '../../../../../core/utils/payment_cache_utils.dart';
+import '../../../../../core/network/dio_client.dart';
+import '../../../../../core/constants/api_constants.dart';
 
 class PaymentPage extends ConsumerStatefulWidget {
   // Normal booking fields
@@ -125,6 +127,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   int? _selectedPaymentMethodIndex;
   bool _agreedToTerms = false;
 
+  // Confirmed total — set when user confirms payment, used for all DOKU gateway calls
+  double _confirmedTotal = 0;
+
+  // Renewal multi-tier pricing — fetched from price-preview API for renewal daily bookings
+  List<dynamic>? _renewalMultiTierBreakdown;
+  double? _renewalMultiTierTotalPrice;
+
   // Deposit & Parking state
   double _depositFee = 0; // Will be loaded from room data
   String? _selectedParkingType; // 'car' or 'motorcycle' or null
@@ -200,7 +209,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
           AppLogger.d('Renewal - Duration: $duration ${rentType.toLowerCase() == "monthly" ? "months" : "days"}, Price: ${widget.dailyPrice}', 'PAYMENT-PAGE');
 
-          // Load renewal payment details
+          // Load renewal payment details with flat rate first (immediate)
           ref.read(paymentNotifierProvider.notifier).loadRenewalPaymentDetails(
             roomId: widget.roomId ?? 0,
             propertyId: widget.propertyId ?? 0,
@@ -214,6 +223,10 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             checkOutDate: checkOutDate,
             localizations: localizations,
           );
+
+          // Fetch multi-tier pricing immediately — updates provider when API responds
+          // Decoupled from _fetchRoomDataForRenewal so room data errors don't block this
+          _fetchRenewalPricing();
         } else {
           AppLogger.e('Missing renewal data', null, null, 'PAYMENT-PAGE');
         }
@@ -232,9 +245,71 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           checkInDate: widget.checkInDate!,
           checkOutDate: widget.checkOutDate!,
           localizations: localizations,
+          // Pass multi-tier total so provider uses correct weekday/weekend/holiday pricing
+          multiTierTotalPrice: widget.multiTierTotalPrice,
         );
       }
     });
+  }
+
+  /// Fetch price-preview API for renewal daily bookings — gets per-date breakdown
+  Future<void> _fetchRenewalPricing() async {
+    if (widget.roomId == null || widget.newCheckIn == null || widget.newCheckOut == null) return;
+    final rentType = widget.rentType ?? 'daily';
+    if (rentType.toLowerCase() != 'daily') return;
+
+    try {
+      final dioClient = DioClient();
+      final url = ApiConfig.roomPricePreview(widget.roomId.toString())
+          .replaceFirst(ApiConfig.baseUrl, '');
+
+      AppLogger.i('Renewal - Fetching price-preview: roomId=${widget.roomId}, ${widget.newCheckIn} to ${widget.newCheckOut}', 'PAYMENT-PAGE');
+
+      final response = await dioClient.get(url, queryParameters: {
+        'check_in': widget.newCheckIn,
+        'check_out': widget.newCheckOut,
+      });
+
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final data = response.data['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          final totalPrice = (data['total_price'] as num?)?.toDouble() ?? 0;
+          final breakdown = data['breakdown'] as List? ?? [];
+
+          if (totalPrice > 0 && mounted) {
+            setState(() {
+              _renewalMultiTierTotalPrice = totalPrice;
+              _renewalMultiTierBreakdown = breakdown;
+            });
+
+            // Re-load renewal payment details with correct multi-tier total
+            final localizations = AppLocalizations.of(context)!;
+            final checkInDate = DateTime.parse(widget.newCheckIn!);
+            final checkOutDate = DateTime.parse(widget.newCheckOut!);
+            final duration = checkOutDate.difference(checkInDate).inDays;
+
+            ref.read(paymentNotifierProvider.notifier).loadRenewalPaymentDetails(
+              roomId: widget.roomId ?? 0,
+              propertyId: widget.propertyId ?? 0,
+              roomName: widget.roomName ?? 'Room',
+              propertyName: widget.propertyName ?? 'Property',
+              dailyPrice: widget.dailyPrice!,
+              monthlyPrice: widget.monthlyPrice ?? 0.0,
+              rentType: rentType,
+              duration: duration,
+              checkInDate: checkInDate,
+              checkOutDate: checkOutDate,
+              localizations: localizations,
+              multiTierTotalPrice: totalPrice,
+            );
+
+            AppLogger.i('Renewal - Multi-tier total: $totalPrice, days: ${breakdown.length}', 'PAYMENT-PAGE');
+          }
+        }
+      }
+    } catch (e, st) {
+      AppLogger.e('Renewal - Failed to fetch price-preview', e, st, 'PAYMENT-PAGE');
+    }
   }
 
   /// Fetch room data for renewal to get latest parking fees
@@ -512,29 +587,18 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 if (selectedBank != null && idrec != null) {
                   final user = authState.user.value;
                   if (user != null) {
-                    // Get grandtotal and order_id from backend response (source of truth)
+                    // Use _confirmedTotal (set when user confirmed payment) — matches what was shown on screen
+                    // Backend's grandtotal_price uses flat daily_price × days, not multi-tier rates
                     final paymentState = ref.read(paymentNotifierProvider);
                     final bookingData = paymentState.postBookingResult.value;
-                    final grandTotalValue = bookingData?['data']?['grandtotal_price'];
-                    final grandTotalFromBackend = grandTotalValue != null
-                        ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
-                        : null;
 
                     // Get order_id from booking response (use this for DOKU, not idrec)
                     final orderId = bookingData?['data']?['order_id']?.toString() ?? idrec;
 
-                    // Fallback to local calculation only if backend doesn't provide it
-                    final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.value;
-                      final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
-                      final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
-                      final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
-                      final voucherDiscount = ref.read(voucherNotifierProvider.notifier).currentDiscount;
-                      return originalTotal - voucherDiscount;
-                    })();
+                    final finalAmount = _confirmedTotal;
 
                     AppLogger.i(
-                      'Generating DOKU VA for booking $idrec, order_id: $orderId, bank: $selectedBank, amount: $finalAmount (source: ${grandTotalFromBackend != null ? "backend" : "local calculation"})',
+                      'Generating DOKU VA for booking $idrec, order_id: $orderId, bank: $selectedBank, amount: $finalAmount (source: confirmedTotal)',
                       'PAYMENT-PAGE',
                     );
 
@@ -676,29 +740,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 if (idrec != null) {
                   final user = authState.user.value;
                   if (user != null) {
-                    // Get grandtotal and order_id from backend response (source of truth)
+                    // Use _confirmedTotal (set when user confirmed payment) — matches what was shown on screen
                     final paymentState = ref.read(paymentNotifierProvider);
                     final bookingData = paymentState.postBookingResult.value;
-                    final grandTotalValue = bookingData?['data']?['grandtotal_price'];
-                    final grandTotalFromBackend = grandTotalValue != null
-                        ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
-                        : null;
 
                     // Get order_id from booking response (use this for DOKU, not idrec)
                     final orderId = bookingData?['data']?['order_id']?.toString() ?? idrec;
 
-                    // Fallback to local calculation only if backend doesn't provide it
-                    final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.value;
-                      final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
-                      final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
-                      final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
-                      final voucherDiscount = ref.read(voucherNotifierProvider.notifier).currentDiscount;
-                      return originalTotal - voucherDiscount;
-                    })();
+                    final finalAmount = _confirmedTotal;
 
                     AppLogger.i(
-                      'Generating DOKU QRIS for booking $idrec, order_id: $orderId, amount: $finalAmount (source: ${grandTotalFromBackend != null ? "backend" : "local calculation"})',
+                      'Generating DOKU QRIS for booking $idrec, order_id: $orderId, amount: $finalAmount (source: confirmedTotal)',
                       'PAYMENT-PAGE',
                     );
 
@@ -853,28 +905,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   final user = authState.user.value;
                   if (user != null) {
                     // Get grandtotal and order_id from backend response (source of truth)
+                    // Use _confirmedTotal (set when user confirmed payment) — matches what was shown on screen
                     final paymentState = ref.read(paymentNotifierProvider);
                     final bookingData = paymentState.postBookingResult.value;
-                    final grandTotalValue = bookingData?['data']?['grandtotal_price'];
-                    final grandTotalFromBackend = grandTotalValue != null
-                        ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
-                        : null;
 
                     // Get order_id from booking response (use this for DOKU, not idrec)
                     final orderId = bookingData?['data']?['order_id']?.toString() ?? idrec;
 
-                    // Fallback to local calculation only if backend doesn't provide it
-                    final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.value;
-                      final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
-                      final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
-                      final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
-                      final voucherDiscount = ref.read(voucherNotifierProvider.notifier).currentDiscount;
-                      return originalTotal - voucherDiscount;
-                    })();
+                    final finalAmount = _confirmedTotal;
 
                     AppLogger.i(
-                      'Generating DOKU CC for booking $idrec, order_id: $orderId, amount: $finalAmount (source: ${grandTotalFromBackend != null ? "backend" : "local calculation"})',
+                      'Generating DOKU CC for booking $idrec, order_id: $orderId, amount: $finalAmount (source: confirmedTotal)',
                       'PAYMENT-PAGE',
                     );
 
@@ -1158,10 +1199,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         final itemDetails = data['itemDetails'] as List<Map<String, dynamic>>;
         final afterOriginalTotalFees = (data['afterOriginalTotalFees'] as num?)?.toDouble();
         final user = authState.user.value;
-        final String normalizedRentType = widget.rentType?.toLowerCase() ?? 'daily';
-        final String durationUnit = (normalizedRentType == 'daily')
-            ? localizations.filterSuffixDays
-            : localizations.filterSuffixMonths;
 
         // Helper to get duration and rentType for both normal and renewal booking
         int getDuration(Map<String, dynamic> roomData) {
@@ -1175,6 +1212,23 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           // For renewal, get from roomData
           return roomData['rentType']?.toString() ?? 'daily';
         }
+
+        // Compute displayed Total Harga once — used for both display and DOKU gateway
+        // For renewal daily: use multi-tier total from price-preview API directly
+        // For new booking: calculateTotalPrice uses rawPrice from provider (already multi-tier via multiTierTotalPrice)
+        final double _roomSubtotal = (widget.isRenewal &&
+                (widget.rentType ?? '').toLowerCase() == 'daily' &&
+                _renewalMultiTierTotalPrice != null)
+            ? _renewalMultiTierTotalPrice! + 30000
+            : ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails, afterOriginalTotalFees ?? 0);
+        final double displayedTotal = _roomSubtotal
+            - voucherNotifier.currentDiscount
+            + ((!widget.isRenewal && _depositFee > 0) ? _depositFee : 0)
+            + (getRentType(roomData).toLowerCase() == 'monthly' ? _parkingFee : 0);
+        final String normalizedRentType = widget.rentType?.toLowerCase() ?? 'daily';
+        final String durationUnit = (normalizedRentType == 'daily')
+            ? localizations.filterSuffixDays
+            : localizations.filterSuffixMonths;
 
         /// Translate booking type based on current locale
         /// 'monthly' -> 'bulanan' (ID) or 'Monthly' (EN)
@@ -1787,13 +1841,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                       const SizedBox(height: 8),
 
                                       // Daily pricing: show per-day breakdown if available
+                                      // For renewal, use state vars fetched from price-preview; for new bookings use widget props
                                       if ((getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily')
-                                          && widget.multiTierBreakdown != null
-                                          && widget.multiTierBreakdown!.isNotEmpty
-                                          && widget.multiTierTotalPrice != null) ...[
+                                          && (widget.multiTierBreakdown ?? _renewalMultiTierBreakdown) != null
+                                          && (widget.multiTierBreakdown ?? _renewalMultiTierBreakdown)!.isNotEmpty
+                                          && (widget.multiTierTotalPrice ?? _renewalMultiTierTotalPrice) != null) ...[
                                         DailyPriceBreakdown(
-                                          breakdown: widget.multiTierBreakdown!,
-                                          totalPrice: widget.multiTierTotalPrice!,
+                                          breakdown: (widget.multiTierBreakdown ?? _renewalMultiTierBreakdown)!,
+                                          totalPrice: (widget.multiTierTotalPrice ?? _renewalMultiTierTotalPrice)!,
                                         ),
                                       ] else ...[
                                         // Monthly or flat rate fallback: show single price + duration
@@ -1903,8 +1958,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                         );
                                       }),
 
-                                      // Deposit Fee (only for monthly bookings and NOT renewal)
-                                      if (getRentType(roomData).toLowerCase() == 'monthly' && !widget.isRenewal)
+                                      // Deposit Fee — show for any rent type if deposit > 0 and NOT renewal
+                                      if (_depositFee > 0 && !widget.isRenewal)
                                         Padding(
                                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                                           child: Row(
@@ -1953,9 +2008,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                                           ),
                                           Text(
-                                            formatCurrency(
-                                              ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails, (afterOriginalTotalFees) ?? 0) - voucherNotifier.currentDiscount + (getRentType(roomData).toLowerCase() == 'monthly' ? (widget.isRenewal ? 0 : _depositFee) + _parkingFee : 0)
-                                            ),
+                                            formatCurrency(displayedTotal),
                                             style: textTheme.titleLarge?.copyWith(
                                               fontWeight: FontWeight.bold,
                                               // Bright orange in dark mode for readability, red in light mode
@@ -2189,13 +2242,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                               return ElevatedButton(
                                                 onPressed: isButtonEnabled
                                                     ? () {
-                                                  final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails, (afterOriginalTotalFees) ?? 0);
-                                                  final voucherDiscount = voucherNotifier.currentDiscount;
-                                                  // Add deposit and parking to final total (only for monthly bookings, deposit only for new bookings)
-                                                  final rentType = getRentType(roomData).toLowerCase();
-                                                  final isMonthly = rentType == 'monthly';
-                                                  final depositAmount = (isMonthly && !widget.isRenewal) ? _depositFee : 0;
-                                                  final finalTotal = originalTotal - voucherDiscount + depositAmount + (isMonthly ? _parkingFee : 0);
+                                                  // Use the same displayedTotal shown on screen — single source of truth
+                                                  setState(() => _confirmedTotal = displayedTotal);
 
                                                   showDialog(
                                                     context: context,
@@ -2204,16 +2252,18 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                       itemDetails: itemDetails,
                                                       rentType: getRentType(roomData),
                                                       duration: getDuration(roomData),
-                                                      totalHarga: finalTotal,
+                                                      totalHarga: displayedTotal,
                                                       voucherCode: voucherNotifier.appliedVoucherCode,
-                                                      voucherDiscount: voucherDiscount > 0 ? voucherDiscount : null,
-                                                      originalTotal: voucherDiscount > 0 ? originalTotal : null,
+                                                      voucherDiscount: voucherNotifier.currentDiscount > 0 ? voucherNotifier.currentDiscount : null,
+                                                      originalTotal: voucherNotifier.currentDiscount > 0 ? _roomSubtotal : null,
                                                       depositFee: widget.isRenewal ? 0 : _depositFee,
                                                       parkingFee: _parkingFee > 0 ? _parkingFee : null,
                                                       parkingType: _selectedParkingType != null
                                                           ? _selectedParkingType
                                                           : null,
                                                       parkingDuration: _parkingFee > 0 ? _parkingDuration : null,
+                                                      // Pass multi-tier subtotal: renewal uses state var, new booking uses widget prop
+                                                      multiTierSubtotal: widget.multiTierTotalPrice ?? _renewalMultiTierTotalPrice,
                                                       onConfirm: () async {
                                                         final selectedTransactionType = paymentMethods[_selectedPaymentMethodIndex!]['value'];
 
@@ -2373,7 +2423,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                               return;
                                                             }
 
-                                                            final amount = renewalResponse.data?.grandTotal ?? 0.0;
+                                                            // Use _confirmedTotal — set when user confirmed, matches displayed price
+                                                            // Backend grandTotal uses flat rate, not multi-tier
+                                                            final amount = _confirmedTotal;
 
                                                             // Use order_id if available, fallback to booking_id
                                                             final orderIdForDoku = newOrderId ?? newBookingId;
@@ -2461,7 +2513,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                             );
                                                           } else if (selectedTransactionType == 'QRIS') {
                                                             // Generate QRIS
-                                                            final amount = renewalResponse.data?.grandTotal ?? 0.0;
+                                                            // Use _confirmedTotal — set when user confirmed, matches displayed price
+                                                            // Backend grandTotal uses flat rate, not multi-tier
+                                                            final amount = _confirmedTotal;
 
                                                             // Use order_id if available, fallback to booking_id
                                                             final orderIdForDoku = newOrderId ?? newBookingId;
@@ -2560,7 +2614,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                             );
                                                           } else if (selectedTransactionType == 'CREDITCARD') {
                                                             // Generate CC
-                                                            final amount = renewalResponse.data?.grandTotal ?? 0.0;
+                                                            // Use _confirmedTotal — set when user confirmed, matches displayed price
+                                                            // Backend grandTotal uses flat rate, not multi-tier
+                                                            final amount = _confirmedTotal;
 
                                                             // Use order_id if available, fallback to booking_id
                                                             final orderIdForDoku = newOrderId ?? newBookingId;
