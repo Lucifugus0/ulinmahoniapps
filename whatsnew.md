@@ -103,6 +103,7 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-04-13 | Transaction Model (`app/Models/Transaction.php`) | Fixed monthly renewal end-of-month drift on production — `original_checkin_day` was missing from `$fillable`, so mass assignment silently dropped it on every `Transaction::create()`. Every renewal since 2026-04-01 was storing NULL, causing the mobile app to fall back to current check-in day and drift the billing day across chains (e.g. Jan 31 → Feb 28 → Mar 28 instead of Mar 31). Added `'original_checkin_day'` to `$fillable` and backfilled the 70 affected production rows using chain-ancestor lookup (same user+room, walks back to last known OCD, fallback to earliest chain check-in day). |
 | 2026-04-10 | ExpireBooking Job | Fixed renewal rollback on booking expiry — when a renewal transaction expires due to unpaid timeout, the parent booking's `renewal_status` is now reset to 0 and `check_out_at` is cleared (and `m_rooms.rental_status` restored for monthly rooms), so the user can renew the parent booking again. Mirrors the existing cancel-flow rollback added in c309eba. |
 | 2026-03-26 | User Model | Added `role()` relationship (belongsTo Role via `role_id`) for HQ CS user identification. |
 | 2026-03-26 | BookingController (renew booking API) | Fixed `Class "App\Http\Controllers\Api\User" not found` error — added missing `use App\Models\User` import. Line 1258 used unqualified `User::find()`. |
