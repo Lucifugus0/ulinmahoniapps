@@ -560,20 +560,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 ),
                               ],
                             ),
-                            // TextButton(
-                            //   onPressed: () {
-                            //     context.push('/forgetpassword');
-                            //   },
-                            //   style: ButtonStyle(
-                            //     backgroundColor: MaterialStateProperty.all(
-                            //         Colors.transparent),
-                            //     foregroundColor:
-                            //     MaterialStateProperty.all(Colors.grey[600]),
-                            //     overlayColor: MaterialStateProperty.all(
-                            //         Colors.transparent),
-                            //   ),
-                            //   child: Text(localizations.forgotPasswordTitle),
-                            // ),
+                            TextButton(
+                              onPressed: () {
+                                context.push('/forgetpassword');
+                              },
+                              style: ButtonStyle(
+                                backgroundColor: WidgetStateProperty.all(
+                                    Colors.transparent),
+                                foregroundColor:
+                                WidgetStateProperty.all(Colors.grey[600]),
+                                overlayColor: WidgetStateProperty.all(
+                                    Colors.transparent),
+                              ),
+                              child: Text(localizations.forgotPasswordTitle),
+                            ),
                           ],
                         ),
                         SizedBox(

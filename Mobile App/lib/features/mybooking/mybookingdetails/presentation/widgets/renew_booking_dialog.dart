@@ -41,8 +41,8 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
     if (widget.bookingData.checkOut != null) {
       try {
         final parsed = DateTime.parse(widget.bookingData.checkOut!);
-        // Set check-in to H+1 from old checkout (continuous booking)
-        _checkInDate = DateTime(parsed.year, parsed.month, parsed.day).add(const Duration(days: 1));
+        // Set check-in to same day as old checkout (renewal starts on checkout day)
+        _checkInDate = DateTime(parsed.year, parsed.month, parsed.day);
       } catch (e) {
         final now = DateTime.now();
         _checkInDate = DateTime(now.year, now.month, now.day);
