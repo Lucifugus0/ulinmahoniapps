@@ -547,6 +547,93 @@
                 customReason.required = false;
                 customReason.value = '';
             }
+
+            /* When the cancel reason is "Bukti pembayaran tidak sesuai" we force the
+               refund option to "no_refund" and lock the other buttons. No actual
+               payment was received, so neither REFUND nor FULL REFUND can apply. */
+            const refundYes      = document.getElementById(`refundOptionYes-${paymentId}`);
+            const refundNo       = document.getElementById(`refundOptionNo-${paymentId}`);
+            const refundFull     = document.getElementById(`refundOptionFull-${paymentId}`);
+            const yesBox         = document.getElementById(`refundOptionYesBox-${paymentId}`);
+            const fullBox        = document.getElementById(`refundOptionFullBox-${paymentId}`);
+            const refundCalcBox  = document.getElementById(`refundCalcContainer-${paymentId}`);
+            const lockedNotice   = document.getElementById(`refundLockedNotice-${paymentId}`);
+
+            const setDisabled = (box, disabled) => {
+                if (!box) return;
+                if (disabled) {
+                    box.style.opacity = '0.4';
+                    box.style.pointerEvents = 'none';
+                } else {
+                    box.style.opacity = '';
+                    box.style.pointerEvents = '';
+                }
+            };
+
+            if (reasonSelect.value === 'bukti_pembayaran_tidak_sesuai') {
+                if (refundNo)   { refundNo.checked = true; refundNo.disabled = false; }
+                if (refundYes)  { refundYes.checked = false; refundYes.disabled = true; }
+                if (refundFull) { refundFull.checked = false; refundFull.disabled = true; }
+                setDisabled(yesBox, true);
+                setDisabled(fullBox, true);
+                if (refundCalcBox) refundCalcBox.classList.add('hidden');
+                if (lockedNotice)  lockedNotice.classList.remove('hidden');
+            } else {
+                if (refundYes)  { refundYes.disabled = false; refundYes.checked = true; }
+                if (refundNo)   { refundNo.disabled = false; refundNo.checked = false; }
+                if (refundFull) { refundFull.disabled = false; refundFull.checked = false; }
+                setDisabled(yesBox, false);
+                setDisabled(fullBox, false);
+                if (refundCalcBox) refundCalcBox.classList.remove('hidden');
+                if (lockedNotice)  lockedNotice.classList.add('hidden');
+            }
+
+            onRefundOptionChange(paymentId);
+        }
+
+        /* Update the read-only refund amount display to match the selected refund option.
+           Three options:
+             - REFUND       → tier-based amount from RefundCalculationService (data-refund-amount)
+             - NO REFUND    → 0
+             - FULL REFUND  → room + parking + deposit (data-full-refund) — backend-only override
+           Also toggles the .refund-opt-active class on the visual buttons so the selected state is
+           clearly visible (peer-checked Tailwind classes don't always survive the dark CSS bundle). */
+        function onRefundOptionChange(paymentId) {
+            const refundAmount = document.getElementById(`refundAmount-${paymentId}`);
+            const refundYes    = document.getElementById(`refundOptionYes-${paymentId}`);
+            const refundNo     = document.getElementById(`refundOptionNo-${paymentId}`);
+            const refundFull   = document.getElementById(`refundOptionFull-${paymentId}`);
+            const yesBox       = document.getElementById(`refundOptionYesBox-${paymentId}`);
+            const noBox        = document.getElementById(`refundOptionNoBox-${paymentId}`);
+            const fullBox      = document.getElementById(`refundOptionFullBox-${paymentId}`);
+            const fullNote     = document.getElementById(`refundFullNote-${paymentId}`);
+
+            // Clear all active states first
+            if (yesBox)  yesBox.classList.remove('refund-opt-active');
+            if (noBox)   noBox.classList.remove('refund-opt-active');
+            if (fullBox) fullBox.classList.remove('refund-opt-active');
+            if (fullNote) fullNote.classList.add('hidden');
+
+            // Apply active state to selected button
+            if (refundNo && refundNo.checked) {
+                if (noBox) noBox.classList.add('refund-opt-active');
+                if (refundAmount) refundAmount.value = '0';
+            } else if (refundFull && refundFull.checked) {
+                if (fullBox) fullBox.classList.add('refund-opt-active');
+                if (fullNote) fullNote.classList.remove('hidden');
+                if (refundAmount) {
+                    const fullAmt = parseFloat(refundFull.dataset.fullRefund || '0');
+                    refundAmount.value = new Intl.NumberFormat('id-ID').format(fullAmt);
+                }
+            } else {
+                // Default: REFUND (tiered)
+                if (refundYes) refundYes.checked = true;
+                if (yesBox) yesBox.classList.add('refund-opt-active');
+                if (refundAmount) {
+                    const calc = parseFloat(refundAmount.dataset.refundAmount || '0');
+                    refundAmount.value = new Intl.NumberFormat('id-ID').format(calc);
+                }
+            }
         }
 
         // Validasi form pembatalan

@@ -193,63 +193,30 @@ class DashboardController extends Controller
 
     private function getRoomTypesBreakdown($propertyId)
     {
-        // Get booked room IDs (transaction paid, belum check-out)
-        // status=1: hanya booking aktif, booking lama dari pindah kamar (status=0) tidak dihitung
-        $bookedRoomIds = Booking::where('property_id', $propertyId)
-            ->where('status', 1)
-            ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
-            })
-            ->whereNull('check_out_at')   // Belum check out
-            ->pluck('room_id')
-            ->toArray();
-
-        // Get occupied room IDs (sudah check-in fisik)
-        // status=1: hanya booking aktif, booking lama dari pindah kamar (status=0) tidak dihitung
-        $occupiedRoomIds = Booking::where('property_id', $propertyId)
-            ->where('status', 1)
-            ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
-            })
-            ->whereNotNull('check_in_at') // Sudah check-in fisik
-            ->whereNull('check_out_at')   // Belum check out
-            ->pluck('room_id')
-            ->toArray();
-
-        // Get all rooms and group by room name (type)
+        /* Room availability widget uses m_rooms.rental_status as the single source of truth:
+             0 = available (Tersedia)
+             1 = occupied  (Terisi)
+           Booking/transaction lookups are intentionally avoided — rental_status is kept
+           in sync by check-in/check-out and booking lifecycle code. */
         $rooms = Room::where('property_id', $propertyId)
             ->where('status', 1)
             ->orderBy('name')
             ->orderBy('no')
             ->get()
             ->groupBy('name')
-            ->map(function ($roomGroup, $roomName) use ($bookedRoomIds, $occupiedRoomIds) {
-                $roomDetails = $roomGroup->map(function ($room) use ($bookedRoomIds, $occupiedRoomIds) {
-                    $isBooked = in_array($room->idrec, $bookedRoomIds);
-                    $isOccupied = in_array($room->idrec, $occupiedRoomIds);
-
-                    // Determine status
-                    $status = 'available';
-                    if ($isOccupied) {
-                        $status = 'occupied';
-                    } elseif ($isBooked) {
-                        $status = 'booked';
-                    } else {
-                        $status = $room->rental_status == 0 ? 'available' : 'unavailable';
-                    }
-
+            ->map(function ($roomGroup, $roomName) {
+                $roomDetails = $roomGroup->map(function ($room) {
                     return [
                         'room_number' => $room->no ?? '-',
-                        'status' => $status,
+                        'status' => $room->rental_status == 1 ? 'occupied' : 'available',
                     ];
                 });
 
-                // Count status
                 $statusCounts = [
                     'available' => $roomDetails->where('status', 'available')->count(),
-                    'booked' => $roomDetails->where('status', 'booked')->count(),
+                    'booked' => 0,
                     'occupied' => $roomDetails->where('status', 'occupied')->count(),
-                    'unavailable' => $roomDetails->where('status', 'unavailable')->count(),
+                    'unavailable' => 0,
                 ];
 
                 return [

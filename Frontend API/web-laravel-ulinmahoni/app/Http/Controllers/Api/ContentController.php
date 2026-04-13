@@ -54,4 +54,60 @@ class ContentController extends Controller
             ],
         ]);
     }
+
+    /**
+     * GET /api/v1/content/footer
+     * Returns all footer CMS data (content, links, contacts, socials, payments)
+     * for consumption by the web portal and mobile app.
+     */
+    public function footer()
+    {
+        $content = DB::table('m_footer_content')->where('status', 1)->get()->keyBy('key');
+        $links = DB::table('m_footer_links')->where('status', 1)->orderBy('sort_order')->get();
+        $contacts = DB::table('m_footer_contacts')->where('status', 1)->orderBy('sort_order')->get();
+        $socials = DB::table('m_footer_socials')->where('status', 1)->orderBy('sort_order')->get();
+        $payments = DB::table('m_footer_payments')->where('status', 1)->orderBy('sort_order')->get();
+
+        /** Build icon URLs for payments — images are stored on the Backend server */
+        $adminUrl = config('app.admin_url', env('ADMIN_URL', ''));
+        $payments = $payments->map(function ($p) use ($adminUrl) {
+            if ($p->icon_image && !str_starts_with($p->icon_image, 'http')) {
+                $p->icon_url = $adminUrl . '/storage/' . $p->icon_image;
+            } else {
+                $p->icon_url = $p->icon_image;
+            }
+            return $p;
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'company_description' => $content->get('company_description')?->value,
+                'copyright' => $content->get('copyright')?->value,
+                'app_store_url' => $content->get('app_store_url')?->value,
+                'play_store_url' => $content->get('play_store_url')?->value,
+                /** Split links by link_group for quick_links vs business sections */
+                'links' => $links,
+                'quick_links' => $links->where('link_group', 'quick_links')->values(),
+                'business_links' => $links->where('link_group', 'business')->values(),
+                'contacts' => $contacts,
+                'socials' => $socials,
+                'payments' => $payments,
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/v1/content/legal/{slug}
+     * Returns a legal page (Terms, Privacy, Rental Agreement) by its URL slug.
+     * Content is stored as multilang XML in the m_legal_pages table.
+     */
+    public function legalPage($slug)
+    {
+        $page = DB::table('m_legal_pages')->where('slug', $slug)->where('status', 1)->first();
+        return response()->json([
+            'status' => 'success',
+            'data' => $page ? ['title' => $page->title, 'content' => $page->content, 'slug' => $page->slug] : null,
+        ]);
+    }
 }

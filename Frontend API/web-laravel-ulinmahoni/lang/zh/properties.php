@@ -80,6 +80,7 @@ return [
         'contact_us' => '请联系我们了解更多信息',
         'includes_tax' => '价格含增值税',
         'payment_method' => '银行转账支付',
+        'accepted_payments' => '接受的付款方式',
     ],
 
     'address' => [

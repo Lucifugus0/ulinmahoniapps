@@ -286,6 +286,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emailNotVerifiedMessage => '请先验证您的邮箱以继续。请检查您的邮箱收件箱并点击我们发送给您的验证链接。';
 
   @override
+  String get emailVerifyResend => '重新发送';
+
+  @override
+  String get emailVerifyChangeEmail => '更改邮箱';
+
+  @override
+  String get emailVerifyLater => '稍后';
+
+  @override
+  String get emailVerifySentTitle => '邮件已发送！';
+
+  @override
+  String get emailVerifySentMessage => '验证邮件已发送。请检查您的收件箱或垃圾邮件文件夹。';
+
+  @override
+  String get emailVerifyChangeTitle => '更改邮箱地址';
+
+  @override
+  String get emailVerifyNewEmailHint => '输入新邮箱';
+
+  @override
+  String get emailVerifyChangeConfirm => '更改并发送验证';
+
+  @override
   String get accountDeactivatedTitle => 'Akun Dinonaktifkan';
 
   @override

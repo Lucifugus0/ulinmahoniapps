@@ -301,11 +301,27 @@
                                     <i class="fas fa-info-circle mr-2 text-teal-600"></i>
                                     Harga sudah termasuk PPN
                                 </p>
-                                <p class="flex items-center mt-1">
-                                    <i class="fas fa-credit-card mr-2 text-teal-600"></i>
-                                    Pembayaran dengan metode transfer bank
-                                </p>
                             </div>
+                            <!-- Payment Methods from CMS -->
+                            @if(isset($footerPayments) && $footerPayments->count() > 0)
+                                <p class="mt-3 text-xs text-gray-500 font-medium">{{ __('properties.price_info.accepted_payments') }}</p>
+                                <div class="mt-1.5 flex flex-wrap gap-2">
+                                    @foreach($footerPayments as $payment)
+                                        @php
+                                            $iconUrl = $payment->icon_image;
+                                            if ($iconUrl && !str_starts_with($iconUrl, 'http')) {
+                                                $iconUrl = rtrim(config('app.admin_url', env('ADMIN_URL', '')), '/') . '/storage/' . $iconUrl;
+                                            }
+                                        @endphp
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-gray-500 border border-gray-200">
+                                            @if($iconUrl)
+                                                <img src="{{ $iconUrl }}" alt="{{ $payment->name }}" class="h-4 object-contain">
+                                            @endif
+                                            {{ $payment->name }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         @endif
                     </div>
                 </div>

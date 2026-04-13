@@ -80,6 +80,7 @@ return [
         'contact_us' => 'Silakan hubungi kami untuk informasi lebih lanjut',
         'includes_tax' => 'Harga sudah termasuk PPN',
         'payment_method' => 'Pembayaran dengan metode transfer bank',
+        'accepted_payments' => 'Metode pembayaran yang diterima',
     ],
 
     'address' => [

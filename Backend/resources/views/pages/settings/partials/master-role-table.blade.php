@@ -43,21 +43,21 @@
                 </span>
             @endif
         </td>
-        {{-- Sidebar Access button — outline style with proper contrast --}}
+        {{-- Sidebar Access button — solid style for clear visibility --}}
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
             <button
                 onclick="manageAccessRights({{ $user->id }}, '{{ addslashes($user->first_name ?? $user->name) }}')"
-                class="inline-flex items-center px-3 py-1.5 text-xs leading-5 font-semibold rounded-full border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150">
+                class="inline-flex items-center px-3 py-1.5 text-xs leading-5 font-semibold rounded-full bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150">
                 <i class="fas fa-key mr-1.5"></i>
                 {{ __('ui.settings_sidebar_menu') }}
             </button>
         </td>
-        {{-- Dashboard Widgets button — pill style matching sidebar access --}}
+        {{-- Dashboard Widgets button — solid style for clear visibility --}}
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
             @if ($user->role)
                 <button
                     onclick="manageDashboardWidgets({{ $user->role->id }}, '{{ addslashes($user->role->name) }}')"
-                    class="inline-flex items-center px-3 py-1.5 text-xs leading-5 font-semibold rounded-full border border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-150">
+                    class="inline-flex items-center px-3 py-1.5 text-xs leading-5 font-semibold rounded-full bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-150">
                     <i class="fas fa-th-large mr-1.5"></i>
                     {{ __('ui.dashboard_widgets') }}
                 </button>

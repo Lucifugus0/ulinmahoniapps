@@ -120,7 +120,7 @@
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.dpp_parking') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.vatt') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.grand_total') }}</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.deposit') }}</th>
+                            {{-- Removed standalone "Deposit" column; "Deposit" header below shows the deposit fee value --}}
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.deposit_fee') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.service_fee') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.payment_status') }}</th>
@@ -133,7 +133,7 @@
                     <!-- Table body with bg-white for dark mode glass treatment (matches All Bookings reference) -->
                     <tbody id="reportTableBody" class="bg-white divide-y divide-gray-200">
                         <tr>
-                            <td colspan="32" class="px-4 py-8 text-center text-gray-500">
+                            <td colspan="31" class="px-4 py-8 text-center text-gray-500">
                                 <div class="flex flex-col items-center gap-2">
                                     <svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -320,7 +320,6 @@
                     <td class="px-3 py-3 text-xs text-gray-900">${row.dpp_parkir}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.vatt}</td>
                     <td class="px-3 py-3 text-xs font-semibold text-gray-900">${row.grand_total}</td>
-                    <td class="px-3 py-3 text-xs text-gray-900">${row.deposit}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.deposit_fee}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.service_fee}</td>
                     <td class="px-3 py-3 text-xs text-gray-700">${row.payment_status}</td>
@@ -465,7 +464,6 @@
                             <td>${row.dpp_parkir}</td>
                             <td>${row.vatt}</td>
                             <td>${row.grand_total}</td>
-                            <td>${row.deposit}</td>
                             <td>${row.deposit_fee}</td>
                             <td>${row.service_fee}</td>
                             <td>${row.payment_status}</td>
@@ -625,7 +623,6 @@
                                 <th>{{ __('ui.dpp_parking') }}</th>
                                 <th>{{ __('ui.vatt') }}</th>
                                 <th>{{ __('ui.grand_total') }}</th>
-                                <th>{{ __('ui.deposit') }}</th>
                                 <th>{{ __('ui.deposit_fee') }}</th>
                                 <th>{{ __('ui.service_fee') }}</th>
                                 <th>{{ __('ui.status') }}</th>

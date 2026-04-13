@@ -106,13 +106,13 @@
 
     <!-- Mobile App Download Link -->
     <div class="mt-4 text-center">
-        <a href="{{ asset('downloads/ulinmahoni.apk') }}"
+        <a href="{{ asset('downloads/ulinmahoni-2.0.15-staging.apk') }}"
            class="download-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all hover:-translate-y-0.5 hover:shadow-lg"
            style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3);">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.523 2.293l-5.523 3.19-5.523-3.19L3 4.414V19.586l3.477 2.12 5.523-3.19 5.523 3.19L21 19.586V4.414l-3.477-2.12zM12 14.5L7.5 11.9V6.7L12 9.3l4.5-2.6v5.2L12 14.5z"/>
             </svg>
-            Download Android App (.apk)
+            Download Android App v2.0.15 (.apk)
         </a>
     </div>
 

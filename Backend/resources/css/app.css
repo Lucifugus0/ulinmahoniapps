@@ -375,6 +375,58 @@ html.dark .checkin-modal-header .text-gray-600 { color: #e5e7eb !important; }
 html.dark .checkout-modal-header .text-gray-800,
 html.dark .checkin-modal-header .text-gray-800 { color: #ffffff !important; }
 
+/* Refund option (REFUND / NO REFUND) buttons in cancel modal — explicit
+   light + dark colors so the active state is visible regardless of which
+   Tailwind classes survive the production CSS bundle. JS toggles the
+   .refund-opt-active class on the selected button. */
+.refund-opt-btn {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  color: #374151;
+}
+html.dark .refund-opt-btn {
+  background: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #d1d5db !important;
+}
+.refund-opt-yes.refund-opt-active {
+  background: #ecfdf5;
+  border-color: #059669;
+  color: #047857;
+}
+html.dark .refund-opt-yes.refund-opt-active {
+  background: #064e3b !important;
+  border-color: #10b981 !important;
+  color: #6ee7b7 !important;
+}
+.refund-opt-no.refund-opt-active {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+html.dark .refund-opt-no.refund-opt-active {
+  background: #7f1d1d !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
+}
+.refund-opt-full.refund-opt-active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+html.dark .refund-opt-full.refund-opt-active {
+  background: #1e3a8a !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+/* Cancel booking modal header — dark red/orange to match the orange-red gradient theme */
+html.dark .cancel-modal-header {
+  background: rgb(127, 29, 29) !important;  /* dark red — matches cancel/danger theme */
+  border-color: rgb(153, 27, 27) !important;
+}
+html.dark .cancel-modal-header h3 { color: #ffffff !important; }
+
 /* Room edit modal header — dark blue to match the blue/indigo gradient theme */
 html.dark .room-edit-modal-header {
   background: rgb(30, 58, 138) !important;  /* dark blue — matches room edit blue theme */

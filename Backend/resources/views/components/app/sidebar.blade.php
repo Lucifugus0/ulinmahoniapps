@@ -769,13 +769,12 @@
                     <ul class="space-y-1 mt-2">
                         <li x-init="if (window.location.href.includes('master-role-management') ||
                             window.location.href.includes('user-access') ||
-                            window.location.href.includes('users/show') ||
-                            window.location.href.includes('maintenance')) { activeMenu = 'appManagement' }
-                        @if (Route::is('master-role-management', 'user-access.*', 'users.show', 'maintenance.index')) activeMenu = 'appManagement' @endif">
+                            window.location.href.includes('users/show')) { activeMenu = 'appManagement' }
+                        @if (Route::is('master-role-management', 'user-access.*', 'users.show')) activeMenu = 'appManagement' @endif">
 
                             <!-- Main Menu Button -->
                             <a @click="activeMenu = activeMenu === 'appManagement' ? '' : 'appManagement'"
-                                class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('master-role-management', 'user-access.*', 'users.show', 'maintenance.index')) bg-indigo-600 @endif">
+                                class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('master-role-management', 'user-access.*', 'users.show')) bg-indigo-600 @endif">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <!-- Gear/Cog Icon -->
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
@@ -843,20 +842,74 @@
                                             </a>
                                         </li>
                                     @endcan
-                                    {{-- Maintenance Mode: only visible to super admins --}}
-                                    @can('manage_settings')
-                                        <li>
-                                            <a href="{{ route('maintenance.index') }}"
-                                                class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('maintenance.index')) bg-indigo-600 @endif">
-                                                <span class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_maintenance_mode') }}</span>
-                                            </a>
-                                        </li>
-                                    @endcan
                                 </ul>
                             </div>
                         </li>
                     </ul>
                 @endcanany
+
+                {{-- ==================== --}}
+                {{-- System Management Group --}}
+                {{-- ==================== --}}
+                {{-- Only visible to admin_tsno@gmail.com --}}
+                @if (Auth::user()->email === 'admin_tsno@gmail.com')
+                    <ul class="space-y-1 mt-2">
+                        <li x-init="if (window.location.href.includes('maintenance')) { activeMenu = 'systemManagement' }
+                            @if (Route::is('maintenance.index')) activeMenu = 'systemManagement' @endif">
+
+                            <!-- Main Menu Button -->
+                            <a @click="activeMenu = activeMenu === 'systemManagement' ? '' : 'systemManagement'"
+                                class="flex items-center justify-between gap-3 px-3 py-2 text-white rounded-lg hover:bg-indigo-600/50 transition-all duration-300 cursor-pointer group relative @if (Route::is('maintenance.index')) bg-indigo-600 @endif">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <!-- Shield/Lock Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    <span class="whitespace-nowrap transition-all duration-300"
+                                        style="transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+                                        :class="sidebarExpanded || window.innerWidth < 1024 ?
+                                            'opacity-100 max-w-[200px]' : 'lg:opacity-0 lg:max-w-0'">
+                                        {{ __('ui.sidebar_system_management') }}
+                                    </span>
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 flex-shrink-0 transition-all duration-300"
+                                    style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+                                    :class="[
+                                        activeMenu === 'systemManagement' ? 'rotate-180' : '',
+                                        sidebarExpanded || window.innerWidth < 1024 ?
+                                        'opacity-100 max-w-[1rem]' : 'lg:opacity-0 lg:max-w-0'
+                                    ]"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                                <div class="absolute left-full ml-2 bg-gray-900 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 whitespace-nowrap shadow-lg"
+                                    style="transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);"
+                                    :class="!sidebarExpanded && window.innerWidth >= 1024 ? 'block' : 'hidden'">
+                                    {{ __('ui.sidebar_system_management') }}
+                                </div>
+                            </a>
+
+                            <!-- Submenu Items -->
+                            <div x-show="activeMenu === 'systemManagement' && (sidebarExpanded || window.innerWidth < 1024)"
+                                x-collapse x-transition:enter="transition-[height] ease-out duration-300"
+                                x-transition:leave="transition-[height] ease-in duration-200" class="overflow-hidden">
+                                <ul class="pl-8 mt-1 space-y-1">
+                                    {{-- Maintenance Mode --}}
+                                    <li>
+                                        <a href="{{ route('maintenance.index') }}"
+                                            class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('maintenance.index')) bg-indigo-600 @endif">
+                                            <span class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_maintenance_mode') }}</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                @endif
 
             </div>
 

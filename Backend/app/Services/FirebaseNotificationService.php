@@ -41,6 +41,29 @@ class FirebaseNotificationService
     }
 
     /**
+     * Send the same push notification to multiple users (used by broadcasts).
+     * Collects all active device tokens for the given user IDs and sends in one batch.
+     * Returns aggregated counts of successful and failed sends.
+     */
+    public function sendToMultipleUsers(array $userIds, string $title, string $body, array $data = []): array
+    {
+        if (empty($userIds)) {
+            return ['sent' => 0, 'failed' => 0, 'message' => 'No recipients'];
+        }
+
+        $tokens = DeviceToken::whereIn('user_id', $userIds)
+            ->where('is_active', 1)
+            ->pluck('token')
+            ->toArray();
+
+        if (empty($tokens)) {
+            return ['sent' => 0, 'failed' => 0, 'message' => 'No active device tokens for any recipient'];
+        }
+
+        return $this->sendToTokens($tokens, $title, $body, $data);
+    }
+
+    /**
      * Send chat message notification to all participants except the sender.
      * Used by both ChatController (web) and ChatApiController (API) to avoid duplication.
      * Includes conversation_id in data payload for mobile deep-linking.
@@ -94,8 +117,9 @@ class FirebaseNotificationService
             $client = new Client();
             $url = "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
 
-            /** Build data-only FCM message (no 'notification' key) to prevent double notifications.
-             *  Title and body are sent as data fields so the app handler controls display. */
+            /** Title/body live in both `data` (for in-app handling) and `notification`
+             *  (so the OS displays it natively in background/terminated state, even for
+             *  message types the mobile app doesn't have a custom handler for, e.g. broadcast). */
             $messageData = array_merge(
                 ['title' => $title, 'body' => $body],
                 !empty($data) ? array_map('strval', $data) : []
@@ -104,8 +128,25 @@ class FirebaseNotificationService
             $message = [
                 'message' => [
                     'token' => $token,
+                    'notification' => [
+                        'title' => $title,
+                        'body'  => $body,
+                    ],
                     'data' => $messageData,
-                    'android' => ['priority' => 'high'],
+                    'android' => [
+                        'priority' => 'high',
+                        'notification' => [
+                            'sound' => 'default',
+                            'channel_id' => 'ulin_mahoni_default',
+                        ],
+                    ],
+                    'apns' => [
+                        'payload' => [
+                            'aps' => [
+                                'sound' => 'default',
+                            ],
+                        ],
+                    ],
                 ],
             ];
 

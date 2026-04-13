@@ -144,6 +144,10 @@ Route::middleware(['auth'])->group(function () {
         $request->user()->sendEmailVerificationNotification();
         return back()->with('status', 'verification-link-sent');
     })->middleware(['throttle:6,1'])->name('verification.send');
+
+    /* Web push notification device token routes — session auth */
+    Route::post('/web/device-token', [\App\Http\Controllers\Web\WebDeviceTokenController::class, 'store'])->name('web.device-token.store');
+    Route::delete('/web/device-token', [\App\Http\Controllers\Web\WebDeviceTokenController::class, 'destroy'])->name('web.device-token.destroy');
 });
 
 // Route::redirect('/', 'login');
@@ -233,16 +237,10 @@ Route::prefix('id')->name('id.')->group(function () {
         Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process');
     });
 
-    // Legal Pages
-    Route::get('/privacy-policy', function () {
-        return view('pages.privacy-policy.privacy-policy');
-    })->name('privacy-policy');
-    Route::get('/terms-of-services', function () {
-        return view('pages.terms-of-services.terms-of-services');
-    })->name('terms-of-services');
-    Route::get('/rental-agreement', function () {
-        return view('pages.rental-agreement.rental-agreement');
-    })->name('rental-agreement');
+    // Legal Pages — routed through LegalPageController for CMS content with legacy fallback
+    Route::get('/privacy-policy', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'privacy-policy')->name('privacy-policy');
+    Route::get('/terms-of-services', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'terms-of-services')->name('terms-of-services');
+    Route::get('/rental-agreement', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'rental-agreement')->name('rental-agreement');
 });
 
 // ========================================
@@ -319,16 +317,10 @@ Route::prefix('en')->name('en.')->group(function () {
         Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process');
     });
 
-    // Legal Pages
-    Route::get('/privacy-policy', function () {
-        return view('pages.privacy-policy.privacy-policy');
-    })->name('privacy-policy');
-    Route::get('/terms-of-services', function () {
-        return view('pages.terms-of-services.terms-of-services');
-    })->name('terms-of-services');
-    Route::get('/rental-agreement', function () {
-        return view('pages.rental-agreement.rental-agreement');
-    })->name('rental-agreement');
+    // Legal Pages — routed through LegalPageController for CMS content with legacy fallback
+    Route::get('/privacy-policy', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'privacy-policy')->name('privacy-policy');
+    Route::get('/terms-of-services', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'terms-of-services')->name('terms-of-services');
+    Route::get('/rental-agreement', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'rental-agreement')->name('rental-agreement');
 });
 
 // ========================================
@@ -407,16 +399,10 @@ Route::prefix('zh')->name('zh.')->group(function () {
         Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process');
     });
 
-    // Legal Pages
-    Route::get('/privacy-policy', function () {
-        return view('pages.privacy-policy.privacy-policy');
-    })->name('privacy-policy');
-    Route::get('/terms-of-services', function () {
-        return view('pages.terms-of-services.terms-of-services');
-    })->name('terms-of-services');
-    Route::get('/rental-agreement', function () {
-        return view('pages.rental-agreement.rental-agreement');
-    })->name('rental-agreement');
+    // Legal Pages — routed through LegalPageController for CMS content with legacy fallback
+    Route::get('/privacy-policy', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'privacy-policy')->name('privacy-policy');
+    Route::get('/terms-of-services', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'terms-of-services')->name('terms-of-services');
+    Route::get('/rental-agreement', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'rental-agreement')->name('rental-agreement');
 });
 
 // ========================================
@@ -488,18 +474,10 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process');
 });
 
-// Legal Pages (non-localized)
-Route::get('/privacy-policy', function () {
-    return view('pages.privacy-policy.privacy-policy');
-})->name('privacy-policy');
-
-Route::get('/terms-of-services', function () {
-    return view('pages.terms-of-services.terms-of-services');
-})->name('terms-of-services');
-
-Route::get('/rental-agreement', function () {
-    return view('pages.rental-agreement.rental-agreement');
-})->name('rental-agreement');
+// Legal Pages (non-localized) — routed through LegalPageController for CMS content with legacy fallback
+Route::get('/privacy-policy', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'privacy-policy')->name('privacy-policy');
+Route::get('/terms-of-services', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'terms-of-services')->name('terms-of-services');
+Route::get('/rental-agreement', [\App\Http\Controllers\LegalPageController::class, 'show'])->defaults('slug', 'rental-agreement')->name('rental-agreement');
 
 // OLD ROUTES
 // Authenticated routes that require email verification

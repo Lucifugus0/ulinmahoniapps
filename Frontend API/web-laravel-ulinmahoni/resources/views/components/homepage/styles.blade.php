@@ -115,6 +115,22 @@ body.liquid-glass-page {
   right: 0;
   transform: translateY(-15%);
   z-index: 30;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Sticky search bar — fixed below nav when scrolled past hero */
+.search-section.is-sticky {
+  position: fixed;
+  top: 4.5rem;
+  bottom: auto;
+  transform: none;
+  z-index: 9998;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-100%); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .search-container {

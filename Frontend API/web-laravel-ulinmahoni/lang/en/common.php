@@ -39,9 +39,17 @@ return [
     'footer' => [
         'tagline' => 'A comfortable and modern living space for city lovers.',
         'quick_links' => 'Quick Links',
+        'business' => 'Ulin Mahoni Business',
+        'business_partnership' => 'Partnership',
+        'business_corporate' => 'Corporate',
         'contact_us' => 'Contact Us',
         'follow_us' => 'Follow Us',
-        'copyright' => '&copy; 2025 Ulin Mahoni. All rights reserved.',
+        'support' => 'Support',
+        'payment_methods' => 'Payment Methods',
+        'login_register' => 'Login / Register',
+        'terms' => 'Terms & Conditions',
+        'privacy' => 'Privacy Policy',
+        'copyright' => '&copy; 2026 Ulin Mahoni. All rights reserved.',
     ],
 
     'language' => [

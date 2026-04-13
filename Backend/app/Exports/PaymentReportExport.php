@@ -72,7 +72,7 @@ class PaymentReportExport
             'No',
             'Invoice Number',
             'Invoice Date',
-            'Transaction Code',
+            'Booking ID',
             'Property Name',
             'Room Type',
             'Room Number',
@@ -287,7 +287,8 @@ class PaymentReportExport
                 'user'
             ])
             ->whereHas('payment')
-            ->where('transaction_status', 'paid')
+            /* Include cancelled bookings alongside paid — matches the web table view */
+            ->whereIn('transaction_status', ['paid', 'cancelled'])
             ->orderByDesc('paid_at');
 
         // Apply filters
@@ -413,11 +414,16 @@ class PaymentReportExport
             $no,                                                                                    // No
             $invoiceNumber,                                                                         // Invoice Number
             $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-', // Invoice Date
-            $transaction->transaction_code ?? '-',                                                  // Transaction Code
+            $transaction->order_id ?? '-',                                                          // Booking ID
             $transaction->property_name ?? '-',                                                     // Property Name
             $roomType,                                                                              // Room Type
             $roomNumber,                                                                            // Room Number
-            $transaction->user_name ?? '-',                                                         // Tenant Name
+            /* Tenant name from user.first_name + last_name (per finance team request);
+               falls back to legacy transaction.user_name when user is not linked */
+            $transaction->user
+                ? (trim(($transaction->user->first_name ?? '') . ' ' . ($transaction->user->last_name ?? ''))
+                    ?: ($transaction->user_name ?? '-'))
+                : ($transaction->user_name ?? '-'),                                                  // Tenant Name
             $nik,                                                                                   // NIK
             $transaction->user_phone_number ?? '-',                                                 // Mobile Number
             $transaction->user_email ?? '-',                                                        // Email
@@ -433,14 +439,40 @@ class PaymentReportExport
             round($dppParkir, 0),                                                                  // DPP Parkir
             round($vatt, 0),                                                                       // VATT
             round($grandTotal, 0),                                                                 // Grand Total
-            round($deposit + $depositFee, 0),                                                      // Deposit (includes deposit fee)
+            round($depositFee, 0),                                                                  // Deposit (deposit fee only — standalone deposit column removed)
             round($serviceFee, 0),                                                                 // Service Fee
-            'Paid',                                                                                // Payment Status
+            $this->resolvePaymentStatus($transaction, $isRefund && $transaction->booking->refund ? $transaction->booking->refund : null),  // Payment Status (Paid / NO REFUND / FULL REFUND / REFUND)
             ($transaction->is_renewal == 1) ? 'Perpanjangan' : '',                                // Status Sewa
-            $verifiedBy,                                                                           // Verified By
-            $payment && $payment->verified_at ? Carbon::parse($payment->verified_at)->format('d M Y H:i') : '-', // Verified Date
+            $transaction->payment_bank ?? '-',                                                     // Verified By (payment bank)
+            $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-', // Verified Date (paid_at)
             $notes,                                                                                // Notes
         ];
+    }
+
+    /**
+     * Resolve the payment status label based on the cancellation refund scheme.
+     * Mirrors PaymentReportController::resolvePaymentStatus so the report and export agree.
+     */
+    private function resolvePaymentStatus($transaction, $refundInfo): string
+    {
+        if (strtolower($transaction->transaction_status ?? '') !== 'cancelled') {
+            return 'Paid';
+        }
+
+        $refundAmount = (float) ($refundInfo->amount ?? 0);
+        if ($refundAmount <= 0) {
+            return 'NO REFUND';
+        }
+
+        $fullRefundAmount = (float) ($transaction->room_price ?? 0)
+            + (float) ($transaction->deposit_fee ?? 0)
+            + (float) ($transaction->parking_fee ?? 0);
+
+        if ($fullRefundAmount > 0 && abs($refundAmount - $fullRefundAmount) < 1) {
+            return 'FULL REFUND';
+        }
+
+        return 'REFUND';
     }
 
     private function getFilterTexts(): array

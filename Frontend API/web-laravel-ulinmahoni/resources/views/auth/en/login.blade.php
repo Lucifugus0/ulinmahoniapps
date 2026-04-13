@@ -36,6 +36,14 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
             z-index: 2;
         }
+        /* Override browser autofill yellow background */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px white inset !important;
+            -webkit-text-fill-color: #111827 !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
         /* Liquid glass — translucent login panel with strong blur */
         .login-box {
             background: rgba(255, 255, 255, 0.18);
@@ -95,19 +103,23 @@
                     <div>
                         <label for="email" class="sr-only">{{ __('Your Email') }}</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-envelope text-gray-400"></i>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style="z-index:1;">
+                                <i class="fas fa-envelope" style="color: #111827;"></i>
                             </div>
-                            <input id="email" name="email" type="email" required class="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Email" :value="old('email')" />
+                            <input id="email" name="email" type="email" required class="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Email" :value="old('email')" />
                         </div>
                     </div>
                     <div>
                         <label for="password" class="sr-only">{{ __('Your Password') }}</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-lock text-gray-400"></i>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style="z-index:1;">
+                                <i class="fas fa-lock" style="color: #111827;"></i>
                             </div>
-                            <input id="password" name="password" type="password" required class="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Password" />
+                            <input id="password" name="password" type="password" required class="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 pr-10 border border-gray-200 placeholder-gray-500 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Password" />
+                            <button type="button" onclick="const p=document.getElementById('password');const h=p.type==='password';p.type=h?'text':'password';this.querySelector('.eye-open').style.display=h?'none':'block';this.querySelector('.eye-closed').style.display=h?'block':'none';" class="absolute inset-y-0 right-0 pr-3 flex items-center" style="z-index:1; color: #111827;">
+                                <i class="fas fa-eye eye-open"></i>
+                                <i class="fas fa-eye-slash eye-closed" style="display:none"></i>
+                            </button>
                         </div>
                     </div>
                 </div>

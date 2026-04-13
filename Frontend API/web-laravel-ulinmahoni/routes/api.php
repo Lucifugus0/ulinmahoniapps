@@ -77,10 +77,12 @@ Route::prefix('v1')->group(function () {
     // ROUTES THAT REQUIRE API KEY (MIDDLEWARE)
     Route::middleware([VerifyApiKey::class])->group(function () {
 
-        // <!-- Content API routes: public tagline and hero video endpoints -->
+        // <!-- Content API routes: public tagline, hero video, footer, and legal page endpoints -->
         Route::prefix('content')->group(function () {
             Route::get('/tagline', [ContentController::class, 'randomTagline']);
             Route::get('/hero-video', [ContentController::class, 'activeHeroVideo']);
+            Route::get('/footer', [ContentController::class, 'footer']);
+            Route::get('/legal/{slug}', [ContentController::class, 'legalPage']);
         });
 
         // BANNER API ROUTES

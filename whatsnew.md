@@ -6,6 +6,7 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-04-08 | All Pages | Web push notification support via Firebase Cloud Messaging — browser sessions now register FCM tokens and receive push notifications for all events (chat, bookings, etc.). |
 | 2026-03-31 | Property & Room Description | Rich text editor (Quill.js) for property and room descriptions — supports bold, italic, text color, bullet/numbered lists, and links. Replaces plain textarea in multi-language description component. |
 | 2026-03-31 | Refund Management (`/refund`) | Enhanced refund page — shows Source column (User Request/Admin badge), refund breakdown (room/deposit/parking), bank account details for QRIS/VA user-initiated refunds, admin notes field in confirmation modal. |
 | 2026-03-31 | Booking Cancellation (PaymentController) | Admin cancel now uses RefundCalculationService for automatic refund breakdown calculation with tiered percentages. |
@@ -28,6 +29,9 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-04-10 | Booking Cancellation Modal (`/payment/pay`) | Fixed text alignment inside Cancel Booking modal — Warning banner heading and message now center-aligned; Booking Details card title and label/value rows now left-aligned; right-column form labels (Cancellation Reason, Refund Calculation, Refund Option, Refund Amount) now left-aligned. |
+| 2026-04-09 | Booking Cancellation Modal (`/payment/pay`) | Fixed dark mode header color (was light pink/orange gradient, now solid dark red). Added new cancellation reason "Bukti pembayaran tidak sesuai dan pembayaran tidak ada"; selecting it locks Jumlah Pengembalian Dana to Rp 0 (read-only). |
+| 2026-04-08 | Booking Cancellation (PaymentController) | Fixed renewal rollback on admin cancel — when a renewal booking is cancelled, the parent booking's `renewal_status` is now reset to 0 and its `check_out_at` is cleared, matching the Frontend API's existing rollback logic. |
 | 2026-03-31 | Payments (`/payments`) | Internationalized all hardcoded strings in payment table — table headers, status badges, action buttons, cancel/reject/edit modals, notes editor, and empty state now use `__('ui.*')` translation keys for ID/EN support. |
 | 2026-03-27 | Transaction Report (`/reports/payment`) | Fixed selected/hovered row background color in dark mode — was showing light gray-50 instead of subtle translucent highlight. |
 | 2026-03-27 | Property's Rooms (`/m-rooms`) Edit Modal | Fixed modal centering — was trapped inside table by dark mode `backdrop-filter` on tbody. Added `no-backdrop-filter` to tbody. |
@@ -72,6 +76,7 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-04-08 | All Pages | Web push notification support via Firebase Cloud Messaging — authenticated browser sessions now register FCM tokens and receive push notifications for all events (bookings, payments, etc.). |
 | 2026-04-07 | Room Availability (API + Views) | Changed availability logic: daily rooms (`periode_daily=1`) are always shown as "Tersedia" (available). Monthly-only rooms compute availability dynamically by checking `t_booking` + `t_transactions` for active bookings instead of the static `rental_status` flag. New `is_available` field added to API responses alongside existing `rental_status` for backward compatibility. Affected: SearchController, BookingController, PropertyController, HomeController, HouseController, ApartController, RoomController, and all property/room blade templates. |
 | 2026-04-07 | Property Detail (`/houses/{id}`) | Room category accordions now default to showing only available rooms. Added "Show all rooms" checkbox inside each category to reveal unavailable rooms. Uses Alpine.js `x-show` filtering. Translated in ID/EN/ZH. |
 
@@ -98,6 +103,7 @@
 
 | Date | Page/Screen | Description |
 |------|-------------|-------------|
+| 2026-04-10 | ExpireBooking Job | Fixed renewal rollback on booking expiry — when a renewal transaction expires due to unpaid timeout, the parent booking's `renewal_status` is now reset to 0 and `check_out_at` is cleared (and `m_rooms.rental_status` restored for monthly rooms), so the user can renew the parent booking again. Mirrors the existing cancel-flow rollback added in c309eba. |
 | 2026-03-26 | User Model | Added `role()` relationship (belongsTo Role via `role_id`) for HQ CS user identification. |
 | 2026-03-26 | BookingController (renew booking API) | Fixed `Class "App\Http\Controllers\Api\User" not found` error — added missing `use App\Models\User` import. Line 1258 used unqualified `User::find()`. |
 | 2026-03-26 | Payment Page (`/payment/show`) | Fixed dark mode not applying — body had no background/text classes. Added `dark:bg-gray-900 dark:text-gray-100` to body, section, and headings. Removed empty `class=""` from `<html>` tag. |

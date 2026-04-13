@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../../../core/layout/mainlayout.dart';
 import '../widgets/profile_menuitem_dart.dart';
 import '../../../../auth/login/provider/auth_provider.dart';
@@ -875,6 +876,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                   },
                                 );
                               },
+                            ),
+                            /* App version info — displays VERSION_NAME from .env */
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
+                            MenuItem(
+                              icon: Icons.info_outline,
+                              text: 'App Version',
+                              subText: dotenv.env['VERSION_NAME'] ?? 'Unknown',
+                              onTap: () {},
                             ),
                             // Show "Switch Apple Account" only on iOS and if user is signed in with Apple
                             if (Platform.isIOS && user?.appleUserId != null) ...[

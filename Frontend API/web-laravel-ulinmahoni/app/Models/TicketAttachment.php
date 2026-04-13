@@ -26,12 +26,14 @@ class TicketAttachment extends Model
         return $this->belongsTo(TicketMessage::class, 'message_id');
     }
 
-    /** Full URL to the file — uses ADMIN_URL since attachments are stored on the Backend server */
+    /** Full URL to the file — attachments are uploaded to the Frontend API's own
+     *  storage/app/public via Storage::disk('public'), so the URL is built from APP_URL,
+     *  not ADMIN_URL. Earlier code mistakenly used ADMIN_URL which 404'd. */
     public function getFileUrlAttribute(): string
     {
         $path = $this->normalizePath($this->file_path);
-        $adminUrl = rtrim(env('ADMIN_URL', ''), '/');
-        return $adminUrl ? $adminUrl . '/storage/' . $path : '/storage/' . $path;
+        $appUrl = rtrim(config('app.url', ''), '/');
+        return $appUrl ? $appUrl . '/storage/' . $path : '/storage/' . $path;
     }
 
     /** Full URL to the thumbnail — falls back to file_url if no thumbnail */
@@ -41,8 +43,8 @@ class TicketAttachment extends Model
             return $this->file_url;
         }
         $path = $this->normalizePath($this->thumbnail_path);
-        $adminUrl = rtrim(env('ADMIN_URL', ''), '/');
-        return $adminUrl ? $adminUrl . '/storage/' . $path : '/storage/' . $path;
+        $appUrl = rtrim(config('app.url', ''), '/');
+        return $appUrl ? $appUrl . '/storage/' . $path : '/storage/' . $path;
     }
 
     /** Strip storage path prefixes for consistent URL generation */

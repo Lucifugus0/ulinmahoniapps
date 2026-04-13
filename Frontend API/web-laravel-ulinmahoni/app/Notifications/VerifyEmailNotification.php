@@ -24,7 +24,7 @@ class VerifyEmailNotification extends BaseVerifyEmail implements ShouldQueue
     {
         return URL::temporarySignedRoute(
             'verification.verify',
-            now()->addMinutes(config('auth.verification.expire', 60)),
+            now()->addHours(24),
             [
                 'id' => $notifiable->getKey(),
                 'hash' => sha1($notifiable->getEmailForVerification()),

@@ -73,6 +73,7 @@ class CustomerController extends Controller
             DB::raw('CONVERT(users.username USING utf8mb4) as username'),
             DB::raw('CONVERT(users.email USING utf8mb4) as email'),
             DB::raw('CONVERT(users.phone_number USING utf8mb4) as phone'),
+            DB::raw('users.email_verified_at as email_verified_at'),
             DB::raw('CONVERT("registered" USING utf8mb4) as registration_status'),
             DB::raw('COALESCE(COUNT(DISTINCT t_transactions.order_id), 0) as total_bookings'),
             DB::raw('COALESCE(SUM(t_transactions.grandtotal_price), 0) as total_spent'),
@@ -94,7 +95,7 @@ class CustomerController extends Controller
                     ->orWhere('users.is_admin', 0)
                     ->orWhereNull('users.is_admin');
             })
-            ->groupBy('users.id', 'users.first_name', 'users.last_name', 'users.nik', 'users.username', 'users.email', 'users.phone_number');
+            ->groupBy('users.id', 'users.first_name', 'users.last_name', 'users.nik', 'users.username', 'users.email', 'users.phone_number', 'users.email_verified_at');
 
         // Get guest customers (transactions without user_id)
         $guestCustomers = Transaction::select([
@@ -105,6 +106,7 @@ class CustomerController extends Controller
             DB::raw('CONVERT(user_name USING utf8mb4) as username'),
             DB::raw('CONVERT(user_email USING utf8mb4) as email'),
             DB::raw('CONVERT(user_phone_number USING utf8mb4) as phone'),
+            DB::raw('NULL as email_verified_at'),
             DB::raw('CONVERT("guest" USING utf8mb4) as registration_status'),
             DB::raw('COUNT(DISTINCT order_id) as total_bookings'),
             DB::raw('SUM(grandtotal_price) as total_spent'),

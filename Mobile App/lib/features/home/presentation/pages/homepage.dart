@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import 'package:ulinmahoniapps/features/home/presentation/widgets/section/populararea.dart';
 import 'package:ulinmahoniapps/features/home/presentation/widgets/section/promotion.dart';
 import '../widgets/section/videosearchbanner.dart';
@@ -12,6 +13,9 @@ import '../../../promo_banner/provider/promo_banner_provider.dart';
 import '../widgets/section/filteredproperties.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../provider/content_provider.dart';
+import '../../../auth/login/provider/auth_provider.dart';
+import '../../../auth/login/presentation/widgets/email_verification_popup.dart';
+import '../../../auth/login/data/repositories/auth_repository.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -23,6 +27,30 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   // Default to "All" (empty string = no filter, show all properties)
   String _selectedFilterLabel = "";
+  bool _verificationPopupShown = false;
+
+  /// Show email verification popup with resend and change email options
+  void _showVerificationPopup(BuildContext context, String email) {
+    final l10n = AppLocalizations.of(context)!;
+
+    EmailVerificationPopup.show(
+      context: context,
+      email: email,
+      onResendEmail: () async {
+        Navigator.of(context).pop();
+        try {
+          final repo = ref.read(authRepositoryProvider);
+          final result = await repo.resendVerification(email);
+          if (context.mounted) {
+            EmailVerificationSentPopup.show(context: context, email: email);
+          }
+        } catch (e) {
+          AppLogger.e('Failed to resend verification', e, null, 'HOME');
+        }
+      },
+      onCancel: () => Navigator.of(context).pop(),
+    );
+  }
 
   Future<void> _onRefresh() async {
     ref.invalidate(propertiesProvider(_selectedFilterLabel));
@@ -39,6 +67,18 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Show email verification popup once if user is logged in but unverified
+    final authState = ref.watch(authProvider);
+    if (!_verificationPopupShown && authState.isLoggedIn) {
+      final user = authState.user.value;
+      if (user != null && !user.isEmailVerified) {
+        _verificationPopupShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showVerificationPopup(context, user.email);
+        });
+      }
+    }
+
     // SafeArea top is disabled so content scrolls behind the glass navbar
     return SafeArea(
       top: false,

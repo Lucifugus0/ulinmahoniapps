@@ -96,6 +96,10 @@ class ManajementRoomsController extends Controller
             ];
         });
 
+        /* Fetch active room name types for the edit modal dropdown —
+           needed by both AJAX partial and full page render */
+        $roomNameTypes = RoomNameType::active()->orderBy('name')->get();
+
         // Jika request AJAX, kembalikan partial view
         if ($request->ajax()) {
             return response()->json([
@@ -105,15 +109,13 @@ class ManajementRoomsController extends Controller
                     'per_page' => $perPage,
                     'facilities' => $facilities,
                     'facilityData' => $facilityData,
+                    'roomNameTypes' => $roomNameTypes,
                 ])->render(),
                 'pagination' => $rooms instanceof \Illuminate\Pagination\LengthAwarePaginator
                     ? $rooms->appends($request->input())->links()->toHtml()
                     : ''
             ]);
         }
-
-        // Fetch active room name types for the dropdown
-        $roomNameTypes = RoomNameType::active()->orderBy('name')->get();
 
         return view('pages.Properties.m-Rooms.index', [
             'facilities' => $facilities,

@@ -743,12 +743,27 @@
                                                 </button>
                                             @endif
                                             @if($canRenew)
+                                                @php
+                                                    /* Renewal check-in must come from the latest PAID/COMPLETED non-renewed
+                                                       booking for this room+user. Cancelled rows are intentionally excluded —
+                                                       a cancelled renewal must not push the renewal start date forward. */
+                                                    $renewalCheckOut = \DB::table('t_transactions')
+                                                        ->where('room_id', $booking->room_id)
+                                                        ->where('user_id', $booking->user_id)
+                                                        ->whereRaw('LOWER(transaction_status) IN (?, ?)', ['paid', 'completed'])
+                                                        ->where('renewal_status', 0)
+                                                        ->whereNull('cancel_at')
+                                                        ->orderBy('check_out', 'desc')
+                                                        ->value('check_out')
+                                                        ?? $booking->check_out;
+                                                    $renewalCheckOutStr = \Carbon\Carbon::parse($renewalCheckOut)->format('Y-m-d');
+                                                @endphp
                                                 <button onclick="openRenewModal({
                                                     orderId: '{{ $booking->order_id }}',
                                                     roomId: {{ $booking->room_id }},
                                                     bookingType: '{{ $booking->booking_type }}',
                                                     months: {{ $booking->booking_months ?? 1 }},
-                                                    previousCheckOut: '{{ $booking->check_out->format('Y-m-d') }}',
+                                                    previousCheckOut: '{{ $renewalCheckOutStr }}',
                                                     originalCheckinDay: {{ $booking->original_checkin_day ?? $booking->check_in->day }},
                                                     userId: {{ $booking->user_id }},
                                                     userName: '{{ addslashes($booking->user_name) }}',

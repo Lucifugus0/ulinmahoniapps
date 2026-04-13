@@ -160,6 +160,33 @@
     </section>
     </div>
 
+    <!-- Sticky search bar: move to body when scrolled past hero to avoid overflow:hidden clipping -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchSection = document.querySelector('.search-section');
+        const heroSection = document.querySelector('.hero-section');
+        if (!searchSection || !heroSection) return;
+
+        const originalParent = searchSection.parentElement;
+        let isSticky = false;
+
+        const observer = new IntersectionObserver(([entry]) => {
+            if (!entry.isIntersecting && !isSticky) {
+                /* Move search bar to body so overflow:hidden on hero doesn't clip it */
+                document.body.appendChild(searchSection);
+                searchSection.classList.add('is-sticky');
+                isSticky = true;
+            } else if (entry.isIntersecting && isSticky) {
+                searchSection.classList.remove('is-sticky');
+                originalParent.appendChild(searchSection);
+                isSticky = false;
+            }
+        }, { threshold: 0, rootMargin: '-72px 0px 0px 0px' });
+
+        observer.observe(heroSection);
+    });
+    </script>
+
     @include('components.homepage.property-types')
     @include('components.homepage.promos')
     @include('components.homepage.areas')
@@ -169,6 +196,7 @@
   </main>
 
   @include('components.homepage.footer')
+  @include('components.homepage.email-verification-popup')
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {

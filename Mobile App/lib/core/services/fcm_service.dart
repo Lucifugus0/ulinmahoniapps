@@ -169,9 +169,17 @@ class FCMService {
   }
 
   /// Get FCM token from Firebase SDK.
+  /// Wrapped in a 10-second timeout to avoid hanging the auth flow if Firebase
+  /// is unable to reach Google Play Services or APNs.
   Future<String?> getToken() async {
     try {
-      final token = await _firebaseMessaging.getToken();
+      final token = await _firebaseMessaging.getToken().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          AppLogger.w('FCM getToken timed out after 10s', 'FCM');
+          return null;
+        },
+      );
       if (token != null) {
         AppLogger.d('FCM Token: ${token.substring(0, 30)}...', 'FCM');
       }
@@ -327,17 +335,24 @@ class FCMService {
   ///
   /// Called by [AuthNotifier] after successful login so the token registered
   /// during [initialize] (before login) is sent to the backend now that an
-  /// auth token is available.
+  /// auth token is available. Also re-requests notification permission if it
+  /// was previously denied (e.g. Android 13+ first-launch denial).
   Future<void> syncTokenToBackend() async {
     final token = await getSavedToken();
     if (token != null) {
       await _sendTokenToBackend(token);
+      return;
+    }
+
+    /// No saved token — try to fetch a fresh one. On Android FCM tokens are
+    /// available even without notification permission, so we don't gate this
+    /// on the permission status.
+    final freshToken = await getToken();
+    if (freshToken != null) {
+      await _saveTokenLocally(freshToken);
+      await _sendTokenToBackend(freshToken);
     } else {
-      // No saved token — request a fresh one
-      final freshToken = await getToken();
-      if (freshToken != null) {
-        await _sendTokenToBackend(freshToken);
-      }
+      AppLogger.w('No FCM token available to sync', 'FCM');
     }
   }
 

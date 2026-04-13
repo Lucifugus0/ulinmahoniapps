@@ -21,6 +21,23 @@
                     class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200">
                     {{ __('ui.video_tab') }}
                 </button>
+                <!-- Footer & Legal tabs -->
+                <button @click="activeTab = 'footer'" :class="activeTab === 'footer' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200">
+                    Footer
+                </button>
+                <button @click="activeTab = 'terms'" :class="activeTab === 'terms' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200">
+                    Terms & Conditions
+                </button>
+                <button @click="activeTab = 'privacy'" :class="activeTab === 'privacy' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200">
+                    Privacy Policy
+                </button>
+                <button @click="activeTab = 'rental'" :class="activeTab === 'rental' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200">
+                    Rental Agreement
+                </button>
             </div>
 
             <!-- ==================== TAGLINES TAB ==================== -->
@@ -174,6 +191,26 @@
                     </table>
                 </div>
             </div>
+
+            <!-- ==================== FOOTER TAB ==================== -->
+            <div x-show="activeTab === 'footer'" x-transition x-cloak>
+                @include('pages.settings.content-management.footer-tab')
+            </div>
+
+            <!-- ==================== TERMS & CONDITIONS TAB ==================== -->
+            <div x-show="activeTab === 'terms'" x-transition x-cloak>
+                @include('pages.settings.content-management.terms-tab')
+            </div>
+
+            <!-- ==================== PRIVACY POLICY TAB ==================== -->
+            <div x-show="activeTab === 'privacy'" x-transition x-cloak>
+                @include('pages.settings.content-management.privacy-tab')
+            </div>
+
+            <!-- ==================== RENTAL AGREEMENT TAB ==================== -->
+            <div x-show="activeTab === 'rental'" x-transition x-cloak>
+                @include('pages.settings.content-management.rental-tab')
+            </div>
         </div>
     </div>
 
@@ -196,9 +233,55 @@
                 isUploading: false,
                 uploadProgress: 0,
 
+                // Footer state — company description (multilang rich text)
+                footerCompanyDesc: '',
+
+                // Footer App Links state
+                appStoreUrl: '',
+                playStoreUrl: '',
+                loginRegisterUrl: '',
+
+                // Footer Quick Links CRUD state
+                quickLinks: [],
+                newQuickLink: { label: '', url: '', link_group: 'quick_links', sort_order: 0 },
+                editingQuickLinkId: null,
+                editingQuickLink: {},
+
+                // Footer Contact Us CRUD state
+                contacts: [],
+                newContact: { icon_class: '', label: '', value: '', link_url: '', sort_order: 0 },
+                editingContactId: null,
+                editingContact: {},
+
+                // Footer Follow Us (social media) CRUD state
+                socials: [],
+                newSocial: { name: '', icon_class: '', icon_image_url: '', url: '', hover_color: '', sort_order: 0 },
+                editingSocialId: null,
+                editingSocial: {},
+
+                // Footer Accepted Payments CRUD state
+                payments: [],
+                newPayment: { name: '', sort_order: 0 },
+                newPaymentIcon: null,
+                editingPaymentId: null,
+                editingPayment: {},
+
+                // Legal pages state — rich text content for each legal page
+                legalTermsContent: '',
+                legalPrivacyContent: '',
+                legalRentalContent: '',
+
                 init() {
                     this.fetchTaglines();
                     this.fetchVideos();
+
+                    /** Watch active tab and lazy-load footer/legal data when first visited */
+                    this.$watch('activeTab', (tab) => {
+                        if (tab === 'footer' && this.quickLinks.length === 0) this.fetchFooterData();
+                        if (tab === 'terms' && !this.legalTermsContent) this.fetchLegalPage('terms-of-services', 'legalTermsContent');
+                        if (tab === 'privacy' && !this.legalPrivacyContent) this.fetchLegalPage('privacy-policy', 'legalPrivacyContent');
+                        if (tab === 'rental' && !this.legalRentalContent) this.fetchLegalPage('rental-agreement', 'legalRentalContent');
+                    });
                 },
 
                 // ==================== TAGLINE METHODS ====================
@@ -399,6 +482,399 @@
                             this.showToast(data.message, 'error');
                         }
                     } catch (e) { this.showToast('Error deleting video', 'error'); }
+                },
+
+                // ==================== FOOTER METHODS ====================
+
+                /** Fetch all footer sub-section data in parallel */
+                async fetchFooterData() {
+                    this.fetchFooterContent();
+                    this.fetchQuickLinks();
+                    this.fetchContacts();
+                    this.fetchSocials();
+                    this.fetchPayments();
+                },
+
+                /** Fetch footer content key-value pairs (company desc, app links, etc.) */
+                async fetchFooterContent() {
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-content") }}');
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            const find = (key) => (data.data.find(c => c.key === key) || {}).value || '';
+                            this.footerCompanyDesc = find('company_description');
+                            this.appStoreUrl = find('app_store_url');
+                            this.playStoreUrl = find('play_store_url');
+                            this.loginRegisterUrl = find('login_register_url');
+                        }
+                    } catch (e) { console.error('Error fetching footer content:', e); }
+                },
+
+                /** Save a footer content field (e.g. company_description) */
+                async saveFooterContent(key, value) {
+                    try {
+                        /** PUT to /footer-content/{key} — route expects key in URL */
+                        const res = await fetch(`{{ url("/settings/content-management/footer-content") }}/${key}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ value: value })
+                        });
+                        const data = await res.json();
+                        if (data.success) this.showToast(data.message || 'Saved', 'success');
+                        else this.showToast(data.message || 'Error saving', 'error');
+                    } catch (e) { this.showToast('Error saving footer content', 'error'); }
+                },
+
+                // --- Quick Links CRUD ---
+
+                async fetchQuickLinks() {
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-links") }}');
+                        const data = await res.json();
+                        if (data.success) this.quickLinks = data.data;
+                    } catch (e) { console.error('Error fetching quick links:', e); }
+                },
+
+                async addQuickLink() {
+                    if (!this.newQuickLink.label.trim() || !this.newQuickLink.url.trim()) return;
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-links") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify(this.newQuickLink)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.newQuickLink = { label: '', url: '', link_group: 'quick_links', sort_order: 0 };
+                            this.fetchQuickLinks();
+                            this.showToast(data.message || 'Added', 'success');
+                        } else {
+                            this.showToast(Object.values(data.errors || {}).flat().join(', ') || 'Error', 'error');
+                        }
+                    } catch (e) { this.showToast('Error adding quick link', 'error'); }
+                },
+
+                startEditQuickLink(item) {
+                    this.editingQuickLinkId = item.idrec;
+                    this.editingQuickLink = { ...item };
+                },
+
+                cancelEditQuickLink() {
+                    this.editingQuickLinkId = null;
+                    this.editingQuickLink = {};
+                },
+
+                async saveEditQuickLink(id) {
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-links') }}/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify(this.editingQuickLink)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.cancelEditQuickLink();
+                            this.fetchQuickLinks();
+                            this.showToast(data.message || 'Updated', 'success');
+                        }
+                    } catch (e) { this.showToast('Error updating quick link', 'error'); }
+                },
+
+                async toggleQuickLinkStatus(item) {
+                    const newStatus = item.status === 1 ? 0 : 1;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-links') }}/${item.idrec}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        const data = await res.json();
+                        if (data.success) this.fetchQuickLinks();
+                    } catch (e) { this.showToast('Error toggling status', 'error'); }
+                },
+
+                async deleteQuickLink(id) {
+                    if (!confirm('Are you sure you want to delete this link?')) return;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-links') }}/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                        });
+                        const data = await res.json();
+                        if (data.success) { this.fetchQuickLinks(); this.showToast(data.message || 'Deleted', 'success'); }
+                    } catch (e) { this.showToast('Error deleting quick link', 'error'); }
+                },
+
+                // --- Contact Us CRUD ---
+
+                async fetchContacts() {
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-contacts") }}');
+                        const data = await res.json();
+                        if (data.success) this.contacts = data.data;
+                    } catch (e) { console.error('Error fetching contacts:', e); }
+                },
+
+                async addContact() {
+                    if (!this.newContact.label.trim()) return;
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-contacts") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify(this.newContact)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.newContact = { icon_class: '', label: '', value: '', link_url: '', sort_order: 0 };
+                            this.fetchContacts();
+                            this.showToast(data.message || 'Added', 'success');
+                        } else {
+                            this.showToast(Object.values(data.errors || {}).flat().join(', ') || 'Error', 'error');
+                        }
+                    } catch (e) { this.showToast('Error adding contact', 'error'); }
+                },
+
+                startEditContact(item) {
+                    this.editingContactId = item.idrec;
+                    this.editingContact = { ...item };
+                },
+
+                cancelEditContact() {
+                    this.editingContactId = null;
+                    this.editingContact = {};
+                },
+
+                async saveEditContact(id) {
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-contacts') }}/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify(this.editingContact)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.cancelEditContact();
+                            this.fetchContacts();
+                            this.showToast(data.message || 'Updated', 'success');
+                        }
+                    } catch (e) { this.showToast('Error updating contact', 'error'); }
+                },
+
+                async toggleContactStatus(item) {
+                    const newStatus = item.status === 1 ? 0 : 1;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-contacts') }}/${item.idrec}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        const data = await res.json();
+                        if (data.success) this.fetchContacts();
+                    } catch (e) { this.showToast('Error toggling status', 'error'); }
+                },
+
+                async deleteContact(id) {
+                    if (!confirm('Are you sure you want to delete this contact?')) return;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-contacts') }}/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                        });
+                        const data = await res.json();
+                        if (data.success) { this.fetchContacts(); this.showToast(data.message || 'Deleted', 'success'); }
+                    } catch (e) { this.showToast('Error deleting contact', 'error'); }
+                },
+
+                // --- Follow Us (Social Media) CRUD ---
+
+                async fetchSocials() {
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-socials") }}');
+                        const data = await res.json();
+                        if (data.success) this.socials = data.data;
+                    } catch (e) { console.error('Error fetching socials:', e); }
+                },
+
+                async addSocial() {
+                    if (!this.newSocial.name.trim()) return;
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-socials") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify(this.newSocial)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.newSocial = { name: '', icon_class: '', icon_image_url: '', url: '', hover_color: '', sort_order: 0 };
+                            this.fetchSocials();
+                            this.showToast(data.message || 'Added', 'success');
+                        } else {
+                            this.showToast(Object.values(data.errors || {}).flat().join(', ') || 'Error', 'error');
+                        }
+                    } catch (e) { this.showToast('Error adding social link', 'error'); }
+                },
+
+                startEditSocial(item) {
+                    this.editingSocialId = item.idrec;
+                    this.editingSocial = { ...item };
+                },
+
+                cancelEditSocial() {
+                    this.editingSocialId = null;
+                    this.editingSocial = {};
+                },
+
+                async saveEditSocial(id) {
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-socials') }}/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify(this.editingSocial)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.cancelEditSocial();
+                            this.fetchSocials();
+                            this.showToast(data.message || 'Updated', 'success');
+                        }
+                    } catch (e) { this.showToast('Error updating social link', 'error'); }
+                },
+
+                async toggleSocialStatus(item) {
+                    const newStatus = item.status === 1 ? 0 : 1;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-socials') }}/${item.idrec}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        const data = await res.json();
+                        if (data.success) this.fetchSocials();
+                    } catch (e) { this.showToast('Error toggling status', 'error'); }
+                },
+
+                async deleteSocial(id) {
+                    if (!confirm('Are you sure you want to delete this social link?')) return;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-socials') }}/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                        });
+                        const data = await res.json();
+                        if (data.success) { this.fetchSocials(); this.showToast(data.message || 'Deleted', 'success'); }
+                    } catch (e) { this.showToast('Error deleting social link', 'error'); }
+                },
+
+                // --- Accepted Payments CRUD ---
+
+                async fetchPayments() {
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-payments") }}');
+                        const data = await res.json();
+                        if (data.success) this.payments = data.data;
+                    } catch (e) { console.error('Error fetching payments:', e); }
+                },
+
+                /** Add a new accepted payment with file upload for icon */
+                async addPayment() {
+                    if (!this.newPayment.name.trim()) return;
+                    const formData = new FormData();
+                    formData.append('name', this.newPayment.name);
+                    formData.append('sort_order', this.newPayment.sort_order);
+                    if (this.newPaymentIcon) formData.append('icon', this.newPaymentIcon);
+                    try {
+                        const res = await fetch('{{ url("/settings/content-management/footer-payments") }}', {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.newPayment = { name: '', sort_order: 0 };
+                            this.newPaymentIcon = null;
+                            if (this.$refs.paymentIconInput) this.$refs.paymentIconInput.value = '';
+                            this.fetchPayments();
+                            this.showToast(data.message || 'Added', 'success');
+                        } else {
+                            this.showToast(Object.values(data.errors || {}).flat().join(', ') || 'Error', 'error');
+                        }
+                    } catch (e) { this.showToast('Error adding payment', 'error'); }
+                },
+
+                startEditPayment(item) {
+                    this.editingPaymentId = item.idrec;
+                    this.editingPayment = { ...item };
+                },
+
+                cancelEditPayment() {
+                    this.editingPaymentId = null;
+                    this.editingPayment = {};
+                },
+
+                async saveEditPayment(id) {
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-payments') }}/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify(this.editingPayment)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.cancelEditPayment();
+                            this.fetchPayments();
+                            this.showToast(data.message || 'Updated', 'success');
+                        }
+                    } catch (e) { this.showToast('Error updating payment', 'error'); }
+                },
+
+                async togglePaymentStatus(item) {
+                    const newStatus = item.status === 1 ? 0 : 1;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-payments') }}/${item.idrec}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        const data = await res.json();
+                        if (data.success) this.fetchPayments();
+                    } catch (e) { this.showToast('Error toggling status', 'error'); }
+                },
+
+                async deletePayment(id) {
+                    if (!confirm('Are you sure you want to delete this payment?')) return;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/footer-payments') }}/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                        });
+                        const data = await res.json();
+                        if (data.success) { this.fetchPayments(); this.showToast(data.message || 'Deleted', 'success'); }
+                    } catch (e) { this.showToast('Error deleting payment', 'error'); }
+                },
+
+                // ==================== LEGAL PAGE METHODS ====================
+
+                /** Fetch a legal page content by slug and store in the given property */
+                async fetchLegalPage(slug, prop) {
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/legal-pages') }}/${slug}`);
+                        const data = await res.json();
+                        if (data.success && data.data) this[prop] = data.data.content || '';
+                    } catch (e) { console.error('Error fetching legal page:', slug, e); }
+                },
+
+                /** Save a legal page content by slug */
+                async saveLegalPage(slug, content) {
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/legal-pages') }}/${slug}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ content: content })
+                        });
+                        const data = await res.json();
+                        if (data.success) this.showToast(data.message || 'Saved', 'success');
+                        else this.showToast(data.message || 'Error saving', 'error');
+                    } catch (e) { this.showToast('Error saving legal page', 'error'); }
                 },
 
                 // ==================== HELPERS ====================

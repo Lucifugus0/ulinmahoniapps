@@ -54,15 +54,11 @@
                 <!-- Search Button with Modal -->
                 {{-- <x-modal-search /> --}}
 
-                <!-- Chat button -->
+                {{-- Unified notifications dropdown — replaces the legacy chat-only dropdown.
+                     Aggregates chat unread + broadcast unread + future push types. --}}
                 @auth
-                    @can('manage_chat')
-                        <x-dropdown-chat align="right" />
-                    @endcan
+                    <x-dropdown-notifications align="right" />
                 @endauth
-
-                <!-- Notifications button -->
-                {{-- <x-dropdown-notifications align="right" /> --}}
 
                 <!-- Info button -->
                 {{-- <x-dropdown-help align="right" /> --}}

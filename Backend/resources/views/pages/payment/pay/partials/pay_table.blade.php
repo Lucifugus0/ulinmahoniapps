@@ -608,11 +608,13 @@
                             class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-[70]"
                             style="display: none;" onclick="hideCancelModal({{ $payment->idrec }})">
                             <div class="flex items-center justify-center min-h-screen px-4 py-8">
-                                <div class="relative mx-auto w-full max-w-2xl" onclick="event.stopPropagation()">
+                                {{-- Wider modal (max-w-4xl) so 2-column body fits without becoming overly tall --}}
+                                <div class="relative mx-auto w-full max-w-4xl" onclick="event.stopPropagation()">
                                     <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl transform transition-all">
                                         <!-- Modal header -->
+                                        {{-- Custom class `cancel-modal-header` lets app.css apply a high-specificity dark override since Tailwind v4 dark: gradient classes do not always end up in the compiled bundle --}}
                                         <div
-                                            class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 rounded-t bg-gradient-to-r from-orange-50 to-red-50 dark:from-gray-700 dark:to-gray-700">
+                                            class="cancel-modal-header px-6 py-4 border-b border-gray-200 dark:border-gray-700 rounded-t bg-gradient-to-r from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-800">
                                             <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
                                                 {{ __('ui.cancel_booking') }}
                                             </h3>
@@ -638,8 +640,9 @@
                                             @method('PUT')
 
                                             <div class="p-6 space-y-4 break-words whitespace-normal">
+                                                {{-- Full-width warning banner — icon on the left, warning title and message centered within the remaining space --}}
                                                 <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                                                    <div class="flex">
+                                                    <div class="flex items-center">
                                                         <div class="flex-shrink-0">
                                                             <svg class="h-5 w-5 text-yellow-400 dark:text-yellow-500"
                                                                 xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
@@ -649,21 +652,39 @@
                                                                     clip-rule="evenodd" />
                                                             </svg>
                                                         </div>
-                                                        <div class="ml-3">
-                                                            <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                                                        {{-- Center-aligned warning content (heading + message) per design request --}}
+                                                        <div class="ml-3 flex-1 text-center">
+                                                            <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-300 text-center">
                                                                 {{ __('ui.warning') }}
                                                             </h3>
-                                                            <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-400">
-                                                                <p>{{ __('ui.cancel_warning_message') }}</p>
+                                                            <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-400 text-center">
+                                                                <p class="text-center">{{ __('ui.cancel_warning_message') }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">{{ __('ui.booking_details') }}
+                                                {{-- 2-column grid: left = Detail Pemesanan, right = cancel form fields. Stacks on mobile. --}}
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                                @php
+                                                    /* Compute refund breakdown using the shared service so the modal
+                                                       shows the same numbers as the user-facing cancel flow. */
+                                                    $refundCalc = null;
+                                                    if ($payment->transaction) {
+                                                        try {
+                                                            $refundCalc = (new \App\Services\RefundCalculationService())->calculate($payment->transaction);
+                                                        } catch (\Throwable $e) {
+                                                            $refundCalc = null;
+                                                        }
+                                                    }
+                                                @endphp
+
+                                                {{-- Left column: Detail Pemesanan card. Title and all label/value rows are explicitly left-aligned per design request. --}}
+                                                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4 self-start text-left">
+                                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2 text-left">{{ __('ui.booking_details') }}
                                                     </h4>
-                                                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                    <div class="grid grid-cols-2 gap-2 text-sm text-left text-gray-600 dark:text-gray-400">
                                                         <div>{{ __('ui.order_id') }}:</div>
                                                         <div class="font-medium">{{ $payment->order_id }}</div>
 
@@ -676,21 +697,60 @@
                                                             {{ $payment->transaction?->property?->name ?? 'N/A' }}
                                                         </div>
 
-                                                        <div>{{ __('ui.total') }}:</div>
+                                                        {{-- Room number from m_rooms.no, falls back to transaction.room_name --}}
+                                                        <div>{{ __('ui.room_number') }}:</div>
                                                         <div class="font-medium">
-                                                            Rp{{ number_format($payment->transaction?->grandtotal_price ?? 0, 0, ',', '.') }}
+                                                            {{ $payment->transaction?->room?->no ?? $payment->transaction?->room_name ?? '-' }}
                                                         </div>
 
                                                         <div>{{ __('ui.check_in') }}:</div>
                                                         <div class="font-medium">
                                                             {{ $payment->transaction?->check_in?->format('d M Y') ?? '-' }}
                                                         </div>
+
+                                                        {{-- Newly added detail fields --}}
+                                                        <div>{{ __('ui.check_out') }}:</div>
+                                                        <div class="font-medium">
+                                                            {{ $payment->transaction?->check_out?->format('d M Y') ?? '-' }}
+                                                        </div>
+
+                                                        <div>{{ __('ui.room_total') }}:</div>
+                                                        <div class="font-medium">
+                                                            Rp{{ number_format($payment->transaction?->room_price ?? 0, 0, ',', '.') }}
+                                                        </div>
+
+                                                        <div>{{ __('ui.parking_total') }}:</div>
+                                                        <div class="font-medium">
+                                                            Rp{{ number_format($payment->transaction?->parking_fee ?? 0, 0, ',', '.') }}
+                                                        </div>
+
+                                                        <div>{{ __('ui.service_fee_label') }}:</div>
+                                                        <div class="font-medium">
+                                                            Rp{{ number_format($payment->transaction?->service_fees ?? 0, 0, ',', '.') }}
+                                                        </div>
+
+                                                        <div>{{ __('ui.deposit_label') }}:</div>
+                                                        <div class="font-medium">
+                                                            Rp{{ number_format($payment->transaction?->deposit_fee ?? 0, 0, ',', '.') }}
+                                                        </div>
+
+                                                        <div>{{ __('ui.payment_method') }}:</div>
+                                                        <div class="font-medium">
+                                                            {{ $payment->transaction?->payment_bank ?? $payment->transaction?->transaction_type ?? '-' }}
+                                                        </div>
+
+                                                        <div class="font-semibold text-gray-900 dark:text-white">{{ __('ui.total') }}:</div>
+                                                        <div class="font-semibold text-gray-900 dark:text-white">
+                                                            Rp{{ number_format($payment->transaction?->grandtotal_price ?? 0, 0, ',', '.') }}
+                                                        </div>
                                                     </div>
                                                 </div>
 
+                                                {{-- Right column: cancel form fields stack vertically. text-left ensures all field labels (Cancellation Reason, Refund Calculation, Refund Option, Refund Amount) are left-aligned per design request. --}}
+                                                <div class="space-y-4 text-left">
                                                 <div class="w-full">
                                                     <label for="cancelReason-{{ $payment->idrec }}"
-                                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                        class="block text-left text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                         {{ __('ui.cancellation_reason') }} <span class="text-red-500">*</span>
                                                     </label>
                                                     <select id="cancelReason-{{ $payment->idrec }}"
@@ -702,6 +762,8 @@
                                                         <option value="ketersediaan_properti">{{ __('ui.cancel_reason_property') }}</option>
                                                         <option value="masalah_teknis">{{ __('ui.cancel_reason_technical') }}</option>
                                                         <option value="pelanggan_melanggar_kebijakan">{{ __('ui.cancel_reason_policy') }}</option>
+                                                        {{-- Invalid payment proof: forces refund amount to 0 (handled in toggleCustomReason) --}}
+                                                        <option value="bukti_pembayaran_tidak_sesuai">{{ __('ui.cancel_reason_invalid_payment') }}</option>
                                                         <option value="other">{{ __('ui.cancel_reason_other') }}</option>
                                                     </select>
                                                 </div>
@@ -717,9 +779,118 @@
                                                         placeholder="{{ __('ui.describe_other_reason_placeholder') }}"></textarea>
                                                 </div>
 
+                                                {{-- Refund calculation breakdown — mirrors the Frontend cancel dialog layout --}}
+                                                @if ($refundCalc)
+                                                    @php
+                                                        /* Refund tiers (must match RefundCalculationService::getRefundPercentage) */
+                                                        $tiers = [
+                                                            ['label' => '> 10 ' . __('ui.days'), 'pct' => 75],
+                                                            ['label' => '7-10 ' . __('ui.days'), 'pct' => 50],
+                                                            ['label' => '3-6 '  . __('ui.days'), 'pct' => 25],
+                                                            ['label' => '< 3 '  . __('ui.days'), 'pct' => 0],
+                                                        ];
+                                                        $activePct = $refundCalc['refund_percentage'];
+                                                    @endphp
+                                                    <div id="refundCalcContainer-{{ $payment->idrec }}" class="w-full">
+                                                        <label class="block text-left text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                            {{ __('ui.refund_calculation') }}
+                                                        </label>
+
+                                                        {{-- Refund tier ribbon — highlights the current tier --}}
+                                                        <div class="grid grid-cols-4 gap-1 mb-2">
+                                                            @foreach ($tiers as $tier)
+                                                                @php $isActive = $tier['pct'] === $activePct; @endphp
+                                                                <div class="text-center px-1 py-2 rounded text-xs font-semibold border
+                                                                    {{ $isActive
+                                                                        ? 'bg-green-600 text-white border-green-700 shadow-md'
+                                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600' }}">
+                                                                    <div class="text-[11px] leading-tight">{{ $tier['label'] }}</div>
+                                                                    <div class="text-sm">{{ $tier['pct'] }}%</div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+
+                                                        <div class="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 p-4 text-sm">
+                                                            <div class="flex justify-between mb-2 text-gray-700 dark:text-gray-200">
+                                                                <span>{{ __('ui.refund_room_label') }} ({{ $refundCalc['refund_percentage'] }}%)</span>
+                                                                <strong>Rp{{ number_format($refundCalc['room_refund'], 0, ',', '.') }}</strong>
+                                                            </div>
+                                                            <div class="flex justify-between mb-2 text-gray-700 dark:text-gray-200">
+                                                                <span>{{ __('ui.refund_deposit_label') }} (100%)</span>
+                                                                <strong>Rp{{ number_format($refundCalc['deposit_refund'], 0, ',', '.') }}</strong>
+                                                            </div>
+                                                            <div class="flex justify-between mb-2 text-gray-700 dark:text-gray-200">
+                                                                <span>{{ __('ui.refund_parking_label') }} ({{ $refundCalc['refund_percentage'] }}%)</span>
+                                                                <strong>Rp{{ number_format($refundCalc['other_refund'], 0, ',', '.') }}</strong>
+                                                            </div>
+                                                            <hr class="my-2 border-green-300 dark:border-green-700">
+                                                            <div class="flex justify-between text-base">
+                                                                <strong>{{ __('ui.refund_total_label') }}</strong>
+                                                                <strong class="text-green-700 dark:text-green-400">Rp{{ number_format($refundCalc['total_refund'], 0, ',', '.') }}</strong>
+                                                            </div>
+                                                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                                                {{ __('ui.days_before_checkin') }}: {{ $refundCalc['days_before_checkin'] }} {{ __('ui.days') }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                @php
+                                                    /* Full refund = room + parking + deposit (everything except service/admin fees).
+                                                       Backend-only override for cases where the customer is owed a complete return. */
+                                                    $fullRefundAmount = (int) round(
+                                                        ($payment->transaction?->room_price ?? 0)
+                                                        + ($payment->transaction?->parking_fee ?? 0)
+                                                        + ($payment->transaction?->deposit_fee ?? 0)
+                                                    );
+                                                @endphp
+
+                                                {{-- REFUND / NO REFUND / FULL REFUND option — uses explicit refund-opt-* classes for reliable dark mode styling driven by JS --}}
+                                                <div class="w-full">
+                                                    <label class="block text-left text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                        {{ __('ui.refund_option') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <div class="grid grid-cols-3 gap-2">
+                                                        <label class="cursor-pointer">
+                                                            <input type="radio" name="refundOption" value="refund"
+                                                                id="refundOptionYes-{{ $payment->idrec }}"
+                                                                class="sr-only"
+                                                                onchange="onRefundOptionChange({{ $payment->idrec }})" checked>
+                                                            <div id="refundOptionYesBox-{{ $payment->idrec }}" class="refund-opt-btn refund-opt-yes refund-opt-active px-3 py-3 text-center text-xs font-semibold rounded-lg border-2 transition-colors">
+                                                                {{ __('ui.refund_yes') }}
+                                                            </div>
+                                                        </label>
+                                                        <label class="cursor-pointer">
+                                                            <input type="radio" name="refundOption" value="no_refund"
+                                                                id="refundOptionNo-{{ $payment->idrec }}"
+                                                                class="sr-only"
+                                                                onchange="onRefundOptionChange({{ $payment->idrec }})">
+                                                            <div id="refundOptionNoBox-{{ $payment->idrec }}" class="refund-opt-btn refund-opt-no px-3 py-3 text-center text-xs font-semibold rounded-lg border-2 transition-colors">
+                                                                {{ __('ui.refund_no') }}
+                                                            </div>
+                                                        </label>
+                                                        <label class="cursor-pointer">
+                                                            <input type="radio" name="refundOption" value="full_refund"
+                                                                id="refundOptionFull-{{ $payment->idrec }}"
+                                                                class="sr-only"
+                                                                data-full-refund="{{ $fullRefundAmount }}"
+                                                                onchange="onRefundOptionChange({{ $payment->idrec }})">
+                                                            <div id="refundOptionFullBox-{{ $payment->idrec }}" class="refund-opt-btn refund-opt-full px-3 py-3 text-center text-xs font-semibold rounded-lg border-2 transition-colors">
+                                                                {{ __('ui.refund_full') }}
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                    <p id="refundLockedNotice-{{ $payment->idrec }}" class="mt-2 text-xs text-red-500 dark:text-red-400 hidden">
+                                                        {{ __('ui.refund_locked_invalid_payment') }}
+                                                    </p>
+                                                    <p id="refundFullNote-{{ $payment->idrec }}" class="mt-2 text-xs text-blue-600 dark:text-blue-400 hidden">
+                                                        {{ __('ui.refund_full_note') }}
+                                                    </p>
+                                                </div>
+
                                                 <div class="w-full">
                                                     <label for="refundAmount-{{ $payment->idrec }}"
-                                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                        class="block text-left text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                         {{ __('ui.refund_amount') }}
                                                     </label>
                                                     <div class="mt-1">
@@ -728,14 +899,15 @@
                                                                 class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-300 text-sm">
                                                                 Rp
                                                             </span>
-                                                            <input type="text"
+                                                            {{-- Read-only — driven by REFUND/NO REFUND radio + reason. Pre-populated from RefundCalculationService --}}
+                                                            <input type="text" readonly
                                                                 id="refundAmount-{{ $payment->idrec }}"
                                                                 name="refundAmount"
-                                                                value="{{ number_format($payment->transaction?->grandtotal_price ?? 0, 0, ',', '.') }}"
-                                                                class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                                                                value="{{ $refundCalc ? number_format($refundCalc['total_refund'], 0, ',', '.') : '0' }}"
+                                                                data-refund-amount="{{ $refundCalc['total_refund'] ?? 0 }}"
+                                                                class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 cursor-not-allowed sm:text-sm">
                                                         </div>
                                                     </div>
-                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('ui.set_refund_amount') }}</p>
                                                 </div>
 
                                                 <div class="flex items-center">
@@ -747,6 +919,8 @@
                                                         {{ __('ui.send_cancel_notification') }}
                                                     </label>
                                                 </div>
+                                                </div> {{-- end right column --}}
+                                                </div> {{-- end 2-column grid --}}
                                             </div>
 
                                             <!-- Modal footer -->

@@ -20,7 +20,8 @@ class DeviceTokenController extends ApiController
     {
         $validator = Validator::make($request->all(), [
             'token' => 'required|string|max:500',
-            'device_type' => 'required|string|in:ios,android',
+            /* Added 'web' type for browser push notification support */
+            'device_type' => 'required|string|in:ios,android,web',
             'device_name' => 'nullable|string|max:100',
         ]);
 
@@ -37,18 +38,31 @@ class DeviceTokenController extends ApiController
             $user = $request->user() ?? auth()->user();
             if (!$user) {
                 $bearerToken = $request->bearerToken();
+                \Log::info('[DeviceToken:store] bearerToken present: ' . ($bearerToken ? 'yes (' . substr($bearerToken, 0, 20) . '...)' : 'no'));
                 if ($bearerToken) {
                     $accessToken = PersonalAccessToken::findToken($bearerToken);
+                    \Log::info('[DeviceToken:store] findToken result: ' . ($accessToken ? 'found (id=' . $accessToken->id . ', user=' . $accessToken->tokenable_id . ')' : 'null'));
                     $user = $accessToken?->tokenable;
                 }
+            } else {
+                \Log::info('[DeviceToken:store] user resolved via request/auth: id=' . $user->id);
             }
 
             if (!$user) {
+                \Log::warning('[DeviceToken:store] 401 - user not authenticated');
                 return response()->json([
                     'status' => 'error',
                     'message' => 'User not authenticated'
                 ], 401);
             }
+
+            \Log::info('[DeviceToken:store] About to upsert', [
+                'user_id' => $user->id,
+                'token_length' => strlen($request->token),
+                'token_prefix' => substr($request->token, 0, 20),
+                'device_type' => $request->device_type,
+                'device_name' => $request->device_name,
+            ]);
 
             // Upsert: update if token exists for this user, otherwise create
             $deviceToken = DeviceToken::updateOrCreate(
@@ -63,12 +77,20 @@ class DeviceTokenController extends ApiController
                 ]
             );
 
+            \Log::info('[DeviceToken:store] Upsert result', [
+                'id' => $deviceToken->id,
+                'wasRecentlyCreated' => $deviceToken->wasRecentlyCreated,
+            ]);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Device token registered successfully',
                 'data' => $deviceToken
             ], 201);
         } catch (\Exception $e) {
+            \Log::error('[DeviceToken:store] Exception: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error registering device token',

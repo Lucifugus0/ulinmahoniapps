@@ -991,6 +991,32 @@ class BookingController extends ApiController
                 ], 400);
             }
 
+            /* Re-anchor the renewal start date to the latest PAID/COMPLETED non-renewed
+               booking in this room+user chain. This guarantees that a previously
+               cancelled renewal cannot push the new check-in forward — even if the
+               client mistakenly sent a date taken from a cancelled row. */
+            $latestPaidCheckOut = DB::table('t_transactions')
+                ->where('room_id', $originalTransaction->room_id)
+                ->where('user_id', $originalTransaction->user_id)
+                ->whereRaw('LOWER(transaction_status) IN (?, ?)', ['paid', 'completed'])
+                ->where('renewal_status', 0)
+                ->whereNull('cancel_at')
+                ->orderBy('check_out', 'desc')
+                ->value('check_out');
+
+            if ($latestPaidCheckOut) {
+                $expectedCheckIn = Carbon::parse($latestPaidCheckOut)->format('Y-m-d');
+                if ($request->check_in !== $expectedCheckIn) {
+                    Log::warning('Renewal check-in mismatch — overriding with latest paid checkout', [
+                        'order_id'        => $orderId,
+                        'received'        => $request->check_in,
+                        'expected'        => $expectedCheckIn,
+                        'reason'          => 'Latest non-cancelled paid booking check_out used as authoritative source',
+                    ]);
+                    $request->merge(['check_in' => $expectedCheckIn]);
+                }
+            }
+
             // Get room details to verify it still exists
             $room = Room::find($request->room_id);
             if (!$room) {

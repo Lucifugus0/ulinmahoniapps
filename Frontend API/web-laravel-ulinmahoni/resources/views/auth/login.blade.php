@@ -41,6 +41,14 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
             z-index: 2;
         }
+        /* Override browser autofill yellow background */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px white inset !important;
+            -webkit-text-fill-color: #111827 !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
         /* Glass login panel — highly transparent with strong blur */
         .login-box {
             background: rgba(255, 255, 255, 0.18);
@@ -102,23 +110,24 @@
                     <div>
                         <label for="email" class="sr-only">{{ __('Your Email') }}</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style="z-index:1;">
+                                <i class="fas fa-envelope" style="color: #111827;"></i>
                             </div>
-                            <input id="email" name="email" type="email" required class="appearance-none rounded-lg block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Email" value="{{ old('email') }}" />
+                            <input id="email" name="email" type="email" required class="appearance-none rounded-lg block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Email" value="{{ old('email') }}" />
                         </div>
                     </div>
                     <div>
                         <label for="password" class="sr-only">{{ __('Your Password') }}</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                </svg>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style="z-index:1;">
+                                <i class="fas fa-lock" style="color: #111827;"></i>
                             </div>
-                            <input id="password" name="password" type="password" required class="appearance-none rounded-lg block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Password" />
+                            <input id="password" name="password" type="password" required class="appearance-none rounded-lg block w-full px-3 py-3 pl-10 pr-10 border border-gray-200 placeholder-gray-500 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Password" />
+                            <!-- Toggle password visibility -->
+                            <button type="button" onclick="const p=document.getElementById('password');const h=p.type==='password';p.type=h?'text':'password';this.querySelector('.eye-open').style.display=h?'none':'block';this.querySelector('.eye-closed').style.display=h?'block':'none';" class="absolute inset-y-0 right-0 pr-3 flex items-center" style="z-index:1; color: #111827;">
+                                <i class="fas fa-eye eye-open"></i>
+                                <i class="fas fa-eye-slash eye-closed" style="display:none"></i>
+                            </button>
                         </div>
                     </div>
                 </div>

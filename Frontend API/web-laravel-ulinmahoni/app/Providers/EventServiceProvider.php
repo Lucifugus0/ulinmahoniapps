@@ -18,6 +18,10 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
+        /* Deactivate web push tokens when user logs out */
+        \Illuminate\Auth\Events\Logout::class => [
+            \App\Listeners\DeactivateWebPushTokensOnLogout::class,
+        ],
     ];
 
     /**

@@ -80,6 +80,7 @@ return [
         'contact_us' => 'Please contact us for more information',
         'includes_tax' => 'Price includes VAT',
         'payment_method' => 'Payment by bank transfer',
+        'accepted_payments' => 'Accepted payments',
     ],
 
     'address' => [

@@ -297,6 +297,31 @@ class AppLocalizationsId extends AppLocalizations {
       'Silakan verifikasi email Anda terlebih dahulu untuk melanjutkan. Cek inbox email Anda dan klik link verifikasi yang telah kami kirimkan.';
 
   @override
+  String get emailVerifyResend => 'Kirim Ulang Email';
+
+  @override
+  String get emailVerifyChangeEmail => 'Ubah Email';
+
+  @override
+  String get emailVerifyLater => 'Nanti Saja';
+
+  @override
+  String get emailVerifySentTitle => 'Email Terkirim!';
+
+  @override
+  String get emailVerifySentMessage =>
+      'Email verifikasi telah dikirim. Silakan periksa inbox atau folder spam Anda.';
+
+  @override
+  String get emailVerifyChangeTitle => 'Ubah Alamat Email';
+
+  @override
+  String get emailVerifyNewEmailHint => 'Masukkan email baru';
+
+  @override
+  String get emailVerifyChangeConfirm => 'Ubah & Kirim Verifikasi';
+
+  @override
   String get accountDeactivatedTitle => 'Akun Dinonaktifkan';
 
   @override

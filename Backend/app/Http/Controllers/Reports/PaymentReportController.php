@@ -64,7 +64,9 @@ class PaymentReportController extends Controller
                 'user'
             ])
             ->whereHas('payment')
-            ->where('transaction_status', 'paid')
+            /* Include cancelled bookings alongside paid — cancelled rows show
+               the existing REFUND badge in the table for visual differentiation */
+            ->whereIn('transaction_status', ['paid', 'cancelled'])
             ->orderByDesc('paid_at');
 
         // Date range filter based on paid_at date
@@ -183,12 +185,18 @@ class PaymentReportController extends Controller
                 'no' => $offset + $index + 1,
                 'invoice_number' => $invoiceNumber,
                 'invoice_date' => $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-',
-                'transaction_code' => $transaction->transaction_code ?? '-',
+                /* Show booking ID (order_id) instead of internal transaction_code */
+                'transaction_code' => $transaction->order_id ?? '-',
                 'property_name' => $transaction->property_name ?? '-',
                 'room_type' => $roomType,
                 'room_number' => $roomNumber,
                 'room_name' => $roomNumber,
-                'tenant_name' => $transaction->user_name ?? '-',
+                /* Tenant name from user.first_name + last_name (per finance team request);
+                   falls back to legacy transaction.user_name when user is not linked */
+                'tenant_name' => $transaction->user
+                    ? trim(($transaction->user->first_name ?? '') . ' ' . ($transaction->user->last_name ?? ''))
+                        ?: ($transaction->user_name ?? '-')
+                    : ($transaction->user_name ?? '-'),
                 'nik' => $nik,
                 'mobile_number' => $transaction->user_phone_number ?? '-',
                 'email' => $transaction->user_email ?? '-',
@@ -204,12 +212,18 @@ class PaymentReportController extends Controller
                 'dpp_parkir' => 'Rp ' . number_format(round($dppParkir, 0), 0, ',', '.'),
                 'vatt' => 'Rp ' . number_format(round($vatt, 0), 0, ',', '.'),
                 'grand_total' => 'Rp ' . number_format($transaction->grandtotal_price ?? 0, 0, ',', '.'),
-                'deposit' => 'Rp ' . number_format($transaction->deposit ?? 0, 0, ',', '.'),
+                /* Removed standalone 'deposit' field — table now shows only deposit_fee under the "Deposit" header */
                 'deposit_fee' => 'Rp ' . number_format(round($depositFee, 0), 0, ',', '.'),
                 'service_fee' => 'Rp ' . number_format($transaction->service_fees ?? 0, 0, ',', '.'),
-                'payment_status' => 'Paid',
-                'verified_by' => $verifiedBy,
-                'verified_at' => $payment && $payment->verified_at ? Carbon::parse($payment->verified_at)->format('d M Y H:i') : '-',
+                /* Payment status reflects the refund scheme chosen at cancel time:
+                     - "Paid"        → still active
+                     - "NO REFUND"   → cancelled with refund.amount = 0
+                     - "FULL REFUND" → cancelled with refund.amount == room+deposit+parking (everything except service)
+                     - "REFUND"     → cancelled with tier-based refund (any other amount > 0) */
+                'payment_status' => $this->resolvePaymentStatus($transaction, $refundInfo),
+                /* Show payment bank as the verifier and paid_at as verification time (per finance team request) */
+                'verified_by' => $transaction->payment_bank ?? '-',
+                'verified_at' => $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-',
                 'notes' => $this->formatNotes($transaction, $isRefund, $refundInfo),
                 'is_refund' => $isRefund,
                 // Legacy fields for backward compatibility
@@ -253,6 +267,38 @@ class PaymentReportController extends Controller
 
         $exporter = new PaymentReportExport($filters);
         return $exporter->export($filename);
+    }
+
+    /**
+     * Resolve the payment status label based on the cancellation refund scheme.
+     *
+     * Categories:
+     *   - "Paid"        → not cancelled
+     *   - "NO REFUND"   → cancelled, refund amount = 0
+     *   - "FULL REFUND" → cancelled, refund amount equals room + deposit + parking (everything except service fee)
+     *   - "REFUND"      → cancelled, tier-based refund (any other amount > 0)
+     */
+    private function resolvePaymentStatus($transaction, $refundInfo): string
+    {
+        if (strtolower($transaction->transaction_status ?? '') !== 'cancelled') {
+            return 'Paid';
+        }
+
+        $refundAmount = (float) ($refundInfo->amount ?? 0);
+        if ($refundAmount <= 0) {
+            return 'NO REFUND';
+        }
+
+        $fullRefundAmount = (float) ($transaction->room_price ?? 0)
+            + (float) ($transaction->deposit_fee ?? 0)
+            + (float) ($transaction->parking_fee ?? 0);
+
+        /* Allow tiny float drift (rounding) when comparing to full refund */
+        if ($fullRefundAmount > 0 && abs($refundAmount - $fullRefundAmount) < 1) {
+            return 'FULL REFUND';
+        }
+
+        return 'REFUND';
     }
 
     private function formatNotes($transaction, $isRefund, $refundInfo)

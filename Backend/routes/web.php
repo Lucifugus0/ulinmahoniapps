@@ -84,6 +84,10 @@ Route::get('storage/{path}', function ($path) {
 // <!-- Auto-translation endpoint for admin description fields (requires auth) -->
 Route::middleware(['auth'])->group(function () {
     Route::post('/api/translate', [\App\Http\Controllers\TranslateController::class, 'translate'])->name('api.translate');
+
+    /* Web push notification device token routes — session auth, no permission check needed */
+    Route::post('/web/device-token', [\App\Http\Controllers\Web\WebDeviceTokenController::class, 'store'])->name('web.device-token.store');
+    Route::delete('/web/device-token', [\App\Http\Controllers\Web\WebDeviceTokenController::class, 'destroy'])->name('web.device-token.destroy');
 });
 
 Route::middleware(['auth', 'permission'])->group(function () {
@@ -122,6 +126,35 @@ Route::middleware(['auth', 'permission'])->group(function () {
     Route::post('/settings/content-management/videos', [\App\Http\Controllers\ContentManagementController::class, 'videoStore'])->name('content-management.videos.store');
     Route::post('/settings/content-management/videos/{id}/activate', [\App\Http\Controllers\ContentManagementController::class, 'videoActivate'])->name('content-management.videos.activate');
     Route::delete('/settings/content-management/videos/{id}', [\App\Http\Controllers\ContentManagementController::class, 'videoDestroy'])->name('content-management.videos.destroy');
+
+    // <!-- Footer content management routes -->
+    Route::get('/settings/content-management/footer-content', [\App\Http\Controllers\ContentManagementController::class, 'footerContentList'])->name('content-management.footer-content.list');
+    Route::put('/settings/content-management/footer-content/{key}', [\App\Http\Controllers\ContentManagementController::class, 'footerContentUpdate'])->name('content-management.footer-content.update');
+
+    Route::get('/settings/content-management/footer-links', [\App\Http\Controllers\ContentManagementController::class, 'footerLinkList'])->name('content-management.footer-links.list');
+    Route::post('/settings/content-management/footer-links', [\App\Http\Controllers\ContentManagementController::class, 'footerLinkStore'])->name('content-management.footer-links.store');
+    Route::put('/settings/content-management/footer-links/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerLinkUpdate'])->name('content-management.footer-links.update');
+    Route::delete('/settings/content-management/footer-links/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerLinkDestroy'])->name('content-management.footer-links.destroy');
+
+    Route::get('/settings/content-management/footer-contacts', [\App\Http\Controllers\ContentManagementController::class, 'footerContactList'])->name('content-management.footer-contacts.list');
+    Route::post('/settings/content-management/footer-contacts', [\App\Http\Controllers\ContentManagementController::class, 'footerContactStore'])->name('content-management.footer-contacts.store');
+    Route::put('/settings/content-management/footer-contacts/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerContactUpdate'])->name('content-management.footer-contacts.update');
+    Route::delete('/settings/content-management/footer-contacts/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerContactDestroy'])->name('content-management.footer-contacts.destroy');
+
+    Route::get('/settings/content-management/footer-socials', [\App\Http\Controllers\ContentManagementController::class, 'footerSocialList'])->name('content-management.footer-socials.list');
+    Route::post('/settings/content-management/footer-socials', [\App\Http\Controllers\ContentManagementController::class, 'footerSocialStore'])->name('content-management.footer-socials.store');
+    Route::put('/settings/content-management/footer-socials/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerSocialUpdate'])->name('content-management.footer-socials.update');
+    Route::delete('/settings/content-management/footer-socials/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerSocialDestroy'])->name('content-management.footer-socials.destroy');
+
+    Route::get('/settings/content-management/footer-payments', [\App\Http\Controllers\ContentManagementController::class, 'footerPaymentList'])->name('content-management.footer-payments.list');
+    Route::post('/settings/content-management/footer-payments', [\App\Http\Controllers\ContentManagementController::class, 'footerPaymentStore'])->name('content-management.footer-payments.store');
+    Route::put('/settings/content-management/footer-payments/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerPaymentUpdate'])->name('content-management.footer-payments.update');
+    Route::delete('/settings/content-management/footer-payments/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerPaymentDestroy'])->name('content-management.footer-payments.destroy');
+
+    // <!-- Legal pages management routes -->
+    Route::get('/settings/content-management/legal-pages', [\App\Http\Controllers\ContentManagementController::class, 'legalPageList'])->name('content-management.legal-pages.list');
+    Route::get('/settings/content-management/legal-pages/{slug}', [\App\Http\Controllers\ContentManagementController::class, 'legalPageShow'])->name('content-management.legal-pages.show');
+    Route::put('/settings/content-management/legal-pages/{slug}', [\App\Http\Controllers\ContentManagementController::class, 'legalPageUpdate'])->name('content-management.legal-pages.update');
 
     Route::get('/settings/users-management/new', [UserController::class, 'indexNew'])->name('users-newManagement');
     Route::post('/settings/users-management/search', [UserController::class, 'searchUsers'])->name('users.search');
@@ -430,5 +463,11 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::post('/{conversationId}/upload-image', [ChatController::class, 'uploadImage'])->name('chat.upload-image');
         Route::put('/messages/{id}/edit', [ChatController::class, 'editMessage'])->name('chat.messages.edit');
         Route::get('/unread-count', [ChatController::class, 'getUnreadCount'])->name('chat.unread-count');
+    });
+
+    /* Unified notification center — combines chat unread + broadcasts + future types */
+    Route::prefix('notifications')->group(function () {
+        Route::get('/feed', [\App\Http\Controllers\NotificationCenterController::class, 'feed'])->name('notifications.feed');
+        Route::post('/mark-all-read', [\App\Http\Controllers\NotificationCenterController::class, 'markAllRead'])->name('notifications.mark-all-read');
     });
 });

@@ -646,6 +646,54 @@ abstract class AppLocalizations {
   /// **'Silakan verifikasi email Anda terlebih dahulu untuk melanjutkan. Cek inbox email Anda dan klik link verifikasi yang telah kami kirimkan.'**
   String get emailNotVerifiedMessage;
 
+  /// No description provided for @emailVerifyResend.
+  ///
+  /// In id, this message translates to:
+  /// **'Kirim Ulang Email'**
+  String get emailVerifyResend;
+
+  /// No description provided for @emailVerifyChangeEmail.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah Email'**
+  String get emailVerifyChangeEmail;
+
+  /// No description provided for @emailVerifyLater.
+  ///
+  /// In id, this message translates to:
+  /// **'Nanti Saja'**
+  String get emailVerifyLater;
+
+  /// No description provided for @emailVerifySentTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Email Terkirim!'**
+  String get emailVerifySentTitle;
+
+  /// No description provided for @emailVerifySentMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Email verifikasi telah dikirim. Silakan periksa inbox atau folder spam Anda.'**
+  String get emailVerifySentMessage;
+
+  /// No description provided for @emailVerifyChangeTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah Alamat Email'**
+  String get emailVerifyChangeTitle;
+
+  /// No description provided for @emailVerifyNewEmailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan email baru'**
+  String get emailVerifyNewEmailHint;
+
+  /// No description provided for @emailVerifyChangeConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah & Kirim Verifikasi'**
+  String get emailVerifyChangeConfirm;
+
   /// No description provided for @accountDeactivatedTitle.
   ///
   /// In id, this message translates to:

@@ -296,6 +296,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please verify your email first to continue. Check your email inbox and click the verification link we sent you.';
 
   @override
+  String get emailVerifyResend => 'Resend Email';
+
+  @override
+  String get emailVerifyChangeEmail => 'Change Email';
+
+  @override
+  String get emailVerifyLater => 'Later';
+
+  @override
+  String get emailVerifySentTitle => 'Email Sent!';
+
+  @override
+  String get emailVerifySentMessage =>
+      'Verification email has been sent. Please check your inbox or spam folder.';
+
+  @override
+  String get emailVerifyChangeTitle => 'Change Email Address';
+
+  @override
+  String get emailVerifyNewEmailHint => 'Enter new email';
+
+  @override
+  String get emailVerifyChangeConfirm => 'Change & Send Verification';
+
+  @override
   String get accountDeactivatedTitle => 'Account Deactivated';
 
   @override

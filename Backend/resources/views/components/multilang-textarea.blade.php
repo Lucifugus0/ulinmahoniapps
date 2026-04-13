@@ -106,7 +106,9 @@
 
     initEditors() {
         const toolbarOptions = [
-            ['bold', 'italic'],
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline'],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
             [{ 'color': [] }],
             [{ 'list': 'ordered' }, { 'list': 'bullet' }],
             ['link'],

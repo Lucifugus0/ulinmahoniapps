@@ -15,7 +15,8 @@
         {{-- Form --}}
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
              x-data="broadcastForm()">
-            <form @submit.prevent="submitBroadcast()">
+            {{-- novalidate: suppress browser's native HTML5 "Please fill out this field" tooltip; validation is handled by isValid() --}}
+            <form @submit.prevent="submitBroadcast()" novalidate>
                 {{-- Sender Type --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('ui.sender_type') ?? 'Sender Type' }}</label>

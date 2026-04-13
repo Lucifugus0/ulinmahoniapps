@@ -95,6 +95,14 @@ class AuthNotifier extends Notifier<AuthState> {
       // Validate and refresh from server
       await refreshUserProfile();
 
+      /// Sync FCM device token to backend on session restore
+      /// (mirrors the sync done after fresh login)
+      try {
+        await FCMService().syncTokenToBackend();
+      } catch (e) {
+        AppLogger.w('FCM token sync on session restore failed: $e', 'AUTH-PROVIDER');
+      }
+
     } catch (e) {
       AppLogger.e('Failed to parse local user data, logging out', e, StackTrace.current, 'AUTH-PROVIDER');
       await repository.logout();
@@ -119,11 +127,9 @@ class AuthNotifier extends Notifier<AuthState> {
 
     switch (result) {
       case Success(:final data):
-        // Check if email is verified
+        // Log warning if email not verified — popup will be shown on HomePage
         if (!data.isEmailVerified) {
-          AppLogger.w('Email not verified for user ID: $currentUserId, logging out', 'AUTH-PROVIDER');
-          await logout();
-          return;
+          AppLogger.w('Email not verified for user ID: $currentUserId — popup will show on home', 'AUTH-PROVIDER');
         }
 
         // Update local storage
@@ -196,6 +202,11 @@ class AuthNotifier extends Notifier<AuthState> {
           // Save user ID for background service
           final prefs = await SharedPreferences.getInstance();
           await prefs.setInt('user_id', user.id);
+
+          /// Save auth token to SharedPreferences for the current session even
+          /// if Remember Me is off — required so DioClient's AuthInterceptor and
+          /// FCMService can attach the Bearer token. Cleared on logout.
+          await prefs.setString('auth_token', data.token);
 
           // Start background polling for chat notifications
           await ChatBackgroundService().startPolling();

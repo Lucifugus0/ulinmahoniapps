@@ -113,6 +113,67 @@ class ExpireBooking implements ShouldQueue
                 }
             }
 
+            // Renewal rollback on expiry — mirrors the cancel flow in
+            // BookingController::cancelBooking. When a renewal transaction
+            // expires we must reset the parent booking so the user can
+            // renew again, otherwise the parent stays flagged as
+            // "Diperpanjang" (renewal_status = 1) forever and its
+            // check_out_at remains set from the renewal that never paid.
+            $txRoomId    = (int)    $transaction->getAttribute('room_id');
+            $txUserId    = (int)    $transaction->getAttribute('user_id');
+            $txIdrec     = (int)    $transaction->getAttribute('idrec');
+            $txCreatedAt = (string) $transaction->getAttribute('created_at');
+
+            if ((int) $transaction->getAttribute('is_renewal') === 1) {
+                // Find the most recent previous PAID/CONFIRMED transaction
+                // for the same room + user — this is the parent booking
+                // that was extended into the now-expired renewal.
+                $previousTransaction = DB::table('t_transactions')
+                    ->where('room_id', $txRoomId)
+                    ->where('user_id', $txUserId)
+                    ->where('idrec', '!=', $txIdrec)
+                    ->whereRaw('UPPER(transaction_status) IN (?, ?)', ['PAID', 'CONFIRMED'])
+                    ->where('created_at', '<', $txCreatedAt)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($previousTransaction) {
+                    $prevIdrec   = (int) $previousTransaction->idrec;
+                    $prevOrderId = (string) $previousTransaction->order_id;
+
+                    $previousBooking = DB::table('t_booking')->where('order_id', $prevOrderId)->first();
+
+                    // Capture before nullifying — used to decide rental_status restoration
+                    $hadCheckOut = $previousBooking && $previousBooking->check_out_at !== null;
+
+                    // Reset parent transaction's renewal_status so it can be renewed again
+                    DB::table('t_transactions')
+                        ->where('idrec', $prevIdrec)
+                        ->update(['renewal_status' => 0]);
+
+                    // Clear parent booking's check_out_at (was set when the renewal was created)
+                    DB::table('t_booking')
+                        ->where('order_id', $prevOrderId)
+                        ->update(['check_out_at' => null]);
+
+                    // Restore rental_status for monthly-only rooms:
+                    // 1 if parent booking had already set check_out_at (was mid-renewal), else 0
+                    $expiredRoom = DB::table('m_rooms')->where('idrec', $txRoomId)->first();
+                    if ($expiredRoom && !$expiredRoom->periode_daily) {
+                        DB::table('m_rooms')
+                            ->where('idrec', $txRoomId)
+                            ->update(['rental_status' => $hadCheckOut ? 1 : 0]);
+                    }
+
+                    Log::info('Renewal rollback on expiry', [
+                        'expired_transaction_id'  => $txIdrec,
+                        'previous_transaction_id' => $prevIdrec,
+                        'previous_order_id'       => $prevOrderId,
+                        'had_check_out'           => $hadCheckOut,
+                    ]);
+                }
+            }
+
             DB::commit();
 
             // Send push notifications for booking expiry

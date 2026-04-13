@@ -9,7 +9,7 @@
                     {{ __('ui.contact_info') }}
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {{ __('ui.registration') }}
+                    {{ __('ui.email_verification') }}
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {{ __('ui.current_status') }}
@@ -80,19 +80,10 @@
                         <div class="text-sm text-gray-400">{{ __('ui.nik') }}: {{ $customer->nik ?? '-' }}</div>
                     </td>
 
-                    <!-- Registration Status -->
+                    <!-- Email Verification Status -->
                     <td class="px-6 py-4 whitespace-nowrap">
-                        @if ($customer->registration_status === 'registered')
-                            <span
-                                class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {{ __('ui.registered') }}
-                            </span>
-                        @else
+                        @if ($customer->registration_status === 'guest')
+                            {{-- Guest users (no account) — show gray "Guest" badge --}}
                             <span
                                 class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
@@ -101,6 +92,28 @@
                                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
                                 {{ __('ui.guest') }}
+                            </span>
+                        @elseif ($customer->email_verified_at)
+                            {{-- Registered user with verified email — green badge --}}
+                            <span
+                                class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {{ __('ui.verified') }}
+                            </span>
+                        @else
+                            {{-- Registered user with unverified email — yellow badge --}}
+                            <span
+                                class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                {{ __('ui.unverified') }}
                             </span>
                         @endif
                     </td>
