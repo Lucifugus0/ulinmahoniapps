@@ -20,12 +20,13 @@ class CheckInController extends Controller
         $perPage = $request->input('per_page', 25);
 
         $query = Booking::with(['transaction', 'property', 'room', 'user'])
-            ->where('status', 1) // Only show active bookings (filter out room-changed old records)
+            ->latestPerOrder()
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->where('transaction_status', 'paid');
             })
             ->whereNotNull('check_in_at')
-            ->whereNull('check_out_at'); // Exclude already checked-out bookings
+            ->whereNull('check_out_at');
 
         // Filter by property_id for site users
         $user = Auth::user();
@@ -70,12 +71,13 @@ class CheckInController extends Controller
     public function filter(Request $request)
     {
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('status', 1) // Only show active bookings (filter out room-changed old records)
+            ->latestPerOrder()
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->where('transaction_status', 'paid');
             })
             ->whereNotNull('check_in_at')
-            ->whereNull('check_out_at'); // Exclude already checked-out bookings
+            ->whereNull('check_out_at');
 
         // Filter by property_id for site users
         $user = Auth::user();

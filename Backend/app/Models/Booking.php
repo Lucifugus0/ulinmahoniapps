@@ -301,6 +301,20 @@ class Booking extends Model
             ->whereNull('check_out_at');
     }
 
+    /**
+     * Scope: keep only the latest t_booking row per order_id.
+     * Prevents duplicates when one transaction has multiple booking rows
+     * (room transfers, date changes).
+     */
+    public function scopeLatestPerOrder($query)
+    {
+        return $query->whereIn('t_booking.idrec', function ($sub) {
+            $sub->selectRaw('MAX(idrec)')
+                ->from('t_booking')
+                ->groupBy('order_id');
+        });
+    }
+
     // ==================== INVOICE DATA ====================
 
     public function getInvoiceData()

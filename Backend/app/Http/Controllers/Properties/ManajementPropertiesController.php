@@ -276,6 +276,8 @@ class ManajementPropertiesController extends Controller
             'property_name' => 'required',
             /* Initial field: increased max to 10 chars for longer property codes */
             'initial' => 'required|string|max:10',
+            /* Property Invoice Code: optional prefix used on printed invoices, max 10 chars */
+            'invoice_code' => 'nullable|string|max:10',
             'property_type' => 'required',
             'gender' => 'nullable|string|in:male,female,mixed',
             'province' => 'required|string',
@@ -340,6 +342,8 @@ class ManajementPropertiesController extends Controller
         $property->gender = ($request->property_type === 'Kos' && $request->gender) ? $request->gender : null;
         $property->name = $request->property_name;
         $property->initial = $initials;
+        /* Persist optional invoice prefix used for receipt/transaction codes (uppercased for consistency with initial) */
+        $property->invoice_code = $request->filled('invoice_code') ? strtoupper($request->invoice_code) : null;
         $property->province = $request->province;
         $property->city = $request->city;
         $property->subdistrict = $request->district;
@@ -396,6 +400,8 @@ class ManajementPropertiesController extends Controller
                 'name' => 'required|string|max:255',
                 /* Initial field: increased max to 10 chars for longer property codes */
             'initial' => 'required|string|max:10',
+                /* Property Invoice Code: optional prefix used on printed invoices, max 10 chars */
+                'invoice_code' => 'nullable|string|max:10',
                 'tags' => 'required|string',
                 'gender' => 'nullable|string|in:male,female,mixed',
                 'description' => 'required|string',
@@ -490,6 +496,8 @@ class ManajementPropertiesController extends Controller
             $property->update([
                 'name' => $request->input('name'),
                 'initial' => strtoupper($request->input('initial')),
+                /* Persist optional invoice prefix used for receipt/transaction codes */
+                'invoice_code' => $request->filled('invoice_code') ? strtoupper($request->input('invoice_code')) : null,
                 'tags' => $request->input('tags'),
                 'gender' => ($request->input('tags') === 'Kos' && $request->input('gender')) ? $request->input('gender') : null,
                 'description' => $request->input('description'),

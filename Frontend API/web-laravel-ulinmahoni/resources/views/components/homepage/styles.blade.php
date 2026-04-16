@@ -1,6 +1,10 @@
 <!-- Liquid Glass Design System — Apple-inspired glassmorphism styles
      Replaces the previous flat/material design with translucent, layered glass panels,
      soft gradients, and fluid animations. -->
+<!-- Font Awesome icons — required by the shared footer component (components.homepage.footer).
+     Centralising the CDN link here ensures every page that includes these styles also gets
+     the icon font, so the footer renders consistently across home, listings, and info pages. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
 <style>
 /* ========================================
    CSS Custom Properties — Glass Design Tokens

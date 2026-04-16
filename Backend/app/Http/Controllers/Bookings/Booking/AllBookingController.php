@@ -17,7 +17,10 @@ class AllBookingController extends Controller
         $sortDir = in_array($request->input('sort_dir'), ['asc', 'desc']) ? $request->input('sort_dir') : 'desc';
 
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('t_booking.status', 1)
+            ->latestPerOrder()
+            ->whereHas('transaction', function ($q) {
+                $q->where('status', 1);
+            })
             ->select('t_booking.*')
             ->leftJoin('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
             ->leftJoin('m_properties', 't_booking.property_id', '=', 'm_properties.idrec');
@@ -91,22 +94,22 @@ class AllBookingController extends Controller
         if ($request->filled('status')) {
             switch ($request->status) {
                 case 'pending':
-                    $query->whereHas('transaction', function ($q) {
+                    $query->where('t_booking.status', 1)->whereHas('transaction', function ($q) {
                         $q->where('transaction_status', 'pending');
                     });
                     break;
                 case 'waiting':
-                    $query->whereHas('transaction', function ($q) {
+                    $query->where('t_booking.status', 1)->whereHas('transaction', function ($q) {
                         $q->where('transaction_status', 'waiting');
                     });
                     break;
                 case 'waiting-check-in':
-                    $query->whereHas('transaction', function ($q) {
+                    $query->where('t_booking.status', 1)->whereHas('transaction', function ($q) {
                         $q->where('transaction_status', 'paid');
                     })->whereNull('check_in_at')->whereNull('check_out_at');
                     break;
                 case 'checked-in':
-                    $query->whereHas('transaction', function ($q) {
+                    $query->where('t_booking.status', 1)->whereHas('transaction', function ($q) {
                         $q->where('transaction_status', 'paid');
                     })->whereNotNull('check_in_at')->whereNull('check_out_at');
                     break;
@@ -156,7 +159,10 @@ class AllBookingController extends Controller
         $sortDir = in_array($request->input('sort_dir'), ['asc', 'desc']) ? $request->input('sort_dir') : 'desc';
 
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('t_booking.status', 1)
+            ->latestPerOrder()
+            ->whereHas('transaction', function ($q) {
+                $q->where('status', 1);
+            })
             ->select('t_booking.*')
             ->leftJoin('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
             ->leftJoin('m_properties', 't_booking.property_id', '=', 'm_properties.idrec');
@@ -230,22 +236,22 @@ class AllBookingController extends Controller
         if ($request->filled('status')) {
             switch ($request->status) {
                 case 'pending':
-                    $query->whereHas('transaction', function ($q) {
+                    $query->where('t_booking.status', 1)->whereHas('transaction', function ($q) {
                         $q->where('transaction_status', 'pending');
                     });
                     break;
                 case 'waiting':
-                    $query->whereHas('transaction', function ($q) {
+                    $query->where('t_booking.status', 1)->whereHas('transaction', function ($q) {
                         $q->where('transaction_status', 'waiting');
                     });
                     break;
                 case 'waiting-check-in':
-                    $query->whereHas('transaction', function ($q) {
+                    $query->where('t_booking.status', 1)->whereHas('transaction', function ($q) {
                         $q->where('transaction_status', 'paid');
                     })->whereNull('check_in_at')->whereNull('check_out_at');
                     break;
                 case 'checked-in':
-                    $query->whereHas('transaction', function ($q) {
+                    $query->where('t_booking.status', 1)->whereHas('transaction', function ($q) {
                         $q->where('transaction_status', 'paid');
                     })->whereNotNull('check_in_at')->whereNull('check_out_at');
                     break;

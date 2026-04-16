@@ -29,11 +29,12 @@ class NewReservController extends Controller
     protected function filterBookings()
     {
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('t_booking.status', 1) // Only show active bookings (filter out room-changed old records)
+            ->latestPerOrder()
+            ->where('t_booking.status', 1)
             ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid'); // Only paid transactions
+                $q->where('transaction_status', 'paid');
             })
-            ->whereNull('check_out_at') // Only bookings that haven't checked out
+            ->whereNull('check_out_at')
             ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
             ->orderByRaw('ISNULL(check_in_at) DESC')
             ->orderBy('t_transactions.check_in', 'desc');

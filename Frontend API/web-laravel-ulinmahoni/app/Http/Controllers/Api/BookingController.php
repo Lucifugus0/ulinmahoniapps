@@ -627,6 +627,19 @@ class BookingController extends ApiController
                 $monthlyPrice = $request->monthly_price;
                 $bookingMonths = $request->booking_months;
 
+                // Defensive server-side checkout clamp for monthly bookings.
+                // Ignore the client-submitted check_out and recompute it from
+                // check_in + booking_months, clamping the day-of-month to the
+                // target month's last day. This prevents overflow bugs from
+                // legacy/old clients (e.g. Mar 31 + 1 month producing May 1
+                // instead of Apr 30) which then cascade into renewal chains.
+                $targetMonth = $checkIn->month + $bookingMonths;
+                $targetYear = $checkIn->year + intdiv($targetMonth - 1, 12);
+                $targetMonth = (($targetMonth - 1) % 12) + 1;
+                $maxDay = Carbon::create($targetYear, $targetMonth, 1)->daysInMonth;
+                $clampedDay = min($checkIn->day, $maxDay);
+                $checkOut = Carbon::create($targetYear, $targetMonth, $clampedDay, 12, 0, 0, config('app.timezone'));
+
                 $roomPrice = $monthlyPrice * $bookingMonths;
                 // $adminFees = $roomPrice * 0.10;
                 $adminFees = $request->admin_fees;

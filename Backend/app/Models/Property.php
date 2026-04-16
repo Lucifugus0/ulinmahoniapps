@@ -21,6 +21,7 @@ class Property extends Model
         'gender',
         'name',
         'initial',
+        'invoice_code',
         'description',
         'level_count',
         'province',

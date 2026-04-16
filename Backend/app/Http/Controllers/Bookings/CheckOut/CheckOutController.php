@@ -27,6 +27,7 @@ class CheckOutController extends Controller
         $today = Carbon::today()->endOfDay();
 
         $query = Booking::with(['transaction', 'property', 'room', 'user'])
+            ->latestPerOrder()
             ->where('t_booking.status', 1)
             ->whereNotNull('check_in_at')
             ->whereNull('check_out_at');
@@ -91,6 +92,7 @@ class CheckOutController extends Controller
         $today = Carbon::today()->endOfDay();
 
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
+            ->latestPerOrder()
             ->where('t_booking.status', 1)
             ->whereNotNull('check_in_at')
             ->whereNull('check_out_at');

@@ -167,110 +167,130 @@
                                         x-transition:enter-start="opacity-0 translate-x-4"
                                         x-transition:enter-end="opacity-100 translate-x-0">
                                         <div class="space-y-6">
-                                            <!-- Nama Properti & Initial -->
-                                            <div class="grid grid-cols-12 gap-4">
-                                                <!-- Nama Properti -->
-                                                <div class="col-span-10">
-                                                    <label for="property_name"
+                                            <!-- Property Name — full-width on its own row so the
+                                                 name input can breathe regardless of modal size. -->
+                                            <div>
+                                                <label for="property_name"
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                    {{ __('ui.property_name') }} <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" id="property_name" name="property_name"
+                                                    required
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                    placeholder="{{ __('ui.enter_property_name') }}">
+                                            </div>
+
+                                            <!-- Property Invoice Code + Property Initial — own row,
+                                                 each half-width (50/50) so both inputs comfortably
+                                                 fit their 10-character max + long labels. -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <!-- Property Invoice Code -->
+                                                <div>
+                                                    <label for="invoice_code"
                                                         class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        {{ __('ui.property_name') }} <span
-                                                            class="text-red-500">*</span>
+                                                        {{ __('ui.property_invoice_code') }}
                                                     </label>
-                                                    <input type="text" id="property_name" name="property_name"
-                                                        required
-                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                        placeholder="{{ __('ui.enter_property_name') }}">
+                                                    {{-- Invoice Code: optional, max 10 chars, auto-uppercase --}}
+                                                    <input type="text" id="invoice_code" name="invoice_code"
+                                                        maxlength="10"
+                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase"
+                                                        placeholder="{{ __('ui.enter_invoice_code') }}"
+                                                        oninput="this.value = this.value.toUpperCase()">
+                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                        Max 10 characters</p>
                                                 </div>
 
-                                                <!-- Initial -->
-                                                <div class="col-span-2">
+                                                <!-- Property Initial -->
+                                                <div>
                                                     <label for="initial"
                                                         class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        Initial <span class="text-red-500">*</span>
+                                                        {{ __('ui.property_initial') }} <span class="text-red-500">*</span>
                                                     </label>
-                                                    <div class="flex items-center">
-                                                        {{-- Initial field: max 10 chars, auto-uppercase --}}
-                                                        <input type="text" id="initial" name="initial" required
-                                                            maxlength="10"
-                                                            class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-center"
-                                                            placeholder="UMKOST1"
-                                                            oninput="this.value = this.value.toUpperCase()">
-                                                    </div>
+                                                    {{-- Initial field: max 10 chars, auto-uppercase --}}
+                                                    <input type="text" id="initial" name="initial" required
+                                                        maxlength="10"
+                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase"
+                                                        placeholder="UMKOST001"
+                                                        oninput="this.value = this.value.toUpperCase()">
                                                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                                         Max 10 characters</p>
                                                 </div>
                                             </div>
 
-                                            <!-- Jenis Properti -->
-                                            <div>
-                                                <label
-                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                                    {{ __('ui.property_type') }} <span class="text-red-500">*</span>
-                                                </label>
-                                                <div class="grid grid-cols-2 gap-4">
-                                                    <template x-for="type in types" :key="type.value">
-                                                        <div class="relative">
-                                                            <input :id="'type-' + type.value" name="property_type"
-                                                                type="radio" :value="type.value"
-                                                                x-model="selectedPropertyType"
-                                                                class="sr-only peer" required>
-                                                            {{-- Property type button: strong blue bg + white text when selected for clear differentiation --}}
-                                                            <label :for="'type-' + type.value"
-                                                                class="flex items-center justify-center p-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white dark:peer-checked:bg-blue-600 dark:peer-checked:text-white dark:peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/25 transition-all duration-200">
-                                                                <span x-text="type.label"></span>
-                                                            </label>
+                                            <!-- Property Type (dropdown) + Tenant Gender — single row.
+                                                 Gender column is only active when property type === 'Kos';
+                                                 otherwise it shows a muted placeholder. -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <!-- Jenis Properti -->
+                                                <div>
+                                                    <label for="property_type"
+                                                        class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                                        {{ __('ui.property_type') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <select id="property_type" name="property_type" required
+                                                        x-model="selectedPropertyType"
+                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <option value="" disabled>{{ __('ui.property_type') }}</option>
+                                                        <template x-for="type in types" :key="type.value">
+                                                            <option :value="type.value" x-text="type.label"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Gender Penghuni (khusus Kos) -->
+                                                <div>
+                                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                                        {{ __('ui.gender_tenant') }} <span class="text-xs font-normal text-gray-500 ml-1">{{ __('ui.gender_optional') }}</span>
+                                                    </label>
+                                                    <div x-show="selectedPropertyType === 'Kos'"
+                                                        x-transition:enter="transition ease-out duration-200"
+                                                        x-transition:enter-start="opacity-0 -translate-y-2"
+                                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                                        x-transition:leave="transition ease-in duration-150"
+                                                        x-transition:leave-start="opacity-100 translate-y-0"
+                                                        x-transition:leave-end="opacity-0 -translate-y-2">
+                                                        <div class="flex gap-3 flex-wrap">
+                                                            <!-- Laki-laki -->
+                                                            <button type="button"
+                                                                @click="gender = (gender === 'male' ? null : 'male')"
+                                                                :class="gender === 'male'
+                                                                    ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 shadow-sm'
+                                                                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-green-300 hover:bg-green-50/50'"
+                                                                class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
+                                                                <span class="text-xl font-bold leading-none" :class="gender === 'male' ? 'text-green-500' : 'text-gray-400'">♂</span>
+                                                                <span>{{ __('ui.gender_male') }}</span>
+                                                            </button>
+
+                                                            <!-- Perempuan -->
+                                                            <button type="button"
+                                                                @click="gender = (gender === 'female' ? null : 'female')"
+                                                                :class="gender === 'female'
+                                                                    ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 shadow-sm'
+                                                                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-pink-300 hover:bg-pink-50/50'"
+                                                                class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
+                                                                <span class="text-xl font-bold leading-none" :class="gender === 'female' ? 'text-pink-500' : 'text-gray-400'">♀</span>
+                                                                <span>{{ __('ui.gender_female') }}</span>
+                                                            </button>
+
+                                                            <!-- Campur -->
+                                                            <button type="button"
+                                                                @click="gender = (gender === 'mixed' ? null : 'mixed')"
+                                                                :class="gender === 'mixed'
+                                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 shadow-sm'
+                                                                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-purple-300 hover:bg-purple-50/50'"
+                                                                class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
+                                                                <span class="text-base font-bold leading-none" :class="gender === 'mixed' ? 'text-green-500' : 'text-gray-400'">♂</span><span class="text-base font-bold leading-none -ml-1" :class="gender === 'mixed' ? 'text-pink-500' : 'text-gray-400'">♀</span>
+                                                                <span>{{ __('ui.gender_mixed') }}</span>
+                                                            </button>
                                                         </div>
-                                                    </template>
+                                                        <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">{{ __('ui.gender_hint') }}</p>
+                                                    </div>
+                                                    {{-- Placeholder when property type is not Kos --}}
+                                                    <p x-show="selectedPropertyType !== 'Kos'" class="text-xs text-gray-400 dark:text-gray-500 italic">
+                                                        {{ __('ui.gender_only_for_kos') }}
+                                                    </p>
+                                                    <input type="hidden" name="gender" :value="gender ?? ''">
                                                 </div>
-                                            </div>
-
-                                            <!-- Gender Penghuni (khusus Kos) -->
-                                            <div x-show="selectedPropertyType === 'Kos'"
-                                                x-transition:enter="transition ease-out duration-200"
-                                                x-transition:enter-start="opacity-0 -translate-y-2"
-                                                x-transition:enter-end="opacity-100 translate-y-0"
-                                                x-transition:leave="transition ease-in duration-150"
-                                                x-transition:leave-start="opacity-100 translate-y-0"
-                                                x-transition:leave-end="opacity-0 -translate-y-2">
-                                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                                    {{ __('ui.gender_tenant') }} <span class="text-xs font-normal text-gray-500 ml-1">{{ __('ui.gender_optional') }}</span>
-                                                </label>
-                                                <div class="flex gap-3 flex-wrap">
-                                                    <!-- Laki-laki -->
-                                                    <button type="button"
-                                                        @click="gender = (gender === 'male' ? null : 'male')"
-                                                        :class="gender === 'male'
-                                                            ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 shadow-sm'
-                                                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-green-300 hover:bg-green-50/50'"
-                                                        class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
-                                                        <span class="text-xl font-bold leading-none" :class="gender === 'male' ? 'text-green-500' : 'text-gray-400'">♂</span>
-                                                        <span>{{ __('ui.gender_male') }}</span>
-                                                    </button>
-
-                                                    <!-- Perempuan -->
-                                                    <button type="button"
-                                                        @click="gender = (gender === 'female' ? null : 'female')"
-                                                        :class="gender === 'female'
-                                                            ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 shadow-sm'
-                                                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-pink-300 hover:bg-pink-50/50'"
-                                                        class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
-                                                        <span class="text-xl font-bold leading-none" :class="gender === 'female' ? 'text-pink-500' : 'text-gray-400'">♀</span>
-                                                        <span>{{ __('ui.gender_female') }}</span>
-                                                    </button>
-
-                                                    <!-- Campur -->
-                                                    <button type="button"
-                                                        @click="gender = (gender === 'mixed' ? null : 'mixed')"
-                                                        :class="gender === 'mixed'
-                                                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 shadow-sm'
-                                                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-purple-300 hover:bg-purple-50/50'"
-                                                        class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
-                                                        <span class="text-base font-bold leading-none" :class="gender === 'mixed' ? 'text-green-500' : 'text-gray-400'">♂</span><span class="text-base font-bold leading-none -ml-1" :class="gender === 'mixed' ? 'text-pink-500' : 'text-gray-400'">♀</span>
-                                                        <span>{{ __('ui.gender_mixed') }}</span>
-                                                    </button>
-                                                </div>
-                                                <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">{{ __('ui.gender_hint') }}</p>
-                                                <input type="hidden" name="gender" :value="gender ?? ''">
                                             </div>
 
                                             <!-- Deskripsi Multi-language -->
@@ -2308,6 +2328,7 @@
                 propertyData: {
                     name: property.name || '',
                     initial: property.initial || '',
+                    invoice_code: property.invoice_code || '',
                     tags: property.tags || 'Kos',
                     gender: property.gender || null,
                     description: property.description || '',
@@ -3325,6 +3346,7 @@
                         // Add basic property data
                         formData.append('name', this.propertyData.name);
                         formData.append('initial', this.propertyData.initial);
+                        formData.append('invoice_code', this.propertyData.invoice_code || '');
                         formData.append('tags', this.propertyData.tags);
                         formData.append('gender', this.propertyData.gender || '');
                         formData.append('description', this.propertyData.description);

@@ -308,12 +308,12 @@
                                 x-transition:leave-start="opacity-100 scale-100"
                                 x-transition:leave-end="opacity-0 scale-95" x-cloak>
 
-                                <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[95vh] flex flex-col"
+                                <div class="payment-proof-modal bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[95vh] flex flex-col"
                                     @click.outside="closeModal" @keydown.escape.window="closeModal">
 
                                     <!-- Modal header -->
                                     <div
-                                        class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
+                                        class="payment-proof-modal-header px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                                         <h3 class="text-lg font-semibold text-gray-800">
                                             {{ __('ui.payment_proof') }} — #<span x-text="orderId"></span>
                                         </h3>
@@ -373,7 +373,7 @@
 
                                     <!-- Modal footer dengan reject modal -->
                                     <div
-                                        class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                                        class="payment-proof-modal-footer px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
                                         <div class="text-sm text-gray-500">
                                             <span>{{ __('ui.press_esc_to_close') }}</span>
                                         </div>
@@ -530,11 +530,11 @@
                                     x-transition:leave="transition ease-in-out duration-200"
                                     x-transition:leave-start="opacity-100 scale-100"
                                     x-transition:leave-end="opacity-0 scale-95" x-cloak>
-                                    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[95vh] flex flex-col"
+                                    <div class="payment-proof-modal bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[95vh] flex flex-col"
                                         @click.outside="closeModal" @keydown.escape.window="closeModal">
 
                                         <!-- Header -->
-                                        <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
+                                        <div class="payment-proof-modal-header px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                                             <h3 class="text-lg font-semibold text-gray-800">
                                                 {{ __('ui.payment_proof') }} — #<span x-text="orderId"></span>
                                             </h3>
@@ -590,7 +590,7 @@
                                         </div>
 
                                         <!-- Footer -->
-                                        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                                        <div class="payment-proof-modal-footer px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
                                             <span class="text-sm text-gray-500">{{ __('ui.press_esc_to_close') }}</span>
                                             <button type="button" @click="closeModal"
                                                 class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">
@@ -1041,11 +1041,11 @@
                                     x-transition:leave="transition ease-in-out duration-200"
                                     x-transition:leave-start="opacity-100 scale-100"
                                     x-transition:leave-end="opacity-0 scale-95" x-cloak>
-                                    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[95vh] flex flex-col"
+                                    <div class="payment-proof-modal bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[95vh] flex flex-col"
                                         @click.outside="closeModal" @keydown.escape.window="closeModal">
 
                                         <!-- Header -->
-                                        <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
+                                        <div class="payment-proof-modal-header px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                                             <h3 class="text-lg font-semibold text-gray-800">
                                                 {{ __('ui.payment_proof') }} — #<span x-text="orderId"></span>
                                             </h3>
@@ -1101,7 +1101,7 @@
                                         </div>
 
                                         <!-- Footer -->
-                                        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                                        <div class="payment-proof-modal-footer px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
                                             <span class="text-sm text-gray-500">{{ __('ui.press_esc_to_close') }}</span>
                                             <button type="button" @click="closeModal"
                                                 class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">

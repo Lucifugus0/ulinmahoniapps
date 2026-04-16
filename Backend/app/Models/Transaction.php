@@ -77,7 +77,13 @@ class Transaction extends Model
 
     public function booking()
     {
-        return $this->hasOne(Booking::class, 'order_id', 'order_id');
+        return $this->hasOne(Booking::class, 'order_id', 'order_id')
+            ->orderByDesc('idrec');
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'order_id', 'order_id');
     }
 
     public function getAttachmentBase64Attribute()
