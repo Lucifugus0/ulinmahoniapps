@@ -964,8 +964,8 @@ class BookingController extends Controller
                 $order_id = 'UMH-' . now()->format('ymd') . $randomNumber . $propertyInitial;
             } while (Transaction::where('order_id', $order_id)->exists());
 
-            // Set expiration time to 15 minutes from now
-            $expiredAt = now()->addMinutes(15);
+            // Set expiration time to 30 minutes from now
+            $expiredAt = now()->addMinutes(30);
 
             // Prepare transaction data
             $transactionData = [

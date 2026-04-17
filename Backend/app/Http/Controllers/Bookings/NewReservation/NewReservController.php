@@ -322,15 +322,10 @@ class NewReservController extends Controller
             abort(404, 'Transaction data not found');
         }
 
-        // Generate nomor invoice sesuai format: No. (id)/KGA-INV/(bulan)/(tahun)
-        $transactionDate = $booking->transaction->transaction_date ?? now();
-        $currentYear = $transactionDate->format('Y');
-        $currentMonth = $transactionDate->format('m');
-
-        // Ambil ID transaksi
-        $transactionId = $booking->transaction->idrec;
-
-        $invoiceNumberFormatted = "No.{$transactionId}/KGA-INV/{$currentMonth}/{$currentYear}";
+        // Read persisted invoice number from t_transactions.invoice_number.
+        // For paid transactions on/after 2026-03-06 this is set by InvoiceNumberService::assign().
+        // For pre-cutoff or not-yet-paid transactions, render '-'.
+        $invoiceNumberFormatted = $booking->transaction->invoice_number ?: '-';
 
         // Return view dengan data invoice number
         return view('pages.bookings.components.invoice', compact('booking', 'invoiceNumberFormatted'));

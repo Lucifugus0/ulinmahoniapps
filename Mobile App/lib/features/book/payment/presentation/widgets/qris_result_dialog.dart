@@ -54,13 +54,13 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
         _remainingTime = Duration.zero;
       }
 
-      // Force maximum 15 minutes countdown
-      if (_remainingTime.inMinutes > 15) {
-        _remainingTime = const Duration(minutes: 15);
+      // Force maximum 30 minutes countdown
+      if (_remainingTime.inMinutes > 30) {
+        _remainingTime = const Duration(minutes: 30);
       }
     } catch (e) {
-      // Default to 15 minutes if parsing fails
-      _remainingTime = const Duration(minutes: 15);
+      // Default to 30 minutes if parsing fails
+      _remainingTime = const Duration(minutes: 30);
     }
   }
 

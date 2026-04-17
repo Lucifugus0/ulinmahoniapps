@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\RefundCalculationService;
+use App\Services\InvoiceNumberService;
 
 class PaymentController extends Controller
 {
@@ -185,6 +186,9 @@ class PaymentController extends Controller
                     'transaction_status' => 'paid',
                     'paid_at' => now()
                 ]);
+
+                // Assign persisted invoice number now that this transaction is paid
+                InvoiceNumberService::assign($transaction->fresh());
             } else {
                 // Update existing payment
                 $payment->update([
@@ -199,6 +203,9 @@ class PaymentController extends Controller
                         'transaction_status' => 'paid',
                         'paid_at' => now()
                     ]);
+
+                    // Assign persisted invoice number now that this transaction is paid
+                    InvoiceNumberService::assign($payment->transaction->fresh());
                 }
             }
 

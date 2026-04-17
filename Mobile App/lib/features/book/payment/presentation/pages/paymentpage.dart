@@ -815,11 +815,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                               // Note: Don't block user flow, just log the error
                           }
 
-                          // Save QR content to cache (15 minutes expiry)
+                          // Save QR content to cache (30 minutes expiry)
                           final transactionDate = bookingData?['data']?['transaction_date'];
                           if (transactionDate != null) {
                             final createdAt = DateTime.parse(transactionDate);
-                            final expiredAt = createdAt.add(const Duration(minutes: 15));
+                            final expiredAt = createdAt.add(const Duration(minutes: 30));
 
                             await PaymentCacheUtils.saveQRContent(
                               bookingId: idrec.toString(),
@@ -986,11 +986,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                               // Note: Don't block user flow, just log the error
                           }
 
-                          // Save CC payment link to cache (15 minutes expiry)
+                          // Save CC payment link to cache (30 minutes expiry)
                           final transactionDate = bookingData?['data']?['transaction_date'];
                           if (transactionDate != null) {
                             final createdAt = DateTime.parse(transactionDate);
-                            final expiredAt = createdAt.add(const Duration(minutes: 15));
+                            final expiredAt = createdAt.add(const Duration(minutes: 30));
 
                             await PaymentCacheUtils.saveCCLink(
                               bookingId: idrec.toString(),
@@ -2554,9 +2554,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                                       .read(paymentNotifierProvider.notifier)
                                                                       .updatePaymentMethod(newBookingId, updateRequest);
 
-                                                                  // Save QR content to cache (15 minutes expiry)
+                                                                  // Save QR content to cache (30 minutes expiry)
                                                                   final createdAt = DateTime.now();
-                                                                  final expiredAt = createdAt.add(const Duration(minutes: 15));
+                                                                  final expiredAt = createdAt.add(const Duration(minutes: 30));
 
                                                                   await PaymentCacheUtils.saveQRContent(
                                                                     bookingId: newBookingId,
@@ -2655,9 +2655,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                                       .read(paymentNotifierProvider.notifier)
                                                                       .updatePaymentMethod(newBookingId, updateRequest);
 
-                                                                  // Save CC payment link to cache (15 minutes expiry)
+                                                                  // Save CC payment link to cache (30 minutes expiry)
                                                                   final createdAt = DateTime.now();
-                                                                  final expiredAt = createdAt.add(const Duration(minutes: 15));
+                                                                  final expiredAt = createdAt.add(const Duration(minutes: 30));
 
                                                                   await PaymentCacheUtils.saveCCLink(
                                                                     bookingId: newBookingId,

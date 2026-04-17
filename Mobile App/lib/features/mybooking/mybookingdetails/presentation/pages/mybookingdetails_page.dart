@@ -218,13 +218,13 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
     }
 
     // For all other pending payment types (VA, Transfer Manual, etc.)
-    // Calculate expiry from transaction_date + 15 minutes so the timer is
-    // consistent across devices, instead of resetting to 15 min from now.
+    // Calculate expiry from transaction_date + 30 minutes so the timer is
+    // consistent across devices, instead of resetting to 30 min from now.
     if (mounted && _remainingTime == Duration.zero) {
       final transactionDate = bookingData['transaction_date'] as String?;
       final expiredAt = transactionDate != null
-          ? DateTime.parse(transactionDate).add(const Duration(minutes: 15)).toIso8601String()
-          : DateTime.now().add(const Duration(minutes: 15)).toIso8601String();
+          ? DateTime.parse(transactionDate).add(const Duration(minutes: 30)).toIso8601String()
+          : DateTime.now().add(const Duration(minutes: 30)).toIso8601String();
       _startCountdownTimer(expiredAt);
     }
   }

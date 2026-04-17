@@ -582,6 +582,15 @@ class BookingController extends ApiController
             ], 422);
         }
 
+        // Block deprecated BRI Manual payment method (old mobile app versions)
+        if ($request->transaction_type && stripos($request->transaction_type, 'bri') !== false && stripos($request->transaction_type, 'manual') !== false) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Metode pembayaran Transfer BRI Manual sudah tidak tersedia. Silakan update aplikasi Anda ke versi terbaru untuk menggunakan metode pembayaran lainnya.',
+                'error_code' => 'PAYMENT_METHOD_DEPRECATED'
+            ], 400);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -706,8 +715,8 @@ class BookingController extends ApiController
                 $order_id = 'UMH-' . now()->format('ymd') . $randomNumber . $propertyInitial;
             } while (Transaction::where('order_id', $order_id)->exists());
 
-            // Set expiration time to 15 minutes from now
-            $expiredAt = now()->addMinutes(15);
+            // Set expiration time to 30 minutes from now
+            $expiredAt = now()->addMinutes(30);
 
             // Prepare transaction data
             $transactionData = [
@@ -982,6 +991,15 @@ class BookingController extends ApiController
             ], 422);
         }
 
+        // Block deprecated BRI Manual payment method (old mobile app versions)
+        if ($request->transaction_type && stripos($request->transaction_type, 'bri') !== false && stripos($request->transaction_type, 'manual') !== false) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Metode pembayaran Transfer BRI Manual sudah tidak tersedia. Silakan update aplikasi Anda ke versi terbaru untuk menggunakan metode pembayaran lainnya.',
+                'error_code' => 'PAYMENT_METHOD_DEPRECATED'
+            ], 400);
+        }
+
         try {
             // Retrieve original booking by order_id
             $originalTransaction = Transaction::where('order_id', $orderId)
@@ -1183,8 +1201,8 @@ class BookingController extends ApiController
                 $newOrderId = 'UMH-' . now()->format('ymd') . $randomNumber . $propertyInitial;
             } while (Transaction::where('order_id', $newOrderId)->exists());
 
-            // Set expiration time to 15 minutes from now
-            $expiredAt = now()->addMinutes(15);
+            // Set expiration time to 30 minutes from now
+            $expiredAt = now()->addMinutes(30);
 
             // Prepare transaction data from request
             $transactionData = [
@@ -2398,6 +2416,40 @@ class BookingController extends ApiController
     }
 
     /**
+     * Normalize a phone number to DOKU's preferred format: 62XXXXXXXXXX.
+     * Strips every non-digit character (spaces, dashes, +, parens, dots, etc.),
+     * then rewrites the country prefix:
+     *   0XXX   -> 62XXX   (Indonesian local format)
+     *   62XXX  -> 62XXX   (already correct)
+     *   620XXX -> 62XXX   (malformed double prefix)
+     *   8XXX   -> 628XXX  (bare digits, assume Indonesia)
+     * Returns empty string for empty/null input so DOKU can treat phone as optional.
+     */
+    private function normalizeDokuPhone(?string $phone): string
+    {
+        if ($phone === null) {
+            return '';
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone);
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '620')) {
+            $digits = '62' . ltrim(substr($digits, 2), '0');
+        } elseif (str_starts_with($digits, '62')) {
+            // already prefixed
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = '62' . ltrim($digits, '0');
+        } else {
+            $digits = '62' . $digits;
+        }
+
+        return $digits;
+    }
+
+    /**
      * Generate Virtual Account via DOKU
      *
      * @param array $data Payment and customer data
@@ -2471,8 +2523,8 @@ class BookingController extends ApiController
                 ]);
             }
 
-            // Calculate expiration date (60 minutes from now)
-            $expiredDate = Carbon::now('Asia/Jakarta')->addMinutes(60)->format('Y-m-d\TH:i:sP');
+            // Calculate expiration date (30 minutes from now — matches t_transactions.expired_at)
+            $expiredDate = Carbon::now('Asia/Jakarta')->addMinutes(30)->format('Y-m-d\TH:i:sP');
 
             $requestBody = [
                 'partnerServiceId' => $partnerServiceId,
@@ -2480,7 +2532,7 @@ class BookingController extends ApiController
                 'virtualAccountNo' => $virtualAccountNo,
                 'virtualAccountName' => $data['user_name'],
                 'virtualAccountEmail' => $data['user_email'],
-                'virtualAccountPhone' => $data['user_phone'],
+                'virtualAccountPhone' => $this->normalizeDokuPhone($data['user_phone'] ?? null),
                 'trxId' => $externalId,
                 'totalAmount' => [
                     'value' => number_format($data['amount'], 2, '.', ''),
@@ -2816,8 +2868,8 @@ class BookingController extends ApiController
             // Generate timestamp in ISO 8601 format with timezone (Asia/Jakarta)
             $timestamp = Carbon::now('Asia/Jakarta')->format('Y-m-d\TH:i:sP');
 
-            // Generate validity period (1 hour from now)
-            $validityPeriod = Carbon::now('Asia/Jakarta')->addHour()->format('Y-m-d\TH:i:sP');
+            // Generate validity period (30 minutes from now — matches t_transactions.expired_at)
+            $validityPeriod = Carbon::now('Asia/Jakarta')->addMinutes(30)->format('Y-m-d\TH:i:sP');
 
             // Generate order_id / partner reference number
             $partnerReferenceNo = $data['order_id'];
@@ -3029,7 +3081,7 @@ class BookingController extends ApiController
                 'customer' => [
                     'name' => $customerName,
                     'email' => $customerEmail,
-                    'phone' => $customerPhone
+                    'phone' => $this->normalizeDokuPhone($customerPhone)
                 ],
                 'override_configuration' => [
                     'themes' => [

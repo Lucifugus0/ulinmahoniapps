@@ -18,6 +18,7 @@ class Transaction extends Model
         'property_id',
         'room_id',
         'order_id',
+        'invoice_number',
         'user_id',
         'user_name',
         'user_phone_number',

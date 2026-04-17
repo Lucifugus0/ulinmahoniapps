@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\Property;
 use App\Exports\PaymentReportExport;
-use App\Services\InvoiceNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -106,11 +105,8 @@ class PaymentReportController extends Controller
 
         $payments = $query->paginate($request->input('per_page', 15));
 
-        // Generate invoice numbers for the paginated results
-        $invoiceNumbers = InvoiceNumberService::generateBatch($payments->getCollection());
-
         // Transform data for display (28 columns)
-        $data = $payments->map(function ($transaction, $index) use ($payments, $invoiceNumbers) {
+        $data = $payments->map(function ($transaction, $index) use ($payments) {
             $payment = $transaction->payment;
 
             // Detect refund
@@ -123,8 +119,8 @@ class PaymentReportController extends Controller
 
             $offset = ($payments->currentPage() - 1) * $payments->perPage();
 
-            // Get invoice number
-            $invoiceNumber = $invoiceNumbers[$transaction->idrec] ?? '-';
+            // Read persisted invoice number — set when the transaction was paid
+            $invoiceNumber = $transaction->invoice_number ?: '-';
 
             // Get duration
             $bookingType = $transaction->booking_type ?? 'daily';

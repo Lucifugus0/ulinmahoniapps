@@ -131,9 +131,9 @@
             document.getElementById('qrisExpiry').textContent = expiryDate.toLocaleString('id-ID');
         }
 
-        // Countdown — capped at 5 minutes from page load
+        // Countdown — capped at 30 minutes from page load (matches server expired_at)
         const countdownEl = document.getElementById('qrisCountdown');
-        const maxMs = 5 * 60 * 1000;
+        const maxMs = 30 * 60 * 1000;
         const displayExpiryDate = expiryDate
             ? new Date(Math.min(expiryDate.getTime(), Date.now() + maxMs))
             : null;

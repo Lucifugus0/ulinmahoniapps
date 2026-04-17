@@ -1643,7 +1643,7 @@
         // Modal functions
         function showQrisModal(qrisData) {
             // Calculate expiry time
-            const expiryMinutes = qrisData.validity_period || '60M';
+            const expiryMinutes = qrisData.validity_period || '30M';
             const minutes = parseInt(expiryMinutes.replace('M', ''));
             const expiresAt = new Date(Date.now() + minutes * 60000);
 

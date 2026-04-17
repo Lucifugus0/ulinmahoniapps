@@ -11,6 +11,7 @@ use App\Models\Parking;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\InvoiceNumberService;
 
 class ParkingPaymentController extends Controller
 {
@@ -131,6 +132,9 @@ class ParkingPaymentController extends Controller
                 'verified_at' => now(),
                 'updated_by' => Auth::id(),
             ]);
+
+            // Assign persisted invoice number now that this parking transaction is paid
+            InvoiceNumberService::assign($transaction->fresh());
 
             return response()->json([
                 'success' => true,
@@ -297,57 +301,8 @@ class ParkingPaymentController extends Controller
                 $extensionOldParkingType = $existingActiveParking->parking_type;
             }
 
-            // Get property details
+            // Get property details (still needed for downstream parking-fee lookup)
             $property = \App\Models\Property::findOrFail($bookingTransaction->property_id);
-
-            // Generate property initials (first letter of each word)
-            $propertyWords = explode(' ', $property->name);
-            $propertyInitials = '';
-            foreach ($propertyWords as $word) {
-                if (!empty($word)) {
-                    $propertyInitials .= strtoupper(substr($word, 0, 1));
-                }
-            }
-            if (strlen($propertyInitials) > 3) {
-                $propertyInitials = substr($propertyInitials, 0, 3);
-            }
-
-            // Get current month and year
-            $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
-            $month = $transactionDate->month;
-            $year = $transactionDate->year;
-
-            // Convert month to Roman numeral
-            $romanMonths = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-            $romanMonth = $romanMonths[$month - 1];
-
-            // Get sequential number for this month/year/property
-            $lastTransaction = ParkingFeeTransaction::where('property_id', $bookingTransaction->property_id)
-                ->whereYear('transaction_date', $year)
-                ->whereMonth('transaction_date', $month)
-                ->orderBy('idrec', 'desc')
-                ->first();
-
-            $sequentialNumber = 1;
-            if ($lastTransaction && $lastTransaction->invoice_id) {
-                // Extract number from last invoice_id (format: 0001/PRK-XX/KGA-INV/I/2026)
-                preg_match('/^(\d+)\//', $lastTransaction->invoice_id, $matches);
-                if (!empty($matches[1])) {
-                    $sequentialNumber = intval($matches[1]) + 1;
-                }
-            }
-
-            // Format sequential number with leading zeros
-            $formattedNumber = str_pad($sequentialNumber, 4, '0', STR_PAD_LEFT);
-
-            // Generate invoice ID: 0001/PRK-XX/KGA-INV/I/2026
-            $invoiceId = sprintf(
-                '%s/PRK-%s/KGA-INV/%s/%s',
-                $formattedNumber,
-                $propertyInitials,
-                $romanMonth,
-                $year
-            );
 
             // Get parking_fee - MUST exist in Parking Fee Management
             $parkingFee = ParkingFee::where('property_id', $bookingTransaction->property_id)
@@ -527,11 +482,12 @@ class ParkingPaymentController extends Controller
                 }
             }
 
-            // Create parking fee transaction with status 'paid' and already verified
+            // Create parking fee transaction with status 'paid' and already verified.
+            // invoice_id is left null here — InvoiceNumberService::assign() below
+            // pulls the next sequence atomically and writes it back.
             $transaction = ParkingFeeTransaction::create([
                 'property_id' => $bookingTransaction->property_id,
                 'parking_id' => $parking->idrec,
-                'invoice_id' => $invoiceId,
                 'order_id' => $request->order_id,
                 'user_id' => $bookingTransaction->user_id,
                 'user_name' => $bookingTransaction->user_name,
@@ -549,6 +505,11 @@ class ParkingPaymentController extends Controller
                 'status' => 1,
                 'created_by' => Auth::id(),
             ]);
+
+            // Assign persisted invoice number (per-invoice-code shared counter)
+            InvoiceNumberService::assign($transaction);
+            $transaction->refresh();
+            $invoiceId = $transaction->invoice_id ?: ('PRK-' . $transaction->idrec);
 
             // Handle image upload - Save as file
             if ($request->hasFile('payment_proof')) {

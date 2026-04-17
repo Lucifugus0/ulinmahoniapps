@@ -5,7 +5,6 @@ namespace App\Exports;
 use App\Models\Transaction;
 use App\Models\Property;
 use App\Services\ExcelService;
-use App\Services\InvoiceNumberService;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -25,9 +24,6 @@ class PaymentReportExport
     {
         // Get data
         $payments = $this->getPayments();
-
-        // Generate invoice numbers batch
-        $invoiceNumbers = InvoiceNumberService::generateBatch($payments);
 
         $totalRevenue = $payments->sum(function ($transaction) {
             return $transaction->grandtotal_price ?? 0;
@@ -171,7 +167,7 @@ class PaymentReportExport
         $dataStartRow = $excel->getCurrentRow();
 
         foreach ($payments as $index => $transaction) {
-            $invoiceNumber = $invoiceNumbers[$transaction->idrec] ?? '-';
+            $invoiceNumber = $transaction->invoice_number ?: '-';
             $row = $this->mapPayment($transaction, $index + 1, $invoiceNumber);
             $currentDataRow = $excel->getCurrentRow();
 
