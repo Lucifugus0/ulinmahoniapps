@@ -299,6 +299,10 @@ class DokuServiceController extends ApiController
                 'paid_at' => now(),
             ]);
 
+            // Assign persisted invoice number now that this booking is paid.
+            // Service is idempotent — safe to call even if a prior retry already assigned.
+            \App\Services\InvoiceNumberService::assign($transaction->fresh());
+
             // Late payment recovery: DOKU callback arrived after ExpireBooking
             // already rolled back booking/room state. Re-apply those updates.
             if ($wasExpired) {
@@ -723,6 +727,9 @@ class DokuServiceController extends ApiController
                     'paid_at' => now(),
                 ]);
 
+                // Assign persisted invoice number now that this booking is paid.
+                \App\Services\InvoiceNumberService::assign($transaction->fresh());
+
                 // Update payment status
                 $payment = \App\Models\Payment::where('order_id', $invoiceNumber)->first();
                 if ($payment) {
@@ -1131,6 +1138,9 @@ class DokuServiceController extends ApiController
                     'transaction_status' => 'paid',
                     'paid_at' => now(),
                 ]);
+
+                // Assign persisted invoice number now that this booking is paid.
+                \App\Services\InvoiceNumberService::assign($transaction->fresh());
 
                 // Update payment status
                 $payment = \App\Models\Payment::where('order_id', $invoiceNumber)->first();

@@ -257,10 +257,14 @@ class DashboardController extends Controller
 
     private function getOccupiedRoomsDetails($propertyId = null)
     {
+        // status=1 filters out renewed/superseded parent bookings — when a renewal is created
+        // the parent's t_booking.status is flipped to 0, so without this the parent (whose
+        // check_out is today) would keep appearing here and falsely show "Check-Out Today".
         return Booking::with(['room', 'property', 'transaction', 'user'])
             ->when($propertyId, function ($q) use ($propertyId) {
                 $q->where('property_id', $propertyId);
             })
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->where('transaction_status', 'paid')
                     ->whereDate('check_in', '<=', now()->toDateString())
@@ -319,9 +323,11 @@ class DashboardController extends Controller
 
             // Count rooms occupied on this specific date
             // Only count rooms where guest has actually checked in
+            // status=1 filters out renewed/superseded parent bookings (renewal flips parent to 0).
             $occupied = Booking::when($propertyId, function ($q) use ($propertyId) {
                     $q->where('property_id', $propertyId);
                 })
+                ->where('status', 1)
                 ->whereHas('transaction', function ($q) use ($date) {
                     $q->where('transaction_status', 'paid')
                         ->whereDate('check_in', '<=', $date)
@@ -415,10 +421,12 @@ class DashboardController extends Controller
         $today = now()->toDateString();
 
         // Get bookings that are currently occupied (checked in but not checked out)
+        // status=1 filters out renewed/superseded parent bookings (renewal flips parent to 0).
         $occupiedBookings = Booking::with('transaction')
             ->when($propertyId, function ($q) use ($propertyId) {
                 $q->where('property_id', $propertyId);
             })
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) use ($today) {
                 $q->where('transaction_status', 'paid')
                     ->whereDate('check_in', '<=', $today)
@@ -777,7 +785,9 @@ class DashboardController extends Controller
         $currentOccupancy = 0;
         $propertyName = null;
         if ($isSite && $userPropertyId) {
+            // status=1 filters out renewed/superseded parent bookings (renewal flips parent to 0).
             $currentOccupancy = Booking::where('property_id', $userPropertyId)
+                ->where('status', 1)
                 ->whereHas('transaction', fn($q) => $q->where('transaction_status', 'paid'))
                 ->whereNotNull('check_in_at')
                 ->whereNull('check_out_at')
@@ -801,11 +811,14 @@ class DashboardController extends Controller
             ->limit(4)
             ->get();
 
-        // Get upcoming check-outs (paid bookings with check-out date within 3 days, checked in but not checked out)
+        // Get upcoming check-outs (paid bookings with check-out date within 3 days, checked in but not checked out).
+        // status=1 filters out renewed/superseded parent bookings — when a renewal is created the parent's
+        // t_booking.status is flipped to 0, so without this it would still appear here.
         $checkOuts = Booking::with(['user', 'room', 'property', 'transaction'])
             ->when($userPropertyId, function ($q) use ($userPropertyId) {
                 $q->where('property_id', $userPropertyId);
             })
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->where('transaction_status', 'paid')
                     ->whereDate('check_out', '>=', now()->toDateString())
@@ -844,6 +857,7 @@ class DashboardController extends Controller
             'checkin' => Booking::when($userPropertyId, function ($q) use ($userPropertyId) {
                     $q->where('property_id', $userPropertyId);
                 })
+                ->where('status', 1)
                 ->whereHas('transaction', fn($q) => $q->where('transaction_status', 'paid'))
                 ->whereNotNull('check_in_at')
                 ->whereNull('check_out_at')
@@ -852,6 +866,7 @@ class DashboardController extends Controller
             'checkout' => Booking::when($userPropertyId, function ($q) use ($userPropertyId) {
                     $q->where('property_id', $userPropertyId);
                 })
+                ->where('status', 1)
                 ->whereHas('transaction', fn($q) => $q->where('transaction_status', 'paid'))
                 ->whereNotNull('check_in_at')
                 ->whereNull('check_out_at')

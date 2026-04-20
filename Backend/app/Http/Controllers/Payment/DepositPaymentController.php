@@ -9,6 +9,7 @@ use App\Models\DepositFeeTransactionImage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\InvoiceNumberService;
 
 class DepositPaymentController extends Controller
 {
@@ -199,66 +200,13 @@ class DepositPaymentController extends Controller
         try {
             DB::beginTransaction();
 
-            // Get transaction details from order_id
+            // Get transaction details from order_id (needed for image filename + FK sanity)
             $bookingTransaction = \App\Models\Transaction::where('order_id', $request->order_id)->firstOrFail();
 
-            // Get property details
-            $property = \App\Models\Property::findOrFail($bookingTransaction->property_id);
-
-            // Generate property initials (first letter of each word)
-            $propertyWords = explode(' ', $property->name);
-            $propertyInitials = '';
-            foreach ($propertyWords as $word) {
-                if (!empty($word)) {
-                    $propertyInitials .= strtoupper(substr($word, 0, 1));
-                }
-            }
-            if (strlen($propertyInitials) > 3) {
-                $propertyInitials = substr($propertyInitials, 0, 3);
-            }
-
-            // Get current month and year
-            $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
-            $month = $transactionDate->month;
-            $year = $transactionDate->year;
-
-            // Convert month to Roman numeral
-            $romanMonths = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-            $romanMonth = $romanMonths[$month - 1];
-
-            // Get sequential number for this month/year/property
-            $lastTransaction = DepositFeeTransaction::whereHas('transaction', function ($q) use ($bookingTransaction) {
-                    $q->where('property_id', $bookingTransaction->property_id);
-                })
-                ->whereYear('transaction_date', $year)
-                ->whereMonth('transaction_date', $month)
-                ->orderBy('idrec', 'desc')
-                ->first();
-
-            $sequentialNumber = 1;
-            if ($lastTransaction && $lastTransaction->invoice_id) {
-                // Extract number from last invoice_id (format: 0001/DEP-XX/KGA-INV/I/2026)
-                preg_match('/^(\d+)\//', $lastTransaction->invoice_id, $matches);
-                if (!empty($matches[1])) {
-                    $sequentialNumber = intval($matches[1]) + 1;
-                }
-            }
-
-            // Format sequential number with leading zeros
-            $formattedNumber = str_pad($sequentialNumber, 4, '0', STR_PAD_LEFT);
-
-            // Generate invoice ID: 0001/DEP-XX/KGA-INV/I/2026
-            $invoiceId = sprintf(
-                '%s/DEP-%s/KGA-INV/%s/%s',
-                $formattedNumber,
-                $propertyInitials,
-                $romanMonth,
-                $year
-            );
-
-            // Create deposit fee transaction with status 'paid' and already verified
+            // Create deposit fee transaction with status 'paid' and already verified.
+            // invoice_id is left null here — InvoiceNumberService::assign() below pulls
+            // the next sequence atomically (per-property DEP counter) and writes it back.
             $transaction = DepositFeeTransaction::create([
-                'invoice_id' => $invoiceId,
                 'order_id' => $request->order_id,
                 'fee_amount' => $request->fee_amount,
                 'transaction_date' => $request->transaction_date,
@@ -270,6 +218,12 @@ class DepositPaymentController extends Controller
                 'status' => 1,
                 'created_by' => Auth::id(),
             ]);
+
+            // Assign persisted invoice number (per-property "DEP-{code}" shared counter).
+            // Service resolves the property via the linked booking transaction's property_id.
+            InvoiceNumberService::assign($transaction);
+            $transaction->refresh();
+            $invoiceId = $transaction->invoice_id ?: ('DEP-' . $transaction->idrec);
 
             // Handle image upload - Save as file
             if ($request->hasFile('payment_proof')) {
