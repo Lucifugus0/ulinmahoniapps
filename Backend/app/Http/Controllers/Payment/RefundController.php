@@ -90,8 +90,6 @@ class RefundController extends Controller
                     ], 422);
                 }
 
-                $fileContents = file_get_contents($image->getRealPath());
-                $imageBase64 = base64_encode($fileContents);
                 $imageCaption = $image->getClientOriginalName();
                 $imagePath = $image->store('refund_images', 'public');
             } else {
@@ -104,7 +102,7 @@ class RefundController extends Controller
             if ($existingRefund) {
                 $existingRefund->update([
                     'status' => 'refunded',
-                    'img' => $imageBase64,
+                    'img' => $imageCaption,
                     'image_caption' => $imageCaption,
                     'image_path' => $imagePath,
                     'refund_date' => now()->format('Y-m-d H:i:s'),
@@ -119,7 +117,7 @@ class RefundController extends Controller
                     'id_booking' => $request->order_id,
                     'status' => 'refunded',
                     'refund_type' => 'admin',
-                    'img' => $imageBase64,
+                    'img' => $imageCaption,
                     'image_caption' => $imageCaption,
                     'image_path' => $imagePath,
                     'refund_date' => now()->format('Y-m-d H:i:s'),

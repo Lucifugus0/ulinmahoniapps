@@ -135,11 +135,12 @@ class Room extends Model
             // Date range specified: check for overlapping bookings
             $query->where('t_transactions.check_in', '<', $checkOut)
                   ->where('t_transactions.check_out', '>', $checkIn);
-        } else {
-            // No dates: check if any confirmed booking exists now or in the future
-            $now = now();
-            $query->where('t_transactions.check_out', '>=', $now);
         }
+        // No dates: any active not-yet-checked-out booking blocks the room.
+        // The scheduled check_out passing alone does NOT release the room —
+        // admin must perform the physical checkout (sets check_out_at) first.
+        // Renewals naturally extend occupancy because the renewal is its own
+        // active row in t_booking with check_out_at NULL.
 
         return !$query->exists();
     }
@@ -147,14 +148,16 @@ class Room extends Model
     /**
      * Query scope: filter to available rooms only.
      * Daily rooms (periode_daily = 1) always pass.
-     * Monthly-only rooms must have no confirmed booking now or in the future.
+     * Monthly-only rooms must have no active not-yet-checked-out booking
+     * (i.e. admin must have performed the physical checkout).
      */
     public function scopeAvailableRooms($query)
     {
         return $query->where(function ($q) {
             // Daily rooms are always available
             $q->where('m_rooms.periode_daily', 1)
-              // Non-daily rooms: no confirmed booking with check_out in the future
+              // Monthly rooms: no active booking still occupying the room.
+              // Past check_out alone does NOT free the room — admin must check out.
               ->orWhereNotExists(function ($sub) {
                   $sub->select(\DB::raw(1))
                       ->from('t_booking')
@@ -162,8 +165,7 @@ class Room extends Model
                       ->whereColumn('t_booking.room_id', 'm_rooms.idrec')
                       ->where('t_booking.status', 1)
                       ->whereNull('t_booking.check_out_at')
-                      ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired', 'checked_out', 'rejected'])
-                      ->where('t_transactions.check_out', '>=', now());
+                      ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired', 'checked_out', 'rejected']);
               });
         });
     }

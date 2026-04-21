@@ -126,7 +126,7 @@
         <!-- Modal dialog -->
         <div class="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6" x-show="modalOpen" x-transition
             x-cloak @keydown.escape.window="modalOpen = false">
-            <div class="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden relative z-50"
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden relative z-50"
                 @click.outside="modalOpen = false">
 
                 <!-- Header -->

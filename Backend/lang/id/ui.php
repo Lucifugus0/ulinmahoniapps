@@ -1848,4 +1848,5 @@ return [
     'edit_notes' => 'Edit Catatan',
     'deactivate' => 'Nonaktifkan',
     'activate' => 'Aktifkan',
+    'last_transfer' => 'Transfer Terakhir',
 ];

@@ -1848,4 +1848,5 @@ return [
     'edit_notes' => 'Edit Notes',
     'deactivate' => 'Deactivate',
     'activate' => 'Activate',
+    'last_transfer' => 'Last Transfer',
 ];
