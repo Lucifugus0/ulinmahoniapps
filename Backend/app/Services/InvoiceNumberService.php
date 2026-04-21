@@ -12,18 +12,19 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Generates and persists invoice numbers using the format:
- *   Booking / Parking: {seq:4}/{property_initial}/{invoice_code}-INV/{roman_month}/{year}
- *   Deposit:           {seq:4}/DEP-{property_initial}/{invoice_code}-INV/{roman_month}/{year}
+ *   Booking: {seq:4}/{property_initial}/{invoice_code}-INV/{roman_month}/{year}
+ *   Parking: {seq:4}/PRK-{property_initial}/{invoice_code}-INV/{roman_month}/{year}
+ *   Deposit: {seq:4}/DEP-{property_initial}/{invoice_code}-INV/{roman_month}/{year}
  *
  * Rules:
  * - Only paid transactions get an invoice number.
  * - Transactions with paid_at < 2026-03-01 are skipped (no number assigned).
- * - Sequence is per (counter_key, year) and resets each January 1.
- *   - Booking (t_transactions) and parking (t_parking_fee_transaction) share
- *     counter_key = invoice_code (e.g. "KGA") — same counter.
- *   - Deposit (t_deposit_fee_transaction) uses counter_key = "DEP-{invoice_code}" —
- *     independent per-property counter so deposit numbering starts from 1 regardless
- *     of booking volume.
+ * - Sequence is per (counter_key, year) and resets each January 1. Each
+ *   transaction type has its OWN counter so the three sequences are independent
+ *   (no shared gaps, each type starts from 1 per year per property):
+ *   - Booking (t_transactions):              counter_key = invoice_code         e.g. "KGA"
+ *   - Parking (t_parking_fee_transaction):   counter_key = "PRK-{invoice_code}" e.g. "PRK-KGA"
+ *   - Deposit (t_deposit_fee_transaction):   counter_key = "DEP-{invoice_code}" e.g. "DEP-KGA"
  * - The number is assigned once and never recomputed; refunds keep it.
  */
 class InvoiceNumberService
@@ -92,12 +93,19 @@ class InvoiceNumberService
         $month           = (int) $paidAt->format('n');
         $romanMonth      = self::$romanMonths[$month];
 
-        // Deposits use a distinct counter key ("DEP-{code}") and a "DEP-{initial}" segment
-        // in the format so deposit invoice numbers are visually & sequentially distinct
-        // from booking/parking numbers.
-        $isDeposit         = $transaction instanceof DepositFeeTransaction;
-        $counterKey        = $isDeposit ? ('DEP-' . $invoiceCode) : $invoiceCode;
-        $formatInitialPart = $isDeposit ? ('DEP-' . $propertyInitial) : $propertyInitial;
+        // Each transaction type uses its own counter key + its own initial-segment
+        // marker so the three sequences are independent and visually distinct.
+        //   Deposit  -> "DEP-..."   Parking -> "PRK-..."   Booking -> "..."
+        if ($transaction instanceof DepositFeeTransaction) {
+            $counterKey        = 'DEP-' . $invoiceCode;
+            $formatInitialPart = 'DEP-' . $propertyInitial;
+        } elseif ($transaction instanceof ParkingFeeTransaction) {
+            $counterKey        = 'PRK-' . $invoiceCode;
+            $formatInitialPart = 'PRK-' . $propertyInitial;
+        } else {
+            $counterKey        = $invoiceCode;
+            $formatInitialPart = $propertyInitial;
+        }
 
         // Atomically increment per (counter_key, year) counter and write back
         return DB::transaction(function () use ($transaction, $counterKey, $formatInitialPart, $invoiceCode, $year, $romanMonth) {

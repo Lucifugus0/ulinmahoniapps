@@ -114,6 +114,11 @@ class DepositPaymentController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
+            // Assign persisted invoice number now that the deposit is paid.
+            // Idempotent — InvoiceNumberService::assign() returns the existing
+            // number if one was already issued (e.g. via store()).
+            InvoiceNumberService::assign($transaction->fresh());
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pembayaran deposit berhasil disetujui'

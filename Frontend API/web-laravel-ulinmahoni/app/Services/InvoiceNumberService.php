@@ -13,16 +13,18 @@ use Illuminate\Support\Facades\Log;
  * invoice number to booking transactions the moment they flip to `paid` via a
  * DOKU webhook (VA / QRIS / Credit Card). Only handles App\Models\Transaction
  * because DOKU callbacks never touch parking or deposit — those live solely
- * in the Backend admin app.
+ * in the Backend admin app, which has its own service that handles parking
+ * (counter "PRK-{code}") and deposits (counter "DEP-{code}").
  *
  * Format: {seq:4}/{property_initial}/{invoice_code}-INV/{roman_month}/{year}
  *
  * Rules:
  * - Only paid transactions get a number.
  * - paid_at < 2026-03-01 → skipped (leaves column NULL, like pre-cutoff rows).
- * - Sequence per (invoice_code, year), resets each January 1. Shared counter
- *   with bookings + parking in the Backend app via m_invoice_sequences (both
- *   Laravel apps connect to the same DB).
+ * - Sequence per (invoice_code, year), resets each January 1. Booking-only
+ *   counter — shares m_invoice_sequences storage with the Backend app's
+ *   booking counter (same key = invoice_code; both Laravel apps connect to
+ *   the same DB).
  * - Number is assigned once and never recomputed; refunds preserve it.
  */
 class InvoiceNumberService
