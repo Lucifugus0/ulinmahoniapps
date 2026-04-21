@@ -157,6 +157,37 @@
         </div>
     </div>
 
+    {{-- Modal input contrast: textbox/select/textarea inside Add Payment modal
+         needs a background distinct from the modal body in BOTH modes. Tailwind v4
+         dark: classes don't reliably make it into the compiled CSS bundle, so we
+         scope the rules with high specificity and !important here. --}}
+    <style>
+        /* Light mode: white modal body, gray-50 inputs */
+        #addPaymentModal input,
+        #addPaymentModal select,
+        #addPaymentModal textarea {
+            background-color: #f9fafb !important; /* gray-50 */
+            color: #111827 !important;             /* gray-900 */
+        }
+        /* Read-only fee field stays slightly darker so it reads as disabled */
+        #addPaymentModal input[readonly] {
+            background-color: #f3f4f6 !important;  /* gray-100 */
+            color: #6b7280 !important;             /* gray-500 */
+        }
+        /* Dark mode: gray-800 modal body (overridden globally), gray-700 inputs */
+        html.dark #addPaymentModal input,
+        html.dark #addPaymentModal select,
+        html.dark #addPaymentModal textarea {
+            background-color: #374151 !important; /* gray-700 */
+            color: #f3f4f6 !important;             /* gray-100 */
+            border-color: #4b5563 !important;      /* gray-600 */
+        }
+        html.dark #addPaymentModal input[readonly] {
+            background-color: #1f2937 !important; /* gray-800 — sinks below body */
+            color: #9ca3af !important;             /* gray-400 */
+        }
+    </style>
+
     {{-- Add New Payment Modal --}}
     <div id="addPaymentModal" class="fixed inset-0 z-50 hidden">
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAddPaymentModal()"></div>
