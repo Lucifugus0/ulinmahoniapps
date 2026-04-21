@@ -83,8 +83,14 @@ class BackfillInvoiceNumbers extends Command
         // filter explicitly to preview what the reset+backfill would produce.
         $includeAll = $reset && $dryRun;
 
-        $bookingAssigned = $this->backfillBookings($properties, $dryRun, $includeAll);
-        $parkingAssigned = $this->backfillParking($properties, $dryRun, $includeAll);
+        // freshCounters mirrors the same reason: in --reset --dry-run the actual
+        // counter delete didn't happen, so reading m_invoice_sequences would seed
+        // from stale post-cutoff values and the preview would show sequences
+        // continuing from where the old run left off (e.g. 0178 instead of 0001).
+        $freshCounters = $reset && $dryRun;
+
+        $bookingAssigned = $this->backfillBookings($properties, $dryRun, $includeAll, $freshCounters);
+        $parkingAssigned = $this->backfillParking($properties, $dryRun, $includeAll, $freshCounters);
 
         $this->info("Done. Bookings assigned: {$bookingAssigned}, Parking assigned: {$parkingAssigned}");
         if ($dryRun) {
@@ -150,7 +156,7 @@ class BackfillInvoiceNumbers extends Command
      * Walk paid bookings on/after cutoff in payment order, assigning sequential
      * numbers from the per-(invoice_code, year) booking counter.
      */
-    protected function backfillBookings($properties, bool $dryRun, bool $includeAll = false): int
+    protected function backfillBookings($properties, bool $dryRun, bool $includeAll = false, bool $freshCounters = false): int
     {
         $query = Transaction::whereNotNull('paid_at')
             ->where('paid_at', '>=', self::CUTOFF)
@@ -182,7 +188,7 @@ class BackfillInvoiceNumbers extends Command
             $year            = (int) $paidAt->format('Y');
             $month           = (int) $paidAt->format('n');
 
-            $next = $this->nextSeq($counters, $invoiceCode, $year);
+            $next = $this->nextSeq($counters, $invoiceCode, $year, $freshCounters);
 
             $invoiceNumber = sprintf(
                 '%s/%s/%s-INV/%s/%d',
@@ -222,7 +228,7 @@ class BackfillInvoiceNumbers extends Command
      * Format segment is "PRK-{initial}" so parking is visually distinct from
      * bookings.
      */
-    protected function backfillParking($properties, bool $dryRun, bool $includeAll = false): int
+    protected function backfillParking($properties, bool $dryRun, bool $includeAll = false, bool $freshCounters = false): int
     {
         $query = ParkingFeeTransaction::whereNotNull('paid_at')
             ->where('paid_at', '>=', self::CUTOFF)
@@ -255,7 +261,7 @@ class BackfillInvoiceNumbers extends Command
             $year            = (int) $paidAt->format('Y');
             $month           = (int) $paidAt->format('n');
 
-            $next = $this->nextSeq($counters, $counterKey, $year);
+            $next = $this->nextSeq($counters, $counterKey, $year, $freshCounters);
 
             $invoiceNumber = sprintf(
                 '%s/PRK-%s/%s-INV/%s/%d',
@@ -293,15 +299,23 @@ class BackfillInvoiceNumbers extends Command
      * Returns the next sequence number for (counter_key, year), seeding from
      * m_invoice_sequences on first access in this run.
      */
-    protected function nextSeq(array &$counters, string $counterKey, int $year): int
+    protected function nextSeq(array &$counters, string $counterKey, int $year, bool $fresh = false): int
     {
         $key = $counterKey . '|' . $year;
         if (!isset($counters[$key])) {
-            $row = DB::table('m_invoice_sequences')
-                ->where('invoice_code', $counterKey)
-                ->where('year', $year)
-                ->first();
-            $counters[$key] = $row ? (int) $row->last_seq : 0;
+            // Normally seed from m_invoice_sequences so that incremental backfill
+            // continues from where live assignments left off. With $fresh=true
+            // (used by --reset --dry-run) we skip the seed because the real
+            // --reset run would have deleted those rows first.
+            if ($fresh) {
+                $counters[$key] = 0;
+            } else {
+                $row = DB::table('m_invoice_sequences')
+                    ->where('invoice_code', $counterKey)
+                    ->where('year', $year)
+                    ->first();
+                $counters[$key] = $row ? (int) $row->last_seq : 0;
+            }
         }
         return ++$counters[$key];
     }
