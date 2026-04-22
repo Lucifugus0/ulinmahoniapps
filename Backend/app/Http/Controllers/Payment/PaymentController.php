@@ -150,6 +150,12 @@ class PaymentController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'html' => view('pages.payment.pay.partials.pay_table', ['payments' => $payments])->render(),
+                /* JS at index.blade.php:411-413 swaps this into the .bg-gray-50 footer.
+                   Without it, the unfiltered page count + entry total stay frozen on screen.
+                   appends() preserves filter params so pagination links don't drop the search. */
+                'pagination' => $payments instanceof \Illuminate\Pagination\LengthAwarePaginator
+                    ? $payments->appends($request->except('page'))->links()->toHtml()
+                    : '',
             ]);
         }
 
