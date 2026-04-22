@@ -80,7 +80,10 @@
         </div>
 
         <!-- Paginasi -->
-        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+        {{-- id="paymentPagination" so the AJAX-filter JS can target this exact
+             container — the page also has a <thead class="bg-gray-50"> which
+             would otherwise be picked up first by querySelector('.bg-gray-50'). --}}
+        <div id="paymentPagination" class="bg-gray-50 px-6 py-3 border-t border-gray-200">
             {{ $payments->appends(request()->except('page'))->links() }}
         </div>
     </div>
@@ -407,13 +410,13 @@
                         tableEl.innerHTML = data.html;
                         // Re-initialize Alpine on new content so sorting works
                         Alpine.initTree(tableEl);
-                        // Update paginasi — always replace, even with empty string.
-                        // The vendor pagination view (tailwind.blade.php) renders
-                        // nothing when hasPages() is false (single-page filtered
-                        // result), so an empty data.pagination must still clear
-                        // the container — otherwise the unfiltered count + page
-                        // links stay visible.
-                        const paginationContainer = document.querySelector('.bg-gray-50');
+                        // Update paginasi — target by ID. querySelector('.bg-gray-50')
+                        // would match the <thead class="bg-gray-50"> first and overwrite
+                        // the table header instead of the pagination footer.
+                        // Always replace, even with empty string, so single-page
+                        // filtered results (where links()->toHtml() returns '' because
+                        // hasPages() is false) still clear the stale unfiltered count.
+                        const paginationContainer = document.getElementById('paymentPagination');
                         if (paginationContainer) {
                             paginationContainer.innerHTML = data.pagination || '';
                         }
