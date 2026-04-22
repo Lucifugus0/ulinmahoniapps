@@ -407,10 +407,15 @@
                         tableEl.innerHTML = data.html;
                         // Re-initialize Alpine on new content so sorting works
                         Alpine.initTree(tableEl);
-                        // Update paginasi jika ada
+                        // Update paginasi — always replace, even with empty string.
+                        // The vendor pagination view (tailwind.blade.php) renders
+                        // nothing when hasPages() is false (single-page filtered
+                        // result), so an empty data.pagination must still clear
+                        // the container — otherwise the unfiltered count + page
+                        // links stay visible.
                         const paginationContainer = document.querySelector('.bg-gray-50');
-                        if (paginationContainer && data.pagination) {
-                            paginationContainer.innerHTML = data.pagination;
+                        if (paginationContainer) {
+                            paginationContainer.innerHTML = data.pagination || '';
                         }
                     })
                     .catch(error => {
