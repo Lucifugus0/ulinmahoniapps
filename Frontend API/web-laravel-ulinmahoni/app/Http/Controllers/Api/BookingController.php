@@ -966,7 +966,10 @@ class BookingController extends ApiController
             'daily_price' => 'nullable|numeric|min:0',
             'monthly_price' => 'nullable|numeric|min:0',
             'booking_days' => 'nullable|integer|min:0',
-            'booking_months' => 'nullable|integer|min:0',
+            // Renewal monthly duration is capped at 12 months per booking (matches new-booking rule).
+            // The cumulative cap (today + 15 months) is enforced separately below after we
+            // compute the resulting check_out, since this depends on the chain anchor.
+            'booking_months' => 'nullable|integer|min:0|max:12',
             'admin_fees' => 'nullable|numeric|min:0',
             'service_fees' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
@@ -1048,6 +1051,29 @@ class BookingController extends ApiController
                 }
             }
 
+            // Renewal availability window — must be 0-90 days before check-out, with a
+            // hard cutoff at 21:00 on the check-out day itself. Server-side mirror of
+            // the modal's pre-open guard so a tampered client request is still rejected.
+            if ($latestPaidCheckOut) {
+                $now = Carbon::now(config('app.timezone'));
+                $today0 = $now->copy()->startOfDay();
+                $coDate0 = Carbon::parse($latestPaidCheckOut)->startOfDay();
+                $daysUntilCheckOut = $today0->diffInDays($coDate0, false);
+
+                if ($daysUntilCheckOut > 90) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => __('booking.js.renewal_window_too_early'),
+                    ], 422);
+                }
+                if ($daysUntilCheckOut < 0 || ($daysUntilCheckOut === 0 && $now->hour >= 21)) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => __('booking.js.renewal_window_closed'),
+                    ], 422);
+                }
+            }
+
             // Get room details to verify it still exists
             $room = Room::find($request->room_id);
             if (!$room) {
@@ -1115,6 +1141,16 @@ class BookingController extends ApiController
                 $maxDay = Carbon::create($targetYear, $targetMonth, 1)->daysInMonth;
                 $clampedDay = min($originalCheckinDay, $maxDay);
                 $checkOutWithTime = Carbon::create($targetYear, $targetMonth, $clampedDay, 12, 0, 0);
+
+                // Cumulative cap: the new check_out cannot extend more than 15 months from today.
+                $maxAllowedCheckOut = Carbon::today(config('app.timezone'))->addMonths(15);
+                if ($checkOutWithTime->gt($maxAllowedCheckOut)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => __('booking.js.renewal_max_15_months'),
+                    ], 422);
+                }
             } else {
                 $checkOutWithTime = Carbon::createFromFormat('Y-m-d', $request->check_out, config('app.timezone'))->setTime(12, 0, 0);
             }

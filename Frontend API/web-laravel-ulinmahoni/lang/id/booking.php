@@ -188,5 +188,10 @@ return [
         'refund_bank_name' => 'Nama Bank',
         'refund_account_no' => 'Nomor Rekening',
         'refund_account_holder' => 'Nama Pemilik Rekening',
+        // Aturan jendela perpanjangan sewa — lihat BookingController::renewBooking + bookings/index.blade.php
+        'renewal_unavailable_title' => 'Perpanjangan Tidak Tersedia',
+        'renewal_window_too_early'  => 'Perpanjangan sewa dibuka 90 hari sebelum tanggal check-out Anda. Silakan kembali lebih dekat ke tanggal check-out untuk memperpanjang masa sewa Anda.',
+        'renewal_window_closed'     => 'Periode perpanjangan sewa telah berakhir. Perpanjangan harus diselesaikan paling lambat pukul 21:00 pada tanggal check-out. Silakan hubungi tim support kami untuk bantuan.',
+        'renewal_max_15_months'     => 'Perpanjangan ini akan memperpanjang masa sewa Anda lebih dari 15 bulan dari hari ini. Silakan pilih durasi perpanjangan yang lebih pendek.',
     ],
 ];

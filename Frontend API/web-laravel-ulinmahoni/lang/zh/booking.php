@@ -188,5 +188,10 @@ return [
         'refund_bank_name' => '银行名称',
         'refund_account_no' => '账号',
         'refund_account_holder' => '账户持有人姓名',
+        // 续租可用窗口规则 — 详见 BookingController::renewBooking + bookings/index.blade.php
+        'renewal_unavailable_title' => '续租不可用',
+        'renewal_window_too_early'  => '续租在您的退房日期前 90 天开放。请在临近退房日期时再回来续租以延长您的入住时间。',
+        'renewal_window_closed'     => '续租窗口已关闭。续租必须在退房日期当天晚上 9:00 之前完成。请联系我们的支持团队获取帮助。',
+        'renewal_max_15_months'     => '续租将使您的入住时间超过今天起 15 个月。请选择更短的续租期。',
     ],
 ];

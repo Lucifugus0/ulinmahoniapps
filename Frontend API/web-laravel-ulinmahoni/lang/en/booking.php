@@ -189,5 +189,10 @@ return [
         'refund_bank_name' => 'Bank Name',
         'refund_account_no' => 'Account Number',
         'refund_account_holder' => 'Account Holder Name',
+        // Renewal availability rules — see BookingController::renewBooking + bookings/index.blade.php
+        'renewal_unavailable_title' => 'Renewal Unavailable',
+        'renewal_window_too_early'  => 'Renewal opens 90 days before your check-out date. Please come back closer to your check-out date to extend your stay.',
+        'renewal_window_closed'     => 'The renewal window has closed. Renewals must be completed by 9:00 PM on your check-out date. Please contact our support team for assistance.',
+        'renewal_max_15_months'     => 'The renewal would extend your stay beyond 15 months from today. Please choose a shorter renewal period.',
     ],
 ];

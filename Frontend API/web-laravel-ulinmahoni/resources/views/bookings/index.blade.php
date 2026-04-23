@@ -970,9 +970,16 @@
                             <label for="renew_months" class="block text-sm font-medium text-gray-700 mb-1">
                                 Jumlah Bulan *
                             </label>
-                            <input type="number" id="renew_months" name="months" min="1" value="1"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                   oninput="updateCheckOutDate()">
+                            {{-- Dropdown 1-12 months. Options that would push the new check_out
+                                 past today + 15 months are disabled at runtime by
+                                 refreshMonthsDropdown() — the 15-month cumulative cap. --}}
+                            <select id="renew_months" name="months" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                    onchange="updateCheckOutDate()">
+                                @for ($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}">{{ $i }} {{ $i === 1 ? 'bulan' : 'bulan' }}</option>
+                                @endfor
+                            </select>
                         </div>
                         <div>
                             <label for="renew_check_out_monthly" class="block text-sm font-medium text-gray-700 mb-1">
@@ -1289,6 +1296,36 @@
     async function openRenewModal(bookingData) {
         const { orderId, roomId, bookingType, months, previousCheckOut, userId, userName, userPhone, userEmail, propertyId, propertyName, propertyType, roomName } = bookingData;
 
+        // Renewal availability window — must be 0-90 days before check-out, with a
+        // hard cutoff at 21:00 on the check-out day itself. Block early & with
+        // localised message rather than open the modal then fail at submit.
+        if (previousCheckOut) {
+            const co = new Date(previousCheckOut + 'T12:00:00');
+            const now = new Date();
+            const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const co0 = new Date(co.getFullYear(), co.getMonth(), co.getDate());
+            const daysUntilCheckOut = Math.floor((co0 - today0) / 86400000);
+
+            if (daysUntilCheckOut > 90) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '{{ __("booking.js.renewal_unavailable_title") }}',
+                    text: '{{ __("booking.js.renewal_window_too_early") }}',
+                    confirmButtonColor: '#0d9488',
+                });
+                return;
+            }
+            if (daysUntilCheckOut < 0 || (daysUntilCheckOut === 0 && now.getHours() >= 21)) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '{{ __("booking.js.renewal_unavailable_title") }}',
+                    text: '{{ __("booking.js.renewal_window_closed") }}',
+                    confirmButtonColor: '#0d9488',
+                });
+                return;
+            }
+        }
+
         // Store booking data for submitRenewal
         currentBookingData = {
             orderId,
@@ -1499,8 +1536,39 @@
         return d;
     }
 
+    // Compute today + 15 months (the cumulative cap) — used to disable invalid
+    // dropdown options and to validate at submit time.
+    function getMaxAllowedRenewalCheckOut() {
+        const t = new Date();
+        return new Date(t.getFullYear(), t.getMonth() + 15, t.getDate());
+    }
+
+    // Disable any dropdown option that would push new check_out past today + 15 months.
+    function refreshMonthsDropdown() {
+        const select = document.getElementById('renew_months');
+        const checkInStr = document.getElementById('renew_check_in_monthly').value;
+        if (!select || !checkInStr) return;
+        const checkInDate = new Date(checkInStr);
+        if (isNaN(checkInDate.getTime())) return;
+        const maxAllowed = getMaxAllowedRenewalCheckOut();
+        let firstEnabledValue = null;
+        for (let i = 0; i < select.options.length; i++) {
+            const m = parseInt(select.options[i].value);
+            const projected = addMonthsClamped(checkInDate, m, window._renewOriginalCheckinDay);
+            const tooLong = projected > maxAllowed;
+            select.options[i].disabled = tooLong;
+            if (!tooLong && firstEnabledValue === null) firstEnabledValue = String(m);
+        }
+        // If currently selected option is now disabled, fall back to the smallest valid one
+        if (select.options[select.selectedIndex] && select.options[select.selectedIndex].disabled && firstEnabledValue !== null) {
+            select.value = firstEnabledValue;
+        }
+    }
+
     function updateCheckOutDate() {
         const checkIn = document.getElementById('renew_check_in_monthly').value;
+        // Refresh disabled options first so the value we read is guaranteed allowed.
+        refreshMonthsDropdown();
         const months = parseInt(document.getElementById('renew_months').value) || 1;
 
         console.log('updateCheckOutDate - checkIn:', checkIn, 'months:', months);
@@ -1559,6 +1627,20 @@
             if (!checkOut) {
                 updateCheckOutDate();
                 checkOut = document.getElementById('renew_check_out_monthly').value;
+            }
+
+            // 15-month cumulative cap — defence-in-depth in case dropdown was tampered with.
+            if (checkOut) {
+                const projected = new Date(checkOut + 'T12:00:00');
+                if (projected > getMaxAllowedRenewalCheckOut()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __("booking.js.renewal_unavailable_title") }}',
+                        text: '{{ __("booking.js.renewal_max_15_months") }}',
+                        confirmButtonColor: '#0d9488',
+                    });
+                    return;
+                }
             }
         } else {
             checkIn = document.getElementById('renew_check_in').value;
