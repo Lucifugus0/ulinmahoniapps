@@ -154,7 +154,11 @@ return [
         'last_name' => 'Last Name',
         'full_name' => 'Full Name',
         'phone_number' => 'Phone Number',
-        'rental_agreement' => 'I agree to the Terms & Conditions, Data Privacy Policy, and Rental Agreement',
+        // :terms_link, :privacy_link, :rental_link are substituted with anchor tags by the blade.
+        'rental_agreement' => 'I declare that I have read, understood, fully comprehended, and agreed to the :terms_link, :privacy_link, and :rental_link',
+        'terms_link_text' => 'Rental Terms & Conditions',
+        'privacy_link_text' => 'Privacy Policy',
+        'rental_link_text' => 'Rental Agreement',
         'rental_agreement_link' => 'Rental Agreement',
         'must_agree' => 'You must agree to the Terms & Conditions to proceed.',
         'login_to_book' => 'Login to book',

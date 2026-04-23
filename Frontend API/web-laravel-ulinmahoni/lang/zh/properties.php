@@ -154,7 +154,11 @@ return [
         'last_name' => '姓',
         'full_name' => '全名',
         'phone_number' => '电话号码',
-        'rental_agreement' => '我同意条款和条件、数据隐私政策和租赁协议',
+        // :terms_link, :privacy_link, :rental_link 在 blade 中替换为锚点标签。
+        'rental_agreement' => '本人声明已阅读、理解并完全同意 :terms_link、:privacy_link 和 :rental_link',
+        'terms_link_text' => '租赁条款',
+        'privacy_link_text' => '隐私政策',
+        'rental_link_text' => '租赁协议',
         'rental_agreement_link' => '租赁协议',
         'must_agree' => '您必须同意条款和条件才能继续。',
         'login_to_book' => '登录后预订',

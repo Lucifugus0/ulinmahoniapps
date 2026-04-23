@@ -695,7 +695,14 @@
                                         </div>
                                         <div class="ml-3 text-sm">
                                             <label for="agreementCheckbox" class="text-gray-700">
-                                                {{ __('properties.booking.rental_agreement') }}
+                                                {{-- :terms_link / :privacy_link / :rental_link are substituted with anchor tags
+                                                     pointing to the legal pages. {!! !!} is required so the HTML renders;
+                                                     route() returns trusted URLs and link text is e()-escaped. --}}
+                                                {!! __('properties.booking.rental_agreement', [
+                                                    'terms_link'   => '<a href="' . route('terms-of-services') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.terms_link_text')) . '</a>',
+                                                    'privacy_link' => '<a href="' . route('privacy-policy') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.privacy_link_text')) . '</a>',
+                                                    'rental_link'  => '<a href="' . route('rental-agreement') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.rental_link_text')) . '</a>',
+                                                ]) !!}
                                             </label>
                                         </div>
                                     </div>

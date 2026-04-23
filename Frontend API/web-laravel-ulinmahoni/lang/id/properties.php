@@ -154,7 +154,11 @@ return [
         'last_name' => 'Nama Belakang',
         'full_name' => 'Nama Lengkap',
         'phone_number' => 'Nomor Telepon',
-        'rental_agreement' => 'Saya menyetujui Syarat & Ketentuan, Kebijaksanaan Privasi Data dan Perjanjian Sewa',
+        // :terms_link, :privacy_link, :rental_link are substituted with anchor tags by the blade.
+        'rental_agreement' => 'Saya menyatakan telah membaca, mengerti, memahami dan menyetujui :terms_link, :privacy_link, dan :rental_link',
+        'terms_link_text' => 'S&K Sewa',
+        'privacy_link_text' => 'Kebijakan Privasi',
+        'rental_link_text' => 'Perjanjian Sewa',
         'rental_agreement_link' => 'Perjanjian Sewa Menyewa',
         'must_agree' => 'Anda harus menyetujui Syarat & Ketentuan untuk melanjutkan.',
         'login_to_book' => 'Masuk untuk memesan',
