@@ -159,6 +159,18 @@ class ModifyBookingController extends Controller
         $tx = $booking->transaction;
         $paidAtEditable = in_array($tx?->transaction_type ?? '', self::PAID_AT_EDITABLE_TYPES, true);
 
+        /* Booking duration is shown in the modal summary so admins know whether they're
+           editing a 1-day reservation or a 12-month rental — the contracted duration drives
+           pricing and shouldn't be confused with the editable check_in/check_out dates. */
+        $bookingType = $tx?->booking_type;
+        $bookingDays = (int) ($tx?->booking_days ?? 0);
+        $bookingMonths = (int) ($tx?->booking_months ?? 0);
+        if ($bookingType === 'daily' && $bookingDays === 0 && $tx?->check_in && $tx?->check_out) {
+            $bookingDays = (int) Carbon::parse($tx->check_in)->diffInDays(Carbon::parse($tx->check_out));
+        } elseif ($bookingType === 'monthly' && $bookingMonths === 0 && $tx?->check_in && $tx?->check_out) {
+            $bookingMonths = (int) Carbon::parse($tx->check_in)->diffInMonths(Carbon::parse($tx->check_out));
+        }
+
         return response()->json([
             'order_id' => $booking->order_id,
             'guest_name' => trim(($booking->user->first_name ?? '') . ' ' . ($booking->user->last_name ?? '')) ?: ($tx?->user_name ?? '-'),
@@ -168,6 +180,9 @@ class ModifyBookingController extends Controller
             'room_name' => $booking->room?->name ?? '-',
             'room_no' => $booking->room?->no ?? '-',
             'transaction_type' => $tx?->transaction_type ?? null,
+            'booking_type' => $bookingType,
+            'booking_days' => $bookingDays,
+            'booking_months' => $bookingMonths,
             'paid_at_editable' => $paidAtEditable,
             /* Dates returned as YYYY-MM-DD only (no time) — the modal exposes <input type="date">
                for check_in / check_out so admins can't accidentally shift the standard 14:00
@@ -191,7 +206,9 @@ class ModifyBookingController extends Controller
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
             'paid_at' => 'nullable|date',
-            'modification_notes' => 'nullable|string|max:500',
+            /* Notes mandatory + min 20 chars so the audit trail is meaningful — admins must
+               document why the date / payment was changed (not just leave it blank). */
+            'modification_notes' => 'required|string|min:20|max:500',
         ]);
 
         try {
