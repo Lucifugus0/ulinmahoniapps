@@ -511,6 +511,8 @@
                                             <div class="text-xs text-gray-500 mt-1">
                                                 <div class="flex items-center"><i class="fas fa-user mr-1"></i> {{ $booking->user_name }}</div>
                                                 <div class="flex items-center"><i class="fas fa-phone mr-1"></i> {{ $booking->user_phone_number }}</div>
+                                                {{-- Transaction created_at — shown so guests/admins can tell renewals/duplicates apart at a glance. --}}
+                                                <div class="flex items-center"><i class="far fa-clock mr-1"></i> {{ optional($booking->created_at)->format('d M Y H:i') ?? '—' }}</div>
                                             </div>
                                         </td>
                                         {{-- Property: Room No → Type → Property Name --}}
@@ -581,6 +583,14 @@
                                                     {{ paymentMethodBadge($booking->transaction_type) }}
                                                 </span>
                                             </div>
+                                            {{-- Bank + VA number: shown only for DOKU-issued Virtual Account payments. --}}
+                                            @if (isDokuVaPayment($booking->transaction_type, $booking->virtual_account_no ?? null, $booking->payment_bank ?? null))
+                                                <div class="mt-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/40 font-mono">
+                                                        {{ strtoupper($booking->payment_bank) }} · {{ $booking->virtual_account_no }}
+                                                    </span>
+                                                </div>
+                                            @endif
                                         </td>
                                         {{-- Actions --}}
                                         <td class="px-6 py-4">
@@ -623,6 +633,19 @@
                             ];
                             return $map[$t] ?? 'VA - Web';
                         }
+
+                        /* Render a third "Bank: VA Number" row only for DOKU-issued Virtual
+                           Account payments. BRI Manual stores a static BRI account number in
+                           virtual_account_no (the fixed account guests transfer to manually) —
+                           that's not a per-transaction DOKU VA, so it's excluded along with
+                           QRIS / Credit Card / Promo flows. Effectively matches the channel
+                           set that paymentMethodBadge() falls through to "VA - Web" for plus
+                           the explicit "Transfer VA" mobile-app channel. */
+                        function isDokuVaPayment($transactionType, $vaNumber, $paymentBank) {
+                            if (empty($vaNumber) || empty($paymentBank)) return false;
+                            $excluded = ['BRI Manual', 'bri_manual', 'QRIS', 'qris', 'credit_card', 'CREDITCARD', 'Credit Card', 'promo'];
+                            return !in_array($transactionType, $excluded, true);
+                        }
                     @endphp
 
                     <!-- Upcoming Bookings Tab: paid, not yet checked out -->
@@ -656,6 +679,8 @@
                                             <div class="text-xs text-gray-500 mt-1">
                                                 <div class="flex items-center"><i class="fas fa-user mr-1"></i> {{ $booking->user_name }}</div>
                                                 <div class="flex items-center"><i class="fas fa-phone mr-1"></i> {{ $booking->user_phone_number }}</div>
+                                                {{-- Transaction created_at — shown so guests/admins can tell renewals/duplicates apart at a glance. --}}
+                                                <div class="flex items-center"><i class="far fa-clock mr-1"></i> {{ optional($booking->created_at)->format('d M Y H:i') ?? '—' }}</div>
                                             </div>
                                         </td>
                                         {{-- Property: Room No → Type → Property Name --}}
@@ -728,6 +753,14 @@
                                                     {{ paymentMethodBadge($booking->transaction_type) }}
                                                 </span>
                                             </div>
+                                            {{-- Bank + VA number: shown only for DOKU-issued Virtual Account payments. --}}
+                                            @if (isDokuVaPayment($booking->transaction_type, $booking->virtual_account_no ?? null, $booking->payment_bank ?? null))
+                                                <div class="mt-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/40 font-mono">
+                                                        {{ strtoupper($booking->payment_bank) }} · {{ $booking->virtual_account_no }}
+                                                    </span>
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4">
                                             @php
@@ -826,6 +859,8 @@
                                             <div class="text-xs text-gray-500 mt-1">
                                                 <div class="flex items-center"><i class="fas fa-user mr-1"></i> {{ $booking->user_name }}</div>
                                                 <div class="flex items-center"><i class="fas fa-phone mr-1"></i> {{ $booking->user_phone_number }}</div>
+                                                {{-- Transaction created_at — shown so guests/admins can tell renewals/duplicates apart at a glance. --}}
+                                                <div class="flex items-center"><i class="far fa-clock mr-1"></i> {{ optional($booking->created_at)->format('d M Y H:i') ?? '—' }}</div>
                                             </div>
                                         </td>
                                         {{-- Property: Room No → Type → Property Name --}}
@@ -878,6 +913,12 @@
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                                                     {{ paymentMethodBadge($booking->transaction_type) }}
                                                 </span>
+                                                {{-- Bank + VA number: shown only for DOKU-issued Virtual Account payments. --}}
+                                                @if (isDokuVaPayment($booking->transaction_type, $booking->virtual_account_no ?? null, $booking->payment_bank ?? null))
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/40 font-mono">
+                                                        {{ strtoupper($booking->payment_bank) }} · {{ $booking->virtual_account_no }}
+                                                    </span>
+                                                @endif
                                             </div>
                                         </td>
                                         {{-- Actions --}}

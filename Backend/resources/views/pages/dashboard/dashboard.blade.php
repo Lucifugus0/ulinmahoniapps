@@ -828,7 +828,7 @@
                                 </svg>
                                 <h2 class="font-semibold text-gray-800 dark:text-gray-100 text-lg">{{ __('ui.checkout_reminder') }}</h2>
                             </div>
-                            <a href="{{ route('checkin.index', ['start_date' => now()->format('Y-m-d'), 'end_date' => now()->addDays(3)->format('Y-m-d')]) }}"
+                            <a href="{{ route('checkout.index') }}"
                                 class="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center">
                                 {{ __('ui.view_all') }}
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none"
@@ -841,14 +841,14 @@
                         <div class="overflow-x-auto">
                             @include('pages.bookings.checkin.partials.checkin_table', [
                                 'checkOuts' => $checkOuts,
-                                'per_page' => request('per_page', 4),
+                                'per_page' => request('per_page', 5),
                                 'type' => 'check-out',
                                 'showStatus' => false,
                                 'showActions' => false,
                             ])
                         </div>
                         <div class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                            {{ __('ui.showing_checkouts', ['shown' => min(4, count($checkOuts)), 'total' => count($checkOuts)]) }}
+                            {{ __('ui.checkout_widget_top_note') }}
                         </div>
                     </div>
                 @endif

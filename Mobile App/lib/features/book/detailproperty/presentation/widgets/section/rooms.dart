@@ -100,14 +100,22 @@ class RoomTypeSection extends ConsumerWidget {
                 roomsAsyncValue.maybeWhen(
                   data: (rooms) {
                     final availableRooms = rooms.where((room) => room.status != 0 && room.status != 2).toList();
-                    // Get distinct room names
-                    final distinctRoomNames = availableRooms
-                        .map((room) => room.name)
-                        .where((name) => name != null && name.isNotEmpty)
-                        .cast<String>()
-                        .toSet()
-                        .toList()
-                      ..sort();
+                    // Build name → sort_priority map from rooms (admin-controlled order
+                    // from m_room_name_types via API field `type_sort_priority`).
+                    // Names without a registered priority go to the end.
+                    final Map<String, int> namePriority = {};
+                    for (final room in availableRooms) {
+                      final n = room.name;
+                      if (n != null && n.isNotEmpty) {
+                        // First non-null priority wins (all rooms of the same type share it).
+                        namePriority[n] = room.typeSortPriority ?? namePriority[n] ?? 999999;
+                      }
+                    }
+                    final distinctRoomNames = namePriority.keys.toList()
+                      ..sort((a, b) {
+                        final cmp = namePriority[a]!.compareTo(namePriority[b]!);
+                        return cmp != 0 ? cmp : a.compareTo(b);
+                      });
 
                     if (distinctRoomNames.isEmpty) {
                       return const SizedBox.shrink();

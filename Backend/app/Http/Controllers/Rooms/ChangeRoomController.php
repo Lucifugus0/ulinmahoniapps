@@ -91,16 +91,26 @@ class ChangeRoomController extends Controller
      */
     private function getTransferHistory($propertyId = null, $search = null, $perPage = 25)
     {
-        // Get distinct order_ids via raw subquery — Laravel's paginator
-        // miscounts with both distinct() and groupBy() on Eloquent models.
-        $orderIds = DB::table('t_booking')
-            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
-            ->whereNotNull('previous_booking_id')
+        // Filter on `room_changed_at` (set only on real room transfers).
+        // Using `previous_booking_id` would also catch renewals, which inflates
+        // the total and leaves the paginator with mostly-empty pages.
+        $orderIds = DB::table('t_booking as b')
+            ->leftJoin('t_transactions as t', 't.order_id', '=', 'b.order_id')
+            ->leftJoin('users as u', 'u.id', '=', 't.user_id')
+            ->when($propertyId, fn($q) => $q->where('b.property_id', $propertyId))
+            ->whereNotNull('b.room_changed_at')
             ->when($search, function ($q) use ($search) {
-                $q->where('order_id', 'like', '%' . $search . '%');
+                $q->where(function ($sub) use ($search) {
+                    $like = '%' . $search . '%';
+                    $sub->where('b.order_id', 'like', $like)
+                        ->orWhere('b.user_name', 'like', $like)
+                        ->orWhere('u.username', 'like', $like)
+                        ->orWhere('u.first_name', 'like', $like)
+                        ->orWhere('u.last_name', 'like', $like);
+                });
             })
-            ->selectRaw('order_id, MAX(created_at) as last_created')
-            ->groupBy('order_id')
+            ->selectRaw('b.order_id, MAX(b.room_changed_at) as last_created')
+            ->groupBy('b.order_id')
             ->orderByDesc('last_created')
             ->get();
 
@@ -126,6 +136,8 @@ class ChangeRoomController extends Controller
             $items->push([
                 'order_id' => $orderId,
                 'guest_name' => $firstBooking->user->username ?? $firstBooking->user_name ?? 'N/A',
+                // Email shown under guest name in the list. Prefer the linked user's email; fall back to t_booking.user_email captured at booking time.
+                'guest_email' => $firstBooking->user->email ?? $firstBooking->user_email ?? null,
                 'property' => $firstBooking->property,
                 'first_room' => $firstBooking->room,
                 'last_room' => $lastBooking->room,
@@ -308,6 +320,16 @@ class ChangeRoomController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
+            // Sync the transaction's room reference to the new room.
+            // Frontend "My Booking" and the mobile app resolve the room via Transaction::room()
+            // (belongsTo Room on t_transactions.room_id), so leaving this stale makes the
+            // transferred booking still appear under the original room everywhere except
+            // the Backend admin views that read directly from t_booking.
+            $currentBooking->transaction?->update([
+                'room_id' => $newRoom->idrec,
+                'room_name' => $newRoom->name,
+            ]);
+
             // Old room: free (guest has moved out)
             $currentRoom->update(['rental_status' => 0]);
 
@@ -418,6 +440,13 @@ class ChangeRoomController extends Controller
             $currentBooking->update([
                 'status' => 0,
                 'updated_by' => Auth::id(),
+            ]);
+
+            // Sync the transaction's room reference back to the previous room — same reason
+            // as in store(): downstream consumers read room from t_transactions, not t_booking.
+            $currentBooking->transaction?->update([
+                'room_id' => $previousRoom->idrec,
+                'room_name' => $previousRoom->name,
             ]);
 
             // Current room: free (guest has moved out)

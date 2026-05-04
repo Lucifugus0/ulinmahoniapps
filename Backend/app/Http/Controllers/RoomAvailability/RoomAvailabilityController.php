@@ -20,17 +20,20 @@ class RoomAvailabilityController extends Controller
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
 
-        // Query untuk room availability — load both current occupants and upcoming bookings
+        /* Eager-load all paid bookings on the room that are still semantically active —
+           status=1 + transaction_status='paid' + renewal_status=0 (excludes superseded
+           parent transactions). The blade splits this into two buckets:
+           - "current" (check_in_at NOT NULL, check_out_at IS NULL) → blue badge
+           - "future"  (check_in_at IS NULL, scheduled check_in >= today) → green badge */
         $rooms = Room::where('status', 1)->with(['property', 'thumbnail', 'bookings' => function ($query) use ($startDate, $endDate) {
-            // Active bookings (status=1) with paid transaction
-            // Includes: currently checked-in (for "Occupied By") AND future bookings (for "Upcoming")
             $query->where('status', 1)
-            ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
-            })
-            ->with(['user', 'transaction.user', 'payment']);
+                ->whereHas('transaction', function ($q) {
+                    $q->where('transaction_status', 'paid')
+                      ->where('renewal_status', 0);
+                })
+                ->with(['user', 'transaction.user', 'payment']);
 
-            // Filter berdasarkan tanggal jika ada
+            // Optional date-range filter from the page's date picker
             if ($startDate && $endDate) {
                 $query->whereHas('transaction', function ($q) use ($startDate, $endDate) {
                     $q->where('check_in', '<', $endDate)

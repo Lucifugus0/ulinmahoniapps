@@ -811,17 +811,24 @@ class DashboardController extends Controller
             ->limit(4)
             ->get();
 
-        // Get upcoming check-outs (paid bookings with check-out date within 3 days, checked in but not checked out).
-        // status=1 filters out renewed/superseded parent bookings — when a renewal is created the parent's
-        // t_booking.status is flipped to 0, so without this it would still appear here.
+        /* Pending check-outs widget — mirrors the Today's Check-out page logic but with a forward-3-day
+           preview added on top:
+           - status=1 + latestPerOrder() collapses renewed/superseded parent bookings (the parent's
+             t_booking.status is flipped to 0 on renewal, and latestPerOrder picks the active row in
+             a renewal chain).
+           - renewal_status = 0 on the transaction excludes parent transactions that have been
+             superseded by a newer paid order_id (matches CheckOutController).
+           - Date window: check_out <= today+3 with no lower bound, so the widget includes both
+             overdue (check_out < today, not yet physically checked out) and the next 3 days. */
         $checkOuts = Booking::with(['user', 'room', 'property', 'transaction'])
+            ->latestPerOrder()
             ->when($userPropertyId, function ($q) use ($userPropertyId) {
-                $q->where('property_id', $userPropertyId);
+                $q->where('t_booking.property_id', $userPropertyId);
             })
-            ->where('status', 1)
+            ->where('t_booking.status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->where('transaction_status', 'paid')
-                    ->whereDate('check_out', '>=', now()->toDateString())
+                    ->where('renewal_status', 0)
                     ->whereDate('check_out', '<=', now()->addDays(3)->toDateString());
             })
             ->whereNotNull('check_in_at')
@@ -831,7 +838,7 @@ class DashboardController extends Controller
                     ->whereColumn('t_transactions.order_id', 't_booking.order_id')
                     ->limit(1)
             )
-            ->limit(4)
+            ->limit(5)
             ->get();
 
         $stats = [

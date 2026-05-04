@@ -12,6 +12,7 @@ use App\Http\Controllers\Bookings\CheckIn\CheckInController;
 use App\Http\Controllers\Bookings\CheckOut\CheckOutController;
 use App\Http\Controllers\Bookings\Completed\CompletedController;
 use App\Http\Controllers\Bookings\NewReservation\NewReservController;
+use App\Http\Controllers\Bookings\ModifyBooking\ModifyBookingController;
 use App\Http\Controllers\Bookings\Pending\PendingController;
 use App\Http\Controllers\Rooms\ChangeRoomController;
 use App\Http\Controllers\Properties\CalendarDateController;
@@ -221,6 +222,14 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
         Route::get('/completed', [CompletedController::class, 'index'])->name('completed.index');
         Route::get('/completed/filter', [CompletedController::class, 'filter'])->name('completed.filter');
+
+        /* Modify Booking — admin tool for editing scheduled check_in / check_out / paid_at on
+           paid bookings. Same filter set as Confirmed Bookings. Each save clones t_booking
+           (audit Option A) and writes the actual data to t_transactions. */
+        Route::get('/modify-booking', [ModifyBookingController::class, 'index'])->name('modifyBooking.index');
+        Route::get('/modify-booking/filter', [ModifyBookingController::class, 'filter'])->name('modifyBooking.filter');
+        Route::get('/modify-booking/{order_id}/details', [ModifyBookingController::class, 'show'])->name('modifyBooking.show');
+        Route::post('/modify-booking/{order_id}', [ModifyBookingController::class, 'modify'])->name('modifyBooking.update');
     });
     
     // ---------------------------------------------------------------------------------------------------------------------
@@ -302,6 +311,7 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::post('/rooms/room-name-types/store', [ManajementRoomsController::class, 'storeRoomNameType'])->name('roomNameTypes.store');
         Route::put('/rooms/room-name-types/update/{id}', [ManajementRoomsController::class, 'updateRoomNameType'])->name('roomNameTypes.update');
         Route::post('/rooms/room-name-types/toggle-status', [ManajementRoomsController::class, 'toggleRoomNameTypeStatus'])->name('roomNameTypes.toggle-status');
+        Route::post('/rooms/room-name-types/reorder', [ManajementRoomsController::class, 'reorderRoomNameType'])->name('roomNameTypes.reorder');
 
         // ------------------------- DOOR LOCK MANAGEMENT -------------------------
         Route::get('/rooms/door-locks', [DoorLockController::class, 'index'])->name('door-locks.index');

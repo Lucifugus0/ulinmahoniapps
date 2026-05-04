@@ -152,6 +152,31 @@
             window.dispatchEvent(new CustomEvent('open-edit-room-name-type-modal', { detail: data }));
         }
 
+        // Up/Down reorder — POSTs to /properties/rooms/room-name-types/reorder
+        // and reloads the page to reflect the new sort_priority values.
+        function reorderRoomNameType(id, direction) {
+            fetch('/properties/rooms/room-name-types/reorder', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id, direction }),
+            })
+                .then(r => r.json().then(data => ({ ok: r.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok && data.success) {
+                        window.location.reload();
+                    } else {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: data.message || 'Cannot reorder', showConfirmButton: false, timer: 2000 });
+                    }
+                })
+                .catch(() => {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Failed to reorder', showConfirmButton: false, timer: 2000 });
+                });
+        }
+
         function applyFilters() {
             const search = document.getElementById('searchInput')?.value || '';
             const status = document.getElementById('statusFilter')?.value || '';

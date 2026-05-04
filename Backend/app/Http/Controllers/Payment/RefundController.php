@@ -137,22 +137,9 @@ class RefundController extends Controller
                     'reason' => 'refunded'
                 ]);
 
-                // Reset rental_status on room if no other active bookings
-                if ($booking->room_id) {
-                    $hasOtherActiveBooking = Booking::where('room_id', $booking->room_id)
-                        ->where('status', 1)
-                        ->where('idrec', '!=', $booking->idrec)
-                        ->whereHas('transaction', function ($q) {
-                            $q->where('transaction_status', 'paid')
-                              ->orWhere('transaction_status', 'waiting');
-                        })
-                        ->exists();
-
-                    if (!$hasOtherActiveBooking) {
-                        Room::where('idrec', $booking->room_id)
-                            ->update(['rental_status' => 0]);
-                    }
-                }
+                /* rental_status untouched — refund follows cancellation, and
+                   cancellation is disallowed after check-in. Only check-out
+                   flips the physical-occupancy flag. */
             }
 
             // Update status transaksi

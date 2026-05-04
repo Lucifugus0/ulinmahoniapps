@@ -653,10 +653,23 @@
                         <h2 class="text-2xl font-bold text-gray-900 mb-6">{{ __('properties.sections.available_rooms') }}</h2>
 
                         @php
-                            // Group rooms by name, sort each group by room number ascending
-                            $groupedRooms = collect($house['rooms'])->groupBy('name')->map(function($rooms) {
-                                return $rooms->sortBy('no', SORT_NATURAL);
-                            });
+                            /* Group rooms by type name; sort the inner list by room number,
+                               and sort the outer group order by m_room_name_types.sort_priority
+                               (admin-controlled). Unknown names (not registered in
+                               m_room_name_types) fall to the end of the list. */
+                            $roomTypePriorities = \DB::table('m_room_name_types')
+                                ->orderBy('sort_priority', 'asc')
+                                ->orderBy('name', 'asc')
+                                ->pluck('sort_priority', 'name');
+
+                            $groupedRooms = collect($house['rooms'])
+                                ->groupBy('name')
+                                ->map(function ($rooms) {
+                                    return $rooms->sortBy('no', SORT_NATURAL);
+                                })
+                                ->sortBy(function ($_, $name) use ($roomTypePriorities) {
+                                    return $roomTypePriorities[$name] ?? PHP_INT_MAX;
+                                });
                         @endphp
 
                         @forelse($groupedRooms as $roomName => $rooms)

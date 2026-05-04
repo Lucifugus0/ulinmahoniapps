@@ -151,9 +151,10 @@
                 };
             };
 
-            /* Sort state: persists across AJAX refreshes */
-            /* Default sort: check-in descending, property ascending */
-            window._bookingSortBy = 'checkin';
+            /* Sort state: persists across AJAX refreshes.
+               Default sort: Booking ID descending — surfaces the newest bookings first
+               since the order_id format `UMH-{ymd}{rand}{property}` sorts naturally by date. */
+            window._bookingSortBy = 'orderid';
             window._bookingSortDir = 'desc';
 
             /* Server-side sort: toggle direction or switch column, then refetch */
@@ -206,9 +207,10 @@
                     const perPage = document.getElementById('per_page').value;
                     params.append('per_page', perPage);
 
-                    /* Server-side sorting: pass current sort state */
-                    params.append('sort_by', window._bookingSortBy || 'checkin');
-                    params.append('sort_dir', window._bookingSortDir || 'asc');
+                    /* Server-side sorting: pass current sort state.
+                       Fallbacks must match window._bookingSortBy/Dir initial values. */
+                    params.append('sort_by', window._bookingSortBy || 'orderid');
+                    params.append('sort_dir', window._bookingSortDir || 'desc');
 
                     /* Pass show_expired checkbox state */
                     if (document.getElementById('show_expired').checked) {

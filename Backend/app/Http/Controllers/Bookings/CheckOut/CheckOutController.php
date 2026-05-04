@@ -26,22 +26,33 @@ class CheckOutController extends Controller
            - Transaction check_out date is today or earlier */
         $today = Carbon::today()->endOfDay();
 
-        $query = Booking::with(['transaction', 'property', 'room', 'user'])
+        /* checkedInByUser / checkedOutByUser eager-loaded so the merged Booking Period column
+           can render "Check-in at ... by <admin>" without N+1. checked_out_by is always NULL on
+           this page (rows shown are not yet checked out) but the relation is still loaded for
+           consistency with the shared row template. */
+        $query = Booking::with(['transaction', 'property', 'room', 'user', 'checkedInByUser', 'checkedOutByUser'])
             ->latestPerOrder()
             ->where('t_booking.status', 1)
             ->whereNotNull('check_in_at')
             ->whereNull('check_out_at');
 
         /* If show_all_checkin is checked, show ALL checked-in bookings.
-           Otherwise only show bookings due today or overdue. */
+           Otherwise only show bookings due today or overdue.
+           In both cases exclude transactions that have been renewed
+           (renewal_status = 1) — a renewed transaction has been
+           superseded by a later one with a new order_id, so the
+           guest has effectively extended their stay and is no
+           longer in the "due for check-out" cohort for this row. */
         if (!$request->filled('show_all_checkin')) {
             $query->whereHas('transaction', function ($q) use ($today) {
                 $q->where('transaction_status', 'paid')
+                  ->where('renewal_status', 0)
                   ->where('check_out', '<=', $today);
             });
         } else {
             $query->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
+                $q->where('transaction_status', 'paid')
+                  ->where('renewal_status', 0);
             });
         }
 
@@ -91,22 +102,26 @@ class CheckOutController extends Controller
            - Transaction check_out date is today or earlier */
         $today = Carbon::today()->endOfDay();
 
-        $query = Booking::with(['user', 'room', 'property', 'transaction'])
+        $query = Booking::with(['user', 'room', 'property', 'transaction', 'checkedInByUser', 'checkedOutByUser'])
             ->latestPerOrder()
             ->where('t_booking.status', 1)
             ->whereNotNull('check_in_at')
             ->whereNull('check_out_at');
 
-        /* If show_all_checkin is checked, show ALL checked-in bookings.
-           Otherwise only show bookings due today or overdue. */
+        /* Mirror of the index() filter — exclude renewed transactions
+           (renewal_status = 1) so a renewed parent booking does not
+           appear as overdue when the guest already has a newer
+           paid order_id covering the current period. */
         if (!$request->filled('show_all_checkin')) {
             $query->whereHas('transaction', function ($q) use ($today) {
                 $q->where('transaction_status', 'paid')
+                  ->where('renewal_status', 0)
                   ->where('check_out', '<=', $today);
             });
         } else {
             $query->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
+                $q->where('transaction_status', 'paid')
+                  ->where('renewal_status', 0);
             });
         }
 
@@ -199,10 +214,30 @@ class CheckOutController extends Controller
             $booking->status = 0; // Mark booking as inactive after checkout
             $booking->save();
 
-            // Checkout selalu membebaskan kamar (rental_status = 0)
+            /* Flip rental_status to 0 (room empty) only if no OTHER active
+               booking on this room is currently checked in. Guards against
+               edge cases like same-day room swaps where another booking row
+               has check_in_at set but hasn't been checked out yet.
+               Transaction must be paid + renewal_status=0 — otherwise expired/
+               pending renewal-attempt rows that inherited check_in_at from
+               their parent (and never got check_out_at set) would falsely
+               keep the flag at 1 (e.g. KOST 2 #202 case 2026-04-30). */
             if ($booking->room_id) {
-                Room::where('idrec', $booking->room_id)
-                    ->update(['rental_status' => 0]);
+                $hasOtherOccupant = Booking::where('room_id', $booking->room_id)
+                    ->where('idrec', '!=', $booking->idrec)
+                    ->where('status', 1)
+                    ->whereNotNull('check_in_at')
+                    ->whereNull('check_out_at')
+                    ->whereHas('transaction', function ($q) {
+                        $q->where('transaction_status', 'paid')
+                          ->where('renewal_status', 0);
+                    })
+                    ->exists();
+
+                if (!$hasOtherOccupant) {
+                    Room::where('idrec', $booking->room_id)
+                        ->update(['rental_status' => 0]);
+                }
             }
 
             // Simpan kondisi barang

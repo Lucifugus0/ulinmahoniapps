@@ -305,6 +305,15 @@
                                             </a>
                                         </li>
                                     @endcan
+                                    {{-- Modify Booking — gated by view_change_room since both edit booking-level state. --}}
+                                    @can('view_change_room')
+                                        <li>
+                                            <a href="{{ route('modifyBooking.index') }}"
+                                                class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('modifyBooking.*')) bg-indigo-600 @endif">
+                                                <span class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_modify_booking') }}</span>
+                                            </a>
+                                        </li>
+                                    @endcan
                                     {{-- Door Lock: moved from Rooms/Units group to Bookings --}}
                                     @can('view_door_locks')
                                         <li>

@@ -21,6 +21,36 @@
             loadPaymentData();
         }
     }
+
+    // Show/hide read-only Payment Details modal triggered from the order_id cell.
+    // Mirrors the show/hide pattern of rejectModal-* and editPaymentDateModal-* on this page
+    // so behavior is consistent (Esc-to-close support is provided by the same global keydown handler).
+    function showPaymentDetailsModal(paymentId) {
+        const modal = document.getElementById(`paymentDetailsModal-${paymentId}`);
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hidePaymentDetailsModal(paymentId) {
+        const modal = document.getElementById(`paymentDetailsModal-${paymentId}`);
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        // Only release scroll-lock if no other Details modal is still open.
+        const stillOpen = document.querySelectorAll('[id^="paymentDetailsModal-"]:not(.hidden)').length;
+        if (!stillOpen) document.body.style.overflow = '';
+    }
+
+    // Close any open Payment Details modal on Escape key.
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        document.querySelectorAll('[id^="paymentDetailsModal-"]:not(.hidden)').forEach(function (modal) {
+            const paymentId = modal.id.replace('paymentDetailsModal-', '');
+            hidePaymentDetailsModal(paymentId);
+        });
+    });
 </script>
 <div>
 <table class="min-w-full divide-y divide-gray-200">
@@ -97,7 +127,12 @@
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{ $payment->order_id }}</div>
+                    {{-- Clickable order_id opens a read-only Payment Details modal. Rendered as a button
+                         (not <a>) so it never navigates away — admins can scan + return to the table. --}}
+                    <button type="button"
+                        onclick="showPaymentDetailsModal({{ $payment->idrec }})"
+                        title="{{ __('ui.payment_details_tooltip') }}"
+                        class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 rounded transition-colors cursor-pointer">{{ $payment->order_id }}</button>
                     {{-- Check-in / Check-out badges --}}
                     @if($payment->transaction?->check_in)
                     <div class="flex items-center gap-1 mt-1 flex-wrap">
@@ -434,18 +469,26 @@
                                 {{ __('ui.cancel_booking') }}
                             </button>
 
-                            <!-- Status Terverifikasi -->
-                            <span
-                                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {{ __('ui.verified') }}
-                            </span>
+                            {{-- Payment method badge (left) + Verified badge (right). Method badge only shows when transaction_type is set. --}}
+                            <div class="flex items-center justify-center gap-2">
+                                @if ($payment->transaction?->transaction_type)
+                                    <span
+                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                                        {{ strtoupper($payment->transaction->transaction_type) }}
+                                    </span>
+                                @endif
+                                <span
+                                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    {{ __('ui.verified') }}
+                                </span>
+                            </div>
 
-                            <!-- Informasi Verifikasi -->
+                            {{-- Verifier label: show admin username when verified_by is set, fall back to "DOKU" only when there is no admin verifier (auto-verified by DOKU webhook) --}}
                             <div class="text-xs text-gray-500">
                                 {{ __('ui.by') }}:
                                 {{ $payment->verifiedBy->username ?? 'DOKU' }}
@@ -948,19 +991,36 @@
                         </div>
                     @else
                         <div class="flex flex-col items-center text-center space-y-2">
-                            <span
-                                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {{ __('ui.verified') }}
-                            </span>
-                            <div class="text-xs text-gray-500">
-                                {{ __('ui.by') }}:
-                                {{ $payment->verifiedBy->name ?? 'DOKU' }}
-                            </div>
+                            {{-- Only render the Verified block when the payment is actually verified — admin-set verified_at, or transaction marked paid/completed via DOKU webhook. Prevents Verified appearing on rejected/failed/expired/canceled. --}}
+                            @php
+                                $isVerified = $payment?->verified_at
+                                    || in_array($payment->transaction?->transaction_status, ['paid', 'completed']);
+                            @endphp
+                            @if ($isVerified)
+                                {{-- Payment method badge (left) + Verified badge (right) --}}
+                                <div class="flex items-center justify-center gap-2">
+                                    @if ($payment->transaction?->transaction_type)
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                                            {{ strtoupper($payment->transaction->transaction_type) }}
+                                        </span>
+                                    @endif
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {{ __('ui.verified') }}
+                                    </span>
+                                </div>
+                                {{-- Verifier label: admin username when verified_by is set, "DOKU" only when no admin verifier --}}
+                                <div class="text-xs text-gray-500">
+                                    {{ __('ui.by') }}:
+                                    {{ $payment->verifiedBy->username ?? $payment->verifiedBy->name ?? 'DOKU' }}
+                                </div>
+                            @endif
 
                             <!-- Lihat Bukti Pembayaran -->
                             @if ($payment->transaction && $payment->transaction->attachment)
@@ -1405,6 +1465,310 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endforeach
+
+{{-- Payment Details modal (read-only). Opened from the clickable order_id cell.
+     One modal per row — populated entirely server-side so no AJAX round-trip is needed
+     when an admin clicks. Mirrors styling of the other modals on this page. --}}
+@foreach ($payments as $payment)
+    @php
+        /* Normalize the chosen payment channel using the same label map as All Bookings,
+           so QRIS / VA / Credit Card etc. render with clean human labels regardless of
+           the inconsistent legacy stored values ('qris' vs 'QRIS', 'bri_manual' vs 'BRI Manual'). */
+        $rawType = $payment->transaction?->transaction_type ?? null;
+        $paymentLabels = [
+            'bri_manual'  => 'BRI Manual',
+            'BRI Manual'  => 'BRI Manual',
+            'qris'        => 'QRIS',
+            'QRIS'        => 'QRIS',
+            'credit_card' => 'Credit Card',
+            'Credit Card' => 'Credit Card',
+            'Transfer VA' => 'Transfer VA',
+            'mandiri'     => 'Mandiri VA',
+            'bri'         => 'BRI VA',
+            'bsi'         => 'BSI VA',
+            'cimb'        => 'CIMB VA',
+            'btn'         => 'BTN VA',
+            'danamon'     => 'Danamon VA',
+        ];
+        $paidMethodLabel = $rawType
+            ? ($paymentLabels[$rawType] ?? strtoupper(str_replace('_', ' ', $rawType)))
+            : ($payment->transaction?->payment_bank ?? null);
+
+        /* DOKU webhooks don't write verified_by — fall back to "DOKU" so the cell never
+           shows an unhelpful em-dash for genuinely paid DOKU transactions. */
+        $confirmer = $payment->verifiedBy ?? null;
+        $confirmerName = $confirmer
+            ? (trim(($confirmer->first_name ?? '') . ' ' . ($confirmer->last_name ?? '')) ?: ($confirmer->username ?? null))
+            : null;
+        $isDokuPaid = !$confirmerName
+            && in_array(strtolower($rawType ?? ''), ['qris', 'credit_card', 'transfer va', 'mandiri', 'bri', 'bsi', 'cimb', 'btn', 'danamon'], true)
+            && in_array(strtolower($payment->transaction?->transaction_status ?? ''), ['paid', 'completed'], true);
+        $confirmerDisplay = $confirmerName ?: ($isDokuPaid ? 'DOKU' : null);
+
+        /* Build the customer display name with the same fallback chain used elsewhere on the page. */
+        $customerName = trim(
+            ($payment->transaction?->user?->first_name ?? '') . ' ' . ($payment->transaction?->user?->last_name ?? '')
+        );
+        if ($customerName === '') {
+            $customerName = $payment->transaction?->user_name
+                ?? $payment->transaction?->user?->username
+                ?? '-';
+        }
+
+        /* Booking duration: prefer the explicit booking_days/booking_months written by the
+           booking flow; fall back to a check_in→check_out diff for legacy rows that lack them. */
+        $bookingType = $payment->transaction?->booking_type ?? null;
+        $bookingDays = (int) ($payment->transaction?->booking_days ?? 0);
+        $bookingMonths = (int) ($payment->transaction?->booking_months ?? 0);
+        if ($bookingType === 'daily' && $bookingDays === 0 && $payment->transaction?->check_in && $payment->transaction?->check_out) {
+            $bookingDays = (int) $payment->transaction->check_in->diffInDays($payment->transaction->check_out);
+        } elseif ($bookingType === 'monthly' && $bookingMonths === 0 && $payment->transaction?->check_in && $payment->transaction?->check_out) {
+            $bookingMonths = (int) $payment->transaction->check_in->diffInMonths($payment->transaction->check_out);
+        }
+
+        /* Subtotal = grand total - admin/service/tax/parking/deposit; clamp at 0 for missing data. */
+        $tx = $payment->transaction;
+        $grandtotal = (int) ($tx?->grandtotal_price ?? 0);
+        $roomPrice = (int) ($tx?->room_price ?? 0);
+        $depositFee = (int) ($tx?->deposit_fee ?? 0);
+        $parkingFee = (int) ($tx?->parking_fee ?? 0);
+        $adminFees = (int) ($tx?->admin_fees ?? 0);
+        $serviceFees = (int) ($tx?->service_fees ?? 0);
+        $taxAmount = (int) ($tx?->tax ?? 0);
+        $discountAmount = (int) ($tx?->discount_amount ?? 0);
+    @endphp
+    <div id="paymentDetailsModal-{{ $payment->idrec }}"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-[70]"
+        style="display: none;" onclick="hidePaymentDetailsModal({{ $payment->idrec }})">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="relative mx-auto w-full max-w-3xl" onclick="event.stopPropagation()">
+                <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl transform transition-all">
+                    {{-- Header --}}
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 rounded-t bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-gray-700 dark:to-gray-700">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                            {{ __('ui.payment_details_title') }}
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $payment->order_id }}</p>
+                        <button type="button" onclick="hidePaymentDetailsModal({{ $payment->idrec }})"
+                            class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center transition-colors duration-200">
+                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                            </svg>
+                            <span class="sr-only">{{ __('ui.close_modal') }}</span>
+                        </button>
+                    </div>
+
+                    {{-- Body: stacked sections of label-left / value-right rows. Single-column layout
+                         (no grid) ensures values never butt up against the next label and stay vertically
+                         aligned for easy scanning regardless of value length. --}}
+                    <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+                        {{-- Order section --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">{{ __('ui.payment_details_section_order') }}</h4>
+                            <div class="text-sm">
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.order_id') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $payment->order_id }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.invoice_number') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->invoice_number ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.transaction_date') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ optional($tx?->created_at)->format('Y-m-d H:i:s') ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_transaction_code') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->transaction_code ?? '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Customer section --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">{{ __('ui.payment_details_section_customer') }}</h4>
+                            <div class="text-sm">
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.customer') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $customerName }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.email') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white text-xs sm:text-sm break-all">{{ $tx?->user_email ?? $tx?->user?->email ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.phone') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->user_phone_number ?? $tx?->user?->phone_number ?? '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Property + Room section --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">{{ __('ui.payment_details_section_property') }}</h4>
+                            <div class="text-sm">
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.property') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->property?->name ?? $tx?->property_name ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.room') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->room?->name ?? $tx?->room_name ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.room_number') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->room?->no ?? '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Booking period section --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">{{ __('ui.payment_details_section_period') }}</h4>
+                            <div class="text-sm">
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.check_in') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->check_in?->format('d M Y H:i') ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.check_out') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->check_out?->format('d M Y H:i') ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.booking_type') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white capitalize">{{ $bookingType ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_duration') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">
+                                        @if ($bookingType === 'daily' && $bookingDays > 0)
+                                            {{ __('ui.payment_details_duration_days', ['count' => $bookingDays]) }}
+                                        @elseif ($bookingType === 'monthly' && $bookingMonths > 0)
+                                            {{ __('ui.payment_details_duration_months', ['count' => $bookingMonths]) }}
+                                        @else
+                                            —
+                                        @endif
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Price breakdown section. Hides any zero-value optional rows so admins
+                             aren't forced to scan past empty Voucher/Tax/Parking lines for most bookings. --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">{{ __('ui.payment_details_section_price') }}</h4>
+                            <div class="text-sm">
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.room_total') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">Rp{{ number_format($roomPrice, 0, ',', '.') }}</span>
+                                </div>
+                                @if ($depositFee > 0)
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.deposit_label') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">Rp{{ number_format($depositFee, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                @if ($parkingFee > 0)
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.parking_total') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">Rp{{ number_format($parkingFee, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                @if ($adminFees > 0)
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_admin_fees') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">Rp{{ number_format($adminFees, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                @if ($serviceFees > 0)
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.service_fee_label') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">Rp{{ number_format($serviceFees, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                @if ($taxAmount > 0)
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_tax') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">Rp{{ number_format($taxAmount, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                @if ($tx?->voucher_code)
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_voucher_code') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx->voucher_code }}</span>
+                                </div>
+                                @endif
+                                @if ($discountAmount > 0)
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_voucher_discount') }}</span>
+                                    <span class="font-medium text-red-600 dark:text-red-400">- Rp{{ number_format($discountAmount, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                <div class="flex justify-between items-baseline gap-4 border-t-2 border-gray-300 dark:border-gray-600 pt-2 mt-2">
+                                    <span class="font-semibold text-gray-900 dark:text-white">{{ __('ui.grand_total') }}</span>
+                                    <span class="font-semibold text-indigo-700 dark:text-indigo-400 text-base">Rp{{ number_format($grandtotal, 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Payment section --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">{{ __('ui.payment_details_section_payment') }}</h4>
+                            <div class="text-sm">
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_method') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $paidMethodLabel ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_transaction_status') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white capitalize">{{ $tx?->transaction_status ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_payment_status') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white capitalize">{{ $payment->payment_status ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_paid_at') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $tx?->paid_at ? \Carbon\Carbon::parse($tx->paid_at)->format('Y-m-d H:i') : '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.verified_by') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $confirmerDisplay ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_verified_at') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $payment->verified_at ? \Carbon\Carbon::parse($payment->verified_at)->format('Y-m-d H:i') : '—' }}</span>
+                                </div>
+                                @if ($tx?->expired_at)
+                                <div class="flex justify-between items-baseline gap-4 border-b border-gray-100 dark:border-gray-700 py-1.5">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ __('ui.payment_details_expired_at') }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($tx->expired_at)->format('Y-m-d H:i') }}</span>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if ($payment->notes)
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">{{ __('ui.payment_details_section_notes') }}</h4>
+                            <p class="text-sm text-gray-700 dark:text-gray-300 break-words bg-gray-50 dark:bg-gray-700 rounded p-3">{{ $payment->notes }}</p>
+                        </div>
+                        @endif
+                    </div>
+
+                    {{-- Footer --}}
+                    <div class="flex items-center justify-end p-4 space-x-2 border-t border-gray-200 dark:border-gray-700 rounded-b bg-gray-50 dark:bg-gray-700">
+                        <button type="button" onclick="hidePaymentDetailsModal({{ $payment->idrec }})"
+                            class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-colors duration-200">
+                            {{ __('ui.close') }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

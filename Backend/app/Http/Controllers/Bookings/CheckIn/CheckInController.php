@@ -19,7 +19,9 @@ class CheckInController extends Controller
     {
         $perPage = $request->input('per_page', 25);
 
-        $query = Booking::with(['transaction', 'property', 'room', 'user'])
+        /* checkedInByUser / checkedOutByUser eager-loaded so the merged Booking Period column
+           can render "Check-in at ... by <admin>" / "Check-out at ... by <admin>" without N+1. */
+        $query = Booking::with(['transaction', 'property', 'room', 'user', 'checkedInByUser', 'checkedOutByUser'])
             ->latestPerOrder()
             ->where('status', 1)
             ->whereHas('transaction', function ($q) {
@@ -70,7 +72,7 @@ class CheckInController extends Controller
 
     public function filter(Request $request)
     {
-        $query = Booking::with(['user', 'room', 'property', 'transaction'])
+        $query = Booking::with(['user', 'room', 'property', 'transaction', 'checkedInByUser', 'checkedOutByUser'])
             ->latestPerOrder()
             ->where('status', 1)
             ->whereHas('transaction', function ($q) {
@@ -163,18 +165,18 @@ class CheckInController extends Controller
             $booking->status = 0; // Mark booking as inactive after checkout
             $booking->save();
 
-            // Reset rental_status on room if no other active bookings
+            /* Flip rental_status to 0 (room empty) only if no OTHER active
+               booking on this room is currently checked in. Same guard as
+               the primary CheckOutController::checkOut. */
             if ($booking->room_id) {
-                $hasOtherActiveBooking = Booking::where('room_id', $booking->room_id)
-                    ->where('status', 1)
+                $hasOtherOccupant = Booking::where('room_id', $booking->room_id)
                     ->where('idrec', '!=', $booking->idrec)
-                    ->whereHas('transaction', function ($q) {
-                        $q->where('transaction_status', 'paid')
-                          ->orWhere('transaction_status', 'waiting');
-                    })
+                    ->where('status', 1)
+                    ->whereNotNull('check_in_at')
+                    ->whereNull('check_out_at')
                     ->exists();
 
-                if (!$hasOtherActiveBooking) {
+                if (!$hasOtherOccupant) {
                     Room::where('idrec', $booking->room_id)
                         ->update(['rental_status' => 0]);
                 }

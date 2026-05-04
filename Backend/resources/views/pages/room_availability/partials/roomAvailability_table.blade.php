@@ -2,8 +2,8 @@
 <!-- Sorting: Alpine.js sorts rows by data-* attributes. Default: Property asc, Room asc -->
 <!-- Action column: only visible to admin_tsno@gmail.com -->
 @php
-    $isAdmin = Auth::check() && Auth::user()->email === 'admin_tsno@gmail.com';
-    $colCount = $isAdmin ? 7 : 6;
+    /* New layout: Room | Property | Status | Booking Reference */
+    $colCount = 4;
 @endphp
 <div class="room-avail-table bg-white rounded-xl shadow-sm border border-gray-200"
     x-data="{
@@ -47,6 +47,15 @@
         /* Apply default sort on init */
         init() { this.performSort(); }
     }">
+    {{-- Legend for the Booking Reference badge colours, shown above the table.
+         Lives inside the partial so it survives AJAX refreshes. --}}
+    <div class="booking-ref-legend px-6 py-3 border-b border-gray-100 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+        <span class="font-semibold text-gray-500 uppercase tracking-wider">{{ __('ui.booking_reference') }}:</span>
+        <span class="booking-ref-badge booking-ref-badge--current px-2 py-0.5 rounded ring-1 ring-inset">{{ __('ui.booking_ref_legend_active') }}</span>
+        <span class="booking-ref-badge booking-ref-badge--soon px-2 py-0.5 rounded ring-1 ring-inset">{{ __('ui.booking_ref_legend_soon') }}</span>
+        <span class="booking-ref-badge booking-ref-badge--overdue px-2 py-0.5 rounded ring-1 ring-inset">{{ __('ui.booking_ref_legend_overdue') }}</span>
+        <span class="booking-ref-badge booking-ref-badge--future px-2 py-0.5 rounded ring-1 ring-inset">{{ __('ui.booking_ref_legend_upcoming') }}</span>
+    </div>
     <div class="overflow-x-auto" style="overflow-y: visible;">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-slate-100">
@@ -72,10 +81,6 @@
                             <template x-if="sortColumn !== 'property'"><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg></template>
                         </div>
                     </th>
-                    <!-- Currently Occupied By -->
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Currently Occupied By
-                    </th>
                     <!-- Sortable Status column header -->
                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 transition-colors"
                         @click="sortTable('status')">
@@ -86,9 +91,9 @@
                             <template x-if="sortColumn !== 'status'"><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7 8l3-3 3 3m0 4l-3 3-3-3"/></svg></template>
                         </div>
                     </th>
-                    <!-- Upcoming Bookings (not sortable) -->
+                    <!-- Booking Reference (not sortable): inline badges, blue=current, green=future -->
                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Upcoming Bookings
+                        {{ __('ui.booking_reference') }}
                     </th>
                     {{-- Action column removed — room availability is system-managed --}}
                 </tr>
@@ -148,38 +153,6 @@
                             </div>
                         </td>
 
-                        <!-- Currently Occupied By -->
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @php
-                                // Find current occupant: checked-in, not checked-out, paid transaction
-                                // Use getRawOriginal('status') because the Booking model's status accessor
-                                // returns display strings like "Checked-In" instead of the raw DB value (1/0)
-                                $activeBooking = $room->bookings->first(function ($booking) {
-                                    return $booking->check_in_at && !$booking->check_out_at
-                                        && $booking->getRawOriginal('status') == 1
-                                        && $booking->transaction
-                                        && $booking->transaction->transaction_status === 'paid';
-                                });
-                            @endphp
-                            @if($activeBooking && $activeBooking->transaction)
-                                @php
-                                    $user = $activeBooking->transaction->user ?? null;
-                                    $occupantName = $user
-                                        ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))
-                                        : ($activeBooking->transaction->user_name ?? 'Unknown');
-                                    if (empty(trim($occupantName))) $occupantName = $activeBooking->transaction->user_name ?? 'Unknown';
-                                @endphp
-                                <div class="text-sm font-medium text-gray-900">{{ $occupantName }}</div>
-                                <div class="text-xs text-gray-500 mt-0.5">
-                                    {{ \Carbon\Carbon::parse($activeBooking->transaction->check_in)->format('d M Y') }}
-                                    —
-                                    {{ \Carbon\Carbon::parse($activeBooking->transaction->check_out)->format('d M Y') }}
-                                </div>
-                            @else
-                                <span class="text-sm text-gray-400">—</span>
-                            @endif
-                        </td>
-
                         <!-- Status + Rent Type -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($room->rental_status == 1)
@@ -207,44 +180,93 @@
                             </div>
                         </td>
 
-                        <!-- Upcoming Bookings — future bookings only (check_in > today, not yet checked-in) -->
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <!-- Booking Reference: one inline badge per paid booking
+                             - blue badge = currently checked in (check_in_at NOT NULL, check_out_at NULL)
+                             - green badge = future paid booking (check_in_at NULL, scheduled check_in >= today)
+                             Each badge: line 1 customer first+last name, line 2 stay period -->
+                        <td class="px-6 py-4 align-top">
                             @php
                                 $today = \Carbon\Carbon::today();
 
-                                // Future bookings: active (raw status=1), paid, check_in after today, not yet checked in
-                                $upcomingBookings = $room->bookings->filter(function ($booking) use ($today) {
-                                    if (!$booking->transaction) return false;
-                                    if ($booking->transaction->transaction_status !== 'paid') return false;
-                                    if ($booking->getRawOriginal('status') != 1) return false;
-                                    // Must not be currently checked in (that's the "occupied by" column)
-                                    if ($booking->check_in_at && !$booking->check_out_at) return false;
-                                    // Check-in date must be in the future
-                                    $checkIn = \Carbon\Carbon::parse($booking->transaction->check_in)->startOfDay();
-                                    return $checkIn->gt($today);
+                                // Eager-load already filters: status=1 + transaction.transaction_status=paid + renewal_status=0
+                                // so we only need to split by physical-state here.
+                                $currentBookings = $room->bookings->filter(function ($b) {
+                                    return $b->transaction
+                                        && $b->getRawOriginal('status') == 1
+                                        && $b->check_in_at && !$b->check_out_at;
                                 });
 
-                                $upcomingCount = $upcomingBookings->count();
+                                $futureBookings = $room->bookings->filter(function ($b) use ($today) {
+                                    if (!$b->transaction) return false;
+                                    if ($b->getRawOriginal('status') != 1) return false;
+                                    if ($b->check_in_at) return false; // not yet physically checked in
+                                    return \Carbon\Carbon::parse($b->transaction->check_in)->startOfDay()->gte($today);
+                                })->sortBy(fn ($b) => $b->transaction->check_in);
+
+                                /* Resolve customer display name in priority:
+                                   1. account name — users.first_name + last_name (when the booking
+                                      has a linked user account, this is the authoritative full name)
+                                   2. check-in name — t_booking.user_name (entered on the booking row,
+                                      which is what the admin sees during check-in)
+                                   3. transaction name — t_transactions.user_name (last-resort fallback)
+                                   Returns empty string when all three are blank — no "Unknown" placeholder. */
+                                $resolveName = function ($b) {
+                                    $u = $b->transaction->user ?? null;
+                                    $name = $u ? trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')) : '';
+                                    if ($name === '') $name = trim($b->user_name ?? '');
+                                    if ($name === '') $name = trim($b->transaction->user_name ?? '');
+                                    return $name;
+                                };
+
+                                /* Decide which colour modifier to use for a current (checked-in) badge,
+                                   based on how close the SCHEDULED check_out date is to today:
+                                   - --overdue (red):   check_out is today or in the past
+                                   - --soon    (yellow): check_out is in the next 1–3 days (D-1 / D-2 / D-3)
+                                   - --current (blue):  check_out is more than 3 days away */
+                                $currentBadgeClass = function ($b) use ($today) {
+                                    $checkOut = \Carbon\Carbon::parse($b->transaction->check_out)->startOfDay();
+                                    if ($checkOut->lte($today)) return 'booking-ref-badge--overdue';
+                                    if ($checkOut->lte($today->copy()->addDays(3))) return 'booking-ref-badge--soon';
+                                    return 'booking-ref-badge--current';
+                                };
                             @endphp
 
-                            @if ($upcomingCount > 0)
-                                <button
-                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition-all duration-200 font-medium text-sm ring-1 ring-inset ring-blue-200 hover:ring-blue-300"
-                                    type="button"
-                                    @click.prevent="$dispatch('open-room-booking-modal', { roomId: {{ $room->idrec }} })"
-                                    title="View upcoming bookings">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <span>{{ $upcomingCount }} Upcoming</span>
-                                </button>
-                            @else
+                            @if ($currentBookings->isEmpty() && $futureBookings->isEmpty())
                                 <span class="inline-flex items-center gap-1.5 text-sm text-gray-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
                                     </svg>
-                                    No upcoming
+                                    {{ __('ui.no_bookings') }}
                                 </span>
+                            @else
+                                <div class="flex flex-col gap-1.5">
+                                    @foreach ($currentBookings as $b)
+                                        <div class="booking-ref-badge {{ $currentBadgeClass($b) }} inline-flex flex-col px-3 py-1.5 rounded-lg ring-1 ring-inset">
+                                            <span class="text-sm font-semibold">{{ $resolveName($b) }}</span>
+                                            <span class="text-xs opacity-90">
+                                                {{ \Carbon\Carbon::parse($b->transaction->check_in)->format('d M Y') }}
+                                                →
+                                                {{ \Carbon\Carbon::parse($b->transaction->check_out)->format('d M Y') }}
+                                            </span>
+                                            {{-- Row 3: actual admin-recorded check-in datetime (only set when guest is currently in the room) --}}
+                                            @if ($b->check_in_at)
+                                                <span class="text-xs opacity-80">
+                                                    {{ __('ui.allbookings_checkin_at') }} {{ \Carbon\Carbon::parse($b->check_in_at)->format('d M Y H:i') }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                    @foreach ($futureBookings as $b)
+                                        <div class="booking-ref-badge booking-ref-badge--future inline-flex flex-col px-3 py-1.5 rounded-lg ring-1 ring-inset">
+                                            <span class="text-sm font-semibold">{{ $resolveName($b) }}</span>
+                                            <span class="text-xs opacity-90">
+                                                {{ \Carbon\Carbon::parse($b->transaction->check_in)->format('d M Y') }}
+                                                →
+                                                {{ \Carbon\Carbon::parse($b->transaction->check_out)->format('d M Y') }}
+                                            </span>
+                                        </div>
+                                    @endforeach
+                                </div>
                             @endif
                         </td>
 
@@ -273,6 +295,54 @@
 
 <!-- Dark mode overrides for room availability table and modal -->
 <style>
+    /* Legend strip above the table */
+    .booking-ref-legend { background-color: #f8fafc; }
+    html.dark .booking-ref-legend { background-color: #0f172a !important; border-color: #334155 !important; }
+    html.dark .booking-ref-legend > span:first-child { color: #94a3b8 !important; }
+
+    /* Booking Reference badges — explicit colors so dark mode contrast is reliable
+       (avoids partial remapping by the dark .bg-blue-50 override below) */
+    .booking-ref-badge--current {
+        background-color: #dbeafe;          /* blue-100 */
+        color: #1e3a8a;                      /* blue-900 — high contrast on light bg */
+        --tw-ring-color: #bfdbfe;           /* ring-blue-200 */
+    }
+    .booking-ref-badge--future {
+        background-color: #d1fae5;          /* emerald-100 */
+        color: #065f46;                      /* emerald-800 */
+        --tw-ring-color: #a7f3d0;           /* ring-emerald-200 */
+    }
+    .booking-ref-badge--soon {
+        background-color: #fef3c7;          /* amber-100 — D-3 to D-1 warning */
+        color: #78350f;                      /* amber-900 */
+        --tw-ring-color: #fde68a;           /* ring-amber-200 */
+    }
+    .booking-ref-badge--overdue {
+        background-color: #fee2e2;          /* red-100 — today or overdue */
+        color: #7f1d1d;                      /* red-900 */
+        --tw-ring-color: #fecaca;           /* ring-red-200 */
+    }
+    html.dark .booking-ref-badge--current {
+        background-color: #1e3a8a !important; /* blue-900 */
+        color: #dbeafe !important;            /* blue-100 — light text on dark bg */
+        --tw-ring-color: #2563eb !important;  /* ring-blue-600 */
+    }
+    html.dark .booking-ref-badge--future {
+        background-color: #065f46 !important; /* emerald-800 */
+        color: #d1fae5 !important;            /* emerald-100 */
+        --tw-ring-color: #059669 !important;  /* ring-emerald-600 */
+    }
+    html.dark .booking-ref-badge--soon {
+        background-color: #78350f !important; /* amber-900 */
+        color: #fef3c7 !important;            /* amber-100 */
+        --tw-ring-color: #d97706 !important;  /* ring-amber-600 */
+    }
+    html.dark .booking-ref-badge--overdue {
+        background-color: #7f1d1d !important; /* red-900 */
+        color: #fee2e2 !important;            /* red-100 */
+        --tw-ring-color: #dc2626 !important;  /* ring-red-600 */
+    }
+
     /* Table dark mode */
     html.dark .room-avail-table { background-color: #1e293b !important; border-color: #334155 !important; }
     html.dark .room-avail-table table { border-color: #334155 !important; }

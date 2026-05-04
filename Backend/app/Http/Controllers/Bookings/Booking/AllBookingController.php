@@ -12,11 +12,16 @@ class AllBookingController extends Controller
 {
     public function index(Request $request)
     {
-        /* Server-side sorting: accepts sort_by and sort_dir params from the frontend */
-        $sortBy = $request->input('sort_by', 'checkin');
+        /* Server-side sorting: accepts sort_by and sort_dir params from the frontend.
+           Default order is Booking ID descending so the newest bookings surface first
+           (the order_id format `UMH-{ymd}{rand}{property}` sorts naturally by date). */
+        $sortBy = $request->input('sort_by', 'orderid');
         $sortDir = in_array($request->input('sort_dir'), ['asc', 'desc']) ? $request->input('sort_dir') : 'desc';
 
-        $query = Booking::with(['user', 'room', 'property', 'transaction'])
+        /* checkedInByUser / checkedOutByUser eager-loaded so the merged Dates column
+           can render "Check-in at ... by <admin>" / "Check-out at ... by <admin>" without
+           N+1 queries. Both come from t_booking.checked_in_by / checked_out_by FKs. */
+        $query = Booking::with(['user', 'room', 'property', 'transaction', 'payment.verifiedBy', 'refund.requestedBy', 'checkedInByUser', 'checkedOutByUser'])
             ->latestPerOrder()
             ->whereHas('transaction', function ($q) {
                 $q->where('status', 1);
@@ -30,8 +35,8 @@ class AllBookingController extends Controller
             case 'checkout':
                 $query->orderBy('t_transactions.check_out', $sortDir);
                 break;
-            case 'orderid':
-                $query->orderBy('t_booking.order_id', $sortDir);
+            case 'checkin':
+                $query->orderBy('t_transactions.check_in', $sortDir);
                 break;
             case 'name':
                 $query->orderBy('t_transactions.user_name', $sortDir);
@@ -39,9 +44,9 @@ class AllBookingController extends Controller
             case 'property':
                 $query->orderBy('m_properties.name', $sortDir);
                 break;
-            case 'checkin':
+            case 'orderid':
             default:
-                $query->orderBy('t_transactions.check_in', $sortDir);
+                $query->orderBy('t_booking.order_id', $sortDir);
                 break;
         }
         /* Secondary sort for stable ordering */
@@ -80,12 +85,23 @@ class AllBookingController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             /* Use t_booking.order_id to avoid ambiguity with t_transactions.order_id from leftJoin */
+            /* Match against: order_id, linked user's name/username/email/phone, and the transaction's
+               denormalized user_name/user_email/user_phone_number — the latter is needed because
+               legacy bookings + guest-checkout flows may have NULL user_id but still hold contact
+               info on the transaction row. */
             $query->where(function ($q) use ($search) {
                 $q->where('t_booking.order_id', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
                         $q->where('username', 'like', "%{$search}%")
                             ->orWhere('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone_number', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('transaction', function ($q) use ($search) {
+                        $q->where('user_name', 'like', "%{$search}%")
+                            ->orWhere('user_email', 'like', "%{$search}%")
+                            ->orWhere('user_phone_number', 'like', "%{$search}%");
                     });
             });
         }
@@ -154,11 +170,15 @@ class AllBookingController extends Controller
             return redirect()->route('bookings.index', $request->query());
         }
 
-        /* Server-side sorting: accepts sort_by and sort_dir params from the frontend */
-        $sortBy = $request->input('sort_by', 'checkin');
+        /* Server-side sorting: accepts sort_by and sort_dir params from the frontend.
+           Default mirrors index() — newest Booking ID first. */
+        $sortBy = $request->input('sort_by', 'orderid');
         $sortDir = in_array($request->input('sort_dir'), ['asc', 'desc']) ? $request->input('sort_dir') : 'desc';
 
-        $query = Booking::with(['user', 'room', 'property', 'transaction'])
+        /* checkedInByUser / checkedOutByUser eager-loaded so the merged Dates column
+           can render "Check-in at ... by <admin>" / "Check-out at ... by <admin>" without
+           N+1 queries. Both come from t_booking.checked_in_by / checked_out_by FKs. */
+        $query = Booking::with(['user', 'room', 'property', 'transaction', 'payment.verifiedBy', 'refund.requestedBy', 'checkedInByUser', 'checkedOutByUser'])
             ->latestPerOrder()
             ->whereHas('transaction', function ($q) {
                 $q->where('status', 1);
@@ -172,8 +192,8 @@ class AllBookingController extends Controller
             case 'checkout':
                 $query->orderBy('t_transactions.check_out', $sortDir);
                 break;
-            case 'orderid':
-                $query->orderBy('t_booking.order_id', $sortDir);
+            case 'checkin':
+                $query->orderBy('t_transactions.check_in', $sortDir);
                 break;
             case 'name':
                 $query->orderBy('t_transactions.user_name', $sortDir);
@@ -181,9 +201,9 @@ class AllBookingController extends Controller
             case 'property':
                 $query->orderBy('m_properties.name', $sortDir);
                 break;
-            case 'checkin':
+            case 'orderid':
             default:
-                $query->orderBy('t_transactions.check_in', $sortDir);
+                $query->orderBy('t_booking.order_id', $sortDir);
                 break;
         }
         /* Secondary sort for stable ordering */
@@ -222,12 +242,23 @@ class AllBookingController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             /* Use t_booking.order_id to avoid ambiguity with t_transactions.order_id from leftJoin */
+            /* Match against: order_id, linked user's name/username/email/phone, and the transaction's
+               denormalized user_name/user_email/user_phone_number — the latter is needed because
+               legacy bookings + guest-checkout flows may have NULL user_id but still hold contact
+               info on the transaction row. */
             $query->where(function ($q) use ($search) {
                 $q->where('t_booking.order_id', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
                         $q->where('username', 'like', "%{$search}%")
                             ->orWhere('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone_number', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('transaction', function ($q) use ($search) {
+                        $q->where('user_name', 'like', "%{$search}%")
+                            ->orWhere('user_email', 'like', "%{$search}%")
+                            ->orWhere('user_phone_number', 'like', "%{$search}%");
                     });
             });
         }

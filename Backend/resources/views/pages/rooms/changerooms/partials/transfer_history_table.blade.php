@@ -25,8 +25,13 @@
                     <span class="font-mono text-sm font-medium">{{ $history['order_id'] }}</span>
                 </td>
 
-                {{-- Guest Name --}}
-                <td class="px-4 py-3">{{ $history['guest_name'] }}</td>
+                {{-- Guest Name + email under it --}}
+                <td class="px-4 py-3">
+                    <div class="font-medium">{{ $history['guest_name'] }}</div>
+                    @if (!empty($history['guest_email']))
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $history['guest_email'] }}</div>
+                    @endif
+                </td>
 
                 {{-- Property --}}
                 <td class="px-4 py-3">{{ $history['property']->name ?? '-' }}</td>

@@ -1182,9 +1182,14 @@ class ManajementRoomsController extends Controller
      */
     public function indexRoomNameType(Request $request)
     {
+        /* Order by admin-controlled sort_priority asc — drives the ordering
+           seen in the public Frontend "Kamar Tersedia" section and the Mobile
+           App room-name filter dropdown. Falls back to name when priorities
+           collide so listings stay deterministic. */
         $query = RoomNameType::query()
             ->when($request->search, fn($q) => $q->where('name', 'like', '%' . $request->search . '%'))
             ->when($request->status, fn($q) => $q->where('status', $request->status === 'active' ? 1 : 0))
+            ->orderBy('sort_priority', 'asc')
             ->orderBy('name', 'asc');
 
         $roomNameTypes = $query->paginate(8)->withQueryString();
@@ -1203,8 +1208,14 @@ class ManajementRoomsController extends Controller
         ]);
 
         try {
+            /* <!-- Auto-assign next sort_priority (max + 1) so new room types
+               land at the bottom of the list instead of colliding at 0. The
+               admin can still reorder afterwards using the up/down arrows. --> */
+            $nextPriority = (int) RoomNameType::max('sort_priority') + 1;
+
             RoomNameType::create([
                 'name' => $validated['name'],
+                'sort_priority' => $nextPriority,
                 'status' => $validated['status'] ? 1 : 0,
                 'created_by' => Auth::id(),
             ]);
@@ -1251,6 +1262,73 @@ class ManajementRoomsController extends Controller
             return response()->json(['success' => true, 'message' => 'Status berhasil diubah']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal mengubah status'], 500);
+        }
+    }
+
+    /**
+     * <!-- Move a room name type up or down in the sort_priority order by
+     *      swapping its priority with the immediate neighbour. Operates on
+     *      the global ordering, not the current paginated page slice, so an
+     *      "up" click on the first row of page 2 swaps with the last row of
+     *      page 1. -->
+     */
+    public function reorderRoomNameType(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer|exists:m_room_name_types,idrec',
+            'direction' => 'required|in:up,down',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $current = RoomNameType::findOrFail($request->id);
+
+            /* Find the neighbour: for "up" → row with the next-lower priority;
+               for "down" → row with the next-higher priority. */
+            $neighbour = RoomNameType::query()
+                ->when($request->direction === 'up',
+                    fn($q) => $q->where('sort_priority', '<', $current->sort_priority)
+                                ->orderBy('sort_priority', 'desc'),
+                    fn($q) => $q->where('sort_priority', '>', $current->sort_priority)
+                                ->orderBy('sort_priority', 'asc'))
+                ->first();
+
+            if (!$neighbour) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => $request->direction === 'up'
+                        ? 'Already at the top'
+                        : 'Already at the bottom',
+                ], 409);
+            }
+
+            // Swap priorities
+            $currentPriority   = $current->sort_priority;
+            $neighbourPriority = $neighbour->sort_priority;
+
+            $current->update([
+                'sort_priority' => $neighbourPriority,
+                'updated_by'    => Auth::id(),
+            ]);
+            $neighbour->update([
+                'sort_priority' => $currentPriority,
+                'updated_by'    => Auth::id(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order updated',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reorder: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

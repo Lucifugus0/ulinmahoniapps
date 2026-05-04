@@ -141,36 +141,50 @@ class ExpireBooking implements ShouldQueue
                     $prevIdrec   = (int) $previousTransaction->idrec;
                     $prevOrderId = (string) $previousTransaction->order_id;
 
-                    $previousBooking = DB::table('t_booking')->where('order_id', $prevOrderId)->first();
+                    /* Skip rollback if the parent has another successful
+                       renewal (paid/confirmed/completed, is_renewal=1) that
+                       is newer than this expired one. Without this guard,
+                       a late-arriving expiry job for a stale renewal attempt
+                       can clobber the renewal_status / check_out_at that a
+                       later, paid renewal already set on the parent —
+                       making the parent reappear on the Check-Out page. */
+                    $hasNewerSuccessfulRenewal = DB::table('t_transactions')
+                        ->where('room_id', $txRoomId)
+                        ->where('user_id', $txUserId)
+                        ->where('idrec', '!=', $txIdrec)
+                        ->where('idrec', '!=', $prevIdrec)
+                        ->where('is_renewal', 1)
+                        ->whereRaw('LOWER(transaction_status) IN (?, ?, ?)', ['paid', 'confirmed', 'completed'])
+                        ->where('created_at', '>', $previousTransaction->created_at)
+                        ->exists();
 
-                    // Capture before nullifying — used to decide rental_status restoration
-                    $hadCheckOut = $previousBooking && $previousBooking->check_out_at !== null;
+                    if ($hasNewerSuccessfulRenewal) {
+                        Log::info('Renewal rollback SKIPPED on expiry — newer successful renewal exists', [
+                            'expired_transaction_id'  => $txIdrec,
+                            'previous_transaction_id' => $prevIdrec,
+                            'previous_order_id'       => $prevOrderId,
+                        ]);
+                    } else {
+                        // Reset parent transaction's renewal_status so it can be renewed again
+                        DB::table('t_transactions')
+                            ->where('idrec', $prevIdrec)
+                            ->update(['renewal_status' => 0]);
 
-                    // Reset parent transaction's renewal_status so it can be renewed again
-                    DB::table('t_transactions')
-                        ->where('idrec', $prevIdrec)
-                        ->update(['renewal_status' => 0]);
+                        // Clear parent booking's check_out_at (was set when the renewal was created)
+                        DB::table('t_booking')
+                            ->where('order_id', $prevOrderId)
+                            ->update(['check_out_at' => null]);
 
-                    // Clear parent booking's check_out_at (was set when the renewal was created)
-                    DB::table('t_booking')
-                        ->where('order_id', $prevOrderId)
-                        ->update(['check_out_at' => null]);
+                        /* rental_status untouched — physical occupancy is owned
+                           by check-in / check-out only. An expired renewal doesn't
+                           change whether the guest is still in the room. */
 
-                    // Restore rental_status for monthly-only rooms:
-                    // 1 if parent booking had already set check_out_at (was mid-renewal), else 0
-                    $expiredRoom = DB::table('m_rooms')->where('idrec', $txRoomId)->first();
-                    if ($expiredRoom && !$expiredRoom->periode_daily) {
-                        DB::table('m_rooms')
-                            ->where('idrec', $txRoomId)
-                            ->update(['rental_status' => $hadCheckOut ? 1 : 0]);
+                        Log::info('Renewal rollback on expiry', [
+                            'expired_transaction_id'  => $txIdrec,
+                            'previous_transaction_id' => $prevIdrec,
+                            'previous_order_id'       => $prevOrderId,
+                        ]);
                     }
-
-                    Log::info('Renewal rollback on expiry', [
-                        'expired_transaction_id'  => $txIdrec,
-                        'previous_transaction_id' => $prevIdrec,
-                        'previous_order_id'       => $prevOrderId,
-                        'had_check_out'           => $hadCheckOut,
-                    ]);
                 }
             }
 

@@ -822,14 +822,9 @@ class BookingController extends ApiController
             // Booking will be automatically expired by scheduled task if not paid within 1 hour
             Log::info("Booking created with expiration time: {$expiredAt} for order_id: {$order_id}");
 
-            // Update room rental_status to 1 only for monthly-only rooms.
-            // Daily rooms (periode_daily=1) are always considered available.
-            $bookedRoom = DB::table('m_rooms')->where('idrec', $request->room_id)->first();
-            if ($bookedRoom && !$bookedRoom->periode_daily) {
-                DB::table('m_rooms')
-                    ->where('idrec', $request->room_id)
-                    ->update(['rental_status' => 1]);
-            }
+            /* m_rooms.rental_status is NOT touched on booking creation. That
+               flag tracks physical occupancy (guest is in the room) — only
+               check-in sets it to 1, only check-out sets it to 0. */
 
             // Increment parking quota if parking is used (only for new bookings, not renewals)
             if ($request->is_renewal != 1 && $parkingFee > 0 && $parkingType) {
@@ -1240,6 +1235,22 @@ class BookingController extends ApiController
             // Set expiration time to 30 minutes from now
             $expiredAt = now()->addMinutes(30);
 
+            // Server-authoritative source for the renewal's room.
+            // The client may send a stale room_id cached from a pre-transfer snapshot
+            // of t_transactions (which historically lagged behind room transfers), so
+            // we resolve the room from the parent order's currently-active t_booking
+            // row instead and ignore the client-supplied values when available.
+            // Falls back to the request payload only if there is no active booking.
+            $activeParentBooking = Booking::where('order_id', $orderId)->where('status', '1')->first();
+            $authRoomId = $activeParentBooking?->room_id ?? $request->room_id;
+            $authRoomName = $request->room_name;
+            if ($activeParentBooking && $activeParentBooking->room_id) {
+                $authRoom = Room::find($activeParentBooking->room_id);
+                if ($authRoom && $authRoom->name) {
+                    $authRoomName = $authRoom->name;
+                }
+            }
+
             // Prepare transaction data from request
             $transactionData = [
                 // USER DATA
@@ -1251,9 +1262,9 @@ class BookingController extends ApiController
                 'property_id' => $request->property_id,
                 'property_name' => $request->property_name,
                 'property_type' => $request->property_type,
-                // ROOM DATA
-                'room_id' => $request->room_id,
-                'room_name' => $request->room_name,
+                // ROOM DATA — server-authoritative (see $authRoomId resolution above)
+                'room_id' => $authRoomId,
+                'room_name' => $authRoomName,
                 // ORDER DETAILS
                 'order_id' => $newOrderId,
                 'transaction_date' => now(),
@@ -1306,15 +1317,15 @@ class BookingController extends ApiController
                     'order_id' => $newOrderId,
                     'transaction_id' => $newTransaction->idrec,
                     'property_id' => $request->property_id,
-                    'room_id' => $request->room_id,
+                    'room_id' => $authRoomId,
                     'original_amount' => $subtotalBeforeDiscount,
                     'discount_amount' => $discountAmount,
                     'final_amount' => $grandtotalPrice
                 ]);
             }
 
-            // 1. Find old active booking (status=1) by order_id and update check_out_at
-            $oldBooking = Booking::where('order_id', $orderId)->where('status', '1')->first();
+            // 1. Reuse the active parent booking already resolved above and close it.
+            $oldBooking = $activeParentBooking;
             if ($oldBooking) {
                 $oldBooking->update(['check_out_at' => now()]);
             }
@@ -1347,7 +1358,7 @@ class BookingController extends ApiController
             // Create new payment record
             $paymentData = [
                 'property_id' => $request->property_id,
-                'room_id' => $request->room_id,
+                'room_id' => $authRoomId,
                 'order_id' => $newOrderId,
                 'user_id' => $request->user_id,
                 'grandtotal_price' => $grandtotalPrice,
@@ -1362,14 +1373,8 @@ class BookingController extends ApiController
             // Update original transaction's renewal_status to 1 (already renewed)
             $originalTransaction->update(['renewal_status' => 1]);
 
-            // Ensure room rental_status stays 1 for monthly-only rooms (room remains occupied by renewed booking).
-            // Daily rooms (periode_daily=1) are always considered available.
-            $renewedRoom = DB::table('m_rooms')->where('idrec', $request->room_id)->first();
-            if ($renewedRoom && !$renewedRoom->periode_daily) {
-                DB::table('m_rooms')
-                    ->where('idrec', $request->room_id)
-                    ->update(['rental_status' => 1]);
-            }
+            /* rental_status untouched — physical occupancy doesn't change on
+               renewal; the guest is still in the room (or not) regardless. */
 
             // Note: Do NOT increment parking quota for renewals - user is extending existing parking slot
 
@@ -3440,36 +3445,47 @@ class BookingController extends ApiController
                     $prevIdrec   = (int) $previousTransaction->idrec;
                     $prevOrderId = (string) $previousTransaction->order_id;
 
-                    $previousBooking = DB::table('t_booking')->where('order_id', $prevOrderId)->first();
+                    /* Skip rollback if the parent has another successful
+                       renewal (paid/confirmed/completed, is_renewal=1) that
+                       is newer than this cancelled one. Cancelling one
+                       attempt of a multi-attempt renewal must not undo the
+                       state set by a later, paid renewal of the same parent. */
+                    $hasNewerSuccessfulRenewal = DB::table('t_transactions')
+                        ->where('room_id', $txRoomId)
+                        ->where('user_id', $txUserId)
+                        ->where('idrec', '!=', $txIdrec)
+                        ->where('idrec', '!=', $prevIdrec)
+                        ->where('is_renewal', 1)
+                        ->whereRaw('LOWER(transaction_status) IN (?, ?, ?)', ['paid', 'confirmed', 'completed'])
+                        ->where('created_at', '>', $previousTransaction->created_at)
+                        ->exists();
 
-                    // Capture before nullifying — used to decide rental_status restoration
-                    $hadCheckOut = $previousBooking && $previousBooking->check_out_at !== null;
+                    if ($hasNewerSuccessfulRenewal) {
+                        Log::info('Renewal rollback SKIPPED on cancellation — newer successful renewal exists', [
+                            'cancelled_transaction_id' => $txIdrec,
+                            'previous_transaction_id'  => $prevIdrec,
+                            'previous_order_id'        => $prevOrderId,
+                        ]);
+                    } else {
+                        // Rollback renewal_status so the previous booking can be renewed again
+                        DB::table('t_transactions')
+                            ->where('idrec', $prevIdrec)
+                            ->update(['renewal_status' => 0]);
 
-                    // Rollback renewal_status so the previous booking can be renewed again
-                    DB::table('t_transactions')
-                        ->where('idrec', $prevIdrec)
-                        ->update(['renewal_status' => 0]);
+                        // Restore previous booking as active (clear the check_out_at set during renewal)
+                        DB::table('t_booking')
+                            ->where('order_id', $prevOrderId)
+                            ->update(['check_out_at' => null]);
 
-                    // Restore previous booking as active (clear the check_out_at set during renewal)
-                    DB::table('t_booking')
-                        ->where('order_id', $prevOrderId)
-                        ->update(['check_out_at' => null]);
+                        /* rental_status untouched — physical occupancy is owned
+                           by check-in / check-out only. */
 
-                    // Restore rental_status for monthly-only rooms:
-                    // 1 if previous booking had already set check_out_at (was mid-renewal), else 0
-                    $cancelledRoom = DB::table('m_rooms')->where('idrec', $txRoomId)->first();
-                    if ($cancelledRoom && !$cancelledRoom->periode_daily) {
-                        DB::table('m_rooms')
-                            ->where('idrec', $txRoomId)
-                            ->update(['rental_status' => $hadCheckOut ? 1 : 0]);
+                        Log::info('Renewal rollback on cancellation', [
+                            'cancelled_transaction_id' => $txIdrec,
+                            'previous_transaction_id'  => $prevIdrec,
+                            'previous_order_id'        => $prevOrderId,
+                        ]);
                     }
-
-                    Log::info('Renewal rollback on cancellation', [
-                        'cancelled_transaction_id' => $txIdrec,
-                        'previous_transaction_id'  => $prevIdrec,
-                        'previous_order_id'        => $prevOrderId,
-                        'had_check_out'            => $hadCheckOut,
-                    ]);
                 }
             }
 
@@ -3482,21 +3498,10 @@ class BookingController extends ApiController
                     'reason' => 'User-initiated cancellation',
                 ]);
 
-            // Release room — only for monthly-only rooms and only if no other active bookings.
-            // Daily rooms (periode_daily=1) are always considered available.
-            $cancelledRoom = DB::table('m_rooms')->where('idrec', $transaction->room_id)->first();
-            if ($cancelledRoom && !$cancelledRoom->periode_daily) {
-                $otherActiveBookings = Booking::where('room_id', $transaction->room_id)
-                    ->where('order_id', '!=', $order_id)
-                    ->where('status', '1')
-                    ->exists();
-
-                if (!$otherActiveBookings) {
-                    DB::table('m_rooms')
-                        ->where('idrec', $transaction->room_id)
-                        ->update(['rental_status' => 0]);
-                }
-            }
+            /* rental_status untouched — cancellation is disallowed after
+               check-in, so the room was either already empty (flag stays 0)
+               or someone else is occupying it (flag stays 1). Only check-out
+               flips it to 0. */
 
             // Release parking quota
             if (!empty($transaction->parking_type)) {

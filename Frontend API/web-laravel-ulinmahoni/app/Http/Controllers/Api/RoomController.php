@@ -32,8 +32,15 @@ class RoomController extends ApiController
 
             $rooms = $query->get();
 
+            /* Lookup table from room type name → admin-controlled sort_priority.
+               Forwarded to each room as `type_sort_priority` so the Mobile App's
+               room-name filter dropdown can order types by admin priority
+               instead of alphabetically. */
+            $roomTypePriorities = \DB::table('m_room_name_types')
+                ->pluck('sort_priority', 'name');
+
             // Group images by room
-            $groupedRooms = $rooms->groupBy('idrec')->map(function ($roomGroup) use ($parkingFees, $depositFee) {
+            $groupedRooms = $rooms->groupBy('idrec')->map(function ($roomGroup) use ($parkingFees, $depositFee, $roomTypePriorities) {
                 $room = $roomGroup->first();
 
                 // Map and sort images - images with thumbnails come first
@@ -65,6 +72,10 @@ class RoomController extends ApiController
                 $roomArray['images'] = $images;
                 $roomArray['parking_fees'] = $parkingFees;
                 $roomArray['deposit_fee'] = $depositFee;
+
+                /* Admin-controlled ordering for the Mobile App's room-name filter.
+                   Null when the room's `name` is not registered in m_room_name_types. */
+                $roomArray['type_sort_priority'] = $roomTypePriorities[$room->name] ?? null;
 
                 /* Multi-Tier Pricing: add additive pricing fields to room response */
                 $roomArray['price_weekday'] = $room->price_weekday;

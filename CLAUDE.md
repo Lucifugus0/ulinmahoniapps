@@ -293,6 +293,7 @@ Note: `php artisan view:clear` may fail on staging due to PHP version mismatch (
   ```bash
   scp -r Backend/public/build/ umadminpanel@ulinmahoni.com:~/repositories/Ulin-Mahoni-New/Backend/public/build/
   ```
+- **Backend has a split webroot layout** — the Laravel app lives in `~/repositories/.../Backend/` but the actual served document root is a separate directory: `~/public_html/admin.ulinmahoni.com/` (prod) or `~/public_html/staging-admin.ulinmahoni.com/` (staging). Laravel reads the Vite `manifest.json` from the **repo's** `public/build/`, but the browser fetches asset files from the **webroot's** `build/`. When deploying CSS/JS, you must copy `public/build/manifest.json` AND the referenced hashed asset files from the repo's `public/build/assets/` into the webroot's `build/assets/` — otherwise users get 404s on the new filenames. Old hashed files can stay (they'll just go unused). Frontend API has the same split: repo `~/repositories/web-laravel-ulinmahoni/` vs webroot `~/public_html/web.ulinmahoni.com/` / `~/public_html/staging.ulinmahoni.com/`.
 - **php artisan migrate fails** on staging (PHP 8.3 vs 8.4 required) — run SQL directly:
   ```bash
   ssh umadminpanel@ulinmahoni.com "mysql -u umadminpanel_root -p'DigitaLL24\$\$' umadminpanel_ulinmahoni-db-staging -e 'SQL_HERE'"

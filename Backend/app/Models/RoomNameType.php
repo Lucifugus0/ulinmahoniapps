@@ -18,6 +18,7 @@ class RoomNameType extends Model
 
     protected $fillable = [
         'name',
+        'sort_priority',
         'status',
         'created_by',
         'updated_by',

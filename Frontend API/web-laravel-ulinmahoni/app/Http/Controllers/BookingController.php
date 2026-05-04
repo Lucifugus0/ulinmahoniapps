@@ -733,10 +733,13 @@ class BookingController extends Controller
             'url' => request()->fullUrl()
         ]);
 
-        // Get all bookings for the user with relationships
+        // Get all bookings for the user with relationships.
+        // Sorted by t_transactions.created_at desc so the most recently created transaction
+        // (e.g. a fresh renewal or a new booking) surfaces at the top of every tab — matches
+        // the new "Tanggal Pemesanan" row admins/guests see in the ID Pemesanan cell.
         $bookings = Transaction::with(['user', 'room', 'property', 'booking'])
             ->where('user_id', $userId)
-            ->orderBy('check_in', 'desc')
+            ->orderBy('created_at', 'desc')
             ->get();
         
         // Debug: Log the query results
@@ -1061,13 +1064,8 @@ class BookingController extends Controller
             // Booking will be automatically expired by scheduled task if not paid within 1 hour
             Log::info("Booking created with expiration time: {$expiredAt} for order_id: {$order_id}");
 
-            // Update room rental_status to 1 only for monthly-only rooms.
-            // Daily rooms (periode_daily=1) are always considered available.
-            if (!$room->periode_daily) {
-                DB::table('m_rooms')
-                    ->where('idrec', $room->idrec)
-                    ->update(['rental_status' => 1]);
-            }
+            /* m_rooms.rental_status untouched — physical occupancy flag is
+               owned exclusively by check-in / check-out. */
 
             // Process payment with DOKU
             try {

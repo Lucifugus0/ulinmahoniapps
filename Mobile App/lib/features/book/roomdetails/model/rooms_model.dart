@@ -44,6 +44,10 @@ class RoomModel {
   final bool? hasSeasonalPricing;
   /// Multi-language descriptions parsed from API as `{"id": "...", "en": "...", "zh": "..."}`
   final Map<String, String>? descriptionsParsed;
+  /// Admin-controlled sort_priority for the room's type name (m_room_name_types).
+  /// Drives ordering of the room-name filter dropdown — lower values come first.
+  /// Null when the room's name isn't registered in m_room_name_types.
+  final int? typeSortPriority;
 
   RoomModel({
     required this.id,
@@ -86,6 +90,7 @@ class RoomModel {
     this.periodeAnnual,
     this.hasSeasonalPricing,
     this.descriptionsParsed,
+    this.typeSortPriority,
   });
 
   /* Daily Multi Tier Pricing: create a copy with overridden daily price */
@@ -107,6 +112,7 @@ class RoomModel {
       priceOriginalAnnual: priceOriginalAnnual, periodeAnnual: periodeAnnual,
       hasSeasonalPricing: hasSeasonalPricing,
       descriptionsParsed: descriptionsParsed,
+      typeSortPriority: typeSortPriority,
     );
   }
 
@@ -214,6 +220,12 @@ class RoomModel {
       priceOriginalAnnual: json['price_original_annual']?.toString(),
       periodeAnnual: json['periode_annual'] ?? 0,
       hasSeasonalPricing: json['has_seasonal_pricing'] ?? false,
+      // Admin-controlled room-type ordering (lower = comes first). Null when missing.
+      typeSortPriority: json['type_sort_priority'] is int
+          ? json['type_sort_priority'] as int
+          : (json['type_sort_priority'] != null
+              ? int.tryParse(json['type_sort_priority'].toString())
+              : null),
     );
   }
 

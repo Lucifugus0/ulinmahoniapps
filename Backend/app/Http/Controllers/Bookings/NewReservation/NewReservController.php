@@ -28,7 +28,11 @@ class NewReservController extends Controller
 
     protected function filterBookings()
     {
-        $query = Booking::with(['user', 'room', 'property', 'transaction'])
+        /* checkedInByUser / checkedOutByUser eager-loaded so the merged Booking Period column
+           can render "Check-in at ... by <admin>" without N+1. The list shown here is paid
+           bookings awaiting check-in, so check_in_at / check_out_at are usually NULL — but the
+           relations are loaded for consistency with the shared row template across booking pages. */
+        $query = Booking::with(['user', 'room', 'property', 'transaction', 'checkedInByUser', 'checkedOutByUser'])
             ->latestPerOrder()
             ->where('t_booking.status', 1)
             ->whereHas('transaction', function ($q) {
@@ -108,6 +112,19 @@ class NewReservController extends Controller
                 ], 400);
             }
 
+            /* Guard: cannot check in when the room is already physically occupied.
+               m_rooms.rental_status = 1 means another guest is currently in the
+               room (set by the previous check-in, cleared by check-out). */
+            if ($booking->room_id) {
+                $room = \App\Models\Room::find($booking->room_id);
+                if ($room && (int) $room->rental_status === 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Room is currently occupied. Please check out the current guest before checking in a new one.'
+                    ], 409);
+                }
+            }
+
             // Conditional validation: only require doc_image if doc_path is null
             $rules = [
                 'doc_type' => 'required|string|in:ktp,passport,sim,other',
@@ -148,6 +165,13 @@ class NewReservController extends Controller
                 'user_email' => $validated['guest_email'],
                 'user_phone_number' => $validated['guest_phone'],
             ]);
+
+            /* Flip the room to occupied. m_rooms.rental_status tracks physical
+               occupancy — only check-in sets it to 1, only check-out sets it to 0. */
+            if ($booking->room_id) {
+                \App\Models\Room::where('idrec', $booking->room_id)
+                    ->update(['rental_status' => 1]);
+            }
 
             // Update NIK pada user
             if ($booking->user) {

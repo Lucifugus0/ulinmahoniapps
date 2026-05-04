@@ -240,6 +240,8 @@ class PaymentController extends Controller
     public function reject(Request $request, $id)
     {
         try {
+            DB::beginTransaction();
+
             // Find payment by idrec (primary key)
             $payment = Payment::findOrFail($id);
 
@@ -253,12 +255,88 @@ class PaymentController extends Controller
             ]);
 
             // Update related transaction if exists
-            if ($payment->transaction) {
-                $payment->transaction->update([
+            $transaction = $payment->transaction;
+            if ($transaction) {
+                $transaction->update([
                     'transaction_status' => 'rejected',
                     'paid_at' => now()
                 ]);
+
+                /* Renewal rollback — when a renewal's payment is rejected, the
+                   previous booking was already marked "checked out" by the renewal
+                   flow (sets previous.check_out_at = now and renewal_status = 1).
+                   Without rollback the room would appear available even though
+                   the guest is still in their original paid period. Mirrors the
+                   rollback in Frontend API BookingController::cancel(). */
+                if ($transaction->is_renewal == 1) {
+                    $txRoomId    = (int)    $transaction->getAttribute('room_id');
+                    $txUserId    = (int)    $transaction->getAttribute('user_id');
+                    $txIdrec     = (int)    $transaction->getAttribute('idrec');
+                    $txCreatedAt = (string) $transaction->getAttribute('created_at');
+
+                    $previousTransaction = DB::table('t_transactions')
+                        ->where('room_id', $txRoomId)
+                        ->where('user_id', $txUserId)
+                        ->where('idrec', '!=', $txIdrec)
+                        ->whereRaw('UPPER(transaction_status) IN (?, ?)', ['PAID', 'CONFIRMED'])
+                        ->where('created_at', '<', $txCreatedAt)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+
+                    if ($previousTransaction) {
+                        $prevIdrec   = (int)    $previousTransaction->idrec;
+                        $prevOrderId = (string) $previousTransaction->order_id;
+
+                        $previousBooking = DB::table('t_booking')->where('order_id', $prevOrderId)->first();
+                        $hadCheckOut = $previousBooking && $previousBooking->check_out_at !== null;
+
+                        /* Skip rollback if the parent has another successful
+                           renewal (paid/confirmed/completed, is_renewal=1) that
+                           is newer than this rejected one. Rejecting a
+                           single attempt of a multi-attempt renewal must not
+                           undo state set by a later, paid renewal. */
+                        $hasNewerSuccessfulRenewal = DB::table('t_transactions')
+                            ->where('room_id', $txRoomId)
+                            ->where('user_id', $txUserId)
+                            ->where('idrec', '!=', $txIdrec)
+                            ->where('idrec', '!=', $prevIdrec)
+                            ->where('is_renewal', 1)
+                            ->whereRaw('LOWER(transaction_status) IN (?, ?, ?)', ['paid', 'confirmed', 'completed'])
+                            ->where('created_at', '>', $previousTransaction->created_at)
+                            ->exists();
+
+                        if ($hasNewerSuccessfulRenewal) {
+                            Log::info('Renewal rollback SKIPPED on payment rejection — newer successful renewal exists', [
+                                'rejected_transaction_id' => $txIdrec,
+                                'previous_transaction_id' => $prevIdrec,
+                                'previous_order_id'       => $prevOrderId,
+                            ]);
+                        } else {
+                            // Allow previous booking to be renewed again
+                            DB::table('t_transactions')
+                                ->where('idrec', $prevIdrec)
+                                ->update(['renewal_status' => 0]);
+
+                            // Restore previous booking as active (clear the check_out_at set during renewal)
+                            DB::table('t_booking')
+                                ->where('order_id', $prevOrderId)
+                                ->update(['check_out_at' => null]);
+
+                            /* rental_status untouched — physical occupancy is
+                               owned by check-in / check-out only. */
+
+                            Log::info('Renewal rollback on payment rejection', [
+                                'rejected_transaction_id' => $txIdrec,
+                                'previous_transaction_id' => $prevIdrec,
+                                'previous_order_id'       => $prevOrderId,
+                                'had_check_out'           => $hadCheckOut,
+                            ]);
+                        }
+                    }
+                }
             }
+
+            DB::commit();
 
             if ($request->ajax()) {
                 return response()->json([
@@ -269,6 +347,7 @@ class PaymentController extends Controller
 
             return redirect()->back()->with('success', 'Pembayaran berhasil ditolak');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Payment rejection failed: ' . $e->getMessage());
 
             if ($request->ajax()) {
@@ -346,13 +425,16 @@ class PaymentController extends Controller
                t_transactions.transaction_status = 'cancelled' AND parent renewal rollback
                are both applied — or neither is. */
             DB::transaction(function () use ($payment, $cancelReason, $refundAmount, $refundCalc) {
-                // Simpan data refund ke tabel t_refund with breakdown
+                // Simpan data refund ke tabel t_refund with breakdown.
+                // `requested_by` records the admin who initiated the cancellation —
+                // surfaced on the All Bookings table alongside the cancel timestamp.
                 Refund::create([
                     'id_booking'    => $payment->order_id,
                     'status'        => 'pending',
                     'reason'        => $cancelReason,
                     'amount'        => $refundAmount,
                     'refund_type'   => 'admin',
+                    'requested_by'  => Auth::id(),
                     'room_refund'   => $refundCalc['room_refund'],
                     'deposit_refund' => $refundCalc['deposit_refund'],
                     'other_refund'  => $refundCalc['other_refund'],
@@ -406,31 +488,48 @@ class PaymentController extends Controller
                         $previousBooking = DB::table('t_booking')->where('order_id', $prevOrderId)->first();
                         $hadCheckOut = $previousBooking && $previousBooking->check_out_at !== null;
 
-                        // Reset parent transaction's renewal_status back to 0
-                        DB::table('t_transactions')
-                            ->where('idrec', $prevIdrec)
-                            ->update(['renewal_status' => 0]);
+                        /* Skip rollback if the parent has another successful
+                           renewal (paid/confirmed/completed, is_renewal=1) that
+                           is newer than this cancelled one. Cancelling one
+                           attempt must not undo the state set by a later,
+                           paid renewal of the same parent booking. */
+                        $hasNewerSuccessfulRenewal = DB::table('t_transactions')
+                            ->where('room_id', $txRoomId)
+                            ->where('user_id', $txUserId)
+                            ->where('idrec', '!=', $txIdrec)
+                            ->where('idrec', '!=', $prevIdrec)
+                            ->where('is_renewal', 1)
+                            ->whereRaw('LOWER(transaction_status) IN (?, ?, ?)', ['paid', 'confirmed', 'completed'])
+                            ->where('created_at', '>', $previousTransaction->created_at)
+                            ->exists();
 
-                        /* Clear parent booking's check_out_at (undo the checkout
-                           that was set when this renewal was created) */
-                        DB::table('t_booking')
-                            ->where('order_id', $prevOrderId)
-                            ->update(['check_out_at' => null]);
+                        if ($hasNewerSuccessfulRenewal) {
+                            Log::info('Renewal rollback SKIPPED on cancellation — newer successful renewal exists', [
+                                'cancelled_transaction_id' => $txIdrec,
+                                'previous_transaction_id'  => $prevIdrec,
+                                'previous_order_id'        => $prevOrderId,
+                            ]);
+                        } else {
+                            // Reset parent transaction's renewal_status back to 0
+                            DB::table('t_transactions')
+                                ->where('idrec', $prevIdrec)
+                                ->update(['renewal_status' => 0]);
 
-                        /* Restore rental_status for monthly-only rooms — if the parent
-                           had a check_out_at, the room was occupied, so set back to 1 */
-                        $cancelledRoom = DB::table('m_rooms')->where('idrec', $txRoomId)->first();
-                        if ($cancelledRoom && !$cancelledRoom->periode_daily) {
-                            DB::table('m_rooms')
-                                ->where('idrec', $txRoomId)
-                                ->update(['rental_status' => $hadCheckOut ? 1 : 0]);
+                            /* Clear parent booking's check_out_at (undo the checkout
+                               that was set when this renewal was created) */
+                            DB::table('t_booking')
+                                ->where('order_id', $prevOrderId)
+                                ->update(['check_out_at' => null]);
+
+                            /* rental_status untouched — physical occupancy is
+                               owned by check-in / check-out only. */
+
+                            Log::info('Renewal rollback on cancellation', [
+                                'cancelled_transaction_id' => $txIdrec,
+                                'previous_transaction_id'  => $prevIdrec,
+                                'previous_order_id'        => $prevOrderId,
+                            ]);
                         }
-
-                        Log::info('Renewal rollback on cancellation', [
-                            'cancelled_transaction_id' => $txIdrec,
-                            'previous_transaction_id'  => $prevIdrec,
-                            'previous_order_id'        => $prevOrderId,
-                        ]);
                     } else {
                         Log::warning('Renewal cancel: parent transaction not found for rollback', [
                             'cancelled_transaction_id' => $txIdrec,
@@ -449,11 +548,9 @@ class PaymentController extends Controller
                         'reason' => $cancelReason,
                     ]);
 
-                    // Cancel booking selalu membebaskan kamar (rental_status = 0)
-                    if ($booking->room_id) {
-                        Room::where('idrec', $booking->room_id)
-                            ->update(['rental_status' => 0]);
-                    }
+                    /* rental_status untouched — cancellation is disallowed
+                       after check-in (see business rule), so the flag is
+                       already in the correct state. Only check-out flips it. */
                 }
 
                 // Release parking quota for this cancelled booking

@@ -1445,10 +1445,9 @@ class DokuServiceController extends ApiController
             $booking->update(['status' => 1]);
         }
 
-        // Re-occupy the room
-        \Illuminate\Support\Facades\DB::table('m_rooms')
-            ->where('idrec', $roomId)
-            ->update(['rental_status' => 1]);
+        /* rental_status untouched — physical occupancy is owned by check-in /
+           check-out. A late DOKU payment on an expired booking doesn't change
+           whether the guest is physically in the room. */
 
         // For renewals: re-flag the parent transaction and deactivate old bookings
         if ((int) $transaction->is_renewal === 1) {
