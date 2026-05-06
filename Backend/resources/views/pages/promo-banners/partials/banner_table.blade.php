@@ -162,6 +162,11 @@
                 <ol id="viewBannerHowToClaim" class="list-decimal list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300"></ol>
                 <p id="viewBannerHowToClaimEmpty" class="text-gray-400 text-sm">-</p>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.promo_banner_terms_conditions') }}</label>
+                <ul id="viewBannerTerms" class="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300"></ul>
+                <p id="viewBannerTermsEmpty" class="text-gray-400 text-sm">-</p>
+            </div>
         </div>
     </div>
 </div>

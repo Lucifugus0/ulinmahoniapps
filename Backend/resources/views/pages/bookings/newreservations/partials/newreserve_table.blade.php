@@ -171,10 +171,18 @@
                 @endif
                 @if ($showActions ?? true)
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        @php
+                            // <!-- Print Registration Form availability window:
+                            //      Allowed only up to and including end-of-day on (scheduled check-in + 3 days).
+                            //      Past that window, the registration form is no longer relevant — guest is settled in. -->
+                            $scheduledCheckIn = $booking->transaction?->check_in;
+                            $printAllowed = !$scheduledCheckIn
+                                || now()->lte(\Carbon\Carbon::parse($scheduledCheckIn)->copy()->addDays(3)->endOfDay());
+                        @endphp
                         @if (is_null($booking->check_in_at))
                             <div class="flex flex-col items-center space-y-2">
-                                @if (!is_null($booking->doc_path) && $booking->is_printed != 1)
-                                    {{-- Document exists and not yet printed - Show Print Registration Form button --}}
+                                @if (!is_null($booking->doc_path) && $booking->is_printed != 1 && $printAllowed)
+                                    {{-- Document exists, not yet printed, and within 3-day window — Show Print Registration Form button --}}
                                     <a href="{{ route('newReserv.checkin.regist', $booking->order_id) }}"
                                         onclick="event.preventDefault();
                                                  window.open(this.href, 'RegistrationForm', 'width=800,height=600');
@@ -191,7 +199,10 @@
                                     </a>
                                 @endif
                                 <div x-data="checkInModal('{{ $booking->order_id }}', {{ is_null($booking->doc_path) ? 'true' : 'false' }})"
-                                     class="{{ (!is_null($booking->doc_path) && $booking->is_printed != 1) ? 'hidden' : '' }}"
+                                     {{-- <!-- Hide Check-In button only when the Print button is *actually* showing.
+                                              Once the 3-day print window has passed, the print button is suppressed,
+                                              so the Check-In button must remain available. --> --}}
+                                     class="{{ (!is_null($booking->doc_path) && $booking->is_printed != 1 && $printAllowed) ? 'hidden' : '' }}"
                                      id="checkin-btn-{{ $booking->order_id }}">
                                     <!-- Tombol Trigger -->
                                     <button type="button"
@@ -754,19 +765,30 @@
                                         {{ __('ui.view_invoice') }}
                                     </a>
 
-                                    @if ($booking->is_printed < 2)
-                                        <a href="{{ route('newReserv.checkin.regist', $booking->order_id) }}"
-                                            target="_blank"
-                                            class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-700 focus:outline-none">
-                                            {{ __('ui.print_regist_form') }}
-                                            <span class="ml-1 px-1 py-0.5 text-[10px] bg-amber-800 rounded">{{ $booking->is_printed }}/2</span>
-                                        </a>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 bg-gray-200 rounded cursor-not-allowed"
-                                            title="{{ __('ui.print_limit_reached') }}">
-                                            {{ __('ui.print_regist_form') }}
-                                            <span class="ml-1 px-1 py-0.5 text-[10px] bg-gray-300 text-gray-500 rounded">2/2</span>
-                                        </span>
+                                    {{-- <!-- Print Registration Form is suppressed entirely once the 3-day window past
+                                             scheduled check-in has elapsed; admins won't need to print at that point. --> --}}
+                                    @if ($printAllowed)
+                                        @if (($booking->is_printed ?? 0) < 2)
+                                            {{-- <!-- Auto-refresh table after print so the counter advances without manual reload (mirrors pre-checkin button behavior). --> --}}
+                                            <a href="{{ route('newReserv.checkin.regist', $booking->order_id) }}"
+                                                onclick="event.preventDefault();
+                                                         window.open(this.href, 'RegistrationForm', 'width=800,height=600');
+                                                         setTimeout(() => {
+                                                             if (typeof fetchFilteredBookings === 'function') { fetchFilteredBookings(); }
+                                                             else { window.location.reload(); }
+                                                         }, 2000);"
+                                                class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-700 focus:outline-none">
+                                                {{ __('ui.print_regist_form') }}
+                                                {{-- <!-- High-contrast counter pill: white bg + bold amber text reads clearly against the amber-600 button. --> --}}
+                                                <span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-white text-amber-700 rounded">{{ $booking->is_printed ?? 0 }}/2</span>
+                                            </a>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 bg-gray-200 rounded cursor-not-allowed"
+                                                title="{{ __('ui.print_limit_reached') }}">
+                                                {{ __('ui.print_regist_form') }}
+                                                <span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-white text-gray-500 rounded">2/2</span>
+                                            </span>
+                                        @endif
                                     @endif
                                 </div>
                             </div>

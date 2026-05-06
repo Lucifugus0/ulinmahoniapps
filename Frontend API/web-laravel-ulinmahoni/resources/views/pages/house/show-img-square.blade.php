@@ -421,7 +421,7 @@
 
                     <!-- Rooms Section -->
                     <div id="rooms-section" class="mt-12">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Kamar Tersedia</h2>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Semua Kamar</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             @forelse($house['rooms'] as $room)

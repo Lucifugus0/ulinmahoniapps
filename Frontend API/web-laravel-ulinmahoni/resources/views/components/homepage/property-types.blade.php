@@ -171,9 +171,19 @@
         background: rgba(255, 255, 255, 0.2);
     }
 
-    /* Active property tab — frosted glass pill */
+    /* Property tabs — theme-aware via var(--accent). Inactive uses 60% opacity for state contrast,
+       active goes to full opacity + glass-pill background. Color flips green/maroon by theme. */
+    .property-tabs-row .property-tab-trigger {
+        color: var(--accent);
+        opacity: 0.6;
+    }
+    .property-tabs-row .property-tab-trigger:hover {
+        opacity: 0.85;
+        background: rgba(255, 255, 255, 0.2);
+    }
     .property-tabs-row .property-tab-trigger.active {
-        color: var(--accent, #0ea5a0);
+        color: var(--accent);
+        opacity: 1;
         background: rgba(255, 255, 255, 0.35);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.18));
@@ -193,11 +203,13 @@
         padding: 0.125rem;
     }
 
+    /* City/location tabs — same theme-aware var(--accent) scheme as property tabs */
     .location-tabs-row .location-tab-trigger {
         padding: 0.5rem 1rem;
         font-size: 0.875rem;
         font-weight: 500;
-        color: var(--text-tertiary, #8888a4);
+        color: var(--accent);
+        opacity: 0.6;
         background: transparent;
         border: none;
         border-radius: var(--radius-sm, 0.75rem);
@@ -207,12 +219,13 @@
     }
 
     .location-tabs-row .location-tab-trigger:hover {
-        color: var(--text-primary, #1a1a2e);
+        opacity: 0.85;
         background: rgba(255, 255, 255, 0.15);
     }
 
     .location-tabs-row .location-tab-trigger.active {
-        color: var(--accent, #0ea5a0);
+        color: var(--accent);
+        opacity: 1;
         background: rgba(255, 255, 255, 0.3);
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     }
@@ -228,6 +241,7 @@
         padding: 2rem 0;
     }
 
+    /* Lihat Semua Properti — theme-aware via var(--accent): green light / maroon dark. */
     .browse-all-btn {
         display: inline-flex;
         align-items: center;
@@ -236,18 +250,19 @@
         font-size: 0.875rem;
         font-weight: 500;
         color: #ffffff;
-        background: linear-gradient(135deg, var(--accent, #0ea5a0), var(--accent-hover, #0d9488));
+        background: var(--accent);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: var(--radius-lg, 1.75rem);
-        box-shadow: 0 4px 15px rgba(14, 165, 160, 0.25);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
         text-decoration: none;
         gap: 0.5rem;
     }
 
     .browse-all-btn:hover {
+        background: var(--accent-hover);
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(14, 165, 160, 0.35);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.20);
     }
 
     .browse-all-btn i { font-size: 0.75rem; }
@@ -262,21 +277,18 @@
         background: linear-gradient(to right, transparent, var(--glass-border, rgba(255, 255, 255, 0.1)), transparent);
     }
 
+    /* Dark mode tab styling — color flips automatically via var(--accent); only the
+       glass-pill background tints adjust for the darker surface. */
     html.dark .property-tabs-row .property-tab-trigger:hover {
-        color: var(--text-primary);
         background: rgba(255, 255, 255, 0.04);
     }
-
     html.dark .property-tabs-row .property-tab-trigger.active {
         background: rgba(255, 255, 255, 0.08);
         border-color: var(--glass-border);
     }
-
     html.dark .location-tabs-row .location-tab-trigger:hover {
-        color: var(--text-primary);
         background: rgba(255, 255, 255, 0.04);
     }
-
     html.dark .location-tabs-row .location-tab-trigger.active {
         background: rgba(255, 255, 255, 0.06);
     }

@@ -55,8 +55,17 @@ class ParkingPaymentController extends Controller
             ? $query->get()
             : $query->paginate((int) $perPage)->withQueryString();
 
+        /* AJAX response shape mirrors filter() — JSON with `html` + `pagination`.
+           The pagination click handler (index.blade.php:739) requests this route as XMLHttpRequest
+           and calls `r.json()`, so returning a plain HTML view here breaks pagination silently.
+           Both responses use the same partial so the rendered table stays consistent. */
         if ($request->ajax() || $request->header('X-Requested-With') == 'XMLHttpRequest') {
-            return view('pages.payment.parking.partials.parking-payment_table', compact('parkingTransactions'));
+            return response()->json([
+                'html' => view('pages.payment.parking.partials.parking-payment_table', compact('parkingTransactions'))->render(),
+                'pagination' => $perPage !== 'all' && $parkingTransactions instanceof \Illuminate\Pagination\LengthAwarePaginator
+                    ? $parkingTransactions->links()->toHtml()
+                    : '',
+            ]);
         }
 
         return view('pages.payment.parking.index', compact('parkingTransactions'));

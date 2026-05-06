@@ -346,7 +346,12 @@
             <a href="{{ route('login') }}" class="text-base font-medium text-gray-900 dark:text-white hover:opacity-75 px-4 py-2 rounded-lg transition-colors duration-200">
                 {{ $signInLabel }}
             </a>
-            <a href="{{ route('register') }}" class="text-base font-medium text-white bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 px-4 py-2 rounded-lg transition-colors duration-200">
+            {{-- Daftar (Sign Up) — uses var(--accent) so it follows the theme:
+                 light = UM Green, dark = UM Maroon. !important on color overrides
+                 the .site-header a !important rule in styles.blade.php:376. --}}
+            <a href="{{ route('register') }}"
+               class="text-base font-medium px-4 py-2 rounded-lg transition-colors duration-200 btn-um-themed"
+               style="color: #ffffff !important;">
                 {{ $signUpLabel }}
             </a>
         @else

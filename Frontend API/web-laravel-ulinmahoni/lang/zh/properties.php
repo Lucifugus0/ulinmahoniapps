@@ -62,7 +62,7 @@ return [
         'facilities' => '设施',
         'rental_price' => '租金',
         'about_property' => '关于房源',
-        'available_rooms' => '可用房间',
+        'available_rooms' => '所有房间',
     ],
 
     'buttons' => [
@@ -243,7 +243,7 @@ return [
     ],
 
     'index' => [
-        'page_title' => '可用房间',
+        'page_title' => '所有房间',
         'page_subtitle' => '找到适合您的理想房间',
         'filters' => '筛选',
         'active_filters' => '当前筛选：',

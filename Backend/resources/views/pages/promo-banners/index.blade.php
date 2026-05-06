@@ -199,6 +199,23 @@
                                 {{ __('ui.promo_banner_add_step') }}
                             </button>
                         </div>
+
+                        {{-- Syarat & Ketentuan — multi-row input mirroring How To Claim.
+                             Empty list → modal falls back to hardcoded i18n defaults. --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('ui.promo_banner_terms_conditions') }}
+                                <span class="text-xs text-gray-400 font-normal">{{ __('ui.promo_banner_terms_conditions_hint') }}</span>
+                            </label>
+                            <div id="terms_conditions_list" class="space-y-2 mb-2"></div>
+                            <button type="button" onclick="addTermsItem()"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                {{ __('ui.promo_banner_add_term') }}
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mt-6 flex justify-end gap-3">
@@ -249,22 +266,29 @@
                 }).showToast();
             }
 
-            // How To Claim dynamic list
+            // How To Claim dynamic list — each step row has 2 inputs (title + description).
+            // Stored as [{title, desc}, ...] in m_promo_banners.how_to_claim.
             let howToClaimCount = 0;
 
-            function addHowToClaimItem(value = '') {
+            function addHowToClaimItem(title = '', desc = '') {
                 howToClaimCount++;
                 const index = howToClaimCount;
                 const num = $('#how_to_claim_list > div').length + 1;
                 const html = `
-                    <div class="htc-item flex items-center gap-2" id="htc_row_${index}">
-                        <span class="htc-num flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-semibold flex items-center justify-center">${num}</span>
-                        <input type="text" name="how_to_claim[]"
-                            value="${escapeHtml(value)}"
-                            placeholder="{{ __('ui.promo_banner_step_placeholder') }} ${num}..."
-                            class="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <div class="htc-item flex items-start gap-2" id="htc_row_${index}">
+                        <span class="htc-num flex-shrink-0 w-6 h-6 mt-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-semibold flex items-center justify-center">${num}</span>
+                        <div class="flex-1 flex flex-col gap-1.5">
+                            <input type="text" name="how_to_claim_titles[]"
+                                value="${escapeHtml(title)}"
+                                placeholder="{{ __('ui.promo_banner_step_title_placeholder') }} ${num}..."
+                                class="htc-title border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <input type="text" name="how_to_claim_descs[]"
+                                value="${escapeHtml(desc)}"
+                                placeholder="{{ __('ui.promo_banner_step_desc_placeholder') }} ${num}..."
+                                class="htc-desc border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
                         <button type="button" onclick="removeHowToClaimItem('htc_row_${index}')"
-                            class="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors">
+                            class="flex-shrink-0 mt-1 text-red-400 hover:text-red-600 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
@@ -281,14 +305,57 @@
 
             function renumberHowToClaim() {
                 $('#how_to_claim_list > div').each(function(i) {
-                    $(this).find('.htc-num').first().text(i + 1);
-                    $(this).find('input').attr('placeholder', 'Langkah ' + (i + 1) + '...');
+                    const n = i + 1;
+                    $(this).find('.htc-num').first().text(n);
+                    $(this).find('.htc-title').attr('placeholder', '{{ __('ui.promo_banner_step_title_placeholder') }} ' + n + '...');
+                    $(this).find('.htc-desc').attr('placeholder', '{{ __('ui.promo_banner_step_desc_placeholder') }} ' + n + '...');
                 });
             }
 
             function clearHowToClaim() {
                 $('#how_to_claim_list').empty();
                 howToClaimCount = 0;
+            }
+
+            /* ----- Syarat & Ketentuan dynamic list (mirror of how_to_claim) ----- */
+            let termsCount = 0;
+
+            function addTermsItem(value = '') {
+                termsCount++;
+                const index = termsCount;
+                const num = $('#terms_conditions_list > div').length + 1;
+                const html = `
+                    <div class="tc-item flex items-center gap-2" id="tc_row_${index}">
+                        <span class="tc-num flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-center">${num}</span>
+                        <input type="text" name="terms_conditions[]"
+                            value="${escapeHtml(value)}"
+                            placeholder="{{ __('ui.promo_banner_term_placeholder') }} ${num}..."
+                            class="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <button type="button" onclick="removeTermsItem('tc_row_${index}')"
+                            class="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>`;
+                $('#terms_conditions_list').append(html);
+                renumberTerms();
+            }
+
+            function removeTermsItem(rowId) {
+                $('#' + rowId).remove();
+                renumberTerms();
+            }
+
+            function renumberTerms() {
+                $('#terms_conditions_list > div').each(function(i) {
+                    $(this).find('.tc-num').first().text(i + 1);
+                });
+            }
+
+            function clearTerms() {
+                $('#terms_conditions_list').empty();
+                termsCount = 0;
             }
 
             function escapeHtml(str) {
@@ -458,6 +525,13 @@
                 $('#upload_icon').removeClass('hidden');
                 $('#image_required').show();
                 clearHowToClaim();
+                clearTerms();
+                /* Auto-prefill the minimum required rows so admins immediately see the structure
+                   (2 step rows for Cara Klaim, 1 row for Syarat & Ketentuan). They can add more
+                   via the "+ Add Step" / "+ Add Term" buttons or remove via the trash icon. */
+                addHowToClaimItem();
+                addHowToClaimItem();
+                addTermsItem();
                 $('#bannerModal').removeClass('hidden').show();
             }
 
@@ -491,14 +565,39 @@
                             $('#viewBannerMobileImageEmpty').removeClass('hidden').text(img && img.mobile_image_url ? 'Using frontend image' : '-');
                         }
 
-                        // How to claim
-                        const steps = banner.how_to_claim || [];
+                        // How to claim — render "Title — Description" per step.
+                        // Backend show() always returns the new {title, desc} shape (legacy [string]
+                        // entries are normalized to {title: 'Langkah N', desc: '...'} server-side).
+                        // Defensive guard kept in case raw legacy data ever reaches here.
+                        const steps = (banner.how_to_claim || []).map((s, i) => {
+                            if (s && typeof s === 'object') {
+                                return {
+                                    title: (s.title || '').toString().trim() || ('Langkah ' + (i + 1)),
+                                    desc: (s.desc || '').toString().trim()
+                                };
+                            }
+                            return { title: 'Langkah ' + (i + 1), desc: (s || '').toString().trim() };
+                        }).filter(s => s.desc !== '');
                         if (steps.length > 0) {
-                            $('#viewBannerHowToClaim').html(steps.map(s => `<li>${$('<span>').text(s).html()}</li>`).join('')).removeClass('hidden');
+                            $('#viewBannerHowToClaim').html(steps.map(s => {
+                                const titleEsc = $('<span>').text(s.title).html();
+                                const descEsc = $('<span>').text(s.desc).html();
+                                return `<li><strong>${titleEsc}</strong> — ${descEsc}</li>`;
+                            }).join('')).removeClass('hidden');
                             $('#viewBannerHowToClaimEmpty').addClass('hidden');
                         } else {
                             $('#viewBannerHowToClaim').addClass('hidden');
                             $('#viewBannerHowToClaimEmpty').removeClass('hidden');
+                        }
+
+                        // Terms & conditions
+                        const terms = banner.terms_conditions || [];
+                        if (terms.length > 0) {
+                            $('#viewBannerTerms').html(terms.map(t => `<li>${$('<span>').text(t).html()}</li>`).join('')).removeClass('hidden');
+                            $('#viewBannerTermsEmpty').addClass('hidden');
+                        } else {
+                            $('#viewBannerTerms').addClass('hidden');
+                            $('#viewBannerTermsEmpty').removeClass('hidden');
                         }
 
                         $('#viewBannerModal').css('display', 'flex');
@@ -530,11 +629,26 @@
                         $('#descriptions').val(banner.descriptions);
                         $('#promo_code').val(banner.promo_code || '');
 
-                        // Populate how_to_claim
+                        // Populate how_to_claim — supports both legacy ["string"] shape and new
+                        // [{title, desc}] shape. Legacy strings get auto-titled "Langkah N" so admins
+                        // see a sensible default in the title input on first edit after schema change.
                         clearHowToClaim();
                         if (banner.how_to_claim && banner.how_to_claim.length > 0) {
-                            banner.how_to_claim.forEach(function(step) {
-                                addHowToClaimItem(step);
+                            banner.how_to_claim.forEach(function(step, i) {
+                                if (step && typeof step === 'object' && ('title' in step || 'desc' in step)) {
+                                    addHowToClaimItem(step.title || '', step.desc || '');
+                                } else {
+                                    /* Legacy: just a string description, no title. Auto-fill "Langkah N". */
+                                    addHowToClaimItem('Langkah ' + (i + 1), String(step || ''));
+                                }
+                            });
+                        }
+
+                        // Populate terms_conditions
+                        clearTerms();
+                        if (banner.terms_conditions && banner.terms_conditions.length > 0) {
+                            banner.terms_conditions.forEach(function(term) {
+                                addTermsItem(term);
                             });
                         }
 
@@ -560,11 +674,31 @@
             function closeModal() {
                 $('#bannerModal').addClass('hidden').hide();
                 clearHowToClaim();
+                clearTerms();
             }
 
             // Form submission
             $('#bannerForm').on('submit', function(e) {
                 e.preventDefault();
+
+                /* Count valid step rows: a row counts only when BOTH title AND desc are non-empty.
+                   Mirrors server-side validation in PromoBannerController. */
+                const stepRows = $('#how_to_claim_list > div').filter(function() {
+                    const t = $(this).find('input[name="how_to_claim_titles[]"]').val().trim();
+                    const d = $(this).find('input[name="how_to_claim_descs[]"]').val().trim();
+                    return t !== '' && d !== '';
+                }).length;
+                const termCount = $('#terms_conditions_list input[name="terms_conditions[]"]')
+                    .filter(function() { return $(this).val().trim() !== ''; }).length;
+                if (stepRows < 2) {
+                    showToast('{{ __('ui.promo_banner_how_to_claim_min_error') }}', 'error');
+                    return;
+                }
+                if (termCount < 1) {
+                    showToast('{{ __('ui.promo_banner_terms_conditions_min_error') }}', 'error');
+                    return;
+                }
+
                 const bannerId = $('#banner_id').val();
                 const url = bannerId ? `/promo-banners/${bannerId}` : '{{ route('promo-banners.store') }}';
 
@@ -574,11 +708,22 @@
                 formData.append('promo_code', $('#promo_code').val());
                 formData.append('_token', '{{ csrf_token() }}');
 
-                // Append how_to_claim items
-                $('#how_to_claim_list input[name="how_to_claim[]"]').each(function() {
-                    const val = $(this).val().trim();
-                    if (val !== '') {
-                        formData.append('how_to_claim[]', val);
+                // Append terms_conditions items
+                $('#terms_conditions_list input[name="terms_conditions[]"]').each(function() {
+                    const tval = $(this).val().trim();
+                    if (tval !== '') {
+                        formData.append('terms_conditions[]', tval);
+                    }
+                });
+
+                // Append how_to_claim — paired title + desc per row, parallel arrays.
+                // Controller zips them back into [{title, desc}, ...].
+                $('#how_to_claim_list > div').each(function() {
+                    const t = $(this).find('input[name="how_to_claim_titles[]"]').val().trim();
+                    const d = $(this).find('input[name="how_to_claim_descs[]"]').val().trim();
+                    if (t !== '' && d !== '') {
+                        formData.append('how_to_claim_titles[]', t);
+                        formData.append('how_to_claim_descs[]', d);
                     }
                 });
 

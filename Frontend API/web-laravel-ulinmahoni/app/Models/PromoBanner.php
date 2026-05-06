@@ -14,6 +14,7 @@ class PromoBanner extends Model
         'image_id',
         'descriptions',
         'how_to_claim',
+        'terms_conditions',
         'promo_code',
         'status',
         'created_by',
@@ -26,7 +27,8 @@ class PromoBanner extends Model
     ];
 
     protected $casts = [
-        'how_to_claim' => 'array',
+        'how_to_claim'     => 'array',
+        'terms_conditions' => 'array',
     ];
 
     public function images()

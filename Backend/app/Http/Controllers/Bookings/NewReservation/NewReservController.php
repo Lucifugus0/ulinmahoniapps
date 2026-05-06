@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class NewReservController extends Controller
@@ -235,8 +236,25 @@ class NewReservController extends Controller
                 ->with(['user', 'property', 'room', 'booking'])
                 ->firstOrFail();
 
-            // Increment print counter berdasarkan order_id
-            Booking::where('order_id', $order_id)->increment('is_printed');
+            // <!-- 3-day print window: registration form is only available up to and including
+            //      end-of-day on (scheduled check-in + 3 days). Past that window, the form is
+            //      no longer relevant and we reject the request to prevent stale-URL bypass of
+            //      the UI hide. Mirrors the $printAllowed guard in newreserve_table.blade.php. -->
+            if ($transaction->check_in) {
+                $cutoff = \Carbon\Carbon::parse($transaction->check_in)->copy()->addDays(3)->endOfDay();
+                if (now()->gt($cutoff)) {
+                    return redirect()->back()
+                        ->with('error', __('ui.print_window_expired'));
+                }
+            }
+
+            // <!-- Increment print counter berdasarkan order_id.
+            //      NULL-safe: legacy rows can have `is_printed = NULL`, and `NULL + 1 = NULL` in MySQL,
+            //      which leaves Eloquent's ->increment() inert (counter stuck at NULL forever).
+            //      Use COALESCE so NULL bookings advance to 1 on first print, 2 on second, etc. -->
+            Booking::where('order_id', $order_id)->update([
+                'is_printed' => DB::raw('COALESCE(is_printed, 0) + 1'),
+            ]);
 
             // Ambil ulang booking setelah update (optional)
             $booking = $transaction->booking;

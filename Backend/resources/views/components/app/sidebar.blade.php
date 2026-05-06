@@ -305,8 +305,8 @@
                                             </a>
                                         </li>
                                     @endcan
-                                    {{-- Modify Booking — gated by view_change_room since both edit booking-level state. --}}
-                                    @can('view_change_room')
+                                    {{-- Modify Booking — own permission `view_modify_booking` since 2026-05-05 (split from view_change_room). --}}
+                                    @can('view_modify_booking')
                                         <li>
                                             <a href="{{ route('modifyBooking.index') }}"
                                                 class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-colors @if (Route::is('modifyBooking.*')) bg-indigo-600 @endif">
@@ -609,7 +609,7 @@
                 {{-- Masters Group --}}
                 {{-- ==================== --}}
                 {{-- Collapsible group: consolidates Properties, Rooms/Units, Customers, Users into one master data section --}}
-                @canany(['view_cities', 'view_properties', 'view_property_facilities', 'view_deposit_fees', 'view_parking_fees', 'view_rooms', 'view_room_facilities', 'view_customers', 'view_users'])
+                @canany(['view_cities', 'view_properties', 'view_property_facilities', 'view_deposit_fees', 'view_parking_fees', 'view_rooms', 'view_room_types', 'view_room_facilities', 'view_daily_pricing', 'view_customers', 'view_users'])
                     <ul class="space-y-1 mt-2">
                         <li x-init="if (window.location.href.includes('m-properties') ||
                             window.location.href.includes('facilityProperty') ||
@@ -719,8 +719,8 @@
                                             </a>
                                         </li>
                                     @endcan
-                                    {{-- Room Types: renamed from "Master Room Types" --}}
-                                    @can('view_rooms')
+                                    {{-- Room Types: own permission `view_room_types` since 2026-05-05 (split from view_rooms). --}}
+                                    @can('view_room_types')
                                         <li>
                                             <a href="{{ route('roomNameTypes.index') }}"
                                                 class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('roomNameTypes.index')) bg-indigo-600 @endif">
@@ -737,8 +737,8 @@
                                             </a>
                                         </li>
                                     @endcan
-                                    {{-- Daily Pricing Management: renamed from "Master Calendar" --}}
-                                    @can('view_properties')
+                                    {{-- Daily Pricing Management: own permission `view_daily_pricing` since 2026-05-05 (split from view_properties). --}}
+                                    @can('view_daily_pricing')
                                         <li>
                                             <a href="{{ route('calendar.index') }}"
                                                 class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('calendar.index')) bg-indigo-600 @endif">
@@ -774,7 +774,7 @@
                 {{-- App Management Group --}}
                 {{-- ==================== --}}
                 {{-- Collapsible group: access management (role & permission), settings (replaces Settings section) --}}
-                @canany(['manage_roles', 'manage_settings'])
+                @canany(['manage_roles', 'manage_settings', 'view_content_management'])
                     <ul class="space-y-1 mt-2">
                         <li x-init="if (window.location.href.includes('master-role-management') ||
                             window.location.href.includes('user-access') ||
@@ -833,8 +833,8 @@
                                             </a>
                                         </li>
                                     @endcan
-                                    {{-- Content Management (Tagline & Video) --}}
-                                    @can('manage_settings')
+                                    {{-- Content Management (Tagline & Video) — own permission `view_content_management` since 2026-05-05 (split from manage_settings). --}}
+                                    @can('view_content_management')
                                         <li>
                                             <a href="{{ route('content-management.index') }}"
                                                 class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('content-management.*')) bg-indigo-600 @endif">

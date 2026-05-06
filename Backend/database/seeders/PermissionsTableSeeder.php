@@ -27,10 +27,12 @@ class PermissionsTableSeeder extends Seeder
             'view_checkouts',
             'view_completed_bookings',
             'view_change_room',
+            'view_modify_booking',
 
             // Properties
             'properties',
             'view_properties',
+            'view_daily_pricing',
             'view_property_facilities',
             'view_cities',
             'view_deposit_fees',
@@ -43,6 +45,7 @@ class PermissionsTableSeeder extends Seeder
             // Rooms
             'rooms',
             'view_rooms',
+            'view_room_types',
             'view_room_facilities',
             'view_door_locks',
 
@@ -82,6 +85,7 @@ class PermissionsTableSeeder extends Seeder
             'view_users',
             'manage_roles',
             'manage_settings',
+            'view_content_management',
 
             // Promo Banners
             'view_promo_banners',

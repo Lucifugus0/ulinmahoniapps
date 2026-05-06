@@ -62,7 +62,7 @@ return [
         'facilities' => 'Fasilitas',
         'rental_price' => 'Harga Sewa',
         'about_property' => 'Tentang Properti',
-        'available_rooms' => 'Kamar Tersedia',
+        'available_rooms' => 'Semua Kamar',
     ],
 
     'buttons' => [
@@ -243,7 +243,7 @@ return [
     ],
 
     'index' => [
-        'page_title' => 'Kamar Tersedia',
+        'page_title' => 'Semua Kamar',
         'page_subtitle' => 'Cari kamar yang ideal untuk Anda',
         'filters' => 'Filter',
         'active_filters' => 'Filter Aktif:',

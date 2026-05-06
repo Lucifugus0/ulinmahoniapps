@@ -85,12 +85,42 @@ class HomeController extends Controller {
                     $image = $promo->images->first()->image;
                 }
 
+                /* Normalize how_to_claim to canonical [{title, desc}, ...] shape so the modal JS
+                   can treat all banners uniformly. Legacy banners stored as ["string", ...] get
+                   auto-titled "Langkah N" until the admin re-saves with explicit titles. */
+                $rawSteps = $promo->how_to_claim ?? [];
+                $steps = [];
+                if (is_array($rawSteps)) {
+                    foreach (array_values($rawSteps) as $i => $step) {
+                        if (is_array($step) && (isset($step['title']) || isset($step['desc']))) {
+                            $steps[] = [
+                                'title' => isset($step['title']) ? (string) $step['title'] : '',
+                                'desc' => isset($step['desc']) ? (string) $step['desc'] : '',
+                            ];
+                        } elseif (is_string($step) && trim($step) !== '') {
+                            $steps[] = [
+                                'title' => 'Langkah ' . ($i + 1),
+                                'desc' => $step,
+                            ];
+                        }
+                    }
+                }
+
                 return [
                     'id' => $promo->idrec,
                     'title' => $promo->title,
                     'image' => $image,
                     'badge' => 'Promo',
                     'description' => $promo->descriptions,
+                    // <!-- promo_code is required by the homepage carousel modal so the
+                    //      "Promo Code" copy-to-clipboard section + Claim button render. -->
+                    'promo_code' => $promo->promo_code,
+                    // <!-- how_to_claim is now [{title, desc}, ...] shape (admin-defined per step).
+                    //      Legacy ["string", ...] auto-promoted with "Langkah N" titles above. -->
+                    'how_to_claim' => $steps,
+                    // <!-- terms_conditions added 2026-05-06 — falls back to hardcoded i18n
+                    //      when null/empty so existing banners without terms still render. -->
+                    'terms_conditions' => $promo->terms_conditions ?? [],
                 ];
             });
 

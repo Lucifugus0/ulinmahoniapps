@@ -55,7 +55,7 @@
             <!-- Promo Content -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <!-- Hero Section -->
-                <div class="relative promo-hero overflow-hidden" style="aspect-ratio: 1911/372;">
+                <div class="relative promo-hero overflow-hidden" style="aspect-ratio: 1920/620;">
                     @if($promo['image'])
                         <img src="{{ env('ADMIN_URL') }}/storage/{{ $promo['image'] }}"
                              alt="{{ $promo['title'] }}"

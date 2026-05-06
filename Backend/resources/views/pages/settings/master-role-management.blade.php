@@ -104,7 +104,7 @@
         </div>
 
         <!-- Information Card -->
-        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="info-card mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div class="flex items-start">
                 <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
                 <div>
@@ -615,6 +615,15 @@
         html.dark #accessRightsModal .bg-blue-50 {
             background-color: rgba(59, 130, 246, 0.15) !important;
         }
+
+        /* Information Card (footer of master-role page) — readable on dark bg */
+        html.dark .info-card.bg-blue-50 {
+            background-color: rgba(30, 58, 138, 0.18) !important;
+            border-color: rgba(59, 130, 246, 0.45) !important;
+        }
+        html.dark .info-card .text-blue-500 { color: #60a5fa !important; }
+        html.dark .info-card .text-blue-700 { color: #bfdbfe !important; }
+        html.dark .info-card .text-blue-800 { color: #dbeafe !important; }
         html.dark #dashboardWidgetsModal .bg-purple-50 {
             background-color: rgba(168, 85, 247, 0.15) !important;
         }
@@ -915,7 +924,18 @@
                             },
                         }).showToast();
 
+                        // Capture the saved user before closing (closeAccessRightsModal nulls currentUserId)
+                        const savedUserId = currentUserId;
                         closeAccessRightsModal();
+
+                        // Auto-reload when admin edits their OWN access rights so the sidebar
+                        // reflects the new permissions immediately. The sidebar is rendered server-side
+                        // via Blade authorization directives evaluated at request time, so a fresh page
+                        // load is the cleanest way to apply changes. Editing OTHER users skips reload
+                        // so the admin can iterate through roles without interruption.
+                        if (parseInt(savedUserId) === {{ Auth::id() }}) {
+                            setTimeout(() => window.location.reload(), 1000);
+                        }
                     } else {
                         Toastify({
                             text: data.message || "Failed to update permissions!",
@@ -1093,6 +1113,14 @@
                 const childCheckboxes = document.querySelectorAll(
                     `#modalPermissionsTableBody .menu-item[data-main-menu="${mainMenuId}"]:not([data-is-main="true"]) .modal-checkbox-round`
                 );
+
+                // Leaf Main Menu items (Dashboard, Room Availability) have no children — their
+                // checked state is governed directly by the user's permission, not derived from
+                // non-existent children. Skip the recompute so we don't force-uncheck them on load.
+                if (childCheckboxes.length === 0) {
+                    updateModalBadgeStatus(mainMenuCheckbox);
+                    return;
+                }
 
                 const checkedCount = Array.from(childCheckboxes).filter(cb => cb.checked).length;
                 mainMenuCheckbox.checked = checkedCount > 0;

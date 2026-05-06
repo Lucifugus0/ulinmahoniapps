@@ -62,7 +62,7 @@ return [
         'facilities' => 'Facilities',
         'rental_price' => 'Rental Price',
         'about_property' => 'About Property',
-        'available_rooms' => 'Available Rooms',
+        'available_rooms' => 'All Rooms',
     ],
 
     'buttons' => [
@@ -243,7 +243,7 @@ return [
     ],
 
     'index' => [
-        'page_title' => 'Available Rooms',
+        'page_title' => 'All Rooms',
         'page_subtitle' => 'Find the ideal room for you',
         'filters' => 'Filters',
         'active_filters' => 'Active Filters:',

@@ -42,10 +42,15 @@ class ChangeRoomController extends Controller
             ->where('status', 1) // Only active bookings
             ->whereNull('check_out_at') // Not checked out yet
             ->when($search, function ($query, $search) {
+                // <!-- Search matches: Booking ID (order_id), Guest username, and Room number (m_rooms.no).
+                //      Room number search lets admins find a guest by typing e.g. "315" or "107". -->
                 return $query->where(function ($q) use ($search) {
                     $q->where('order_id', 'like', '%' . $search . '%')
                         ->orWhereHas('user', function ($uq) use ($search) {
                             $uq->where('username', 'like', '%' . $search . '%');
+                        })
+                        ->orWhereHas('room', function ($rq) use ($search) {
+                            $rq->where('no', 'like', '%' . $search . '%');
                         });
                 });
             })
@@ -567,8 +572,12 @@ class ChangeRoomController extends Controller
                 return $query->where('t_booking.order_id', '!=', $excludeOrderId);
             })
             ->whereHas('transaction', function ($query) use ($checkInDate, $checkOutDate) {
+                // <!-- Exclude non-occupying lifecycle states: expired, cancelled (BE/AmE spellings),
+                //      and rejected. Rejected payment-rejection rows can keep `t_booking.status = 1`
+                //      and inherited `check_in_at` from a parent booking but no longer occupy the room,
+                //      so they must NOT block availability for room transfers. -->
                 $query->where('status', 1)
-                    ->whereNotIn('transaction_status', ['expired', 'cancelled', 'canceled'])
+                    ->whereNotIn('transaction_status', ['expired', 'cancelled', 'canceled', 'rejected'])
                     ->where('check_in', '<', $checkOutDate)
                     ->where('check_out', '>', $checkInDate);
             })

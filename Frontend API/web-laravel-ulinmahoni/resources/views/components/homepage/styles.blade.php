@@ -21,11 +21,11 @@
   --glass-blur: blur(24px);
   --glass-blur-strong: blur(48px);
 
-  /* Brand accent — brighter teal in light mode for visibility on light glass */
-  --accent: #2dd4bf;
-  --accent-hover: #14b8a6;
-  --accent-glass: rgba(45, 212, 191, 0.15);
-  --accent-glass-border: rgba(45, 212, 191, 0.3);
+  /* Brand accent — UM Green in light mode (was teal #2dd4bf) */
+  --accent: #0F513D;
+  --accent-hover: #1a7553;
+  --accent-glass: rgba(15, 81, 61, 0.15);
+  --accent-glass-border: rgba(15, 81, 61, 0.3);
 
   /* Typography — darker values for readability on translucent glass backgrounds */
   --text-primary: #0f0f1a;
@@ -234,11 +234,36 @@ main > section:first-of-type {
   main > section:first-of-type { margin-top: 0; }
 }
 
-/* Teal utility classes */
-.bg-teal-600 { background-color: var(--accent); }
-.bg-teal-700 { background-color: var(--accent-hover); }
-.text-teal-600 { color: var(--accent); }
-.hover\:bg-teal-700:hover { background-color: var(--accent-hover); }
+/* Theme-aware brand button — surfaces flip with dark mode (Green ↔ Maroon).
+   Used by Daftar, Cari Hunian, etc. Pair with `style="color: #fff !important;"` on the element
+   to beat the .site-header a !important rule in header text styling. */
+.btn-um-themed {
+    background-color: var(--accent) !important;
+    transition: background-color 0.2s ease;
+}
+.btn-um-themed:hover {
+    background-color: var(--accent-hover) !important;
+}
+
+/* Teal utility class remaps → UM Green via --accent. !important required because Tailwind Play CDN
+   injects its compiled `.bg-teal-600 { rgb(13 148 136) }` at runtime AFTER this stylesheet, with the
+   same specificity. Without !important, Tailwind wins and the buttons render in their original teal. */
+.bg-teal-600 { background-color: var(--accent) !important; }
+.bg-teal-700 { background-color: var(--accent-hover) !important; }
+.bg-teal-500 { background-color: var(--accent) !important; }
+.bg-teal-50 { background-color: rgba(15, 81, 61, 0.10) !important; }
+.text-teal-600 { color: var(--accent) !important; }
+.text-teal-500 { color: var(--accent) !important; }
+.text-teal-700 { color: var(--accent-hover) !important; }
+.border-teal-600 { border-color: var(--accent) !important; }
+.border-teal-500 { border-color: var(--accent) !important; }
+.hover\:bg-teal-700:hover { background-color: var(--accent-hover) !important; }
+.hover\:bg-teal-600:hover { background-color: var(--accent) !important; }
+.hover\:bg-teal-50:hover { background-color: rgba(15, 81, 61, 0.10) !important; }
+.hover\:text-teal-600:hover { color: var(--accent) !important; }
+.hover\:text-teal-700:hover { color: var(--accent-hover) !important; }
+.focus\:ring-teal-500:focus { --tw-ring-color: var(--accent) !important; }
+.focus\:border-teal-500:focus { border-color: var(--accent) !important; }
 
 /* ========================================
    Property Cards — Glass Cards
@@ -460,8 +485,10 @@ footer::before {
 .login-container .login-box p {
   color: rgba(255, 255, 255, 0.8) !important;
 }
+/* Login-box anchor colors flip with theme via var(--accent) — green light / maroon dark.
+   The `:not(.bg-teal-600)` exclusion keeps the primary login button on its own button styling. */
 .login-container .login-box a:not(.bg-teal-600) {
-  color: #5eead4 !important;
+  color: var(--accent) !important;
 }
 .login-container .login-box input[type="checkbox"] {
   background: rgba(255, 255, 255, 0.15) !important;
@@ -514,11 +541,13 @@ html.dark {
   --glass-border-subtle: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --glass-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.5);
-  /* Brand accent — more subdued teal in dark mode to avoid being overly bright */
-  --accent: #0ea5a0;
-  --accent-hover: #0d9488;
-  --accent-glass: rgba(14, 165, 160, 0.15);
-  --accent-glass-border: rgba(14, 165, 160, 0.3);
+  /* Brand accent — UM Maroon. Using a vibrant saturated maroon (#a83333) as the base — close to
+     the documented UM Red #800000 but slightly lighter for stronger presence on dark glass.
+     #d97777 was too desaturated/pink and didn't read as a proper red. */
+  --accent: #a83333;
+  --accent-hover: #800000;
+  --accent-glass: rgba(168, 51, 51, 0.18);
+  --accent-glass-border: rgba(168, 51, 51, 0.35);
   /* Typography — brighter values for readability on dark glass backgrounds */
   --text-primary: #f5f5fa;
   --text-secondary: #d0d0e0;
@@ -776,10 +805,8 @@ html.dark .property-cards-empty-content p { color: var(--text-tertiary) !importa
 html.dark .property-cards-empty-icon { color: var(--text-tertiary) !important; }
 
 /* Dark tabs — targets the combined filter container rows */
-html.dark .property-tabs-row .property-tab-trigger { color: var(--text-tertiary) !important; }
-html.dark .property-tabs-row .property-tab-trigger:hover { color: var(--text-primary) !important; }
-html.dark .property-tabs-row .property-tab-trigger.active,
-html.dark .property-tabs-row .property-tab-trigger.text-teal-600 { color: var(--accent) !important; }
+/* Dark-mode tab colors are now defined in property-types.blade.php using UM brand colors
+   (#d97777 inactive, #7fd4b4 active). Leave these rules as no-ops to avoid override conflicts. */
 
 html.dark .location-tabs-row .location-tab-trigger { color: var(--text-tertiary) !important; }
 html.dark .location-tabs-row .location-tab-trigger:hover { color: var(--text-primary) !important; }
@@ -806,17 +833,44 @@ html.dark .site-footer {
 }
 
 /* Dark area tabs */
-html.dark .area-tab-trigger { color: var(--text-tertiary) !important; }
-html.dark .area-tab-trigger:hover { color: var(--text-primary) !important; }
-html.dark .area-tab-trigger.text-teal-600,
-html.dark .area-tab-trigger[class*="border-teal"] { color: var(--accent) !important; }
+/* Area-tab colors handled via location-tabs-row UM brand rules (property-types.blade.php). */
 
 /* Dark promo section details */
 html.dark .promo-image-container { background: rgba(255, 255, 255, 0.03) !important; }
 html.dark .promo-no-image { background: rgba(255, 255, 255, 0.03) !important; color: var(--text-tertiary) !important; }
 html.dark .promo-empty { color: var(--text-tertiary) !important; }
 
-/* Dark browse all button */
-html.dark .browse-all-btn { background-color: var(--accent) !important; }
-html.dark .browse-all-btn:hover { background-color: var(--accent-hover) !important; }
+/* Dark mode Lihat Semua Properti — uses var(--accent) which flips to UM Maroon in dark mode */
+html.dark .browse-all-btn { background: var(--accent) !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.45) !important; }
+html.dark .browse-all-btn:hover { background: var(--accent-hover) !important; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.55) !important; }
+
+/* Brand badge — small Ulin Mahoni logo overlaid on the top-left of every property card image.
+   Implemented as a CSS pseudo-element so it applies to all 10 card variants (5 ID + 5 EN) without
+   touching markup. White circular surface + subtle shadow + small inner padding so the leaf logo
+   sits centred and recognisable at small size. */
+.property-card-image::before {
+    content: "";
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    z-index: 5;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.95);
+    background-image: url('/images/assets/ulinmahoni-logo.svg');
+    background-size: 70%;
+    background-repeat: no-repeat;
+    background-position: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+}
+
+/* Slightly more opaque badge surface in dark mode so it still pops against tinted glass cards. */
+html.dark .property-card-image::before {
+    background-color: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.4);
+}
 </style>

@@ -149,7 +149,12 @@
                     </script>
                     
                     <div class="md:w-48">
-                        <button type="submit" class="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-all duration-200 flex items-center justify-center">
+                        {{-- Search Property — UM Maroon brand --}}
+                        <button type="submit"
+                            class="w-full h-12 text-white rounded-lg transition-all duration-200 flex items-center justify-center"
+                            style="background-color: #800000;"
+                            onmouseover="this.style.backgroundColor='#a83333'"
+                            onmouseout="this.style.backgroundColor='#800000'">
                             <i class="fas fa-search mr-2"></i>
                             <span>Search Property</span>
                         </button>

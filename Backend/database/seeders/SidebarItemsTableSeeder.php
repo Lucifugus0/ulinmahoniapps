@@ -46,14 +46,9 @@ class SidebarItemsTableSeeder extends Seeder
             'order' => 2
         ]);
 
-        // <!-- Chat: standalone top-level item with unread badge -->
-        SidebarItem::create([
-            'name' => 'Chat',
-            'route' => 'chat.index',
-            'permission_id' => $permissions['manage_chat'] ?? null,
-            'parent_id' => null,
-            'order' => 3
-        ]);
+        // <!-- Chat / Customer Service: NOT registered in Access Rights —
+        //      Customer Service group (Tickets + Broadcasts) is available to all users
+        //      and does not require role-based access control. -->
 
         // =====================
         // Bookings Group (order 4)
@@ -124,13 +119,23 @@ class SidebarItemsTableSeeder extends Seeder
             'order' => 7
         ]);
 
+        // <!-- Modify Booking: dedicated `view_modify_booking` permission (separated from `view_change_room`
+        //      on 2026-05-05) so admins can grant/revoke independently of Change Booking. -->
+        SidebarItem::create([
+            'name' => 'Modify Booking',
+            'route' => 'modifyBooking.index',
+            'permission_id' => $permissions['view_modify_booking'] ?? null,
+            'parent_id' => $bookings->id,
+            'order' => 8
+        ]);
+
         // <!-- Door Lock: moved from Rooms/Units to Bookings group -->
         SidebarItem::create([
             'name' => 'Door Lock',
             'route' => 'door-locks.index',
             'permission_id' => $permissions['view_door_locks'] ?? null,
             'parent_id' => $bookings->id,
-            'order' => 8
+            'order' => 9
         ]);
 
         // <!-- Parking Management: moved from standalone to Bookings group -->
@@ -139,7 +144,7 @@ class SidebarItemsTableSeeder extends Seeder
             'route' => 'parking.index',
             'permission_id' => $permissions['view_parking'] ?? null,
             'parent_id' => $bookings->id,
-            'order' => 9
+            'order' => 10
         ]);
 
         // =====================
@@ -328,11 +333,15 @@ class SidebarItemsTableSeeder extends Seeder
             'order' => 5
         ]);
 
-        // <!-- Room Types: renamed from "Master Room Types" -->
+        // <!-- Room Types: renamed from "Master Room Types".
+        //      Uses dedicated `view_room_types` permission (separated from `view_rooms` on 2026-05-05)
+        //      so admins can grant/revoke Room Types independently of Property's Rooms in the
+        //      Access Rights modal. Previously both shared `view_rooms`, which made unchecking
+        //      one item silently grant access via the other on save+reload. -->
         SidebarItem::create([
             'name' => 'Room Types',
             'route' => 'roomNameTypes.index',
-            'permission_id' => $permissions['view_rooms'] ?? null,
+            'permission_id' => $permissions['view_room_types'] ?? null,
             'parent_id' => $masters->id,
             'order' => 6
         ]);
@@ -346,11 +355,12 @@ class SidebarItemsTableSeeder extends Seeder
             'order' => 7
         ]);
 
-        // <!-- Daily Pricing Management: renamed from "Master Calendar" -->
+        // <!-- Daily Pricing Management: renamed from "Master Calendar".
+        //      Dedicated `view_daily_pricing` permission (separated from `view_properties` on 2026-05-05). -->
         SidebarItem::create([
             'name' => 'Daily Pricing Management',
             'route' => 'calendar.index',
-            'permission_id' => $permissions['view_properties'] ?? null,
+            'permission_id' => $permissions['view_daily_pricing'] ?? null,
             'parent_id' => $masters->id,
             'order' => 8
         ]);
@@ -385,28 +395,29 @@ class SidebarItemsTableSeeder extends Seeder
             'order' => 9,
         ]);
 
-        // <!-- Access Management: collapsible sub-group replacing "Role & Permission" -->
-        $accessManagement = SidebarItem::create([
-            'name' => 'Access Management',
-            'route' => null,
+        // <!-- Master Role: promoted directly under App Management on 2026-05-06.
+        //      Previously nested under an "Access Management" sub-group with a sibling "User Access"
+        //      entry, but User Access (route: user-access.edit → pages/settings/user-access-management.blade.php)
+        //      is a legacy page with no sidebar link, replaced by the Access Rights modal on this very
+        //      page (master-role-management). Removing User Access left Access Management with one
+        //      child, so the sub-group was flattened — Master Role now sits directly under App Management,
+        //      matching the actual sidebar structure (sidebar.blade.php:828-834). -->
+        SidebarItem::create([
+            'name' => 'Access Rights',
+            'route' => 'master-role-management',
             'permission_id' => $permissions['manage_roles'] ?? null,
             'parent_id' => $appManagement->id,
             'order' => 1
         ]);
 
+        // <!-- Content Management: tagline & video editor — added under App Management group.
+        //      Dedicated `view_content_management` permission (separated from `manage_settings`
+        //      on 2026-05-05) so admins can grant/revoke independently of system Settings. -->
         SidebarItem::create([
-            'name' => 'Master Role',
-            'route' => 'master-role-management',
-            'permission_id' => $permissions['manage_roles'] ?? null,
-            'parent_id' => $accessManagement->id,
-            'order' => 1
-        ]);
-
-        SidebarItem::create([
-            'name' => 'User Access',
-            'route' => 'user-access.edit',
-            'permission_id' => $permissions['view_users'] ?? null,
-            'parent_id' => $accessManagement->id,
+            'name' => 'Content Management',
+            'route' => 'content-management.index',
+            'permission_id' => $permissions['view_content_management'] ?? null,
+            'parent_id' => $appManagement->id,
             'order' => 2
         ]);
 
@@ -416,17 +427,16 @@ class SidebarItemsTableSeeder extends Seeder
             'route' => 'users.show',
             'permission_id' => $permissions['manage_settings'] ?? null,
             'parent_id' => $appManagement->id,
-            'order' => 2
-        ]);
-
-        // <!-- Maintenance Mode: dedicated page under App Management for toggling site maintenance -->
-        SidebarItem::create([
-            'name' => 'Maintenance Mode',
-            'route' => 'maintenance.index',
-            'permission_id' => $permissions['manage_settings'] ?? null,
-            'parent_id' => $appManagement->id,
             'order' => 3
         ]);
+
+        // <!-- Maintenance Mode is intentionally NOT registered in sidebar_items.
+        //      It's a super-admin-only feature: sidebar visibility is gated by
+        //      `Auth::user()->email === 'admin_tsno@gmail.com'` in sidebar.blade.php
+        //      (System Management group) and the route is similarly gated in
+        //      CheckPermission.php:47-52. There's no useful permission to grant here,
+        //      so it doesn't belong in the Access Rights modal. -->
+
 
         // <!-- Note: Users is now under Masters group (order 8, child 10) instead of Settings section.
         //      Users route (users-newManagement) is registered there with view_users permission.

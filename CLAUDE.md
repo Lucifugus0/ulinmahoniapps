@@ -152,7 +152,9 @@ pending → waiting → paid → completed/cancelled/expired
 ### Backend Sidebar Structure
 Flat group hierarchy with 3 standalone items and 7 collapsible groups:
 - **Standalone:** Dashboard, Room Availability, Chat
-- **Groups:** Bookings (incl. Door Lock, Parking), Finance, Promo, Reports, Masters (incl. Customers, Users), App Management (Maintenance Mode, Access Management), Miscellaneous
+- **Groups:** Bookings (incl. Door Lock, Parking), Finance, Promo, Reports, Masters (incl. Customers, Users), App Management (Access Rights only — Maintenance Mode is super-admin-only and lives outside the sidebar), Miscellaneous
+
+The sidebar is driven by `m_sidebar_items` + `PermissionsTableSeeder`. **Access Rights** (formerly "Master Role" at `/settings/master-role-management`) is the per-role permission editor; each leaf sidebar item now has its own dedicated `view_*` permission so toggling one item never grants/revokes another. After editing the seeder, run `php artisan db:seed --class=SidebarItemsTableSeeder` (and `PermissionsTableSeeder` if permissions changed) on each environment to sync.
 
 ### Booking Pages (Backend Admin)
 - **All Bookings** — shows all bookings, hides expired by default (checkbox to show)
@@ -209,6 +211,33 @@ Push notifications are implemented in the **Frontend API** (not Backend). The Ba
 - **Frontend API middleware:** `CheckMaintenanceMode` — checks `global_title` table; returns JSON 503 for API requests, redirects to `/maintenance` for web
 - **Maintenance page:** `resources/views/maintenance.blade.php` — standalone bilingual page (EN + ID) with Tailwind CDN
 - **Mobile support:** Health-check API includes `maintenance_mode` flag
+
+## Brand Colors (Ulin Mahoni palette)
+
+Use these hex values for any new brand-aligned UI (buttons, accents, icons, badges). Tailwind utility colors (e.g. `green-600`, `emerald-500`) are fine for generic UI; reach for brand hexes when the surface needs to read as Ulin Mahoni rather than generic.
+
+| Color | Hex | Use |
+|---|---|---|
+| **UM Green** | `#0F513D` | Primary brand — logo, primary buttons, headings, accent borders |
+| **UM Maroon Red** | `#800000` | Secondary brand — alerts, highlights, "Penuh"/full-state pills, contrast accents |
+
+Pair with neutrals (`#f8f7f4` cream/light bg, `#111827` dark mode bg) for grounding.
+
+### Frontend (Web Portal) theme-aware accent
+Light mode `--accent: #0F513D` (UM Green), dark mode `--accent: #a83333` (saturated UM Maroon variant — pure `#800000` was too dark on `#111827`). Defined in `Frontend API/.../resources/views/components/homepage/styles.blade.php`. Use `var(--accent)` / `var(--accent-hover)` for any new brand surfaces; `.btn-um-themed` is the canonical primary-button class. Tailwind `teal-*` utility classes are remapped to the accent variable with `!important` to beat the Tailwind Play CDN runtime CSS.
+
+## Promo Banner (`/promo-banners`)
+
+Data lives in `m_promo_banners`. Two JSON-cast columns drive the homepage detail modal:
+
+- **`how_to_claim`** — array of step objects: `[{title: string, desc: string}, …]`. Min 2, max 5 entries, both fields required per entry (Backend validates).
+- **`terms_conditions`** — array of strings: `[string, …]`. Min 1 entry.
+
+**Backward compatibility** — pre-2026-05-05 banners stored `how_to_claim` as a flat string array `[string, …]`. Both apps normalize-on-read: legacy entries are auto-promoted to `{title: "Langkah N", desc: <original-string>}` so old data keeps rendering without a migration. Normalization lives in `Backend/app/Http/Controllers/PromoBannerController::normalizeHowToClaim()` (called from `show()`) and inline in `Frontend API/.../app/Http/Controllers/homepage/HomeController::index()`. **Never** assume a banner stores either shape exclusively — always run it through the normalizer.
+
+**Banner image sizes** — frontend banner is **1920 × 620 px** (was 1911 × 372 px pre-2026-05). Mobile banner unchanged.
+
+**Cara Klaim animation is disabled** — all step circles render with the `.active` class statically (lit gradient + scaled). The `startStepsAnimation()` cycling logic in `promos.blade.php` is left in place but no longer invoked.
 
 ## Code Style
 

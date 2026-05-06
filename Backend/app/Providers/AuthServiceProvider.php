@@ -34,8 +34,10 @@ class AuthServiceProvider extends ServiceProvider
             'view_checkouts',
             'view_completed_bookings',
             'view_change_room',
+            'view_modify_booking',
             'properties',
             'view_properties',
+            'view_daily_pricing',
             'view_property_facilities',
             'view_deposit_fees',
             'parking',
@@ -43,6 +45,7 @@ class AuthServiceProvider extends ServiceProvider
             'view_parking',
             'rooms',
             'view_rooms',
+            'view_room_types',
             'view_room_availability',
             'view_vouchers',
             'view_promo_banners',
@@ -66,6 +69,7 @@ class AuthServiceProvider extends ServiceProvider
             'view_users',
             'manage_roles',
             'manage_settings',
+            'view_content_management',
         ];
 
         foreach ($permissions as $permission) {

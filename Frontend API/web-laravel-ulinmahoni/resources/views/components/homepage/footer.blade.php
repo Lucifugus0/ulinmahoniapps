@@ -52,7 +52,7 @@
             <!-- Payment Methods -->
             @if(isset($footerPayments) && $footerPayments->count() > 0)
                 <div>
-                    <h4 class="text-lg font-semibold mb-3" style="color: #2dd4bf;">{{ __('common.footer.payment_methods') }}</h4>
+                    <h4 class="text-lg font-semibold mb-3" style="color: #ffffff;">{{ __('common.footer.payment_methods') }}</h4>
                     <div class="flex flex-wrap gap-2">
                         @foreach($footerPayments as $payment)
                             @php
@@ -77,7 +77,7 @@
 
         <!-- Column 2: Tautan Cepat (Quick Links) -->
         <div>
-            <h4 class="text-lg font-semibold mb-5" style="color: #2dd4bf;">{{ __('common.footer.quick_links') }}</h4>
+            <h4 class="text-lg font-semibold mb-5" style="color: #ffffff;">{{ __('common.footer.quick_links') }}</h4>
             <ul class="space-y-3 text-gray-400 text-sm">
                 @if(isset($footerQuickLinks) && $footerQuickLinks->count() > 0)
                     @foreach($footerQuickLinks as $link)
@@ -96,7 +96,7 @@
 
         <!-- Column 3: Ulin Mahoni Bisnis -->
         <div>
-            <h4 class="text-lg font-semibold mb-5" style="color: #2dd4bf;">{{ __('common.footer.business') }}</h4>
+            <h4 class="text-lg font-semibold mb-5" style="color: #ffffff;">{{ __('common.footer.business') }}</h4>
             <ul class="space-y-3 text-gray-400 text-sm">
                 @if(isset($footerBusinessLinks) && $footerBusinessLinks->count() > 0)
                     @foreach($footerBusinessLinks as $link)
@@ -120,7 +120,7 @@
 
         <!-- Column 4: Ikuti Kami (Follow Us) -->
         <div>
-            <h4 class="text-lg font-semibold mb-5" style="color: #2dd4bf;">{{ __('common.footer.follow_us') }}</h4>
+            <h4 class="text-lg font-semibold mb-5" style="color: #ffffff;">{{ __('common.footer.follow_us') }}</h4>
             <div class="flex flex-wrap gap-3">
                 @if(isset($footerSocials) && $footerSocials->count() > 0)
                     @foreach($footerSocials as $social)
@@ -152,7 +152,7 @@
 
         <!-- Column 5: Support -->
         <div>
-            <h4 class="text-lg font-semibold mb-5" style="color: #2dd4bf;">{{ __('common.footer.support') }}</h4>
+            <h4 class="text-lg font-semibold mb-5" style="color: #ffffff;">{{ __('common.footer.support') }}</h4>
             <ul class="space-y-3 text-gray-400 text-sm">
                 @if(isset($footerContacts) && $footerContacts->count() > 0)
                     @foreach($footerContacts as $contact)
@@ -188,9 +188,9 @@
         <p>
             {!! __('common.footer.copyright') !!}
             &nbsp;&nbsp;
-            <a href="/terms-of-services" class="hover:text-white transition-colors duration-300" style="color: #2dd4bf;">{{ __('common.footer.terms') }}</a>
+            <a href="/terms-of-services" class="hover:text-white transition-colors duration-300" style="color: #ffffff;">{{ __('common.footer.terms') }}</a>
             &nbsp;|&nbsp;
-            <a href="/privacy-policy" class="hover:text-white transition-colors duration-300" style="color: #2dd4bf;">{{ __('common.footer.privacy') }}</a>
+            <a href="/privacy-policy" class="hover:text-white transition-colors duration-300" style="color: #ffffff;">{{ __('common.footer.privacy') }}</a>
         </p>
     </div>
 </footer>
