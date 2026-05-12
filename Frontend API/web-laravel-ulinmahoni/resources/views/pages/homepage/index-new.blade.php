@@ -317,7 +317,7 @@
               <div class="md:w-48">
                 <button class="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors duration-200">
                   <i class="fas fa-search mr-2"></i>
-                  Cari Hunian
+                  Cari Property
                 </button>
               </div>
             </div>

@@ -81,6 +81,26 @@
                                 {{ __('ui.modify_booking_paid_at_locked_hint') }}
                             </p>
                         </div>
+                        {{-- Original Check-in Day anchor (1-31). Used by the monthly renewal arithmetic
+                             to preserve the chain's day-of-month across short-month clamps (e.g. Jan 31
+                             → Feb 28 → Mar 31, not Mar 28). Editing this on a renewal is allowed but
+                             actively warned against — it rewrites the chain root's anchor. --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                {{ __('ui.modify_booking_field_ocd') }}
+                                <span class="text-xs text-gray-500 font-normal">(1-31)</span>
+                            </label>
+                            <input type="number" min="1" max="31" step="1" x-model.number="form.original_checkin_day"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">
+                                {{ __('ui.modify_booking_ocd_hint') }}
+                            </p>
+                            <p class="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium"
+                               x-show="snapshot.is_renewal === 1 && (form.original_checkin_day ?? null) !== (snapshot.original_checkin_day ?? null)">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                {{ __('ui.modify_booking_ocd_renewal_warning') }}
+                            </p>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 {{ __('ui.modify_booking_field_notes') }} <span class="text-red-500">*</span>
@@ -156,7 +176,7 @@
             open: false,
             saving: false,
             snapshot: { order_id: null, history: [] },
-            form: { check_in: '', check_out: '', paid_at: '', modification_notes: '' },
+            form: { check_in: '', check_out: '', paid_at: '', original_checkin_day: null, modification_notes: '' },
             init() {
                 window.addEventListener('modify-booking:open', (e) => this.load(e.detail.orderId));
             },
@@ -174,7 +194,7 @@
             },
             async load(orderId) {
                 this.snapshot = { order_id: orderId, history: [] };
-                this.form = { check_in: '', check_out: '', paid_at: '', modification_notes: '' };
+                this.form = { check_in: '', check_out: '', paid_at: '', original_checkin_day: null, modification_notes: '' };
                 this.open = true;
                 try {
                     const res = await fetch(`/bookings/modify-booking/${encodeURIComponent(orderId)}/details`, {
@@ -186,6 +206,7 @@
                     this.form.check_in = data.check_in ?? '';
                     this.form.check_out = data.check_out ?? '';
                     this.form.paid_at = data.paid_at ?? '';
+                    this.form.original_checkin_day = data.original_checkin_day ?? null;
                 } catch (err) {
                     console.error(err);
                     Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load booking details.' });

@@ -25,6 +25,8 @@ class Parking extends Model
         'user_id',
         'order_id',
         'parking_duration',
+        'start_rent',
+        'end_rent',
         'fee_amount',
         'notes',
         'status',
@@ -34,9 +36,11 @@ class Parking extends Model
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'start_rent'  => 'date',
+        'end_rent'    => 'date',
+        'created_at'  => 'datetime',
+        'updated_at'  => 'datetime',
+        'deleted_at'  => 'datetime',
     ];
 
     public function property()
@@ -54,9 +58,64 @@ class Parking extends Model
         return $this->hasMany(ParkingFeeTransaction::class, 'parking_id', 'idrec');
     }
 
+    /**
+     * The latest paid parking fee transaction for this parking row — used to surface
+     * the active invoice number on the Parking Management page. Returns null when
+     * the parking was created via the Frontend booking flow (no separate parking
+     * payment row); the caller should then fall back to the room booking's invoice.
+     */
+    public function latestPaidTransaction()
+    {
+        return $this->hasOne(ParkingFeeTransaction::class, 'parking_id', 'idrec')
+            ->where('transaction_status', 'paid')
+            ->orderByDesc('idrec');
+    }
+
+    /**
+     * Resolved invoice number for display: prefer the latest paid parking fee
+     * transaction's invoice_id; fall back to the linked booking transaction's
+     * invoice_number; null if neither exists. Both relationships must be eager-loaded.
+     */
+    public function getInvoiceDisplayAttribute(): ?string
+    {
+        return $this->latestPaidTransaction?->invoice_id
+            ?? $this->bookingTransaction?->invoice_number
+            ?? null;
+    }
+
+    /**
+     * Where the displayed invoice number came from — drives the label under the
+     * invoice column on the Parking Management page. Returns:
+     *   'addon'   — standalone parking payment via Finance > Parking Entry (t_parking_fee_transaction)
+     *   'bundled' — parking paid as part of a room booking transaction (t_transactions)
+     *   null      — no paid invoice associated yet (pending / unpaid / legacy)
+     */
+    public function getInvoiceSourceAttribute(): ?string
+    {
+        if ($this->latestPaidTransaction?->invoice_id) {
+            return 'addon';
+        }
+        if ($this->bookingTransaction?->invoice_number) {
+            return 'bundled';
+        }
+        return null;
+    }
+
     public function bookingTransaction()
     {
         return $this->belongsTo(Transaction::class, 'order_id', 'order_id');
+    }
+
+    /**
+     * The currently-active t_booking row for this parking's order_id.
+     * Used to look up the room number on the Parking Management page —
+     * a booking chain may have multiple t_booking rows (renewal clones,
+     * modify-booking clones), so we filter to status=1 to pick the live one.
+     */
+    public function activeBooking()
+    {
+        return $this->hasOne(\App\Models\Booking::class, 'order_id', 'order_id')
+            ->where('status', 1);
     }
 
     public function createdBy()
@@ -83,6 +142,18 @@ class Parking extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 1);
+    }
+
+    /**
+     * "01 Mar 2026 → 01 Jun 2026" — null-safe display label for the current rental period.
+     * Falls back to "—" when either date is missing (legacy / malformed rows).
+     */
+    public function getRentPeriodLabelAttribute(): string
+    {
+        if (!$this->start_rent || !$this->end_rent) {
+            return '—';
+        }
+        return $this->start_rent->format('d M Y') . ' → ' . $this->end_rent->format('d M Y');
     }
 
     public function scopeSearch(Builder $query, string $search): Builder

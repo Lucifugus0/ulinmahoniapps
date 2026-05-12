@@ -11,9 +11,14 @@ return [
         'placeholder_location' => 'Cari lokasi...',
         'check_in' => 'Tanggal Check In',
         'check_out' => 'Tanggal Check Out',
-        'submit' => 'Cari Hunian',
+        'submit' => 'Cari Property',
         'all_properties' => 'Semua Properti',
         'all_periods' => 'Semua Periode',
+        // Field labels rendered above each input in the hero search bar
+        'label_property_type' => 'Tipe Properti',
+        'label_period' => 'Periode',
+        'label_check_in' => 'Check-In',
+        'label_check_out' => 'Check-Out',
     ],
 
     'property_types' => [
@@ -35,6 +40,8 @@ return [
         'promos' => 'Penawaran Khusus',
         'areas' => 'Area Populer',
         'featured' => 'Properti Unggulan',
+        'category_property' => 'Kategori Properti',
+        'location' => 'Lokasi',
     ],
 
     'actions' => [

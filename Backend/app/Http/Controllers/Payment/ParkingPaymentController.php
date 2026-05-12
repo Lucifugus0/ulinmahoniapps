@@ -244,6 +244,7 @@ class ParkingPaymentController extends Controller
             'parking_type' => 'required|in:car,motorcycle',
             'vehicle_plate' => 'required|string|max:50',
             'parking_duration' => 'required|integer|min:1',
+            'start_rent' => 'required|date', // NEW: parking start date (mid-stay allowed)
             'fee_amount' => 'required|numeric|min:0',
             'transaction_date' => 'required|date',
             'payment_proof' => 'required|image|mimes:jpeg,jpg|max:5120', // 5MB in kilobytes
@@ -251,6 +252,7 @@ class ParkingPaymentController extends Controller
         ], [
             'order_id.required' => 'Please select a booking order',
             'order_id.exists' => 'Selected booking order not found',
+            'start_rent.required' => 'Please pick a parking start date',
             'payment_proof.image' => 'Payment proof must be an image file',
             'payment_proof.mimes' => 'Payment proof must be a JPG/JPEG file',
             'payment_proof.max' => 'Payment proof size must not exceed 5MB',
@@ -262,20 +264,24 @@ class ParkingPaymentController extends Controller
             // Get transaction details from order_id
             $bookingTransaction = \App\Models\Transaction::where('order_id', $request->order_id)->firstOrFail();
 
-            // Validate parking_duration does not exceed stay duration
-            if ($bookingTransaction->check_in && $bookingTransaction->check_out) {
-                $checkIn = \Carbon\Carbon::parse($bookingTransaction->check_in);
-                $checkOut = \Carbon\Carbon::parse($bookingTransaction->check_out);
-                $maxMonths = $checkIn->diffInMonths($checkOut);
-                if ($checkIn->copy()->addMonths($maxMonths)->lt($checkOut)) {
-                    $maxMonths++;
-                }
-                $maxMonths = max(1, $maxMonths);
+            // Compute the parking period (start_rent + duration months) and enforce date-based caps
+            // against the booking's stay window. End is exclusive — last covered day is end_rent - 1.
+            $startRent = \Carbon\Carbon::parse($request->start_rent)->startOfDay();
+            $endRent = $startRent->copy()->addMonths((int) $request->parking_duration);
 
-                if ($request->parking_duration > $maxMonths) {
+            if ($bookingTransaction->check_in && $bookingTransaction->check_out) {
+                $checkIn = \Carbon\Carbon::parse($bookingTransaction->check_in)->startOfDay();
+                $checkOut = \Carbon\Carbon::parse($bookingTransaction->check_out)->startOfDay();
+
+                if ($startRent->lt($checkIn)) {
                     throw new \Exception(
-                        "Parking duration ({$request->parking_duration} months) cannot exceed stay duration ({$maxMonths} months). " .
-                        "Stay period: {$checkIn->format('d M Y')} - {$checkOut->format('d M Y')}."
+                        "Parking start date ({$startRent->format('d M Y')}) cannot be earlier than booking check-in ({$checkIn->format('d M Y')})."
+                    );
+                }
+                if ($endRent->gt($checkOut)) {
+                    throw new \Exception(
+                        "Parking end date ({$endRent->format('d M Y')}) cannot exceed booking check-out ({$checkOut->format('d M Y')}). " .
+                        "Choose a shorter duration or earlier start date."
                     );
                 }
             }
@@ -293,9 +299,11 @@ class ParkingPaymentController extends Controller
             $extensionOldParkingType = null;
 
             if ($existingActiveParking) {
-                // Calculate expiry: transaction_date + parking_duration months
-                $expiryDate = \Carbon\Carbon::parse($existingActiveParking->transaction_date)
-                    ->addMonths($existingActiveParking->parking_duration);
+                // Prefer the persisted end_rent; fall back to computed for legacy txns.
+                $expiryDate = $existingActiveParking->end_rent
+                    ? \Carbon\Carbon::parse($existingActiveParking->end_rent)
+                    : \Carbon\Carbon::parse($existingActiveParking->transaction_date)
+                        ->addMonths($existingActiveParking->parking_duration);
 
                 if ($expiryDate->isFuture()) {
                     $typeLabel = ucfirst($existingActiveParking->parking_type);
@@ -319,11 +327,13 @@ class ParkingPaymentController extends Controller
                 ->where('status', 1)
                 ->first();
 
-            // Parking fee MUST be configured in Parking Fee Management first
-            if (!$parkingFee) {
+            // Parking fee row + non-zero capacity are both required to allow new parking entries.
+            // Capacity == 0 used to mean "unlimited" but we now treat it as "not configured" so
+            // admins must explicitly set a slot count before any parking can be sold.
+            if (!$parkingFee || (int) $parkingFee->capacity <= 0) {
                 throw new \Exception(
-                    'Parking fee for ' . ucfirst($request->parking_type) . ' is not configured for this property. ' .
-                    'Please create parking fee in Parking Fee Management first before creating parking payment.'
+                    'Parking capacity for ' . ucfirst($request->parking_type) . ' is not configured for this property. ' .
+                    'Please set capacity in Parking Fee Management first before creating parking payment.'
                 );
             }
 
@@ -504,6 +514,8 @@ class ParkingPaymentController extends Controller
                 'parking_type' => $request->parking_type,
                 'vehicle_plate' => strtoupper($request->vehicle_plate),
                 'parking_duration' => $request->parking_duration,
+                'start_rent' => $startRent->toDateString(),
+                'end_rent' => $endRent->toDateString(),
                 'fee_amount' => $request->fee_amount,
                 'transaction_date' => $request->transaction_date,
                 'transaction_status' => 'paid', // Already paid
@@ -514,6 +526,16 @@ class ParkingPaymentController extends Controller
                 'status' => 1,
                 'created_by' => Auth::id(),
             ]);
+
+            // Mirror the new payment's period onto the t_parking row (current active rental).
+            // Extension behavior: overwrite. History stays preserved on past txn rows.
+            $parking->forceFill([
+                'start_rent' => $startRent->toDateString(),
+                'end_rent' => $endRent->toDateString(),
+                'parking_duration' => (int) $request->parking_duration,
+                'fee_amount' => $request->fee_amount,
+                'updated_by' => Auth::id(),
+            ])->save();
 
             // Assign persisted invoice number (per-invoice-code shared counter)
             InvoiceNumberService::assign($transaction);
@@ -705,13 +727,21 @@ class ParkingPaymentController extends Controller
                         ->first();
 
                     if ($existingParking) {
-                        $expiryDate = \Carbon\Carbon::parse($existingParking->transaction_date)
-                            ->addMonths($existingParking->parking_duration ?? 1);
+                        // Prefer persisted period; fall back to computed for legacy rows.
+                        $startDate = $existingParking->start_rent
+                            ? \Carbon\Carbon::parse($existingParking->start_rent)
+                            : \Carbon\Carbon::parse($existingParking->transaction_date);
+                        $expiryDate = $existingParking->end_rent
+                            ? \Carbon\Carbon::parse($existingParking->end_rent)
+                            : \Carbon\Carbon::parse($existingParking->transaction_date)
+                                ->addMonths($existingParking->parking_duration ?? 1);
                         $parkingStatus = $expiryDate->isFuture() ? 'active' : 'renewal';
                         $parkingInfo = [
                             'parking_type'  => $existingParking->parking_type,
                             'vehicle_plate' => $existingParking->vehicle_plate,
                             'duration'      => $existingParking->parking_duration,
+                            'start_rent'    => $startDate->format('d M Y'),
+                            'end_rent'      => $expiryDate->format('d M Y'),
                             'expiry_date'   => $expiryDate->format('d M Y'),
                             'expired_ago'   => $expiryDate->diffForHumans(),
                         ];
@@ -721,21 +751,27 @@ class ParkingPaymentController extends Controller
                     if (!$parkingInfo) {
                         $txn = $booking->transaction;
                         if ($txn && $txn->parking_type && $txn->parking_fee > 0 && $txn->parking_duration) {
-                            $checkIn = \Carbon\Carbon::parse($txn->check_in);
-                            $expiryDate = $checkIn->copy()->addMonths((int) $txn->parking_duration);
-                            $parkingStatus = $expiryDate->isFuture() ? 'active' : 'renewal';
-
-                            // Ambil plat kendaraan dari t_parking berdasarkan user + properti + tipe
+                            // Ambil plat kendaraan + persisted period dari t_parking
                             $parkingRecord = \App\Models\Parking::where('user_id', $userId)
                                 ->where('property_id', $booking->property_id)
                                 ->where('parking_type', $txn->parking_type)
                                 ->where('status', 1)
                                 ->first();
 
+                            $startDate = $parkingRecord && $parkingRecord->start_rent
+                                ? \Carbon\Carbon::parse($parkingRecord->start_rent)
+                                : \Carbon\Carbon::parse($txn->check_in);
+                            $expiryDate = $parkingRecord && $parkingRecord->end_rent
+                                ? \Carbon\Carbon::parse($parkingRecord->end_rent)
+                                : $startDate->copy()->addMonths((int) $txn->parking_duration);
+                            $parkingStatus = $expiryDate->isFuture() ? 'active' : 'renewal';
+
                             $parkingInfo = [
                                 'parking_type'  => $txn->parking_type,
                                 'vehicle_plate' => $parkingRecord->vehicle_plate ?? null,
                                 'duration'      => $txn->parking_duration,
+                                'start_rent'    => $startDate->format('d M Y'),
+                                'end_rent'      => $expiryDate->format('d M Y'),
                                 'expiry_date'   => $expiryDate->format('d M Y'),
                                 'expired_ago'   => $expiryDate->diffForHumans(),
                             ];
@@ -751,13 +787,20 @@ class ParkingPaymentController extends Controller
                             ->first();
 
                         if ($prevParkingTxn) {
-                            $expiryDate = \Carbon\Carbon::parse($prevParkingTxn->transaction_date)
-                                ->addMonths($prevParkingTxn->parking_duration ?? 1);
+                            $startDate = $prevParkingTxn->start_rent
+                                ? \Carbon\Carbon::parse($prevParkingTxn->start_rent)
+                                : \Carbon\Carbon::parse($prevParkingTxn->transaction_date);
+                            $expiryDate = $prevParkingTxn->end_rent
+                                ? \Carbon\Carbon::parse($prevParkingTxn->end_rent)
+                                : \Carbon\Carbon::parse($prevParkingTxn->transaction_date)
+                                    ->addMonths($prevParkingTxn->parking_duration ?? 1);
                             $parkingStatus = 'renewal';
                             $parkingInfo = [
                                 'parking_type'  => $prevParkingTxn->parking_type,
                                 'vehicle_plate' => $prevParkingTxn->vehicle_plate,
                                 'duration'      => $prevParkingTxn->parking_duration,
+                                'start_rent'    => $startDate->format('d M Y'),
+                                'end_rent'      => $expiryDate->format('d M Y'),
                                 'expiry_date'   => $expiryDate->format('d M Y'),
                                 'expired_ago'   => $expiryDate->diffForHumans(),
                             ];
@@ -777,21 +820,27 @@ class ParkingPaymentController extends Controller
                             ->first();
 
                         if ($prevTxn && $prevTxn->check_in && $prevTxn->parking_duration) {
-                            $checkIn = \Carbon\Carbon::parse($prevTxn->check_in);
-                            $expiryDate = $checkIn->copy()->addMonths((int) $prevTxn->parking_duration);
-                            $parkingStatus = 'renewal';
-
-                            // Ambil plat kendaraan dari t_parking berdasarkan user + properti + tipe
+                            // Ambil plat kendaraan + persisted period dari t_parking
                             $parkingRecord = \App\Models\Parking::where('user_id', $userId)
                                 ->where('property_id', $booking->property_id)
                                 ->where('parking_type', $prevTxn->parking_type)
                                 ->where('status', 1)
                                 ->first();
 
+                            $startDate = $parkingRecord && $parkingRecord->start_rent
+                                ? \Carbon\Carbon::parse($parkingRecord->start_rent)
+                                : \Carbon\Carbon::parse($prevTxn->check_in);
+                            $expiryDate = $parkingRecord && $parkingRecord->end_rent
+                                ? \Carbon\Carbon::parse($parkingRecord->end_rent)
+                                : $startDate->copy()->addMonths((int) $prevTxn->parking_duration);
+                            $parkingStatus = 'renewal';
+
                             $parkingInfo = [
                                 'parking_type'  => $prevTxn->parking_type,
                                 'vehicle_plate' => $parkingRecord->vehicle_plate ?? null,
                                 'duration'      => $prevTxn->parking_duration,
+                                'start_rent'    => $startDate->format('d M Y'),
+                                'end_rent'      => $expiryDate->format('d M Y'),
                                 'expiry_date'   => $expiryDate->format('d M Y'),
                                 'expired_ago'   => $expiryDate->diffForHumans(),
                             ];
@@ -805,32 +854,47 @@ class ParkingPaymentController extends Controller
                             ->where('property_id', $booking->property_id)
                             ->where('status', 1)
                             ->whereNull('deleted_at')
-                            ->get(['idrec', 'vehicle_plate', 'parking_type']);
+                            ->get(['idrec', 'vehicle_plate', 'parking_type', 'start_rent', 'end_rent', 'parking_duration']);
 
                         foreach ($activeParkingRecords as $ap) {
-                            // Get latest paid transaction for this parking record to determine duration/expiry
-                            $latestTxn = ParkingFeeTransaction::where('parking_id', $ap->idrec)
-                                ->where('transaction_status', 'paid')
-                                ->orderBy('created_at', 'desc')
-                                ->first();
-
-                            $apExpiryDate = null;
+                            $apStartDate  = null;
+                            $apEndDate    = null;
                             $apIsExpired  = null;
-                            $apDuration   = null;
+                            $apDuration   = $ap->parking_duration;
 
-                            if ($latestTxn) {
-                                $apExpiry    = \Carbon\Carbon::parse($latestTxn->transaction_date)
-                                    ->addMonths($latestTxn->parking_duration ?? 1);
-                                $apExpiryDate = $apExpiry->format('d M Y');
-                                $apIsExpired  = !$apExpiry->isFuture();
-                                $apDuration   = $latestTxn->parking_duration;
+                            // Prefer persisted t_parking period; fall back to latest txn for legacy rows.
+                            if ($ap->start_rent && $ap->end_rent) {
+                                $apStart      = \Carbon\Carbon::parse($ap->start_rent);
+                                $apEnd        = \Carbon\Carbon::parse($ap->end_rent);
+                                $apStartDate  = $apStart->format('d M Y');
+                                $apEndDate    = $apEnd->format('d M Y');
+                                $apIsExpired  = !$apEnd->isFuture();
+                            } else {
+                                $latestTxn = ParkingFeeTransaction::where('parking_id', $ap->idrec)
+                                    ->where('transaction_status', 'paid')
+                                    ->orderBy('created_at', 'desc')
+                                    ->first();
+                                if ($latestTxn) {
+                                    $apStart      = $latestTxn->start_rent
+                                        ? \Carbon\Carbon::parse($latestTxn->start_rent)
+                                        : \Carbon\Carbon::parse($latestTxn->transaction_date);
+                                    $apEnd        = $latestTxn->end_rent
+                                        ? \Carbon\Carbon::parse($latestTxn->end_rent)
+                                        : $apStart->copy()->addMonths($latestTxn->parking_duration ?? 1);
+                                    $apStartDate  = $apStart->format('d M Y');
+                                    $apEndDate    = $apEnd->format('d M Y');
+                                    $apIsExpired  = !$apEnd->isFuture();
+                                    $apDuration   = $latestTxn->parking_duration;
+                                }
                             }
 
                             $activeParkings[] = [
                                 'vehicle_plate'    => $ap->vehicle_plate,
                                 'parking_type'     => $ap->parking_type,
                                 'parking_duration' => $apDuration,
-                                'expiry_date'      => $apExpiryDate,
+                                'start_rent'       => $apStartDate,
+                                'end_rent'         => $apEndDate,
+                                'expiry_date'      => $apEndDate, // legacy alias
                                 'is_expired'       => $apIsExpired,
                             ];
                         }

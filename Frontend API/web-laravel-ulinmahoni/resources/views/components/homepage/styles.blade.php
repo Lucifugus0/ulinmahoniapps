@@ -143,13 +143,15 @@ body.liquid-glass-page {
   padding: 0 1rem;
 }
 
-/* Glass search box — the primary glass surface */
+/* Glass search box — the primary glass surface.
+   Corner radius reduced from var(--radius-xl) (2rem / 32px) to 1rem (16px) per design
+   request — keeps the soft-rounded feel but reads tighter against the hero composition. */
 .search-box {
   background: var(--glass-bg-strong);
   backdrop-filter: var(--glass-blur-strong);
   -webkit-backdrop-filter: var(--glass-blur-strong);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
+  border-radius: 1rem;
   box-shadow:
     var(--glass-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -166,14 +168,31 @@ body.liquid-glass-page {
   transform: translateY(-2px);
 }
 
-/* Glass form inputs — more see-through */
+/* Field labels above each search input — uppercase, bold, theme-aware contrast */
+.search-box .search-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #000000;
+  line-height: 1;
+}
+html.dark .search-box .search-label {
+  color: #ffffff;
+}
+
+/* Glass form inputs — more see-through.
+   Radius tightened from var(--radius-md) (1.25rem / 20px) to 0.5rem (8px) to match the
+   less-rounded card; both follow the same "softened-square" feel rather than pill. */
 .search-box select,
 .search-box input {
   background: rgba(255, 255, 255, 0.25) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  border-radius: var(--radius-md) !important;
+  border-radius: 0.5rem !important;
   color: var(--text-primary) !important;
   font-weight: 400;
   transition: all 0.3s ease;
@@ -187,11 +206,12 @@ body.liquid-glass-page {
   outline: none;
 }
 
-/* Search button — glass accent */
+/* Search button — glass accent. Radius matched to the input fields above so the
+   action button visually aligns with the form row. */
 .search-box button[type="submit"] {
   background: linear-gradient(135deg, var(--accent), var(--accent-hover)) !important;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-md) !important;
+  border-radius: 0.5rem !important;
   box-shadow: 0 4px 15px rgba(14, 165, 160, 0.3);
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -235,7 +255,7 @@ main > section:first-of-type {
 }
 
 /* Theme-aware brand button — surfaces flip with dark mode (Green ↔ Maroon).
-   Used by Daftar, Cari Hunian, etc. Pair with `style="color: #fff !important;"` on the element
+   Used by Daftar, Cari Property, etc. Pair with `style="color: #fff !important;"` on the element
    to beat the .site-header a !important rule in header text styling. */
 .btn-um-themed {
     background-color: var(--accent) !important;

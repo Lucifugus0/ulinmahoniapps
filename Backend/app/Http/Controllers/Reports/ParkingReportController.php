@@ -56,11 +56,13 @@ class ParkingReportController extends Controller
                 'verifiedBy',
             ])
             ->where('transaction_status', 'paid')
-            ->orderByDesc('paid_at');
+            // Order + filter by transaction_date so the list, the date filter, and the displayed
+            // Payment Date column all agree (Payment Date column sources transaction_date below).
+            ->orderByDesc('transaction_date');
 
-        // Date range filter
+        // Date range filter — matches the displayed Payment Date column (transaction_date).
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('paid_at', [
+            $query->whereBetween('transaction_date', [
                 $request->start_date . ' 00:00:00',
                 $request->end_date . ' 23:59:59'
             ]);
@@ -115,8 +117,11 @@ class ParkingReportController extends Controller
                 'parking_type' => ucfirst($transaction->parking_type ?? '-'),
                 'vehicle_plate' => $transaction->vehicle_plate ?? '-',
                 'fee_amount' => 'Rp ' . number_format($transaction->fee_amount ?? 0, 0, ',', '.'),
-                'transaction_date' => $transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('d M Y') : '-',
-                'paid_at' => $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-',
+                // Column meanings (after 2026-05-07 swap):
+                //   Transaction Date column ← paid_at (server clock when row was recorded)
+                //   Payment Date column     ← transaction_date (admin-keyed actual money date)
+                'transaction_date' => $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-',
+                'paid_at' => $transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('d M Y') : '-',
                 'payment_status' => 'Paid',
                 'verified_by' => $verifiedByName,
                 'verified_at' => $transaction->verified_at ? Carbon::parse($transaction->verified_at)->format('d M Y H:i') : '-',

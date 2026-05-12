@@ -1,29 +1,35 @@
+{{-- Parking Management table.
+     Column order: Invoice # | Parking Period | Booking ID | Property (with Room) | Parking Type (with Plate) | Status | Action
+
+     Invoice # falls back through: latest paid t_parking_fee_transaction.invoice_id →
+     t_transactions.invoice_number for the linked booking → '-' (no paid txn yet, e.g. pending or
+     pre-2026-03-06 legacy rows). The model accessor `invoice_display` does the lookup.
+     Booking ID cell stacks 3 rows: order_id (+ Perpanjangan badge), customer name + phone,
+     and the booking's stay period (from t_transactions.check_in / check_out).
+     Parking Type cell stacks 2 rows: the type pill, then the vehicle plate with type icon.
+     New entries are no longer created here — Finance > Parking Entry is the only entry path. --}}
 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
     <thead class="bg-gray-50 dark:bg-gray-800">
         <tr>
+            <th scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {{ __('ui.invoice_no_short') }}
+            </th>
+            <th scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {{ __('ui.parking_period') }}
+            </th>
+            <th scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {{ __('ui.booking_id') }}
+            </th>
             <th scope="col"
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {{ __('ui.property') }}
             </th>
             <th scope="col"
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Check-in
-            </th>
-            <th scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {{ __('ui.vehicle_plate') }}
-            </th>
-            <th scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {{ __('ui.parking_type') }}
-            </th>
-            <th scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {{ __('ui.owner_name') }}
-            </th>
-            <th scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {{ __('ui.parking_fee_amount') }}
             </th>
             <th scope="col"
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -37,71 +43,97 @@
     </thead>
     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400">
         @forelse($parkings as $parking)
-            <tr class="{{ $parking->trashed() ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer' }} transition-colors duration-200 border-b border-gray-300 property-table-row">
+            @php
+                /* Customer display: prefer User.first_name+last_name + User.phone_number;
+                   fall back to the booking transaction snapshot, then to the parking row's own snapshot.
+                   Matches the precedence used on the Bookings tables. */
+                $txn = $parking->bookingTransaction;
+                $usr = $txn?->user;
+                $custName = trim(($usr?->first_name ?? '') . ' ' . ($usr?->last_name ?? ''));
+                if ($custName === '') {
+                    $custName = $txn?->user_name ?: $parking->owner_name ?: '-';
+                }
+                $custPhone = $usr?->phone_number ?: ($txn?->user_phone_number ?: $parking->owner_phone);
+                /* Stay period from the parking's linked booking transaction (NOT the parking's own period). */
+                $stayIn = $txn?->check_in ? \Carbon\Carbon::parse($txn->check_in)->format('d M Y') : null;
+                $stayOut = $txn?->check_out ? \Carbon\Carbon::parse($txn->check_out)->format('d M Y') : null;
+            @endphp
+            <tr class="{{ $parking->trashed() ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-gray-200 dark:hover:bg-gray-700' }} transition-colors duration-200 border-b border-gray-300 property-table-row">
+                {{-- Invoice # — number on row 1, source label ("Booking + Parking" vs "Add on Parking") on row 2 --}}
+                <td class="px-6 py-4 whitespace-nowrap">
+                    @if($parking->invoice_display)
+                        <div class="text-xs font-mono text-gray-700 dark:text-gray-300">{{ $parking->invoice_display }}</div>
+                        @if($parking->invoice_source === 'bundled')
+                            <div class="mt-0.5">
+                                <span class="px-1.5 py-0.5 inline-flex text-[10px] leading-3 font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                    {{ __('ui.parking_invoice_bundled') }}
+                                </span>
+                            </div>
+                        @elseif($parking->invoice_source === 'addon')
+                            <div class="mt-0.5">
+                                <span class="px-1.5 py-0.5 inline-flex text-[10px] leading-3 font-semibold rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                                    {{ __('ui.parking_invoice_addon') }}
+                                </span>
+                            </div>
+                        @endif
+                    @else
+                        <span class="text-xs text-gray-400">-</span>
+                    @endif
+                </td>
+
+                {{-- Parking Period (from start_rent / end_rent via the model's accessor) --}}
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <div class="text-xs text-gray-700 dark:text-gray-300">{{ $parking->rent_period_label }}</div>
+                    @if($parking->parking_duration)
+                        <div class="text-xs text-gray-400 mt-0.5">
+                            {{ $parking->parking_duration }} {{ __('ui.parking_duration_months') }}
+                        </div>
+                    @endif
+                </td>
+
+                {{-- Booking ID stack: order_id + Perpanjangan, then customer name+phone, then booking stay period --}}
+                <td class="px-6 py-4 whitespace-nowrap">
+                    @if ($parking->order_id)
+                        @php
+                            $isParkingRenewal = $txn && $txn->is_renewal == 1;
+                        @endphp
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{ $parking->order_id }}</span>
+                            @if ($isParkingRenewal)
+                                <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                                    Perpanjangan
+                                </span>
+                            @endif
+                        </div>
+                        <div class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                            {{ $custName }}@if($custPhone) - {{ $custPhone }}@endif
+                        </div>
+                        @if($stayIn || $stayOut)
+                            <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                {{ $stayIn ?? '-' }} → {{ $stayOut ?? '-' }}
+                            </div>
+                        @endif
+                    @else
+                        <span class="text-xs text-gray-400">-</span>
+                    @endif
+                </td>
+
+                {{-- Property + Room (room comes from t_booking row whose status=1, joined to m_rooms) --}}
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {{ $parking->property->name ?? '-' }}
                     </div>
+                    @if($parking->activeBooking && $parking->activeBooking->room)
+                        <div class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                            {{ __('ui.room') }} {{ $parking->activeBooking->room->no }}
+                        </div>
+                    @endif
                     <div class="text-xs text-gray-500 dark:text-gray-400">
                         {{ $parking->property->city ?? '' }}
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    @if($parking->bookingTransaction && $parking->bookingTransaction->check_in)
-                        <div class="text-gray-900 dark:text-gray-100">
-                            {{ \Carbon\Carbon::parse($parking->bookingTransaction->check_in)->format('Y-m-d') }}
-                        </div>
-                        @if($parking->bookingTransaction->check_out)
-                            <div class="text-xs text-gray-400 dark:text-gray-500">
-                                s/d {{ \Carbon\Carbon::parse($parking->bookingTransaction->check_out)->format('Y-m-d') }}
-                            </div>
-                        @endif
-                    @else
-                        <span class="text-gray-400">-</span>
-                    @endif
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center gap-2">
-                        @if ($parking->parking_type === 'car')
-                            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                                <svg class="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5"></path>
-                                    <rect x="3" y="13" width="18" height="5" rx="2"></rect>
-                                    <circle cx="7" cy="18" r="2"></circle>
-                                    <circle cx="17" cy="18" r="2"></circle>
 
-                                </svg>
-
-                            </div>
-                        @else
-                            <div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-full">
-                                <svg class="h-5 w-5 text-orange-600 dark:text-orange-400" viewBox="0 0 24 24"
-     fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-     stroke-linejoin="round">
-    <!-- Roda belakang -->
-    <circle cx="6" cy="18" r="2.5"></circle>
-    <!-- Roda depan -->
-    <circle cx="18" cy="18" r="2.5"></circle>
-    <!-- Body/deck motor matic -->
-    <path d="M8.5 18h7.5"></path>
-    <path d="M8.5 18v-3a2 2 0 0 1 2-2h4"></path>
-    <!-- Stang/handlebar -->
-    <path d="M18 18v-6l2-2"></path>
-    <path d="M18 10h3"></path>
-    <!-- Jok/seat -->
-    <path d="M10 13h4"></path>
-    <ellipse cx="12" cy="13" rx="3" ry="1"></ellipse>
-    <!-- Spatbor depan -->
-    <path d="M16 15c1-1 2-2 2-3"></path>
-</svg>
-                            </div>
-                        @endif
-                        <span
-                            class="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wider">{{ $parking->vehicle_plate }}</span>
-                    </div>
-                </td>
+                {{-- Parking Type pill + Vehicle Plate (with type icon) stacked --}}
                 <td class="px-6 py-4 whitespace-nowrap">
                     @php
                         $typeColors = [
@@ -114,111 +146,70 @@
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $colorClass }}">
                         {{ $typeLabel }}
                     </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900 dark:text-gray-100">
-                        {{ $parking->owner_name ?? '-' }}
+                    <div class="flex items-center gap-2 mt-1">
+                        @if ($parking->parking_type === 'car')
+                            <svg class="h-4 w-4 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5"></path>
+                                <rect x="3" y="13" width="18" height="5" rx="2"></rect>
+                                <circle cx="7" cy="18" r="2"></circle>
+                                <circle cx="17" cy="18" r="2"></circle>
+                            </svg>
+                        @else
+                            <svg class="h-4 w-4 text-orange-600 dark:text-orange-400" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="6" cy="18" r="2.5"></circle>
+                                <circle cx="18" cy="18" r="2.5"></circle>
+                                <path d="M8.5 18h7.5"></path>
+                                <path d="M8.5 18v-3a2 2 0 0 1 2-2h4"></path>
+                                <path d="M18 18v-6l2-2"></path>
+                                <path d="M18 10h3"></path>
+                                <path d="M10 13h4"></path>
+                                <ellipse cx="12" cy="13" rx="3" ry="1"></ellipse>
+                                <path d="M16 15c1-1 2-2 2-3"></path>
+                            </svg>
+                        @endif
+                        <span class="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wider">{{ $parking->vehicle_plate }}</span>
                     </div>
-                    @if ($parking->owner_phone)
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                            {{ $parking->owner_phone }}
-                        </div>
-                    @endif
-                    @if ($parking->order_id)
-                        @php
-                            $parkingTxn = \App\Models\Transaction::where('order_id', $parking->order_id)
-                                ->select('is_renewal')
-                                ->first();
-                            $isParkingRenewal = $parkingTxn && $parkingTxn->is_renewal == 1;
-                        @endphp
-                        <div class="flex items-center gap-1 mt-1">
-                            <span class="text-xs text-gray-400 dark:text-gray-500">{{ $parking->order_id }}</span>
-                            @if ($isParkingRenewal)
-                                <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
-                                    Perpanjangan
-                                </span>
-                            @endif
-                        </div>
-                    @endif
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    @php
-                        $fee = \App\Models\ParkingFee::where('property_id', $parking->property_id)
-                            ->where('parking_type', $parking->parking_type)
-                            ->where('status', 1)
-                            ->first();
-                    @endphp
-                    @if ($fee)
-                        <div class="text-sm font-semibold text-green-600 dark:text-green-400">
-                            Rp {{ number_format($fee->fee, 0, ',', '.') }}
-                        </div>
-                    @else
-                        <span class="text-xs text-red-500">{{ __('ui.parking_fee_not_configured') }}</span>
-                    @endif
-                </td>
+
+                {{-- Status (read-only badge — toggle removed) --}}
                 <td class="px-6 py-4 whitespace-nowrap">
                     @if ($parking->trashed())
-                        <span
-                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
                             {{ __('ui.deleted') }}
                         </span>
+                    @elseif ($parking->status == 1)
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                            {{ __('ui.active') }}
+                        </span>
                     @else
-                        <div class="flex items-center space-x-2">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" class="sr-only peer parking-status-toggle"
-                                    data-id="{{ $parking->idrec }}" {{ $parking->status == 1 ? 'checked' : '' }}
-                                    onchange="toggleParkingStatus(this)">
-                                <div
-                                    class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer-checked:bg-blue-600 transition-all duration-300">
-                                </div>
-                                <div
-                                    class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 peer-checked:translate-x-5">
-                                </div>
-                            </label>
-                            <span
-                                class="text-sm font-medium status-label {{ $parking->status == 1 ? 'text-green-600' : 'text-red-600' }}">
-                                {{ $parking->status == 1 ? __('ui.active') : __('ui.inactive') }}
-                            </span>
-                        </div>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                            {{ __('ui.inactive') }}
+                        </span>
                     @endif
                 </td>
+
+                {{-- Action (Edit/Delete removed; Restore stays for soft-deleted rows surfaced via Show Deleted toggle) --}}
                 <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                    <div class="flex items-center gap-2">
-                        @if ($parking->trashed())
-                            <button type="button" onclick="restoreParking({{ $parking->idrec }})"
-                                class="text-green-500 hover:text-green-700" title="{{ __('ui.restore') }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
-                                    fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        @else
-                            <button type="button" onclick="openEditParkingModal(@js($parking))"
-                                class="text-yellow-500 hover:text-yellow-700" title="{{ __('ui.edit') }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
-                                    fill="currentColor">
-                                    <path
-                                        d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                            </button>
-                            <button type="button" onclick="deleteParking({{ $parking->idrec }})"
-                                class="text-red-500 hover:text-red-700" title="{{ __('ui.delete') }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
-                                    fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        @endif
-                    </div>
+                    @if ($parking->trashed())
+                        <button type="button" onclick="restoreParking({{ $parking->idrec }})"
+                            class="text-green-500 hover:text-green-700" title="{{ __('ui.restore') }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    @else
+                        <span class="text-xs text-gray-400">—</span>
+                    @endif
                 </td>
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                     {{ __('ui.no_parking_data') }}
                 </td>
             </tr>

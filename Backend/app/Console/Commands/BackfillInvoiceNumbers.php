@@ -236,9 +236,11 @@ class BackfillInvoiceNumbers extends Command
         if (!$includeAll) {
             $query->whereNull('invoice_id');
         }
-        $parking = $query->orderBy('paid_at')
+        // Order by COALESCE(transaction_date, paid_at) so the sequence aligns with the
+        // actual money-changed-hands order (matches the new month/year derivation below).
+        $parking = $query->orderByRaw('COALESCE(transaction_date, paid_at) ASC')
             ->orderBy('idrec')
-            ->get(['idrec', 'property_id', 'paid_at']);
+            ->get(['idrec', 'property_id', 'paid_at', 'transaction_date']);
 
         $this->line("  Parking to assign:  {$parking->count()}");
         if ($parking->isEmpty()) {
@@ -258,8 +260,14 @@ class BackfillInvoiceNumbers extends Command
             $propertyInitial = strtoupper($property->initial ?? '');
             $counterKey      = 'PRK-' . $invoiceCode;
             $paidAt          = Carbon::parse($t->paid_at);
-            $year            = (int) $paidAt->format('Y');
-            $month           = (int) $paidAt->format('n');
+            // The {roman_month}/{year} segments come from transaction_date (admin-keyed actual
+            // payment date). Falls back to paid_at when transaction_date is missing. Mirrors
+            // the runtime path in InvoiceNumberService so both code paths produce identical numbers.
+            $invoiceDate     = !empty($t->transaction_date)
+                ? Carbon::parse($t->transaction_date)
+                : $paidAt;
+            $year            = (int) $invoiceDate->format('Y');
+            $month           = (int) $invoiceDate->format('n');
 
             $next = $this->nextSeq($counters, $counterKey, $year, $freshCounters);
 

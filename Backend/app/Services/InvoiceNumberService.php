@@ -18,7 +18,12 @@ use Illuminate\Support\Facades\Log;
  *
  * Rules:
  * - Only paid transactions get an invoice number.
- * - Transactions with paid_at < 2026-03-01 are skipped (no number assigned).
+ * - Transactions with paid_at < 2026-03-01 are skipped (no number assigned). The cutoff
+ *   guard still uses paid_at — it defines when this numbering system became active.
+ * - The {roman_month}/{year} segments are derived from transaction_date (admin-keyed
+ *   actual money-changed-hands date), with paid_at as a defensive fallback when
+ *   transaction_date is missing. So a back-dated payment recorded May 6 with
+ *   transaction_date=Apr 15 gets numbered IV/2026 (April), not V/2026 (May).
  * - Sequence is per (counter_key, year) and resets each January 1. Each
  *   transaction type has its OWN counter so the three sequences are independent
  *   (no shared gaps, each type starts from 1 per year per property):
@@ -60,7 +65,7 @@ class InvoiceNumberService
             return null;
         }
 
-        // Must have paid_at on/after cutoff
+        // Cutoff guard still operates on paid_at (defines when this numbering system started).
         if (empty($transaction->paid_at)) {
             return null;
         }
@@ -68,6 +73,14 @@ class InvoiceNumberService
         if ($paidAt->lt(Carbon::parse(self::CUTOFF_DATE))) {
             return null;
         }
+
+        // The invoice number's year + roman month segments come from transaction_date
+        // (the admin-keyed actual money-changed-hands date), so back-dated payments produce
+        // invoices in the month the customer actually paid, not the month admin recorded the row.
+        // Falls back to paid_at when transaction_date is missing (legacy data safety).
+        $invoiceDate = !empty($transaction->transaction_date)
+            ? Carbon::parse($transaction->transaction_date)
+            : $paidAt;
 
         // Resolve property. Deposit transactions belong to a booking via order_id,
         // so fall back to the linked booking Transaction's property_id for deposits.
@@ -89,8 +102,9 @@ class InvoiceNumberService
 
         $invoiceCode     = strtoupper($property->invoice_code);
         $propertyInitial = strtoupper($property->initial ?? '');
-        $year            = (int) $paidAt->format('Y');
-        $month           = (int) $paidAt->format('n');
+        // Year + month derived from transaction_date (with paid_at fallback) — see $invoiceDate above.
+        $year            = (int) $invoiceDate->format('Y');
+        $month           = (int) $invoiceDate->format('n');
         $romanMonth      = self::$romanMonths[$month];
 
         // Each transaction type uses its own counter key + its own initial-segment

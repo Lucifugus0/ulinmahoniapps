@@ -214,10 +214,12 @@ class ParkingReportExport
                 'verifiedBy',
             ])
             ->where('transaction_status', 'paid')
-            ->orderByDesc('paid_at');
+            // Mirror the controller: order + filter by transaction_date so the export matches
+            // the web view's Payment Date column.
+            ->orderByDesc('transaction_date');
 
         if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
-            $query->whereBetween('paid_at', [
+            $query->whereBetween('transaction_date', [
                 $this->filters['start_date'] . ' 00:00:00',
                 $this->filters['end_date'] . ' 23:59:59'
             ]);
@@ -264,8 +266,11 @@ class ParkingReportExport
             ucfirst($transaction->parking_type ?? '-'),
             $transaction->vehicle_plate ?? '-',
             round($transaction->fee_amount ?? 0, 0),
-            $transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('d M Y') : '-',
+            // Column meanings (after 2026-05-07 swap, mirrors controller):
+            //   Transaction Date column ← paid_at (server clock when row was recorded)
+            //   Payment Date column     ← transaction_date (admin-keyed actual money date)
             $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-',
+            $transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('d M Y') : '-',
             'Paid',
             $verifiedByName,
             $transaction->verified_at ? Carbon::parse($transaction->verified_at)->format('d M Y H:i') : '-',

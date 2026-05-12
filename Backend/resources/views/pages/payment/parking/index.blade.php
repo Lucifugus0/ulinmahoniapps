@@ -304,11 +304,11 @@
                                 </div>
                             </div>
 
-                            <!-- Vehicle Plate and Parking Duration side by side -->
+                            <!-- Vehicle Plate, Parking Start Date, Parking Duration -->
                             <div>
                                 <label for="add_vehicle_plate"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Vehicle Plate <span class="text-red-500">*</span>
+                                    {{ __('ui.vehicle_plate') ?? 'Vehicle Plate' }} <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" name="vehicle_plate" id="add_vehicle_plate" required
                                     placeholder="e.g., B 1234 XYZ" oninput="this.value = this.value.toUpperCase()"
@@ -317,7 +317,19 @@
                                 <p class="text-red-500 text-xs mt-1 hidden" id="add_vehicle_plate_error"></p>
                             </div>
 
+                            <!-- Parking Start Date (NEW) -->
                             <div>
+                                <label for="add_start_rent"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {{ __('ui.parking_start_rent') }} <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" name="start_rent" id="add_start_rent" required
+                                    value="{{ now()->toDateString() }}"
+                                    class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200">
+                                <p class="text-red-500 text-xs mt-1 hidden" id="add_start_rent_error"></p>
+                            </div>
+
+                            <div class="md:col-span-2">
                                 <label for="add_parking_duration"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Parking Duration (months) <span class="text-red-500">*</span>
@@ -325,6 +337,7 @@
                                 <input type="number" name="parking_duration" id="add_parking_duration" required
                                     min="1" value="1" placeholder="e.g., 1"
                                     class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200">
+                                {{-- Live "Parking period: X → Y" preview, computed by recomputeParkingPeriod() in JS --}}
                                 <p class="text-xs text-blue-600 mt-1 hidden" id="parking_duration_max_hint"></p>
                                 <p class="text-red-500 text-xs mt-1 hidden" id="add_parking_duration_error"></p>
                             </div>
@@ -343,11 +356,13 @@
                                 <p class="text-red-500 text-xs mt-1 hidden" id="add_fee_amount_error"></p>
                             </div>
 
-                            <!-- Transaction Date and Payment Proof in one row -->
+                            <!-- Payment Date and Payment Proof in one row.
+                                 The DB column stays named transaction_date (CLAUDE.md rule 2: no DB renames);
+                                 this label change is UI-only. -->
                             <div>
                                 <label for="add_transaction_date"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Transaction Date <span class="text-red-500">*</span>
+                                    {{ __('ui.payment_date') }} <span class="text-red-500">*</span>
                                 </label>
                                 <input type="datetime-local" name="transaction_date" id="add_transaction_date"
                                     required
@@ -793,6 +808,12 @@
             if (maxHint) maxHint.classList.add('hidden');
             document.getElementById('add_parking_duration').removeAttribute('max');
             document.getElementById('add_parking_duration').value = 1;
+            // Restore start_rent default (form.reset() blanks it out — restore to today)
+            const startInput = document.getElementById('add_start_rent');
+            if (startInput) {
+                startInput.value = new Date().toISOString().slice(0, 10);
+                startInput.removeAttribute('min');
+            }
             // Clear order search
             const searchInput = document.getElementById('order_search_input');
             if (searchInput) {
@@ -888,9 +909,13 @@
 
                 const vehicleRows = activeParkings.length > 0
                     ? activeParkings.map(p => {
+                        // Prefer the new {start_rent → end_rent} period; fall back to the legacy
+                        // "duration • s/d expiry" format for unbackfilled or malformed rows.
+                        const periodText = (p.start_rent && p.end_rent)
+                            ? `${p.start_rent} → ${p.end_rent}`
+                            : (p.expiry_date ? `s/d ${p.expiry_date}` : '');
                         const durationText = p.parking_duration ? `${p.parking_duration} bln` : '';
-                        const expiryText   = p.expiry_date ? `s/d ${p.expiry_date}` : '';
-                        const infoText     = [durationText, expiryText].filter(Boolean).join(' • ');
+                        const infoText     = [durationText, periodText].filter(Boolean).join(' • ');
                         const expiredBadge = p.is_expired === true
                             ? `<span class="ml-1 text-red-500 font-bold">✗ Expired</span>`
                             : (p.is_expired === false ? `<span class="ml-1 text-green-600 font-bold">✓ Aktif</span>` : '');
@@ -1008,8 +1033,27 @@
                     (selectedOption.dataset.checkIn || '-') + ' - ' + (selectedOption.dataset.checkOut || '-');
                 orderInfoSection.classList.remove('hidden');
 
-                // Auto-calculate parking duration in months from check-in to check-out
-                calculateParkingDuration(selectedOption.dataset.checkIn, selectedOption.dataset.checkOut, selectedOption.dataset.maxParkingMonths);
+                // Stash the booking's stay window on the form so recomputeParkingPeriod()
+                // (driven by start_rent and parking_duration inputs) can cap end_rent ≤ check_out.
+                const formEl = document.getElementById('addPaymentForm');
+                if (formEl) {
+                    formEl.dataset.checkIn = selectedOption.dataset.checkIn || '';
+                    formEl.dataset.checkOut = selectedOption.dataset.checkOut || '';
+                }
+
+                // Default start_rent to the later of [today, check-in] so the picker never
+                // points to a date before the booking window.
+                const startInput = document.getElementById('add_start_rent');
+                if (startInput) {
+                    const todayIso = new Date().toISOString().slice(0, 10);
+                    const checkInIso = parseDisplayDateToISO(selectedOption.dataset.checkIn);
+                    const minStart = checkInIso && checkInIso > todayIso ? checkInIso : todayIso;
+                    startInput.min = checkInIso || '';
+                    startInput.value = minStart;
+                }
+
+                // Compute the period preview (start_rent + duration months, capped at check_out)
+                recomputeParkingPeriod();
 
                 // Show parking status badge (informational only)
                 showParkingStatusBadge(selectedOption.dataset.parkingStatus || 'new', selectedOption.dataset.parkingInfo || '', selectedOption.dataset.activeParkings || '[]');
@@ -1034,55 +1078,101 @@
             }
         });
 
-        // Calculate parking duration in months from check-in and check-out dates
-        function calculateParkingDuration(checkInStr, checkOutStr, maxParkingMonths) {
+        // Parse a display-formatted date like "01 Mar 2026" into ISO YYYY-MM-DD.
+        // Returns '' if input is empty / unparseable / placeholder.
+        function parseDisplayDateToISO(s) {
+            if (!s || s === '-') return '';
+            const d = new Date(s);
+            if (isNaN(d.getTime())) return '';
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // PHP Carbon-equivalent addMonths semantics (overflow=true, the default).
+        // Carbon clamps day-of-month overflow into the next month, so Jan 31 + 1mo → Mar 3.
+        // We replicate that here so client preview matches server.
+        function addMonths(date, n) {
+            const d = new Date(date);
+            const targetDay = d.getDate();
+            d.setDate(1);
+            d.setMonth(d.getMonth() + n);
+            const lastDayOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            // Overflow behavior matches Carbon: if target day > last day of new month,
+            // roll over into the following month.
+            if (targetDay > lastDayOfMonth) {
+                d.setDate(lastDayOfMonth);
+                d.setDate(d.getDate() + (targetDay - lastDayOfMonth));
+            } else {
+                d.setDate(targetDay);
+            }
+            return d;
+        }
+
+        function isoToDisplay(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return iso;
+            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        // Recompute the parking period preview live. Reads start_rent input + parking_duration
+        // input + the stashed booking check_in/check_out from the form. Auto-caps duration
+        // so end_rent ≤ check_out, and writes a "Period: X → Y" hint under the duration field.
+        function recomputeParkingPeriod() {
+            const startInput = document.getElementById('add_start_rent');
             const durationInput = document.getElementById('add_parking_duration');
             const durationError = document.getElementById('add_parking_duration_error');
             const maxHint = document.getElementById('parking_duration_max_hint');
+            const formEl = document.getElementById('addPaymentForm');
+            if (!startInput || !durationInput || !maxHint || !formEl) return;
 
-            if (!checkInStr || !checkOutStr || checkOutStr === '-') {
-                durationInput.value = 1;
-                durationInput.removeAttribute('max');
-                if (maxHint) maxHint.classList.add('hidden');
+            const startIso = startInput.value;
+            const checkOutDisp = formEl.dataset.checkOut || '';
+            const checkOutIso = parseDisplayDateToISO(checkOutDisp);
+            let duration = parseInt(durationInput.value, 10);
+            if (!startIso || isNaN(duration) || duration < 1) {
+                maxHint.classList.add('hidden');
                 return;
             }
 
-            const checkIn = new Date(checkInStr);
-            const checkOut = new Date(checkOutStr);
-
-            if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
-                durationInput.value = 1;
+            // Auto-cap duration so the resulting end_rent never exceeds booking check_out.
+            // We probe upward from 1mo until the next addition would overshoot.
+            let maxDuration = null;
+            if (checkOutIso) {
+                const checkOutDate = new Date(checkOutIso);
+                let m = 1;
+                while (m <= 60) { // Hard ceiling (5y) — booking constraints prevent stays this long anyway
+                    const candidate = addMonths(startIso, m);
+                    if (candidate > checkOutDate) {
+                        break;
+                    }
+                    m++;
+                }
+                maxDuration = Math.max(1, m - 1);
+                durationInput.setAttribute('max', maxDuration);
+                if (duration > maxDuration) {
+                    duration = maxDuration;
+                    durationInput.value = duration;
+                }
+            } else {
                 durationInput.removeAttribute('max');
-                if (maxHint) maxHint.classList.add('hidden');
-                return;
             }
 
-            // Calculate difference in months
-            let months = (checkOut.getFullYear() - checkIn.getFullYear()) * 12 +
-                (checkOut.getMonth() - checkIn.getMonth());
+            const endDate = addMonths(startIso, duration);
+            const endIso = endDate.toISOString().slice(0, 10);
+            const periodLabel = `Period: ${isoToDisplay(startIso)} → ${isoToDisplay(endIso)}`;
+            const capLabel = maxDuration ? ` — Max ${maxDuration} month(s) up to check-out (${checkOutDisp})` : '';
+            maxHint.textContent = periodLabel + capLabel;
+            maxHint.classList.remove('hidden');
 
-            // If there are remaining days, round up to next month
-            if (checkOut.getDate() > checkIn.getDate()) {
-                months++;
-            }
-
-            // Minimum 1 month
-            months = Math.max(1, months);
-
-            // Set max parking months from server calculation
-            const maxMonths = maxParkingMonths ? parseInt(maxParkingMonths) : months;
-            durationInput.value = Math.min(months, maxMonths);
-            durationInput.setAttribute('max', maxMonths);
-
-            // Show max hint
-            if (maxHint) {
-                maxHint.textContent = `Max ${maxMonths} month(s) based on stay period (${checkInStr} - ${checkOutStr})`;
-                maxHint.classList.remove('hidden');
-            }
-
-            // Clear any previous error
             if (durationError) durationError.classList.add('hidden');
         }
+
+        // Wire the live recompute to both inputs that drive the period.
+        document.getElementById('add_start_rent')?.addEventListener('input', recomputeParkingPeriod);
+        document.getElementById('add_parking_duration')?.addEventListener('input', recomputeParkingPeriod);
 
         // Validate parking duration on input change
         document.getElementById('add_parking_duration')?.addEventListener('input', function() {

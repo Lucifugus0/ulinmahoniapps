@@ -14,6 +14,11 @@ return [
         'submit' => '搜索房源',
         'all_properties' => '所有房源',
         'all_periods' => '所有周期',
+        // Field labels rendered above each input in the hero search bar
+        'label_property_type' => '房源类型',
+        'label_period' => '周期',
+        'label_check_in' => '入住',
+        'label_check_out' => '退房',
     ],
 
     'property_types' => [
@@ -35,6 +40,8 @@ return [
         'promos' => '特别优惠',
         'areas' => '热门区域',
         'featured' => '精选房源',
+        'category_property' => '房源分类',
+        'location' => '位置',
     ],
 
     'actions' => [

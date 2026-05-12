@@ -14,6 +14,11 @@ return [
         'submit' => 'Search Properties',
         'all_properties' => 'All Properties',
         'all_periods' => 'All Periods',
+        // Field labels rendered above each input in the hero search bar
+        'label_property_type' => 'Property Type',
+        'label_period' => 'Period',
+        'label_check_in' => 'Check-In',
+        'label_check_out' => 'Check-Out',
     ],
 
     'property_types' => [
@@ -35,6 +40,8 @@ return [
         'promos' => 'Special Offers',
         'areas' => 'Popular Areas',
         'featured' => 'Featured Properties',
+        'category_property' => 'Category Property',
+        'location' => 'Location',
     ],
 
     'actions' => [

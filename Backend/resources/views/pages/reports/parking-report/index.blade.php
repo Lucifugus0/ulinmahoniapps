@@ -271,7 +271,7 @@
                 return `
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-3 py-3 text-xs text-gray-900">${row.no}</td>
-                    <td class="px-3 py-3 text-xs font-medium text-blue-600">${row.invoice_id}</td>
+                    <td class="px-3 py-3 text-xs font-medium text-white">${row.invoice_id}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.order_id}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.property_name}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.room_name}</td>

@@ -549,15 +549,31 @@
                                         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">{{ __('properties.booking.monthly_booking') }}</h3>
                                     </div>
 
-                                    <!-- Check-in Date -->
-                                    <div class="mb-4">
-                                        <label for="check_in_monthly" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            <i class="fas fa-calendar-check mr-1 text-gray-500"></i>{{ __('properties.booking.check_in') }}
-                                        </label>
-                                        <input type="text" id="check_in_monthly" name="check_in_monthly"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
-                                            placeholder="Select check-in date" data-required="true" readonly>
-                                        <div id="check_in_monthlyError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                    {{-- Check-in (editable) + Check-out (read-only, computed) side by side.
+                                         Two columns on tablet/desktop, stacked on phones. The check-out is derived
+                                         by updatePriceSummary() using the same clamped-month math the server applies
+                                         in BookingController::store (so Jan 31 + 1 mo → Feb 28, not Mar 3). --}}
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <!-- Check-in Date -->
+                                        <div>
+                                            <label for="check_in_monthly" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-calendar-check mr-1 text-gray-500"></i>{{ __('properties.booking.check_in') }}
+                                            </label>
+                                            <input type="text" id="check_in_monthly" name="check_in_monthly"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                                placeholder="Select check-in date" data-required="true" readonly>
+                                            <div id="check_in_monthlyError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                        </div>
+
+                                        <!-- Check-out Date (computed, read-only) -->
+                                        <div>
+                                            <label for="check_out_monthly_display" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-calendar-times mr-1 text-gray-500"></i>{{ __('properties.booking.check_out') }}
+                                            </label>
+                                            <input type="text" id="check_out_monthly_display" readonly
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 cursor-not-allowed opacity-90"
+                                                placeholder="—">
+                                        </div>
                                     </div>
 
                                     <!-- Months Selection -->
@@ -1247,6 +1263,42 @@
                         roomTotal = duration * rate;
                         if (durationDisplay) durationDisplay.textContent = `${duration} {{ __("properties.booking.months") }}`;
                         hidePriceBreakdown();
+
+                        /* Compute the projected check-out date and surface it under "Durasi Sewa"
+                           so the guest can sanity-check their stay length before paying. Mirrors
+                           the clamp logic in BookingController::store() (Jan 31 + 1 month →
+                           Feb 28, not Mar 3) so what we display equals what the server will store. */
+                        const monthlyCheckInEl = document.getElementById('check_in_monthly');
+                        const monthlyCheckOutDisplay = document.getElementById('check_out_monthly_display');
+                        if (monthlyCheckInEl && monthlyCheckOutDisplay) {
+                            const raw = (monthlyCheckInEl.value || '').trim();
+                            if (raw) {
+                                /* check_in_monthly is rendered by flatpickr as YYYY-MM-DD. Anything
+                                   else (placeholder text, garbage) falls through to '—'. */
+                                const parts = raw.split('-');
+                                if (parts.length === 3) {
+                                    const y0 = parseInt(parts[0], 10);
+                                    const m0 = parseInt(parts[1], 10);
+                                    const d0 = parseInt(parts[2], 10);
+                                    if (!isNaN(y0) && !isNaN(m0) && !isNaN(d0)) {
+                                        const targetMonthIdx = (m0 - 1) + duration; // 0-based month index
+                                        const targetYear = y0 + Math.floor(targetMonthIdx / 12);
+                                        const targetMonth = (targetMonthIdx % 12) + 1; // 1-based
+                                        const lastDay = new Date(targetYear, targetMonth, 0).getDate();
+                                        const clampedDay = Math.min(d0, lastDay);
+                                        const mm = String(targetMonth).padStart(2, '0');
+                                        const dd = String(clampedDay).padStart(2, '0');
+                                        monthlyCheckOutDisplay.value = `${targetYear}-${mm}-${dd}`;
+                                    } else {
+                                        monthlyCheckOutDisplay.value = '';
+                                    }
+                                } else {
+                                    monthlyCheckOutDisplay.value = '';
+                                }
+                            } else {
+                                monthlyCheckOutDisplay.value = '';
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error('Error updating price summary:', error);

@@ -25,6 +25,14 @@ class Kernel extends ConsoleKernel
             ->at('00:30')
             ->withoutOverlapping()
             ->runInBackground();
+
+        /* Daily parking expiry sweep — flips status=1 → 0 when end_rent has passed.
+           Note: this only fires if `php artisan schedule:run` is wired into system cron;
+           production/staging currently use direct crontab entries instead. */
+        $schedule->command('parking:deactivate-expired')
+            ->dailyAt('00:00')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

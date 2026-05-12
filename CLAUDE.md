@@ -119,11 +119,14 @@ Note: Direct MySQL connection fails due to MariaDB 10.11 (server) vs MySQL 9.6 (
 
 ### Key Integrations
 
-- **Payments:** DOKU gateway (virtual accounts for BRI/BNI/BCA/Mandiri/etc., QRIS)
+- **Payments:** DOKU gateway (virtual accounts for BRI/BNI/BCA/Mandiri/etc., QRIS). **BRI Manual is deprecated** as of 2026-05-08 — code references remain only to render historical rows; no new flows create BRI Manual transactions.
 - **Real-time:** Pusher (chat WebSockets), Firebase Cloud Messaging (push notifications)
 - **Push Notifications:** Firebase Cloud Messaging via Frontend API (see Push Notifications section below)
 - **Storage:** Local or AWS S3 (configured via `.env`)
 - **OAuth:** Google (via Laravel Socialite)
+
+### DOKU SNAP-BI Virtual Account format
+SNAP-BI VA endpoints require `partnerServiceId` to be numeric, **max 8 characters**, left-padded with spaces if shorter. DGPC env vars (`DOKU_BNI_DGPC`, `DOKU_BRI_DGPC`, etc., in the Frontend API `.env`) feed this directly via `Api/BookingController::dokuGenerateVA`. **A 9+ digit env value silently fails** with response code `4002701 Invalid Field Format {partnerServiceId}` because `str_pad` in the controller only pads up, not down — over-length values get sent as-is. Validate any new bank's DGPC against DOKU's documented example for that bank before deploying.
 
 ### Daily Room Pricing
 All 5 pricing categories are required at daily room creation: `weekday_price`, `weekend_price`, `holiday_price`, `high_season_price`, `low_season_price`. Priority: high_season > low_season > holiday > weekend > weekday. Manual price overrides are preserved. Service: `RoomPriceGeneratorService.php`.
@@ -166,6 +169,40 @@ The sidebar is driven by `m_sidebar_items` + `PermissionsTableSeeder`. **Access 
 - All pages default to 25 items per page
 - User name displays `first_name + last_name` from user model (falls back to `transaction.user_name`)
 - Checkout modal is a shared partial: `checkin/partials/checkout_modal_button.blade.php` (requires `checkOutModal` Alpine component registered on the page)
+
+## Parking System
+
+### Storage: one row per paid period (post-2026-05-08)
+`t_parking` is a per-period audit trail. Every paid renewal/payment that includes parking **INSERTs a new row** with its own `start_rent` / `end_rent`; previous rows stay as history. "Currently active" = `status = 1 AND deleted_at IS NULL` (and conventionally also `end_rent >= CURDATE()`, but the daily cron keeps `status` in sync). The 2026-05-08 design pivot from single-row-update-in-place is preserved as `t_parking_single_line_old` on production (89 rows, rollback path). The `(property_id, vehicle_plate)` unique index was **dropped** — same plate now legitimately has multiple rows over time.
+
+### Three write paths (all INSERT new row, never update existing)
+- **Frontend web bundled** — `Frontend API/.../BookingController::updatePaymentMethod` (renewal + initial branches both insert)
+- **Mobile API bundled** — `Frontend API/.../Api/BookingController::updatePaymentMethod` (same logic; computes `start_rent`/`end_rent` from booking dates)
+- **Backend Finance > Parking Entry standalone** — `Backend/.../ParkingPaymentController::store`. Creates a `t_parking_fee_transaction` row alongside, whose `parking_id` is repointed to the new t_parking `idrec`.
+
+The Backend Properties → Parking page (`/properties/parking`) is **read-only** — no Add button, no Edit/Delete actions. All new parking entries flow exclusively through Finance → Parking Entry. The page does have a property combobox (HQ/HO only; site users auto-scoped) and a "Show Expired" toggle.
+
+### Daily expiry cron at 00:00
+`php artisan parking:deactivate-expired` flips `status = 1 → 0` on (a) rows where `end_rent < CURDATE()`, and (b) rows where `end_rent IS NULL` (orphan / legacy / failed write). Idempotent; supports `--dry-run`. Registered in `Backend/Console/Kernel.php` AND wired as direct system crontab entries on each environment (Laravel scheduler is not running on this server):
+- Staging: `0 0 * * * cd ~/repositories/Ulin-Mahoni-New/Backend && /usr/local/bin/php artisan parking:deactivate-expired >> ~/logs/staging_parking_deactivate.log 2>&1`
+- Production: same pattern against `~/repositories/web-laravel-admin-um/`
+
+### `m_parking_fee.quota_used` is legacy/drifted — do not display
+The persisted "currently used" counter drifted upward for months because increments fired on every renewal while decrements were missed on many close paths. **Don't surface `quota_used` in any new UI**. Live capacity for any chart/table:
+```sql
+SELECT COUNT(*) FROM t_parking
+WHERE property_id = ? AND parking_type = ?
+  AND status = 1 AND deleted_at IS NULL;
+```
+Capacity (denominator) still comes from `m_parking_fee.capacity` — that column is admin-set and trustworthy. The `/properties/parking` chart and `/properties/property-fees` page both follow this pattern (the latter had its `quota_used` counter removed on 2026-05-08).
+
+### Server-side parking-entry guard
+`ParkingPaymentController::store` rejects when the matching `m_parking_fee` row is missing OR `capacity <= 0`. Pre-2026-05-07 a `capacity = 0` row meant "unlimited"; that interpretation is gone — admins must set an explicit non-zero slot count before any parking can be sold.
+
+### Invoice number resolution (display)
+- `Parking::invoice_display` accessor → latest paid `t_parking_fee_transaction.invoice_id` → fall back to `t_transactions.invoice_number` → null
+- `Parking::invoice_source` accessor → `'addon'` (standalone parking payment) / `'bundled'` (paid with room) / null
+The Parking Management table renders the invoice number on row 1 and a colored chip on row 2 ("Booking + Parking" blue / "Add on Parking" purple).
 
 ## Push Notifications (Firebase Cloud Messaging)
 

@@ -191,6 +191,12 @@ class ModifyBookingController extends Controller
             'check_in' => $tx?->check_in?->format('Y-m-d'),
             'check_out' => $tx?->check_out?->format('Y-m-d'),
             'paid_at' => $tx?->paid_at ? Carbon::parse($tx->paid_at)->format('Y-m-d\TH:i') : null,
+            /* OCD (original_checkin_day) — surfaced so admins can repair drift from the
+               2026-04 backfill incident directly. is_renewal is also returned so the modal
+               can warn before editing OCD on a renewal (rewriting it loses the chain-root
+               clamp anchor and silently shifts future renewals). */
+            'original_checkin_day' => $tx?->original_checkin_day !== null ? (int) $tx->original_checkin_day : null,
+            'is_renewal' => (int) ($tx?->is_renewal ?? 0),
             'history' => $history,
         ]);
     }
@@ -206,6 +212,12 @@ class ModifyBookingController extends Controller
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
             'paid_at' => 'nullable|date',
+            /* OCD is the day-of-month anchor used by the renewal arithmetic in
+               Api/BookingController::renewBooking. Stored as unsignedTinyInteger so 1-31
+               is the only meaningful range — leaving it editable here lets admins repair
+               historic bad backfills without dropping into MySQL directly. Nullable for
+               daily bookings and legacy rows. */
+            'original_checkin_day' => 'nullable|integer|min:1|max:31',
             /* Notes mandatory + min 20 chars so the audit trail is meaningful — admins must
                document why the date / payment was changed (not just leave it blank). */
             'modification_notes' => 'required|string|min:20|max:500',
@@ -223,6 +235,7 @@ class ModifyBookingController extends Controller
             $oldCheckIn = $tx->check_in?->format('Y-m-d H:i:s');
             $oldCheckOut = $tx->check_out?->format('Y-m-d H:i:s');
             $oldPaidAt = $tx->paid_at ? Carbon::parse($tx->paid_at)->format('Y-m-d H:i:s') : null;
+            $oldOcd = $tx->original_checkin_day !== null ? (int) $tx->original_checkin_day : null;
 
             /* Modal sends check_in / check_out as YYYY-MM-DD only. Combine with the standard
                property times (14:00 check-in, 12:00 check-out) so the time portion stays
@@ -239,18 +252,39 @@ class ModifyBookingController extends Controller
                 $changes['check_out'] = ['old' => $oldCheckOut, 'new' => $newCheckOut->format('Y-m-d H:i:s')];
             }
 
+            /* OCD diff. array_key_exists (not isset) so an explicit `null` from the form —
+               admin clearing the field — still registers as a change against a stored value. */
+            $newOcd = null;
+            if (array_key_exists('original_checkin_day', $validated)) {
+                $newOcd = $validated['original_checkin_day'] !== null
+                    ? (int) $validated['original_checkin_day']
+                    : null;
+                if ($oldOcd !== $newOcd) {
+                    $changes['original_checkin_day'] = ['old' => $oldOcd, 'new' => $newOcd];
+                }
+            }
+
             $paidAtEditable = in_array($tx->transaction_type ?? '', self::PAID_AT_EDITABLE_TYPES, true);
             $newPaidAt = null;
             if (!empty($validated['paid_at'])) {
-                if (!$paidAtEditable) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'paid_at can only be modified for BRI Manual transactions.',
-                    ], 422);
-                }
                 $newPaidAt = Carbon::parse($validated['paid_at']);
-                if ($oldPaidAt !== $newPaidAt->format('Y-m-d H:i:s')) {
+                /* Compare at minute precision because the modal exposes paid_at via a
+                   datetime-local input (no seconds). Comparing at H:i:s would flag an
+                   unchanged value as "changed" whenever the stored paid_at has non-zero
+                   seconds, falsely tripping the BRI-Manual gate on every save. */
+                $oldPaidAtMin = $oldPaidAt ? substr($oldPaidAt, 0, 16) : null;
+                $newPaidAtMin = $newPaidAt->format('Y-m-d H:i');
+                if ($oldPaidAtMin !== $newPaidAtMin) {
+                    /* Only enforce the BRI-Manual gate when paid_at is actually being changed.
+                       Otherwise the unchanged value the modal echoes back would block every
+                       check_in/check_out edit on DOKU-channel bookings. */
+                    if (!$paidAtEditable) {
+                        DB::rollBack();
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'paid_at can only be modified for BRI Manual transactions.',
+                        ], 422);
+                    }
                     $changes['paid_at'] = ['old' => $oldPaidAt, 'new' => $newPaidAt->format('Y-m-d H:i:s')];
                 }
             }
@@ -263,12 +297,16 @@ class ModifyBookingController extends Controller
                 ], 422);
             }
 
-            /* Apply the t_transactions changes. Only assign paid_at when it actually changed
-               so we don't accidentally clobber a NULL with a parsed value on every save. */
+            /* Apply the t_transactions changes. Only assign paid_at / original_checkin_day
+               when they actually changed so we don't accidentally clobber a NULL with a
+               parsed value on every save. */
             $tx->check_in = $newCheckIn;
             $tx->check_out = $newCheckOut;
             if ($paidAtEditable && isset($changes['paid_at'])) {
                 $tx->paid_at = $newPaidAt;
+            }
+            if (isset($changes['original_checkin_day'])) {
+                $tx->original_checkin_day = $newOcd;
             }
             $tx->save();
 
@@ -280,9 +318,13 @@ class ModifyBookingController extends Controller
             $oldIdrec = $booking->idrec;
 
             $modificationType = collect($changes)->keys()->map(function ($k) {
-                return $k === 'paid_at' ? 'payment_date' : 'date';
+                return match ($k) {
+                    'paid_at' => 'payment_date',
+                    'original_checkin_day' => 'ocd',
+                    default => 'date',
+                };
             })->unique()->sort()->values()->implode('+');
-            // 'date' / 'payment_date' / 'date+payment_date'
+            // 'date' / 'ocd' / 'payment_date' / combinations like 'date+ocd'
 
             $cloneData = $booking->only([
                 'order_id', 'room_id', 'user_name', 'user_email', 'user_phone_number',

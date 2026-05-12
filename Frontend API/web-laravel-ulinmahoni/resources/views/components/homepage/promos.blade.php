@@ -306,19 +306,22 @@
         border: none;
         transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     }
+    /* Brand-aligned: Claim + View Properties buttons now use UM Green (#0F513D) instead of
+       UM Maroon. Gradient and shadows derived from rgba(15, 81, 61, ...) to keep depth /
+       hover lift consistent with the original maroon treatment. */
     .promo-modal-actions .btn-claim {
-        background: linear-gradient(135deg, #800000, #a83333);
+        background: linear-gradient(135deg, #0F513D, #1a7a5c);
         color: #fff;
-        box-shadow: 0 8px 20px rgba(128, 0, 0, 0.40);
+        box-shadow: 0 8px 20px rgba(15, 81, 61, 0.40);
     }
-    .promo-modal-actions .btn-claim:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(128, 0, 0, 0.50); }
+    .promo-modal-actions .btn-claim:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(15, 81, 61, 0.50); }
     .promo-modal-actions .btn-properties {
         background: rgba(255, 255, 255, 0.7);
-        color: #800000;
-        border: 1px solid rgba(128, 0, 0, 0.40);
+        color: #0F513D;
+        border: 1px solid rgba(15, 81, 61, 0.40);
         backdrop-filter: blur(8px);
     }
-    .promo-modal-actions .btn-properties:hover { background: rgba(255, 255, 255, 0.95); border-color: rgba(128, 0, 0, 0.70); transform: translateY(-2px); }
+    .promo-modal-actions .btn-properties:hover { background: rgba(255, 255, 255, 0.95); border-color: rgba(15, 81, 61, 0.70); transform: translateY(-2px); }
 
     .promo-modal-banner {
         margin: 1.75rem 0;
@@ -584,12 +587,14 @@
         -webkit-background-clip: text;
     }
     html.dark .promo-modal-description { color: #d1d5db; }
+    /* Dark-mode View Properties — soft mint variant of UM Green (was the dark maroon
+       #d97777) so the label stays legible on the dark glass surface. */
     html.dark .promo-modal-actions .btn-properties {
         background: rgba(31, 41, 55, 0.7);
-        color: #d97777;
-        border-color: rgba(217, 119, 119, 0.45);
+        color: #5fb892;
+        border-color: rgba(95, 184, 146, 0.45);
     }
-    html.dark .promo-modal-actions .btn-properties:hover { background: rgba(31, 41, 55, 0.95); border-color: rgba(217, 119, 119, 0.75); }
+    html.dark .promo-modal-actions .btn-properties:hover { background: rgba(31, 41, 55, 0.95); border-color: rgba(95, 184, 146, 0.75); }
     html.dark .promo-modal-banner { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.08); }
     html.dark .promo-modal-steps-section h3 { color: #f3f4f6; }
     html.dark .promo-modal-steps-section > p { color: #9ca3af; }

@@ -576,63 +576,68 @@ class BookingController extends Controller
             if ($parkingFee > 0 && $request->parking_type && $request->parking_type !== 'none') {
                 $user = Auth::user();
 
+                // Compute the parking rent period (start = check_in, end capped at check_out).
+                // Booked-with-room parking always starts at the booking's check-in date.
+                $parkingMonths = intval($request->parking_duration ?? 1);
+                $startRent = null;
+                $endRent = null;
+                if (!empty($booking->check_in)) {
+                    $startCarbon = \Carbon\Carbon::parse($booking->check_in)->startOfDay();
+                    $endCarbon = $startCarbon->copy()->addMonths($parkingMonths);
+                    if (!empty($booking->check_out)) {
+                        $checkOutCarbon = \Carbon\Carbon::parse($booking->check_out)->startOfDay();
+                        if ($endCarbon->gt($checkOutCarbon)) {
+                            $endCarbon = $checkOutCarbon;
+                        }
+                    }
+                    $startRent = $startCarbon->toDateString();
+                    $endRent = $endCarbon->toDateString();
+                }
+
                 if ($booking->is_renewal == 1) {
-                    // For renewal bookings, check existing parking record
+                    // Renewal — always INSERT a new t_parking row so each paid period
+                    // is preserved as its own record (multi-row design, see 2026-05-08 rebuild).
+                    // The most-recent prior parking row is looked up only to (a) detect
+                    // parking_type changes for the quota swap, and (b) carry forward
+                    // plate/owner/phone when the renewal request omits them.
                     $existingParking = DB::table('t_parking')
                         ->where('user_id', Auth::id())
                         ->where('property_id', $booking->property_id)
-                        ->orderBy('created_at', 'desc')
+                        ->whereNull('deleted_at')
+                        ->orderByDesc('idrec')
                         ->first();
 
-                    if ($existingParking) {
-                        // User has existing parking record
-                        if ($existingParking->parking_type !== $request->parking_type) {
-                            // Different parking type - decrement old, increment new
-                            $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
-                            $this->incrementParkingQuota($booking->property_id, $request->parking_type);
-
-                            // Update existing parking record with new type
-                            try {
-                                DB::table('t_parking')
-                                    ->where('idrec', $existingParking->idrec)
-                                    ->update([
-                                        'parking_type' => $request->parking_type,
-                                        'vehicle_plate' => $request->vehicle_plate ?? $existingParking->vehicle_plate,
-                                        'owner_name' => $request->owner_name ?? $existingParking->owner_name,
-                                        'owner_phone' => $request->owner_phone ?? $existingParking->owner_phone,
-                                        'parking_duration' => intval($request->parking_duration ?? $existingParking->parking_duration),
-                                        'fee_amount' => $parkingFee,
-                                        'order_id' => $booking->order_id,
-                                        'updated_at' => now()
-                                    ]);
-                            } catch (\Exception $e) {
-                                \Log::error('Failed to update parking record: ' . $e->getMessage());
-                            }
-                        }
-                        // If same parking type, do nothing (no quota change needed)
-                    } else {
-                        // No existing parking record for renewal - increment and insert
+                    // Quota counter: only swap on type change. Same-type renewal keeps
+                    // the slot the guest already holds. First-time parking purchase on
+                    // a renewal (no prior parking row) increments fresh.
+                    if ($existingParking && $existingParking->parking_type !== $request->parking_type) {
+                        $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
                         $this->incrementParkingQuota($booking->property_id, $request->parking_type);
+                    } elseif (!$existingParking) {
+                        $this->incrementParkingQuota($booking->property_id, $request->parking_type);
+                    }
 
-                        try {
-                            DB::table('t_parking')->insert([
-                                'property_id' => $booking->property_id,
-                                'parking_type' => $request->parking_type,
-                                'vehicle_plate' => $request->vehicle_plate ?? null,
-                                'owner_name' => $request->owner_name ?? $user->name ?? null,
-                                'owner_phone' => $request->owner_phone ?? $user->phone_number ?? null,
-                                'user_id' => Auth::id(),
-                                'parking_duration' => intval($request->parking_duration ?? 1),
-                                'fee_amount' => $parkingFee,
-                                'order_id' => $booking->order_id,
-                                'management_only' => 0,
-                                'created_by' => Auth::id(),
-                                'created_at' => now(),
-                                'updated_at' => now()
-                            ]);
-                        } catch (\Exception $e) {
-                            \Log::error('Failed to insert parking record for renewal: ' . $e->getMessage());
-                        }
+                    try {
+                        DB::table('t_parking')->insert([
+                            'property_id' => $booking->property_id,
+                            'parking_type' => $request->parking_type,
+                            'vehicle_plate' => $request->vehicle_plate ?? ($existingParking->vehicle_plate ?? null),
+                            'owner_name' => $request->owner_name ?? ($existingParking->owner_name ?? $user->name ?? null),
+                            'owner_phone' => $request->owner_phone ?? ($existingParking->owner_phone ?? $user->phone_number ?? null),
+                            'user_id' => Auth::id(),
+                            'parking_duration' => intval($request->parking_duration ?? 1),
+                            'start_rent' => $startRent,
+                            'end_rent' => $endRent,
+                            'fee_amount' => $parkingFee,
+                            'order_id' => $booking->order_id,
+                            'status' => 1,
+                            'management_only' => 0,
+                            'created_by' => Auth::id(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to insert parking record for renewal: ' . $e->getMessage());
                     }
                 } else {
                     // For new bookings - increment quota and insert parking record
@@ -647,6 +652,8 @@ class BookingController extends Controller
                             'owner_phone' => $request->owner_phone ?? $user->phone_number ?? null,
                             'user_id' => Auth::id(),
                             'parking_duration' => intval($request->parking_duration ?? 1),
+                            'start_rent' => $startRent,
+                            'end_rent' => $endRent,
                             'fee_amount' => $parkingFee,
                             'order_id' => $booking->order_id,
                             'management_only' => 0,

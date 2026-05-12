@@ -1908,51 +1908,72 @@ class BookingController extends ApiController
                 ->where('order_id', $booking->order_id)
                 ->update(['grandtotal_price' => $newGrandtotal]);
 
-            // Insert parking record into t_parking table (only for new bookings with parking, not renewals)
+            // Insert a new t_parking row for this booking/renewal — multi-row design
+            // (see 2026-05-08 rebuild): every paid period gets its own record, never an
+            // in-place update of a previous renewal's row.
             if ($parkingFee > 0 && $request->parking_type && $request->parking_type !== 'none') {
                 try {
                     $user = Auth::user();
-                    $existingParking = DB::table('t_parking')
-                        ->where('order_id', $booking->order_id)
-                        ->first();
 
-                    if ($existingParking) {
-                        // Update existing record if parking type changed
-                        if ($existingParking->parking_type !== $request->parking_type) {
-                            $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
-                            $this->incrementParkingQuota($booking->property_id, $request->parking_type);
+                    // Compute parking period from the booking dates:
+                    //   start_rent = check_in
+                    //   end_rent   = MIN(check_in + duration months, check_out)
+                    $startRent = null;
+                    $endRent = null;
+                    if (!empty($booking->check_in)) {
+                        $startCarbon = \Carbon\Carbon::parse($booking->check_in)->startOfDay();
+                        $endCarbon = $startCarbon->copy()->addMonths(max(1, (int) $parkingDuration));
+                        if (!empty($booking->check_out)) {
+                            $checkOutCarbon = \Carbon\Carbon::parse($booking->check_out)->startOfDay();
+                            if ($endCarbon->gt($checkOutCarbon)) {
+                                $endCarbon = $checkOutCarbon;
+                            }
                         }
-                        DB::table('t_parking')
-                            ->where('idrec', $existingParking->idrec)
-                            ->update([
-                                'parking_type' => $request->parking_type,
-                                'vehicle_plate' => $request->vehicle_plate ?? $existingParking->vehicle_plate,
-                                'owner_name' => $request->owner_name ?? $existingParking->owner_name,
-                                'owner_phone' => $request->owner_phone ?? $existingParking->owner_phone,
-                                'parking_duration' => $parkingDuration ?: $existingParking->parking_duration,
-                                'fee_amount' => $parkingFee,
-                                'updated_at' => now(),
-                            ]);
-                    } else {
-                        $this->incrementParkingQuota($booking->property_id, $request->parking_type);
-                        DB::table('t_parking')->insert([
-                            'property_id' => $booking->property_id,
-                            'order_id' => $booking->order_id,
-                            'parking_type' => $request->parking_type,
-                            'vehicle_plate' => $request->vehicle_plate ?? null,
-                            'owner_name' => $request->owner_name ?? ($user->name ?? null),
-                            'owner_phone' => $request->owner_phone ?? ($user->phone_number ?? null),
-                            'user_id' => Auth::id(),
-                            'parking_duration' => $parkingDuration,
-                            'fee_amount' => $parkingFee,
-                            'management_only' => 0,
-                            'created_by' => Auth::id(),
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                        $startRent = $startCarbon->toDateString();
+                        $endRent = $endCarbon->toDateString();
                     }
+
+                    // For renewals, look up the most-recent prior parking row to detect
+                    // a type change (quota swap) and to carry forward plate/owner data
+                    // when the request omits them. Initial bookings always increment quota.
+                    $isRenewal = (int) ($booking->is_renewal ?? 0) === 1;
+                    $existingParking = $isRenewal
+                        ? DB::table('t_parking')
+                            ->where('user_id', Auth::id())
+                            ->where('property_id', $booking->property_id)
+                            ->whereNull('deleted_at')
+                            ->orderByDesc('idrec')
+                            ->first()
+                        : null;
+
+                    if ($existingParking && $existingParking->parking_type !== $request->parking_type) {
+                        $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
+                        $this->incrementParkingQuota($booking->property_id, $request->parking_type);
+                    } elseif (!$existingParking) {
+                        // Initial booking, OR first-time parking purchase on a renewal
+                        $this->incrementParkingQuota($booking->property_id, $request->parking_type);
+                    }
+
+                    DB::table('t_parking')->insert([
+                        'property_id' => $booking->property_id,
+                        'order_id' => $booking->order_id,
+                        'parking_type' => $request->parking_type,
+                        'vehicle_plate' => $request->vehicle_plate ?? ($existingParking->vehicle_plate ?? null),
+                        'owner_name' => $request->owner_name ?? ($existingParking->owner_name ?? ($user->name ?? null)),
+                        'owner_phone' => $request->owner_phone ?? ($existingParking->owner_phone ?? ($user->phone_number ?? null)),
+                        'user_id' => Auth::id(),
+                        'parking_duration' => (int) $parkingDuration ?: 1,
+                        'start_rent' => $startRent,
+                        'end_rent' => $endRent,
+                        'fee_amount' => $parkingFee,
+                        'status' => 1,
+                        'management_only' => 0,
+                        'created_by' => Auth::id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to insert/update parking record: ' . $e->getMessage());
+                    \Log::error('Failed to insert parking record: ' . $e->getMessage());
                 }
             }
 

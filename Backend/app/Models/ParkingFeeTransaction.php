@@ -25,6 +25,8 @@ class ParkingFeeTransaction extends Model
         'parking_type',
         'vehicle_plate',
         'parking_duration',
+        'start_rent',
+        'end_rent',
         'fee_amount',
         'transaction_date',
         'transaction_status',
@@ -40,6 +42,8 @@ class ParkingFeeTransaction extends Model
     protected $casts = [
         'fee_amount' => 'decimal:4',
         'parking_duration' => 'integer',
+        'start_rent' => 'date',
+        'end_rent' => 'date',
         'transaction_date' => 'datetime',
         'paid_at' => 'datetime',
         'verified_at' => 'datetime',
@@ -100,5 +104,26 @@ class ParkingFeeTransaction extends Model
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * "01 Mar 2026 → 01 Jun 2026" — display label for this payment's rental period.
+     * Falls back to the legacy on-the-fly computation when columns are unbackfilled.
+     */
+    public function getRentPeriodLabelAttribute(): string
+    {
+        if ($this->start_rent && $this->end_rent) {
+            return $this->start_rent->format('d M Y') . ' → ' . $this->end_rent->format('d M Y');
+        }
+
+        // Backward-compat: legacy rows pre-2026-05-07 have neither column populated;
+        // fall back to transaction_date + parking_duration months so the UI never breaks.
+        if ($this->transaction_date && $this->parking_duration) {
+            $start = $this->transaction_date->copy()->startOfDay();
+            $end = $start->copy()->addMonths((int) $this->parking_duration);
+            return $start->format('d M Y') . ' → ' . $end->format('d M Y');
+        }
+
+        return '—';
     }
 }

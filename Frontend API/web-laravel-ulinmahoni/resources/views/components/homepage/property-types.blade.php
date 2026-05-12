@@ -4,6 +4,10 @@
         <!-- Combined filter container — property type (row 1) + city (row 2) in one glass panel -->
         <div class="filter-container">
             <!-- Row 1: Property Type Tabs — "All" is selected by default -->
+            <div class="filter-row-label">
+                <i class="fas fa-building"></i>
+                <span>{{ __('homepage.sections.category_property') }}</span>
+            </div>
             <div class="property-tabs-row">
                 <button class="property-tab-trigger active" data-tab="all">
                     {{ __('homepage.property_types.All') }}
@@ -31,6 +35,10 @@
             <div class="filter-divider"></div>
 
             <!-- Row 2: City / Location Tabs -->
+            <div class="filter-row-label">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ __('homepage.sections.location') }}</span>
+            </div>
             <div class="location-tabs-row">
                 <button class="location-tab-trigger active" data-location="all">
                     {{ __('homepage.cities.all') }}
@@ -144,6 +152,26 @@
         border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.25));
         border-radius: var(--radius-lg, 1.75rem);
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Small section label that sits above each pill row. Building icon for property type,
+       Pin icon for location. Keeps the glass panel readable when the two rows aren't
+       self-evident — especially when active state is "All" on both. */
+    .filter-row-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        opacity: 0.75;
+    }
+    .filter-row-label i {
+        font-size: 0.8125rem;
+        opacity: 0.9;
     }
 
     /* Row 1: Property type pills */
@@ -329,6 +357,13 @@
         }
 
         .filter-divider { margin: 0.25rem 0.5rem; }
+
+        .filter-row-label {
+            padding: 0.25rem 0.5rem 0.125rem;
+            font-size: 0.6875rem;
+            letter-spacing: 0.03em;
+        }
+        .filter-row-label i { font-size: 0.75rem; }
 
         .browse-all-wrapper { padding: 1.5rem 0; }
         .browse-all-btn {

@@ -55,14 +55,11 @@
                     @endif
                 </td>
 
-                {{-- Motorcycle column --}}
+                {{-- Motorcycle column — capacity counter removed; live count is on /properties/parking chart --}}
                 <td class="px-6 py-4 whitespace-nowrap">
                     @if($motorcycle)
                         <div class="text-sm font-semibold text-green-600 dark:text-green-400">
                             Rp {{ number_format($motorcycle->fee, 0, ',', '.') }}
-                        </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {{ $motorcycle->quota_used }}/{{ $motorcycle->capacity }} {{ __('ui.parking_capacity') }}
                         </div>
                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium mt-1 {{ $motorcycle->status == 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' }}">
                             {{ $motorcycle->status == 1 ? __('ui.active') : __('ui.inactive') }}
@@ -72,14 +69,11 @@
                     @endif
                 </td>
 
-                {{-- Car column --}}
+                {{-- Car column — capacity counter removed; live count is on /properties/parking chart --}}
                 <td class="px-6 py-4 whitespace-nowrap">
                     @if($car)
                         <div class="text-sm font-semibold text-green-600 dark:text-green-400">
                             Rp {{ number_format($car->fee, 0, ',', '.') }}
-                        </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {{ $car->quota_used }}/{{ $car->capacity }} {{ __('ui.parking_capacity') }}
                         </div>
                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium mt-1 {{ $car->status == 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' }}">
                             {{ $car->status == 1 ? __('ui.active') : __('ui.inactive') }}

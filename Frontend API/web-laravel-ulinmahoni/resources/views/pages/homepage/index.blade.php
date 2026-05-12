@@ -75,60 +75,75 @@
       <!-- Overlay with text — frosted text area over hero image -->
       <div class="absolute inset-0 gradient-overlay flex flex-col justify-center md:justify-end p-8 md:p-12 lg:p-16 text-white">
         <!-- Tagline — will be replaced with dynamic tagline from database -->
-        <h1 class="text-2xl md:text-5xl lg:text-5xl font-light mb-24 max-w-4xl tracking-tight" style="letter-spacing: -0.03em;">{{ $heroTagline ?? __('homepage.hero.subtitle') }}</h1>
+        <h1 class="text-2xl md:text-5xl lg:text-5xl font-light mb-40 max-w-4xl tracking-tight" style="letter-spacing: -0.03em;">{{ $heroTagline ?? __('homepage.hero.subtitle') }}</h1>
     </div>
 
       <!-- Search Section -->
       <section class="search-section">
         <div class="search-container">
             <form action="{{ route('properties.index') }}" method="GET" class="search-box">
-                <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex flex-col md:flex-row gap-4 md:items-end">
                     <!-- Property Types -->
-                    <div class="md:w-48 relative">
-                        <i class="fas fa-building absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <select name="type" class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white transition-all duration-200">
-                            <option value="">{{ __('homepage.search.all_properties') }}</option>
-                            <option value="Kos" {{ request('type') == 'Kos' ? 'selected' : '' }}>{{ __('homepage.property_types.Kos') }}</option>
-                            <option value="House" {{ request('type') == 'House' ? 'selected' : '' }}>{{ __('homepage.property_types.House') }}</option>
-                            <option value="Apartment" {{ request('type') == 'Apartment' ? 'selected' : '' }}>{{ __('homepage.property_types.Apartment') }}</option>
-                            <option value="Villa" {{ request('type') == 'Villa' ? 'selected' : '' }}>{{ __('homepage.property_types.Villa') }}</option>
-                            <option value="Hotel" {{ request('type') == 'Hotel' ? 'selected' : '' }}>{{ __('homepage.property_types.Hotel') }}</option>
-                        </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    {{-- Field label sits above the input; inner .relative wrapper preserves absolute icon positioning --}}
+                    <div class="md:w-48">
+                        <label for="search-type" class="search-label">{{ __('homepage.search.label_property_type') }}</label>
+                        <div class="relative">
+                            <i class="fas fa-building absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <select id="search-type" name="type" class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white transition-all duration-200">
+                                <option value="">{{ __('homepage.search.all_properties') }}</option>
+                                <option value="Kos" {{ request('type') == 'Kos' ? 'selected' : '' }}>{{ __('homepage.property_types.Kos') }}</option>
+                                <option value="House" {{ request('type') == 'House' ? 'selected' : '' }}>{{ __('homepage.property_types.House') }}</option>
+                                <option value="Apartment" {{ request('type') == 'Apartment' ? 'selected' : '' }}>{{ __('homepage.property_types.Apartment') }}</option>
+                                <option value="Villa" {{ request('type') == 'Villa' ? 'selected' : '' }}>{{ __('homepage.property_types.Villa') }}</option>
+                                <option value="Hotel" {{ request('type') == 'Hotel' ? 'selected' : '' }}>{{ __('homepage.property_types.Hotel') }}</option>
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
                     </div>
 
                     <!-- Rent Period -->
-                    <div class="md:w-48 relative">
-                        <i class="fas fa-clock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <select name="period" class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white transition-all duration-200">
-                            <option value="">{{ __('homepage.search.all_periods') }}</option>
-                            <option value="daily" {{ request('period') == 'daily' ? 'selected' : '' }}>{{ __('homepage.period.daily') }}</option>
-                            <option value="monthly" {{ request('period') == 'monthly' ? 'selected' : '' }}>{{ __('homepage.period.monthly') }}</option>
-                        </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    <div class="md:w-48">
+                        <label for="search-period" class="search-label">{{ __('homepage.search.label_period') }}</label>
+                        <div class="relative">
+                            <i class="fas fa-clock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <select id="search-period" name="period" class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white transition-all duration-200">
+                                <option value="">{{ __('homepage.search.all_periods') }}</option>
+                                <option value="daily" {{ request('period') == 'daily' ? 'selected' : '' }}>{{ __('homepage.period.daily') }}</option>
+                                <option value="monthly" {{ request('period') == 'monthly' ? 'selected' : '' }}>{{ __('homepage.period.monthly') }}</option>
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
                     </div>
 
                     <!-- Check-in Check-out Dates -->
                     <div class="flex-1 flex gap-4">
-                        <div class="w-1/2 relative">
-                            <i class="far fa-calendar-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text"
-                                name="check_in"
-                                value="{{ request('check_in') }}"
-                                onfocus="(this.type='date')"
-                                onblur="if(!this.value) this.type='text'"
-                                placeholder="{{ __('homepage.search.check_in') }}"
-                                class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
+                        <div class="w-1/2">
+                            <label for="search-check-in" class="search-label">{{ __('homepage.search.label_check_in') }}</label>
+                            <div class="relative">
+                                <i class="far fa-calendar-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text"
+                                    id="search-check-in"
+                                    name="check_in"
+                                    value="{{ request('check_in') }}"
+                                    onfocus="(this.type='date')"
+                                    onblur="if(!this.value) this.type='text'"
+                                    placeholder="{{ __('homepage.search.check_in') }}"
+                                    class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
+                            </div>
                         </div>
-                        <div class="w-1/2 relative">
-                            <i class="far fa-calendar-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text"
-                                name="check_out"
-                                value="{{ request('check_out') }}"
-                                onfocus="(this.type='date')"
-                                onblur="if(!this.value) this.type='text'"
-                                placeholder="{{ __('homepage.search.check_out') }}"
-                                class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
+                        <div class="w-1/2">
+                            <label for="search-check-out" class="search-label">{{ __('homepage.search.label_check_out') }}</label>
+                            <div class="relative">
+                                <i class="far fa-calendar-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text"
+                                    id="search-check-out"
+                                    name="check_out"
+                                    value="{{ request('check_out') }}"
+                                    onfocus="(this.type='date')"
+                                    onblur="if(!this.value) this.type='text'"
+                                    placeholder="{{ __('homepage.search.check_out') }}"
+                                    class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
+                            </div>
                         </div>
                     </div>
                     
@@ -182,7 +197,7 @@
                     </script>
                     
                     <div class="md:w-48">
-                        {{-- Cari Hunian / Search — themed via var(--accent): green light / maroon dark. --}}
+                        {{-- Cari Property / Search — themed via var(--accent): green light / maroon dark. --}}
                         <button type="submit"
                             class="w-full h-12 rounded-lg transition-all duration-200 flex items-center justify-center btn-um-themed"
                             style="color: #ffffff;">

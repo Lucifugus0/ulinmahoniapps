@@ -14,35 +14,42 @@ class ParkingController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 8);
+        $perPage = $request->input('per_page', 50);
 
-        $query = Parking::with(['property', 'createdBy', 'updatedBy', 'bookingTransaction'])
+        // Eager-load activeBooking.room so the table can show "Property / Room 206"
+        // without N+1 queries; activeBooking returns the t_booking row with status=1
+        // (which is also where current room_id lives after room-changes / renewals).
+        $query = Parking::with(['property', 'createdBy', 'updatedBy', 'bookingTransaction.user', 'activeBooking.room', 'latestPaidTransaction'])
             ->orderBy('property_id', 'asc');
 
         $user = Auth::user();
         $accessiblePropertyId = $user->getAccessiblePropertyId();
 
+        // Site users are auto-scoped to their property regardless of any
+        // ?property_id= they try to send. HQ/HO users may filter via combobox.
         if ($accessiblePropertyId !== null) {
             $query->where('property_id', $accessiblePropertyId);
+        } elseif ($request->filled('property_id') && $request->input('property_id') !== 'all') {
+            $query->where('property_id', $request->input('property_id'));
         }
 
-        // Include soft-deleted if requested
-        if ($request->input('show_deleted') === '1') {
-            $query->withTrashed();
+        // Default view shows only status=1 (active). The "Show Expired" toggle includes
+        // status=0 rows too — those are auto-deactivated by `parking:deactivate-expired`
+        // when end_rent passes. Soft-deleted rows are never shown (we removed the
+        // delete UI; deleted_at survives only as legacy data).
+        if ($request->input('show_expired') !== '1') {
+            $query->where('status', 1);
         }
 
         if ($request->has('search') && !empty($request->search)) {
             $query->where(function ($q) use ($request) {
                 $q->where('vehicle_plate', 'like', "%{$request->search}%")
                   ->orWhere('owner_name', 'like', "%{$request->search}%")
+                  ->orWhere('order_id', 'like', "%{$request->search}%")
                   ->orWhereHas('property', function ($q2) use ($request) {
                       $q2->where('name', 'like', "%{$request->search}%");
                   });
             });
-        }
-
-        if ($request->has('status') && $request->status !== '' && $request->status !== 'all') {
-            $query->where('status', $request->status);
         }
 
         if ($request->has('parking_type') && !empty($request->parking_type)) {
@@ -57,43 +64,106 @@ class ParkingController extends Controller
             return view('pages.Properties.Parking.partials.parking_table', compact('parkings'));
         }
 
-        return view('pages.Properties.Parking.index', compact('parkings'));
+        // Combobox data — only HQ/HO users see a list of all properties.
+        // Site users get an empty list (their combobox is hidden in the view).
+        $properties = $accessiblePropertyId === null
+            ? \App\Models\Property::where('status', 1)->orderBy('name')->get(['idrec', 'name'])
+            : collect();
+        $canFilterByProperty = $accessiblePropertyId === null;
+
+        // Capacity chart data — for every property the user can see, compute live "used"
+        // count straight from t_parking (status=1, not soft-deleted) and pair with the
+        // configured capacity from m_parking_fee. We deliberately ignore m_parking_fee.quota_used
+        // here — that counter has drift; t_parking is source of truth post the daily expiry sweep.
+        $parkingStats = $this->buildParkingStats($accessiblePropertyId);
+
+        return view('pages.Properties.Parking.index', compact('parkings', 'properties', 'canFilterByProperty', 'parkingStats'));
+    }
+
+    /**
+     * Build the per-property capacity stats array used by the chart at the top of
+     * the Parking Management page. Returns an array of:
+     *   [['property' => Property, 'types' => ['car' => [...], 'motorcycle' => [...]]], ...]
+     */
+    private function buildParkingStats(?int $accessiblePropertyId): array
+    {
+        $propertiesQuery = \App\Models\Property::where('status', 1)->orderBy('name');
+        if ($accessiblePropertyId !== null) {
+            $propertiesQuery->where('idrec', $accessiblePropertyId);
+        }
+        $properties = $propertiesQuery->get(['idrec', 'name', 'city']);
+        if ($properties->isEmpty()) {
+            return [];
+        }
+
+        $propertyIds = $properties->pluck('idrec')->all();
+
+        $fees = ParkingFee::whereIn('property_id', $propertyIds)
+            ->where('status', 1)
+            ->get(['property_id', 'parking_type', 'capacity', 'fee'])
+            ->keyBy(fn($f) => $f->property_id . ':' . $f->parking_type);
+
+        $usedCounts = DB::table('t_parking')
+            ->select('property_id', 'parking_type', DB::raw('COUNT(*) as used'))
+            ->whereIn('property_id', $propertyIds)
+            ->where('status', 1)
+            ->whereNull('deleted_at')
+            ->groupBy('property_id', 'parking_type')
+            ->get()
+            ->keyBy(fn($r) => $r->property_id . ':' . $r->parking_type);
+
+        $stats = [];
+        foreach ($properties as $prop) {
+            $row = ['property' => $prop, 'types' => []];
+            foreach (['car', 'motorcycle'] as $type) {
+                $key = $prop->idrec . ':' . $type;
+                $fee = $fees->get($key);
+                $usedRow = $usedCounts->get($key);
+                $row['types'][$type] = [
+                    'capacity' => (int) ($fee->capacity ?? 0),
+                    'used' => (int) ($usedRow->used ?? 0),
+                    'configured' => $fee !== null,
+                ];
+            }
+            $stats[] = $row;
+        }
+        return $stats;
     }
 
     public function filter(Request $request)
     {
-        $perPage = $request->input('per_page', 8);
+        $perPage = $request->input('per_page', 50);
         $search = $request->input('search');
-        $status = $request->input('status', '');
         $parkingType = $request->input('parking_type', '');
-        $showDeleted = $request->input('show_deleted', '0');
+        $showExpired = $request->input('show_expired', '0');
 
-        $query = Parking::with(['property', 'createdBy', 'updatedBy', 'bookingTransaction'])
+        $query = Parking::with(['property', 'createdBy', 'updatedBy', 'bookingTransaction.user', 'activeBooking.room', 'latestPaidTransaction'])
             ->orderBy('property_id', 'asc');
 
         $user = Auth::user();
         $accessiblePropertyId = $user->getAccessiblePropertyId();
 
+        // Same scoping rule as index()
         if ($accessiblePropertyId !== null) {
             $query->where('property_id', $accessiblePropertyId);
+        } elseif ($request->filled('property_id') && $request->input('property_id') !== 'all') {
+            $query->where('property_id', $request->input('property_id'));
         }
 
-        if ($showDeleted === '1') {
-            $query->withTrashed();
+        // Default to active-only; toggle includes auto-deactivated (expired) rows.
+        if ($showExpired !== '1') {
+            $query->where('status', 1);
         }
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('vehicle_plate', 'like', "%{$search}%")
                   ->orWhere('owner_name', 'like', "%{$search}%")
+                  ->orWhere('order_id', 'like', "%{$search}%")
                   ->orWhereHas('property', function ($q2) use ($search) {
                       $q2->where('name', 'like', "%{$search}%");
                   });
             });
-        }
-
-        if ($status !== '' && $status !== 'all') {
-            $query->where('status', $status);
         }
 
         if (!empty($parkingType)) {
@@ -119,7 +189,7 @@ class ParkingController extends Controller
             'order_id' => 'required|exists:t_transactions,order_id',
             'parking_type' => 'required|in:car,motorcycle',
             'vehicle_plate' => 'required|string|max:50',
-            'parking_duration' => 'nullable|integer|min:1',
+            'parking_duration' => 'required|integer|min:1',
             'fee_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:500',
         ]);
@@ -141,6 +211,24 @@ class ParkingController extends Controller
                     'Parking fee for ' . ucfirst($request->parking_type) . ' is not configured for this property. ' .
                     'Please create parking fee in Parking Fee Management first.'
                 );
+            }
+
+            // Compute parking rent period from booking dates (same rule as Frontend booking flow):
+            // start_rent = check_in, end_rent = MIN(check_in + duration months, check_out)
+            $startRent = null;
+            $endRent = null;
+            if ($bookingTransaction->check_in) {
+                $startCarbon = \Carbon\Carbon::parse($bookingTransaction->check_in)->startOfDay();
+                $duration = (int) ($request->parking_duration ?? 1);
+                $endCarbon = $startCarbon->copy()->addMonths(max(1, $duration));
+                if ($bookingTransaction->check_out) {
+                    $checkOutCarbon = \Carbon\Carbon::parse($bookingTransaction->check_out)->startOfDay();
+                    if ($endCarbon->gt($checkOutCarbon)) {
+                        $endCarbon = $checkOutCarbon;
+                    }
+                }
+                $startRent = $startCarbon->toDateString();
+                $endRent = $endCarbon->toDateString();
             }
 
             // Determine if this is a renewal booking (user extending their stay, same vehicle/slot)
@@ -221,6 +309,8 @@ class ParkingController extends Controller
                         'user_id' => $bookingTransaction->user_id,
                         'order_id' => $request->order_id,
                         'parking_duration' => $request->parking_duration,
+                        'start_rent' => $startRent,
+                        'end_rent' => $endRent,
                         'fee_amount' => $request->fee_amount,
                         'notes' => $request->notes,
                         'status' => 1,
@@ -242,6 +332,8 @@ class ParkingController extends Controller
                     'user_id' => $bookingTransaction->user_id,
                     'order_id' => $request->order_id,
                     'parking_duration' => $request->parking_duration,
+                    'start_rent' => $startRent,
+                    'end_rent' => $endRent,
                     'fee_amount' => $request->fee_amount,
                     'notes' => $request->notes,
                     'status' => 1,
@@ -259,6 +351,8 @@ class ParkingController extends Controller
                     'user_id' => $bookingTransaction->user_id,
                     'order_id' => $request->order_id,
                     'parking_duration' => $request->parking_duration,
+                    'start_rent' => $startRent,
+                    'end_rent' => $endRent,
                     'fee_amount' => $request->fee_amount,
                     'notes' => $request->notes,
                     'status' => 1,
