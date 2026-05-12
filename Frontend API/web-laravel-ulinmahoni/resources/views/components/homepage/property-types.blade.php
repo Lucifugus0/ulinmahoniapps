@@ -184,7 +184,7 @@
     .property-tabs-row .property-tab-trigger {
         padding: 0.625rem 1.25rem;
         font-size: 0.9375rem;
-        font-weight: 500;
+        font-weight: 700;
         color: var(--text-tertiary, #8888a4);
         background: transparent;
         border: none;
@@ -199,14 +199,14 @@
         background: rgba(255, 255, 255, 0.2);
     }
 
-    /* Property tabs — theme-aware via var(--accent). Inactive uses 60% opacity for state contrast,
-       active goes to full opacity + glass-pill background. Color flips green/maroon by theme. */
+    /* Property tabs — inactive text is theme-aware: black in light mode, white in dark.
+       Active state keeps the brand pill (green in light, red in dark — see dark overrides below). */
     .property-tabs-row .property-tab-trigger {
-        color: var(--accent);
-        opacity: 0.6;
+        color: #1a1a2e;
+        opacity: 0.65;
     }
     .property-tabs-row .property-tab-trigger:hover {
-        opacity: 0.85;
+        opacity: 1;
         background: rgba(255, 255, 255, 0.2);
     }
     .property-tabs-row .property-tab-trigger.active {
@@ -231,13 +231,13 @@
         padding: 0.125rem;
     }
 
-    /* City/location tabs — same theme-aware var(--accent) scheme as property tabs */
+    /* City/location tabs — same theme-aware scheme as property tabs: black in light, white in dark. */
     .location-tabs-row .location-tab-trigger {
         padding: 0.5rem 1rem;
         font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--accent);
-        opacity: 0.6;
+        font-weight: 700;
+        color: #1a1a2e;
+        opacity: 0.65;
         background: transparent;
         border: none;
         border-radius: var(--radius-sm, 0.75rem);
@@ -252,7 +252,7 @@
     }
 
     .location-tabs-row .location-tab-trigger.active {
-        color: #ffffff;
+        color: #ffffff !important;
         opacity: 1;
         background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%);
         box-shadow: 0 2px 8px rgba(15, 81, 61, 0.30);
@@ -276,7 +276,7 @@
         justify-content: center;
         padding: 0.75rem 2rem;
         font-size: 0.875rem;
-        font-weight: 500;
+        font-weight: 700;
         color: #ffffff;
         background: var(--accent);
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -301,26 +301,41 @@
         border-color: var(--glass-border, rgba(255, 255, 255, 0.1));
     }
 
+    /* Row labels — brighter red in dark mode so KATEGORI PROPERTI / LOKASI pop against the dark glass. */
+    html.dark .filter-row-label {
+        color: #ff4d4d;
+        opacity: 1;
+    }
+
     html.dark .filter-divider {
         background: linear-gradient(to right, transparent, var(--glass-border, rgba(255, 255, 255, 0.1)), transparent);
     }
 
-    /* Dark mode tab styling — color flips automatically via var(--accent); only the
-       glass-pill background tints adjust for the darker surface. */
-    html.dark .property-tabs-row .property-tab-trigger:hover {
-        background: rgba(255, 255, 255, 0.04);
+    /* Dark mode tab styling — inactive text turns white; active pills use UM Maroon red
+       gradient instead of the light-mode green to match the dark theme accent. */
+    html.dark .property-tabs-row .property-tab-trigger,
+    html.dark .location-tabs-row .location-tab-trigger {
+        color: #ffffff;
+        opacity: 0.7;
+    }
+    html.dark .property-tabs-row .property-tab-trigger:hover,
+    html.dark .location-tabs-row .location-tab-trigger:hover {
+        color: #ffffff;
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.06);
     }
     html.dark .property-tabs-row .property-tab-trigger.active {
         color: #ffffff;
-        background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%);
+        opacity: 1;
+        background: linear-gradient(135deg, #800000 0%, #a83333 100%);
         border-color: rgba(255, 255, 255, 0.1);
-    }
-    html.dark .location-tabs-row .location-tab-trigger:hover {
-        background: rgba(255, 255, 255, 0.04);
+        box-shadow: 0 2px 10px rgba(168, 51, 51, 0.45);
     }
     html.dark .location-tabs-row .location-tab-trigger.active {
-        color: #ffffff;
-        background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%);
+        color: #ffffff !important;
+        opacity: 1;
+        background: linear-gradient(135deg, #800000 0%, #a83333 100%);
+        box-shadow: 0 2px 8px rgba(168, 51, 51, 0.40);
     }
 
     /* Mobile responsive */

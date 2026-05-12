@@ -122,10 +122,11 @@ body.liquid-glass-page {
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Sticky search bar — fixed below nav when scrolled past hero */
+/* Sticky search bar — fixed below nav when scrolled past hero.
+   `top` = header height (4.5rem) + breathing room so the panel doesn't kiss the header. */
 .search-section.is-sticky {
   position: fixed;
-  top: 4.5rem;
+  top: 5.5rem;
   bottom: auto;
   transform: none;
   z-index: 9998;
@@ -181,6 +182,15 @@ body.liquid-glass-page {
   line-height: 1;
 }
 html.dark .search-box .search-label {
+  color: #ffffff;
+}
+/* Sticky state — search bar now floats over the white page background instead of the hero
+   video, so labels flip to dark in light mode (mirrors the header text behavior). Dark mode
+   keeps white because the page background stays dark. */
+.search-section.is-sticky .search-box .search-label {
+  color: #1a1a2e;
+}
+html.dark .search-section.is-sticky .search-box .search-label {
   color: #ffffff;
 }
 

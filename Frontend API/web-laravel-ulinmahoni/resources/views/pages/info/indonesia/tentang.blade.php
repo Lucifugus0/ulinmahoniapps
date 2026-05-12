@@ -10,8 +10,9 @@
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <!-- Dark mode: apply 'dark' class before render to prevent flash of light mode -->
-    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
+    {{-- Dark mode: apply only when localStorage explicitly says 'true' — matches the header
+         and homepage convention so the page and header agree on the initial theme. --}}
+    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     <style>
         /* Video background fixed below header (header ~72px tall) */
         .video-wrapper {
@@ -34,27 +35,32 @@
             object-fit: cover;
             z-index: 1;
         }
+        /* Overlay — soft white wash in light mode, dark gradient in dark mode. */
         .video-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
+            background: linear-gradient(to bottom, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.30) 100%);
             z-index: 2;
+        }
+        html.dark .video-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
         }
         /* Push page content below the fixed header */
         main.relative {
             padding-top: 72px;
         }
 
-        /* Glass content card — translucent panel */
+        /* Glass content card — opaque white in light mode keeps dark Tailwind text readable;
+           dark mode override below drops it back to translucent dark glass. */
         .content-card {
-            background: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             border-radius: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.20);
+            border: 1px solid rgba(255, 255, 255, 0.50);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             padding: 2rem;
         }
