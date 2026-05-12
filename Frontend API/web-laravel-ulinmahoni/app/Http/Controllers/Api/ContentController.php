@@ -32,6 +32,27 @@ class ContentController extends Controller
     }
 
     /**
+     * GET /api/v1/content/tagline-desc
+     * Returns one random active tagline description from the m_tagline_desc table.
+     * Paired with the tagline endpoint above for the home page hero section.
+     * Falls back to null if no active tagline descriptions exist.
+     */
+    public function randomTaglineDesc()
+    {
+        $desc = DB::table('m_tagline_desc')
+            ->where('status', 1)
+            ->inRandomOrder()
+            ->first();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'description' => $desc ? $desc->description : null,
+            ],
+        ]);
+    }
+
+    /**
      * GET /api/v1/content/hero-video
      * Returns the active hero video URL from the m_hero_videos table.
      * Video files are stored on the Backend (admin) server and served via storage symlink.

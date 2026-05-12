@@ -17,6 +17,10 @@
                     class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200">
                     {{ __('ui.tagline_tab') }}
                 </button>
+                <button @click="activeTab = 'tagline_descs'" :class="activeTab === 'tagline_descs' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200">
+                    {{ __('ui.tagline_desc_tab') }}
+                </button>
                 <button @click="activeTab = 'videos'" :class="activeTab === 'videos' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                     class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200">
                     {{ __('ui.video_tab') }}
@@ -111,6 +115,80 @@
                             <!-- Empty state -->
                             <tr x-show="taglines.length === 0">
                                 <td colspan="4" class="px-6 py-8 text-center text-gray-400 text-sm">{{ __('ui.no_taglines') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ==================== TAGLINE DESCRIPTIONS TAB ==================== -->
+            <!-- Mirrors the Taglines tab structure; column is `description` (text) instead of `tagline` (short string). -->
+            <div x-show="activeTab === 'tagline_descs'" x-transition x-cloak>
+                <!-- Add Tagline Description Form -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">{{ __('ui.add_tagline_desc') }}</h3>
+                    <div class="flex gap-3">
+                        <textarea x-model="newTaglineDesc" rows="2"
+                            placeholder="{{ __('ui.tagline_desc_placeholder') }}"
+                            class="flex-1 border-2 border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"></textarea>
+                        <button @click="addTaglineDesc()" :disabled="!newTaglineDesc.trim() || isLoadingDesc"
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200 flex items-center gap-2 self-start">
+                            <svg x-show="isLoadingDesc" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            {{ __('ui.add_tagline_desc') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tagline Description List -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">No</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{{ __('ui.tagline_desc_text') }}</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">{{ __('ui.status') }}</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">{{ __('ui.actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="(desc, index) in taglineDescs" :key="desc.idrec">
+                                <tr>
+                                    <td class="px-6 py-4 text-sm text-gray-600 align-top" x-text="index + 1"></td>
+                                    <td class="px-6 py-4 align-top">
+                                        <!-- View mode -->
+                                        <span x-show="editingDescId !== desc.idrec" class="text-sm text-gray-800 whitespace-pre-wrap" x-text="desc.description"></span>
+                                        <!-- Edit mode -->
+                                        <textarea x-show="editingDescId === desc.idrec" x-model="editingDescText" rows="2"
+                                            @keydown.escape="cancelEditDesc()"
+                                            class="w-full border-2 border-blue-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"></textarea>
+                                    </td>
+                                    <td class="px-6 py-4 text-center align-top">
+                                        <!-- Status toggle switch -->
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" :checked="desc.status === 1" @change="toggleDescStatus(desc)" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                                        </label>
+                                    </td>
+                                    <td class="px-6 py-4 text-center align-top">
+                                        <div class="flex justify-center gap-2">
+                                            <button x-show="editingDescId !== desc.idrec" @click="startEditDesc(desc)"
+                                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">{{ __('ui.edit') }}</button>
+                                            <button x-show="editingDescId === desc.idrec" @click="saveEditDesc(desc.idrec)"
+                                                class="text-green-600 hover:text-green-800 text-sm font-medium">{{ __('ui.room_btn_save') }}</button>
+                                            <button x-show="editingDescId === desc.idrec" @click="cancelEditDesc()"
+                                                class="text-gray-600 hover:text-gray-800 text-sm font-medium">{{ __('ui.cancel') }}</button>
+                                            <button x-show="editingDescId !== desc.idrec" @click="deleteTaglineDesc(desc.idrec)"
+                                                class="text-red-600 hover:text-red-800 text-sm font-medium">{{ __('ui.delete') }}</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                            <!-- Empty state -->
+                            <tr x-show="taglineDescs.length === 0">
+                                <td colspan="4" class="px-6 py-8 text-center text-gray-400 text-sm">{{ __('ui.no_tagline_descs') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -225,6 +303,12 @@
                 editingId: null,
                 editingText: '',
                 isLoading: false,
+                // Tagline Description state — mirrors tagline state, separate variables to avoid cross-tab edit collisions
+                taglineDescs: [],
+                newTaglineDesc: '',
+                editingDescId: null,
+                editingDescText: '',
+                isLoadingDesc: false,
                 // Video state
                 videos: [],
                 newVideoTitle: '',
@@ -273,6 +357,7 @@
 
                 init() {
                     this.fetchTaglines();
+                    this.fetchTaglineDescs();
                     this.fetchVideos();
 
                     /** Watch active tab and lazy-load footer/legal data when first visited */
@@ -368,6 +453,92 @@
                             this.showToast(data.message, 'success');
                         }
                     } catch (e) { this.showToast('Error deleting tagline', 'error'); }
+                },
+
+                // ==================== TAGLINE DESCRIPTION METHODS ====================
+
+                async fetchTaglineDescs() {
+                    try {
+                        const res = await fetch('{{ route("content-management.tagline-descs.list") }}');
+                        const data = await res.json();
+                        if (data.success) this.taglineDescs = data.data;
+                    } catch (e) { console.error('Error fetching tagline descriptions:', e); }
+                },
+
+                async addTaglineDesc() {
+                    if (!this.newTaglineDesc.trim()) return;
+                    this.isLoadingDesc = true;
+                    try {
+                        const res = await fetch('{{ route("content-management.tagline-descs.store") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ description: this.newTaglineDesc.trim() })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.newTaglineDesc = '';
+                            this.fetchTaglineDescs();
+                            this.showToast(data.message, 'success');
+                        } else {
+                            this.showToast(Object.values(data.errors).flat().join(', '), 'error');
+                        }
+                    } catch (e) { this.showToast('Error adding tagline description', 'error'); }
+                    this.isLoadingDesc = false;
+                },
+
+                startEditDesc(desc) {
+                    this.editingDescId = desc.idrec;
+                    this.editingDescText = desc.description;
+                },
+
+                cancelEditDesc() {
+                    this.editingDescId = null;
+                    this.editingDescText = '';
+                },
+
+                async saveEditDesc(id) {
+                    if (!this.editingDescText.trim()) return;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/tagline-descs') }}/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ description: this.editingDescText.trim() })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.cancelEditDesc();
+                            this.fetchTaglineDescs();
+                            this.showToast(data.message, 'success');
+                        }
+                    } catch (e) { this.showToast('Error updating tagline description', 'error'); }
+                },
+
+                async toggleDescStatus(desc) {
+                    const newStatus = desc.status === 1 ? 0 : 1;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/tagline-descs') }}/${desc.idrec}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        const data = await res.json();
+                        if (data.success) this.fetchTaglineDescs();
+                    } catch (e) { this.showToast('Error toggling status', 'error'); }
+                },
+
+                async deleteTaglineDesc(id) {
+                    if (!confirm('{{ __("ui.confirm_delete_tagline_desc") }}')) return;
+                    try {
+                        const res = await fetch(`{{ url('/settings/content-management/tagline-descs') }}/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.fetchTaglineDescs();
+                            this.showToast(data.message, 'success');
+                        }
+                    } catch (e) { this.showToast('Error deleting tagline description', 'error'); }
                 },
 
                 // ==================== VIDEO METHODS ====================

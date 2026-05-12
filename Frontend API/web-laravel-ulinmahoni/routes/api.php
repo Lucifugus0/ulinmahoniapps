@@ -80,6 +80,8 @@ Route::prefix('v1')->group(function () {
         // <!-- Content API routes: public tagline, hero video, footer, and legal page endpoints -->
         Route::prefix('content')->group(function () {
             Route::get('/tagline', [ContentController::class, 'randomTagline']);
+            // <!-- Returns one random active tagline description from m_tagline_desc; paired with /tagline on home hero -->
+            Route::get('/tagline-desc', [ContentController::class, 'randomTaglineDesc']);
             Route::get('/hero-video', [ContentController::class, 'activeHeroVideo']);
             Route::get('/footer', [ContentController::class, 'footer']);
             Route::get('/legal/{slug}', [ContentController::class, 'legalPage']);
