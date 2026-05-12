@@ -3,8 +3,65 @@
      - Dark mode toggle (sun/moon icon) persisted in localStorage('dark-mode')
      - Language switcher dropdown with flag icons for each locale
 -->
-<!-- Header — floating liquid glass bar, fixed over hero content with strong backdrop blur -->
-<header class="site-header py-4 px-6 flex items-center justify-between fixed top-0 left-0 right-0 z-50 transition-all duration-500">
+{{-- Header text override — force white so it reads against the hero video/dark backdrop.
+     Beats the `.site-header a/span/button { color: #1f2937 !important; }` rule in
+     styles.blade.php by matching selector + !important and appearing later in cascade.
+     Dropdown menu items are excluded so their own light/dark text colors keep working. --}}
+<style>
+/* Default state — header sits over the hero video, text is white for contrast. */
+.site-header a,
+.site-header span,
+.site-header button {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+/* Dropdown panel items keep their own weight so menus don't look chunky. */
+.site-header .header-dropdown a,
+.site-header .header-dropdown span,
+.site-header .header-dropdown button,
+.site-header .header-dropdown p {
+    font-weight: 400 !important;
+}
+.site-header a:hover,
+.site-header button:hover {
+    color: #ffffff !important;
+    opacity: 0.85;
+}
+/* Scrolled state in light mode — header has a visible tint over content, swap to dark text. */
+.site-header.is-scrolled a,
+.site-header.is-scrolled span,
+.site-header.is-scrolled button {
+    color: #1f2937 !important;
+}
+.site-header.is-scrolled a:hover,
+.site-header.is-scrolled button:hover {
+    color: #000000 !important;
+    opacity: 1;
+}
+/* Dark mode keeps white text regardless of scroll position. */
+html.dark .site-header.is-scrolled a,
+html.dark .site-header.is-scrolled span,
+html.dark .site-header.is-scrolled button {
+    color: #ffffff !important;
+}
+html.dark .site-header.is-scrolled a:hover,
+html.dark .site-header.is-scrolled button:hover {
+    color: #ffffff !important;
+    opacity: 0.85;
+}
+/* Dropdown panels live inside .site-header but should keep their own text colors */
+.site-header .header-dropdown a,
+.site-header .header-dropdown span,
+.site-header .header-dropdown button,
+.site-header .header-dropdown p {
+    color: inherit !important;
+}
+</style>
+<!-- Header — floating liquid glass bar, fixed over hero content with strong backdrop blur.
+     Background opacity is scroll-driven: starts at 0% (fully transparent / subtle) at top of page
+     and ramps to 20% once the user has scrolled `scrollRange` px down. Implemented by overriding
+     the `--glass-bg` CSS variable inline on this element, which the .site-header rule reads from. -->
+<header class="site-header py-4 px-6 flex items-center justify-between fixed top-0 left-0 right-0 z-50 transition-all duration-500" style="--glass-bg: rgba(255, 255, 255, 0); --glass-blur-strong: blur(0px);">
     <div class="flex items-center space-x-8">
         <!-- Mobile Menu Button (Hidden on desktop) -->
         <div x-data="{ mobileMenuOpen: false }" class="md:hidden">
@@ -418,3 +475,43 @@
 @include('components.ticket.floating-widget')
 
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+{{-- Scroll-driven header transparency:
+     opacity ramps linearly from 0 (at scrollY = 0) to 0.20 (at scrollY >= scrollRange).
+     Uses requestAnimationFrame to throttle scroll handler. White RGB works for both
+     light and dark modes — matches the existing --glass-bg pattern in styles.blade.php. --}}
+<script>
+(function () {
+    const header = document.querySelector('.site-header');
+    if (!header) return;
+
+    const maxOpacity = 0.10;   // peak header tint (0–1)
+    const maxBlur = 24;        // peak backdrop blur in px (default CSS uses 48 — too heavy over video)
+    const scrollRange = 200;   // px of scroll over which both values ramp from 0 → max
+    let ticking = false;
+
+    // Toggle .is-scrolled once the user has scrolled past half the ramp range.
+    // CSS uses this to swap text from white (over video) to dark (over tinted header) in light mode.
+    const scrolledThreshold = scrollRange * 0.5;
+
+    function applyOpacity() {
+        const progress = Math.min(window.scrollY / scrollRange, 1);
+        const opacity = progress * maxOpacity;
+        const blur = progress * maxBlur;
+        header.style.setProperty('--glass-bg', `rgba(255, 255, 255, ${opacity})`);
+        header.style.setProperty('--glass-blur-strong', `blur(${blur}px)`);
+        header.classList.toggle('is-scrolled', window.scrollY > scrolledThreshold);
+        ticking = false;
+    }
+
+    function onScroll() {
+        if (!ticking) {
+            window.requestAnimationFrame(applyOpacity);
+            ticking = true;
+        }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    applyOpacity();
+})();
+</script>
