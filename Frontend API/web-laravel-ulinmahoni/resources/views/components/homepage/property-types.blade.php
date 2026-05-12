@@ -163,7 +163,7 @@
         gap: 0.5rem;
         padding: 0.375rem 0.75rem 0.25rem;
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: 900;
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: var(--accent);
@@ -210,11 +210,11 @@
         background: rgba(255, 255, 255, 0.2);
     }
     .property-tabs-row .property-tab-trigger.active {
-        color: var(--accent);
+        color: #ffffff;
         opacity: 1;
-        background: rgba(255, 255, 255, 0.35);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.18));
+        background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%);
+        box-shadow: 0 2px 10px rgba(15, 81, 61, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.18);
     }
 
     /* Thin divider between the two rows */
@@ -252,10 +252,10 @@
     }
 
     .location-tabs-row .location-tab-trigger.active {
-        color: var(--accent);
+        color: #ffffff;
         opacity: 1;
-        background: rgba(255, 255, 255, 0.3);
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%);
+        box-shadow: 0 2px 8px rgba(15, 81, 61, 0.30);
     }
 
     /* Property tab content visibility */
@@ -311,14 +311,16 @@
         background: rgba(255, 255, 255, 0.04);
     }
     html.dark .property-tabs-row .property-tab-trigger.active {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: var(--glass-border);
+        color: #ffffff;
+        background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%);
+        border-color: rgba(255, 255, 255, 0.1);
     }
     html.dark .location-tabs-row .location-tab-trigger:hover {
         background: rgba(255, 255, 255, 0.04);
     }
     html.dark .location-tabs-row .location-tab-trigger.active {
-        background: rgba(255, 255, 255, 0.06);
+        color: #ffffff;
+        background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%);
     }
 
     /* Mobile responsive */

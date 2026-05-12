@@ -4,6 +4,7 @@ return [
     'hero' => [
         'title' => '欢迎来到 Ulin Mahoni',
         'subtitle' => '安全和谐的居住环境',
+        'description' => '轻松、快速、可靠地找到您理想的宿舍、公寓或别墅。',
         'hashtag' => '#UlinMahoni',
     ],
 

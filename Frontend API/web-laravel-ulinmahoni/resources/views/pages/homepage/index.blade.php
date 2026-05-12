@@ -16,7 +16,7 @@
   <!-- Inter font — Apple-like clean sans-serif for the liquid glass UI -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <!-- Swiper JS loaded before body scripts to ensure availability at DOMContentLoaded -->
   <script src="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.js"></script>
   @include('components.homepage.styles')
@@ -73,9 +73,11 @@
       @endif
 
       <!-- Overlay with text — frosted text area over hero image -->
-      <div class="absolute inset-0 gradient-overlay flex flex-col justify-center md:justify-end p-8 md:p-12 lg:p-16 text-white">
+      <div class="absolute inset-0 gradient-overlay flex flex-col items-center justify-center md:justify-end p-8 md:p-12 lg:p-16 text-white">
         <!-- Tagline — will be replaced with dynamic tagline from database -->
-        <h1 class="text-2xl md:text-5xl lg:text-5xl font-light mb-40 max-w-4xl tracking-tight" style="letter-spacing: -0.03em;">{{ $heroTagline ?? __('homepage.hero.subtitle') }}</h1>
+        <h1 class="text-2xl md:text-5xl lg:text-5xl font-bold mb-4 max-w-4xl tracking-tight text-center mx-auto" style="letter-spacing: -0.03em;">{{ $heroTagline ?? __('homepage.hero.subtitle') }}</h1>
+        {{-- Tagline 2 — supporting description below the main tagline --}}
+        <p class="text-sm md:text-lg lg:text-xl font-normal mb-40 max-w-3xl text-center mx-auto opacity-90">{{ $heroDescription ?? __('homepage.hero.description') }}</p>
     </div>
 
       <!-- Search Section -->
@@ -89,7 +91,7 @@
                         <label for="search-type" class="search-label">{{ __('homepage.search.label_property_type') }}</label>
                         <div class="relative">
                             <i class="fas fa-building absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <select id="search-type" name="type" class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white transition-all duration-200">
+                            <select id="search-type" name="type" class="w-full pl-10 h-12 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white transition-all duration-200">
                                 <option value="">{{ __('homepage.search.all_properties') }}</option>
                                 <option value="Kos" {{ request('type') == 'Kos' ? 'selected' : '' }}>{{ __('homepage.property_types.Kos') }}</option>
                                 <option value="House" {{ request('type') == 'House' ? 'selected' : '' }}>{{ __('homepage.property_types.House') }}</option>
@@ -106,9 +108,8 @@
                         <label for="search-period" class="search-label">{{ __('homepage.search.label_period') }}</label>
                         <div class="relative">
                             <i class="fas fa-clock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <select id="search-period" name="period" class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white transition-all duration-200">
-                                <option value="">{{ __('homepage.search.all_periods') }}</option>
-                                <option value="daily" {{ request('period') == 'daily' ? 'selected' : '' }}>{{ __('homepage.period.daily') }}</option>
+                            <select id="search-period" name="period" class="w-full pl-10 h-12 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white transition-all duration-200">
+                                <option value="daily" {{ request('period', 'daily') == 'daily' ? 'selected' : '' }}>{{ __('homepage.period.daily') }}</option>
                                 <option value="monthly" {{ request('period') == 'monthly' ? 'selected' : '' }}>{{ __('homepage.period.monthly') }}</option>
                             </select>
                             <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
@@ -127,8 +128,8 @@
                                     value="{{ request('check_in') }}"
                                     onfocus="(this.type='date')"
                                     onblur="if(!this.value) this.type='text'"
-                                    placeholder="{{ __('homepage.search.check_in') }}"
-                                    class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
+                                    placeholder="dd/mm/yyyy"
+                                    class="w-full pl-10 h-12 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
                             </div>
                         </div>
                         <div class="w-1/2">
@@ -141,8 +142,8 @@
                                     value="{{ request('check_out') }}"
                                     onfocus="(this.type='date')"
                                     onblur="if(!this.value) this.type='text'"
-                                    placeholder="{{ __('homepage.search.check_out') }}"
-                                    class="w-full pl-10 h-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
+                                    placeholder="dd/mm/yyyy"
+                                    class="w-full pl-10 h-12 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
                             </div>
                         </div>
                     </div>

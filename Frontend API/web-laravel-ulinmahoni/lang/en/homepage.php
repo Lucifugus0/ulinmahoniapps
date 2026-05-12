@@ -4,6 +4,7 @@ return [
     'hero' => [
         'title' => 'Welcome to Ulin Mahoni',
         'subtitle' => 'A safe and harmonious environment',
+        'description' => 'Find your dream kos, apartment, or villa easily, quickly, and reliably.',
         'hashtag' => '#UlinMahoni',
     ],
 

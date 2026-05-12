@@ -117,7 +117,7 @@ body.liquid-glass-page {
   bottom: 0;
   left: 0;
   right: 0;
-  transform: translateY(-15%);
+  transform: translateY(-35%);
   z-index: 30;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -171,12 +171,13 @@ body.liquid-glass-page {
 /* Field labels above each search input — uppercase, bold, theme-aware contrast */
 .search-box .search-label {
   display: block;
-  margin-bottom: 0.375rem;
+  padding-left: 0.75rem;
+  margin-bottom: 0.75rem;
   font-size: 0.6875rem; /* 11px */
-  font-weight: 700;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #000000;
+  color: #ffffff;
   line-height: 1;
 }
 html.dark .search-box .search-label {
@@ -192,7 +193,7 @@ html.dark .search-box .search-label {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  border-radius: 0.5rem !important;
+  border-radius: 1rem !important;
   color: var(--text-primary) !important;
   font-weight: 400;
   transition: all 0.3s ease;
@@ -211,7 +212,7 @@ html.dark .search-box .search-label {
 .search-box button[type="submit"] {
   background: linear-gradient(135deg, var(--accent), var(--accent-hover)) !important;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.5rem !important;
+  border-radius: 1rem !important;
   box-shadow: 0 4px 15px rgba(14, 165, 160, 0.3);
   font-weight: 500;
   letter-spacing: 0.02em;

@@ -30,7 +30,7 @@
                         $mobileLocale = app()->getLocale();
                     @endphp
                     <a href="/{{ $mobileLocale }}/homepage" class="flex items-center">
-                        <img src="{{ asset('images/assets/ulinmahoni-logo.svg') }}" alt="Ulin Mahoni Logo" class="h-8 w-auto">
+                        <img src="{{ asset('images/assets/new-ullinmahoni.PNG') }}" alt="Ulin Mahoni Logo" class="h-8 w-auto">
                     </a>
                     <button @click="mobileMenuOpen = false" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +133,7 @@
             $logoLocale = app()->getLocale();
         @endphp
         <a href="/{{ $logoLocale }}/homepage" class="hidden md:flex items-center">
-            <img src="{{ asset('images/assets/ulinmahoni-logo.svg') }}" alt="Ulin Mahoni Logo" class="h-10 w-auto">
+            <img src="{{ asset('images/assets/new-ullinmahoni.PNG') }}" alt="Ulin Mahoni Logo" class="h-10 w-auto">
         </a>
 
         <!-- Navigation — consistent text-sm, black in light / white in dark, bold when active -->
