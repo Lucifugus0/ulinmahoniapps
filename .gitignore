@@ -39,6 +39,12 @@ public/storage
 build/
 *.iml
 
+# Kotlin/Android local build cache
+Mobile App/android/.kotlin/
+
+# Ad-hoc translation scripts — contain hardcoded prod credentials, never commit
+Backend/translate_*.php
+
 # Large files
 Frontend API/web-laravel-ulinmahoni/public/images/assets/My_Movie.mp4
 Frontend API/web-laravel-ulinmahoni/public/public.zip
