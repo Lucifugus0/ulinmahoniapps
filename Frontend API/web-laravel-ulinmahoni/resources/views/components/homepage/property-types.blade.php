@@ -315,8 +315,8 @@
        gradient instead of the light-mode green to match the dark theme accent. */
     html.dark .property-tabs-row .property-tab-trigger,
     html.dark .location-tabs-row .location-tab-trigger {
-        color: #ffffff;
-        opacity: 0.7;
+        color: #ffffff !important;
+        opacity: 1;
     }
     html.dark .property-tabs-row .property-tab-trigger:hover,
     html.dark .location-tabs-row .location-tab-trigger:hover {
