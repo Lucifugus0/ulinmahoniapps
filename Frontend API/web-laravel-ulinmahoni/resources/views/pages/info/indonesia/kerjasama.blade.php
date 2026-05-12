@@ -9,15 +9,19 @@
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
+    {{-- Match the header/homepage convention: dark mode only when localStorage explicitly says 'true'.
+         Previously this page used `!== 'false'`, which defaulted the page to dark while the header
+         defaulted to light — a mismatch when the key was unset. --}}
+    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     <style>
-        /* Glass content card — translucent panel */
+        /* Glass content card — light mode is mostly opaque white so dark text on cards stays
+           legible over the bright hero image; dark mode override below drops it back to translucent. */
         .content-card {
-            background: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             border-radius: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.20);
+            border: 1px solid rgba(255, 255, 255, 0.50);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             padding: 2rem;
         }
@@ -60,14 +64,19 @@
             object-fit: cover;
             z-index: 1;
         }
+        /* Overlay — soft white wash in light mode (keeps the image visible without dimming text),
+           dark gradient in dark mode for atmospheric contrast. */
         .video-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
+            background: linear-gradient(to bottom, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.30) 100%);
             z-index: 2;
+        }
+        html.dark .video-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
         }
         /* Push page content below the fixed header */
         main.relative {

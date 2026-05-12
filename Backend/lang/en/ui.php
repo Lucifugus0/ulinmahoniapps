@@ -126,6 +126,13 @@ return [
     'no_videos' => 'No videos uploaded yet.',
     'confirm_delete_tagline' => 'Are you sure you want to delete this tagline?',
     'confirm_delete_video' => 'Are you sure you want to delete this video?',
+    // <!-- Tagline Description CRUD keys (separate from Tagline; paired display on home page hero) -->
+    'tagline_desc_tab' => 'Tagline Descriptions',
+    'add_tagline_desc' => 'Add Tagline Description',
+    'tagline_desc_placeholder' => 'Enter tagline description...',
+    'tagline_desc_text' => 'Description Text',
+    'no_tagline_descs' => 'No tagline descriptions yet. Add your first description above.',
+    'confirm_delete_tagline_desc' => 'Are you sure you want to delete this tagline description?',
 
     // <!-- Footer & Legal CMS tab labels -->
     'footer_tab' => 'Footer',

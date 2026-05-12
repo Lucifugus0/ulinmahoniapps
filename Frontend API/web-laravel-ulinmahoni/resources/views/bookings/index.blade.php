@@ -1842,6 +1842,49 @@
     }
     </script>
 
+    {{-- Cancel-modal styling — scoped to .swal-cancel-popup so it only affects the redesigned cancel dialog --}}
+    <style>
+        .swal-cancel-popup { border-radius: 24px !important; padding: 28px 24px 22px !important; max-width: 440px; }
+        .swal-cancel-popup .swal2-html-container { margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+        .swal-cancel-popup .swal2-actions { gap: 10px; margin-top: 18px !important; padding: 0 !important; width: 100%; }
+        .swal-cancel-popup .swal2-actions button { margin: 0 !important; }
+        .swal-cancel-popup .swal2-cancel {
+            flex: 0 0 38% !important;
+            background: #ffffff !important;
+            color: #374151 !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            padding: 12px 18px !important;
+            box-shadow: none !important;
+        }
+        .swal-cancel-popup .swal2-confirm {
+            flex: 1 1 auto !important;
+            background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%) !important;
+            color: #fff !important;
+            border: none !important;
+            border-radius: 999px !important;
+            font-weight: 700 !important;
+            padding: 12px 18px !important;
+            box-shadow: 0 6px 14px rgba(15, 81, 61, 0.28) !important;
+        }
+        .swal-cancel-popup .swal-refund-input {
+            width: 100%; height: 44px;
+            padding: 0 12px 0 38px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fff;
+            color: #111827;
+            font-size: 14px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .swal-cancel-popup .swal-refund-input:focus { border-color: #0F513D; box-shadow: 0 0 0 3px rgba(15, 81, 61, 0.12); }
+        html.dark .swal-cancel-popup .swal-refund-input { background: #334155; border-color: #475569; color: #e2e8f0; }
+        html.dark .swal-cancel-popup .swal2-cancel { background: #334155 !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+    </style>
+
     <script>
     /**
      * Cancel booking flow — shows refund preview for paid bookings,
@@ -1940,46 +1983,89 @@
             const refund = previewData.data.refund;
             const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
 
+            // Theme-aware colors for the redesigned modal
+            const subtitleColor = isDarkMode ? '#94a3b8' : '#6b7280';
+            const titleColor = isDarkMode ? '#f1f5f9' : '#111827';
+            const itemColor = isDarkMode ? '#cbd5e1' : '#374151';
+            const dividerColor = isDarkMode ? '#065f46' : '#bbf7d0';
+            const totalColor = isDarkMode ? '#34d399' : '#0F513D';
+            const infoBoxBg = isDarkMode ? '#1e293b' : '#f3f4f6';
+            const infoBoxText = isDarkMode ? '#cbd5e1' : '#4b5563';
+            const sectionLabelColor = isDarkMode ? '#cbd5e1' : '#374151';
+            const fieldLabelColor = isDarkMode ? '#94a3b8' : '#6b7280';
+
+            // Subtitle copy — short confirmation line shown under the title
+            const subtitleCopy = '{{ __("booking.js.cancel_subtitle") }}';
+
             let breakdownHtml = `
-                <div style="text-align:left; font-size:14px; margin-top:10px;">
-                    <div style="background:${refundBoxBg}; border:1px solid ${refundBoxBorder}; border-radius:8px; padding:16px; margin-bottom:12px;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                            <span>${cancelT.refundRoom} (${refund.refund_percentage}%)</span>
-                            <strong>${fmt(refund.room_refund)}</strong>
+                <div style="text-align:center; padding:4px 2px 0;">
+                    <!-- Amber warning icon -->
+                    <div style="width:60px; height:60px; margin:0 auto 16px; background:#fef3c7; border-radius:16px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-exclamation" style="color:#d97706; font-size:26px;"></i>
+                    </div>
+                    <!-- Title + subtitle -->
+                    <h2 style="font-size:22px; font-weight:700; color:${titleColor}; margin:0 0 8px; line-height:1.2;">${cancelT.title}</h2>
+                    <p style="font-size:13.5px; color:${subtitleColor}; margin:0 0 18px; line-height:1.5;">${subtitleCopy}</p>
+
+                    <!-- Refund breakdown card -->
+                    <div style="background:${refundBoxBg}; border-radius:14px; padding:16px 18px; text-align:left; margin-bottom:14px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px;">
+                            <span style="color:${itemColor};">${cancelT.refundRoom} (${refund.refund_percentage}%)</span>
+                            <strong style="color:${titleColor}; font-weight:600;">${fmt(refund.room_refund)}</strong>
                         </div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                            <span>${cancelT.refundDeposit} (100%)</span>
-                            <strong>${fmt(refund.deposit_refund)}</strong>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px;">
+                            <span style="color:${itemColor};">${cancelT.refundDeposit} (100%)</span>
+                            <strong style="color:${titleColor}; font-weight:600;">${fmt(refund.deposit_refund)}</strong>
                         </div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                            <span>${cancelT.refundParking} (${refund.refund_percentage}%)</span>
-                            <strong>${fmt(refund.other_refund)}</strong>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px;">
+                            <span style="color:${itemColor};">${cancelT.refundParking} (${refund.refund_percentage}%)</span>
+                            <strong style="color:${titleColor}; font-weight:600;">${fmt(refund.other_refund)}</strong>
                         </div>
-                        <hr style="border-color:${refundBoxBorder}; margin:8px 0;">
-                        <div style="display:flex; justify-content:space-between; font-size:16px;">
-                            <strong>${cancelT.refundTotal}</strong>
-                            <strong style="color:#059669;">${fmt(refund.total_refund)}</strong>
+                        <div style="height:1px; background:${dividerColor}; margin:12px 0;"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="color:${titleColor}; font-size:15px; font-weight:700;">${cancelT.refundTotal}</strong>
+                            <strong style="color:${totalColor}; font-size:18px; font-weight:800;">${fmt(refund.total_refund)}</strong>
                         </div>
                     </div>
-                    <p style="color:${labelColor}; font-size:12px;">${cancelT.daysBefore}: ${refund.days_before_checkin} ${cancelT.days}</p>
-                    <p style="color:${labelColor}; font-size:12px;">${cancelT.processTime}</p>
+
+                    <!-- Info box: days before check-in + estimated process time -->
+                    <div style="background:${infoBoxBg}; border-radius:12px; padding:12px 14px; margin-bottom:18px; text-align:left;">
+                        <div style="display:flex; gap:10px; align-items:flex-start;">
+                            <i class="fas fa-info-circle" style="color:#9ca3af; font-size:14px; margin-top:2px;"></i>
+                            <div style="font-size:12.5px; color:${infoBoxText}; line-height:1.6;">
+                                <div>${cancelT.daysBefore}: <strong>${refund.days_before_checkin} ${cancelT.days}</strong></div>
+                                <div>${cancelT.processTime}</div>
+                            </div>
+                        </div>
+                    </div>
             `;
 
             if (refund.requires_bank_account) {
                 breakdownHtml += `
-                    <div style="background:${bankBoxBg}; border:1px solid ${bankBoxBorder}; border-radius:8px; padding:12px; margin-top:12px;">
-                        <p style="font-weight:600; color:${bankTitleColor}; margin-bottom:8px;">${cancelT.bankTitle}</p>
-                        <div style="margin-bottom:8px;">
-                            <label style="display:block; font-size:12px; color:${labelColor}; margin-bottom:2px;">${cancelT.bankName}</label>
-                            <input type="text" id="refund-bank-name" class="swal2-input" placeholder="BCA, Mandiri, BNI..." style="width:100%; margin:0; font-size:14px; background:${inputBg}; color:${inputColor}; border:1px solid ${inputBorder};">
+                    <!-- Bank account section -->
+                    <div style="text-align:left; font-size:11px; font-weight:800; letter-spacing:0.08em; color:${sectionLabelColor}; margin:0 0 12px; display:flex; align-items:center; gap:8px; text-transform:uppercase;">
+                        <i class="far fa-credit-card" style="font-size:14px;"></i>
+                        <span>{{ __("booking.js.refund_bank_section_title") }}</span>
+                    </div>
+                    <div style="text-align:left; margin-bottom:12px;">
+                        <label style="display:block; font-size:12px; color:${fieldLabelColor}; margin-bottom:6px; font-weight:500;">${cancelT.bankName}</label>
+                        <div style="position:relative;">
+                            <i class="fas fa-university" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:13px;"></i>
+                            <input id="refund-bank-name" type="text" placeholder="BCA, Mandiri, BNI..." class="swal-refund-input">
                         </div>
-                        <div style="margin-bottom:8px;">
-                            <label style="display:block; font-size:12px; color:${labelColor}; margin-bottom:2px;">${cancelT.accountNo}</label>
-                            <input type="text" id="refund-account-no" class="swal2-input" placeholder="1234567890" style="width:100%; margin:0; font-size:14px; background:${inputBg}; color:${inputColor}; border:1px solid ${inputBorder};">
+                    </div>
+                    <div style="text-align:left; margin-bottom:12px;">
+                        <label style="display:block; font-size:12px; color:${fieldLabelColor}; margin-bottom:6px; font-weight:500;">${cancelT.accountNo}</label>
+                        <div style="position:relative;">
+                            <i class="far fa-credit-card" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:13px;"></i>
+                            <input id="refund-account-no" type="text" placeholder="1234567890" class="swal-refund-input">
                         </div>
-                        <div>
-                            <label style="display:block; font-size:12px; color:${labelColor}; margin-bottom:2px;">${cancelT.accountHolder}</label>
-                            <input type="text" id="refund-account-holder" class="swal2-input" placeholder="" style="width:100%; margin:0; font-size:14px; background:${inputBg}; color:${inputColor}; border:1px solid ${inputBorder};">
+                    </div>
+                    <div style="text-align:left; margin-bottom:4px;">
+                        <label style="display:block; font-size:12px; color:${fieldLabelColor}; margin-bottom:6px; font-weight:500;">${cancelT.accountHolder}</label>
+                        <div style="position:relative;">
+                            <i class="far fa-user" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:13px;"></i>
+                            <input id="refund-account-holder" type="text" placeholder="Contoh: Budi Santoso" class="swal-refund-input">
                         </div>
                     </div>
                 `;
@@ -1987,15 +2073,15 @@
             breakdownHtml += '</div>';
 
             const confirmResult = await Swal.fire({
-                title: cancelT.title,
                 html: breakdownHtml,
-                icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: cancelT.yesRefund,
-                cancelButtonText: cancelT.no,
-                width: '500px',
+                showCloseButton: false,
+                reverseButtons: true,
+                confirmButtonText: '{{ __("booking.js.cancel_yes_refund_short") }}',
+                cancelButtonText: '{{ __("booking.js.cancel_back") }}',
+                buttonsStyling: false,
+                customClass: { popup: 'swal-cancel-popup' },
+                width: '460px',
                 ...swalDark,
                 preConfirm: () => {
                     if (refund.requires_bank_account) {

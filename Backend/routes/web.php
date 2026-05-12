@@ -123,6 +123,11 @@ Route::middleware(['auth', 'permission'])->group(function () {
     Route::post('/settings/content-management/taglines', [\App\Http\Controllers\ContentManagementController::class, 'taglineStore'])->name('content-management.taglines.store');
     Route::put('/settings/content-management/taglines/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineUpdate'])->name('content-management.taglines.update');
     Route::delete('/settings/content-management/taglines/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineDestroy'])->name('content-management.taglines.destroy');
+    // <!-- Tagline description CRUD — mirrors taglines, stored in m_tagline_desc -->
+    Route::get('/settings/content-management/tagline-descs', [\App\Http\Controllers\ContentManagementController::class, 'taglineDescList'])->name('content-management.tagline-descs.list');
+    Route::post('/settings/content-management/tagline-descs', [\App\Http\Controllers\ContentManagementController::class, 'taglineDescStore'])->name('content-management.tagline-descs.store');
+    Route::put('/settings/content-management/tagline-descs/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineDescUpdate'])->name('content-management.tagline-descs.update');
+    Route::delete('/settings/content-management/tagline-descs/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineDescDestroy'])->name('content-management.tagline-descs.destroy');
     Route::get('/settings/content-management/videos', [\App\Http\Controllers\ContentManagementController::class, 'videoList'])->name('content-management.videos.list');
     Route::post('/settings/content-management/videos', [\App\Http\Controllers\ContentManagementController::class, 'videoStore'])->name('content-management.videos.store');
     Route::post('/settings/content-management/videos/{id}/activate', [\App\Http\Controllers\ContentManagementController::class, 'videoActivate'])->name('content-management.videos.activate');

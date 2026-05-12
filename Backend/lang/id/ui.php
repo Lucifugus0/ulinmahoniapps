@@ -126,6 +126,13 @@ return [
     'no_videos' => 'Belum ada video yang diunggah.',
     'confirm_delete_tagline' => 'Apakah Anda yakin ingin menghapus tagline ini?',
     'confirm_delete_video' => 'Apakah Anda yakin ingin menghapus video ini?',
+    // <!-- Tagline Description CRUD keys -->
+    'tagline_desc_tab' => 'Deskripsi Tagline',
+    'add_tagline_desc' => 'Tambah Deskripsi Tagline',
+    'tagline_desc_placeholder' => 'Masukkan deskripsi tagline...',
+    'tagline_desc_text' => 'Teks Deskripsi',
+    'no_tagline_descs' => 'Belum ada deskripsi tagline. Tambahkan deskripsi pertama di atas.',
+    'confirm_delete_tagline_desc' => 'Apakah Anda yakin ingin menghapus deskripsi tagline ini?',
 
     // <!-- Footer & Legal CMS tab labels -->
     'footer_tab' => 'Footer',

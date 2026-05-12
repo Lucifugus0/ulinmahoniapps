@@ -56,6 +56,16 @@ class HomeController extends Controller {
         }
         $heroTagline = $taglineRow ? $taglineRow->tagline : __('homepage.hero.subtitle');
 
+        // <!-- Fetch random active tagline description from m_tagline_desc, fallback to translation key -->
+        // Mirrors the m_taglines fetch above; paired with the tagline on the hero section.
+        // Wrapped in try-catch: m_tagline_desc may not exist on local DB (imported from prod without migrations).
+        try {
+            $taglineDescRow = DB::table('m_tagline_desc')->where('status', 1)->inRandomOrder()->first();
+        } catch (\Exception $e) {
+            $taglineDescRow = null;
+        }
+        $heroDescription = $taglineDescRow ? $taglineDescRow->description : __('homepage.hero.description');
+
         // <!-- Fetch active hero video from database, fallback to default bundled video -->
         try {
             $activeVideo = DB::table('m_hero_videos')->where('status', 1)->first();
@@ -195,6 +205,8 @@ class HomeController extends Controller {
                 'hotels' => $propertyTypes['Hotel'],
                 'heroMedia' => $heroMedia,
                 'heroTagline' => $heroTagline,
+                // <!-- heroDescription pairs with heroTagline; sourced from m_tagline_desc -->
+                'heroDescription' => $heroDescription,
                 'promos' => $promos,
                 'propertyAreas' => $propertyAreas,
                 'nearbyProperties' => $nearbyProperties,
@@ -228,6 +240,8 @@ class HomeController extends Controller {
                 'hotels' => [],
                 'heroMedia' => $heroMedia,
                 'heroTagline' => $heroTagline,
+                // <!-- heroDescription pairs with heroTagline; sourced from m_tagline_desc -->
+                'heroDescription' => $heroDescription,
                 'promos' => $promos,
                 'propertyAreas' => [
                     'jakarta' => [],

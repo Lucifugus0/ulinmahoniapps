@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tagline;
+use App\Models\TaglineDesc;
 use App\Models\HeroVideo;
 use App\Models\FooterContent;
 use App\Models\FooterLink;
@@ -93,6 +94,72 @@ class ContentManagementController extends Controller
         $tagline->delete();
 
         return response()->json(['success' => true, 'message' => 'Tagline deleted successfully.']);
+    }
+
+    // ==================== TAGLINE DESCRIPTION METHODS ====================
+    // <!-- Tagline descriptions are paired with taglines on home pages; CRUD mirrors taglines exactly except the column is `description` (text) instead of `tagline` (varchar 255). -->
+
+    /** GET — return all tagline descriptions as JSON */
+    public function taglineDescList()
+    {
+        $descs = TaglineDesc::orderBy('created_at', 'desc')->get();
+        return response()->json(['success' => true, 'data' => $descs]);
+    }
+
+    /** POST — create a new tagline description */
+    public function taglineDescStore(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'description' => 'required|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $desc = TaglineDesc::create([
+            'description' => $request->description,
+            'status' => 1,
+            'created_by' => Auth::id(),
+            'updated_by' => Auth::id(),
+        ]);
+
+        return response()->json(['success' => true, 'data' => $desc, 'message' => 'Tagline description created successfully.']);
+    }
+
+    /** PUT — update an existing tagline description (text and/or status) */
+    public function taglineDescUpdate(Request $request, $id)
+    {
+        $desc = TaglineDesc::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'description' => 'sometimes|required|string|max:1000',
+            'status' => 'sometimes|in:0,1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        if ($request->has('description')) {
+            $desc->description = $request->description;
+        }
+        if ($request->has('status')) {
+            $desc->status = $request->status;
+        }
+        $desc->updated_by = Auth::id();
+        $desc->save();
+
+        return response()->json(['success' => true, 'data' => $desc, 'message' => 'Tagline description updated successfully.']);
+    }
+
+    /** DELETE — remove a tagline description */
+    public function taglineDescDestroy($id)
+    {
+        $desc = TaglineDesc::findOrFail($id);
+        $desc->delete();
+
+        return response()->json(['success' => true, 'message' => 'Tagline description deleted successfully.']);
     }
 
     // ==================== HERO VIDEO METHODS ====================

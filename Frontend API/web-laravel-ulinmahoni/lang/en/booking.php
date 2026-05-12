@@ -165,6 +165,9 @@ return [
         'monthly_booking' => 'Monthly Booking',
         // Cancel booking modal
         'cancel_title' => 'Cancel Booking?',
+        'cancel_subtitle' => 'Confirm the cancellation to start the refund process.',
+        'cancel_back' => 'Back',
+        'cancel_yes_refund_short' => 'Cancel & Refund',
         'cancel_confirm_text' => 'Are you sure you want to cancel booking',
         'cancel_yes' => 'Yes, Cancel',
         'cancel_no' => 'No',
@@ -186,6 +189,7 @@ return [
         'refund_days' => 'days',
         'refund_process_time' => 'Refund processing time: 14-30 business days',
         'refund_bank_title' => 'Payment via QRIS/VA — enter bank details:',
+        'refund_bank_section_title' => 'Refund Bank Account Details',
         'refund_bank_name' => 'Bank Name',
         'refund_account_no' => 'Account Number',
         'refund_account_holder' => 'Account Holder Name',

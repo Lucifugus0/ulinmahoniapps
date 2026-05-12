@@ -4,6 +4,7 @@ return [
     'hero' => [
         'title' => 'Selamat Datang di Ulin Mahoni',
         'subtitle' => 'Lingkungan yang aman dan harmonis',
+        'description' => 'Temukan kos, apartemen, dan villa impianmu dengan mudah, cepat, dan terpercaya.',
         'hashtag' => '#UlinMahoni',
     ],
 
