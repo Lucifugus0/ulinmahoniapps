@@ -1482,6 +1482,28 @@ class DokuServiceController extends ApiController
             }
         }
 
+        /**
+         * Restore the bundled-flow `t_parking` row that `ExpireBooking::handle`
+         * soft-deleted. Without this, a late DOKU payment would mark the booking
+         * paid but leave the customer without a parking slot — they'd need an
+         * admin to re-create the parking entry manually.
+         */
+        $parkingRestored = \Illuminate\Support\Facades\DB::table('t_parking')
+            ->where('order_id', $orderId)
+            ->whereNotNull('deleted_at')
+            ->update([
+                'status'     => 1,
+                'deleted_at' => null,
+                'updated_at' => now(),
+            ]);
+
+        if ($parkingRestored > 0) {
+            \Illuminate\Support\Facades\Log::info('Parking restored on late-payment recovery', [
+                'order_id'      => $orderId,
+                'rows_restored' => $parkingRestored,
+            ]);
+        }
+
         \Illuminate\Support\Facades\Log::warning('Late payment recovery: re-applied booking state after ExpireBooking rollback', [
             'order_id'   => $orderId,
             'room_id'    => $roomId,
