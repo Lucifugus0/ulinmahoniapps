@@ -39,6 +39,7 @@ class AvailabilityCheckNotifier extends Notifier<AvailabilityCheckState> {
     required String checkInDate,
     required String checkOutDate,
     bool isRenewal = false,
+    String bookingType = 'daily',
   }) async {
     state = state.copyWith(isRoomAvailable: const AsyncValue.loading());
 
@@ -50,6 +51,7 @@ class AvailabilityCheckNotifier extends Notifier<AvailabilityCheckState> {
       checkInDate: checkInDate,
       checkOutDate: checkOutDate,
       isRenewal: isRenewal,
+      bookingType: bookingType,
     );
 
     switch (result) {

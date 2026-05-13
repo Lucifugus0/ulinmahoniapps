@@ -395,6 +395,7 @@
     "renewBookingInfoMessage": "优惠券和付款方式可在下一页选择",
     "renewBookingContinueButton": "继续支付",
     "renewBookingRoomNumber": "房间号",
+    "renewBookingCutoffPassed": "续租窗口已关闭。日租续租须在退房当天中午 12:00 前完成,月租续租须在晚上 21:00 前完成。",
     "checkInDateLabel": "入住日期",
     "checkOutDateLabel": "退房日期",
     "selectDateHint": "选择日期",

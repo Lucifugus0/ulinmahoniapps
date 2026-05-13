@@ -196,7 +196,8 @@ return [
         // Renewal availability rules — see BookingController::renewBooking + bookings/index.blade.php
         'renewal_unavailable_title' => 'Renewal Unavailable',
         'renewal_window_too_early'  => 'Renewal opens 90 days before your check-out date. Please come back closer to your check-out date to extend your stay.',
-        'renewal_window_closed'     => 'The renewal window has closed. Renewals must be completed by 9:00 PM on your check-out date. Please contact our support team for assistance.',
+        'renewal_window_closed'     => 'The renewal window has closed. Daily renewals close at 12:00 PM and monthly renewals at 9:00 PM on your check-out date. Please contact our support team for assistance.',
         'renewal_max_15_months'     => 'The renewal would extend your stay beyond 15 months from today. Please choose a shorter renewal period.',
+        'renewal_max_60_days'       => 'Daily renewals can extend your stay by up to 60 days from today. Please choose a shorter renewal period.',
     ],
 ];

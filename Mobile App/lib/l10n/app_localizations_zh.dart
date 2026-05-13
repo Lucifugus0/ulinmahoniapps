@@ -1011,6 +1011,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get renewBookingRoomNumber => '房间号';
 
   @override
+  String get renewBookingCutoffPassed => '续租窗口已关闭。日租续租须在退房当天中午 12:00 前完成,月租续租须在晚上 21:00 前完成。';
+
+  @override
   String get checkInDateLabel => '入住日期';
 
   @override

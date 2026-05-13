@@ -397,6 +397,7 @@
     "renewBookingInfoMessage": "Voucher dan metode pembayaran dapat dipilih di halaman berikutnya",
     "renewBookingContinueButton": "Lanjutkan ke Pembayaran",
     "renewBookingRoomNumber": "No. Kamar",
+    "renewBookingCutoffPassed": "Periode perpanjangan sewa telah berakhir. Perpanjangan harian harus diselesaikan paling lambat pukul 12:00 dan perpanjangan bulanan pukul 21:00 pada tanggal check-out.",
     "checkInDateLabel": "Tanggal Masuk",
     "checkOutDateLabel": "Tanggal Keluar",
     "selectDateHint": "Pilih tanggal",

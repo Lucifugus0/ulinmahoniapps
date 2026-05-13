@@ -195,7 +195,8 @@ return [
         // Aturan jendela perpanjangan sewa — lihat BookingController::renewBooking + bookings/index.blade.php
         'renewal_unavailable_title' => 'Perpanjangan Tidak Tersedia',
         'renewal_window_too_early'  => 'Perpanjangan sewa dibuka 90 hari sebelum tanggal check-out Anda. Silakan kembali lebih dekat ke tanggal check-out untuk memperpanjang masa sewa Anda.',
-        'renewal_window_closed'     => 'Periode perpanjangan sewa telah berakhir. Perpanjangan harus diselesaikan paling lambat pukul 21:00 pada tanggal check-out. Silakan hubungi tim support kami untuk bantuan.',
+        'renewal_window_closed'     => 'Periode perpanjangan sewa telah berakhir. Perpanjangan harian harus diselesaikan paling lambat pukul 12:00 dan perpanjangan bulanan pukul 21:00 pada tanggal check-out. Silakan hubungi tim support kami untuk bantuan.',
         'renewal_max_15_months'     => 'Perpanjangan ini akan memperpanjang masa sewa Anda lebih dari 15 bulan dari hari ini. Silakan pilih durasi perpanjangan yang lebih pendek.',
+        'renewal_max_60_days'       => 'Perpanjangan sewa harian maksimal 60 hari dari hari ini. Silakan pilih durasi perpanjangan yang lebih pendek.',
     ],
 ];

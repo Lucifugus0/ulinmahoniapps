@@ -1338,14 +1338,16 @@
         const { orderId, roomId, bookingType, months, previousCheckOut, userId, userName, userPhone, userEmail, propertyId, propertyName, propertyType, roomName } = bookingData;
 
         // Renewal availability window — must be 0-90 days before check-out, with a
-        // hard cutoff at 21:00 on the check-out day itself. Block early & with
-        // localised message rather than open the modal then fail at submit.
+        // type-specific hard cutoff on the check-out day: 12:00 WIB for daily
+        // (new guest arrives after noon checkout), 21:00 WIB for monthly. Block early
+        // and with localised message rather than open the modal then fail at submit.
         if (previousCheckOut) {
             const co = new Date(previousCheckOut + 'T12:00:00');
             const now = new Date();
             const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const co0 = new Date(co.getFullYear(), co.getMonth(), co.getDate());
             const daysUntilCheckOut = Math.floor((co0 - today0) / 86400000);
+            const sameDayCutoffHour = bookingType === 'monthly' ? 21 : 12;
 
             if (daysUntilCheckOut > 90) {
                 Swal.fire({
@@ -1356,7 +1358,7 @@
                 });
                 return;
             }
-            if (daysUntilCheckOut < 0 || (daysUntilCheckOut === 0 && now.getHours() >= 21)) {
+            if (daysUntilCheckOut < 0 || (daysUntilCheckOut === 0 && now.getHours() >= sameDayCutoffHour)) {
                 Swal.fire({
                     icon: 'info',
                     title: '{{ __("booking.js.renewal_unavailable_title") }}',
@@ -1501,6 +1503,12 @@
 
             // Set minimum date for check-out (must be after check-in)
             document.getElementById('renew_check_out').min = previousCheckOut;
+            // Daily renewal: cap check_out at today + 60 days (max stay window).
+            // Monthly renewals don't use this input; the 15-month dropdown cap applies there.
+            const maxDailyCheckOut = new Date();
+            maxDailyCheckOut.setDate(maxDailyCheckOut.getDate() + 60);
+            document.getElementById('renew_check_out').max =
+                maxDailyCheckOut.toISOString().slice(0, 10);
 
             // Show appropriate fields
             toggleBookingTypeFields();
@@ -1692,6 +1700,22 @@
                     icon: 'error',
                     title: '{{ __("booking.js.invalid_dates") }}',
                     text: '{{ __("booking.js.invalid_dates_text") }}',
+                    confirmButtonColor: '#0d9488',
+                });
+                return;
+            }
+
+            // 60-day cap for daily renewals — defence-in-depth in case the date
+            // input's max attribute was tampered with. Mirrors the server validator.
+            const projectedCheckOut = new Date(checkOut + 'T12:00:00');
+            const maxDailyCheckOut = new Date();
+            maxDailyCheckOut.setDate(maxDailyCheckOut.getDate() + 60);
+            maxDailyCheckOut.setHours(23, 59, 59, 999);
+            if (projectedCheckOut > maxDailyCheckOut) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '{{ __("booking.js.renewal_unavailable_title") }}',
+                    text: '{{ __("booking.js.renewal_max_60_days") }}',
                     confirmButtonColor: '#0d9488',
                 });
                 return;

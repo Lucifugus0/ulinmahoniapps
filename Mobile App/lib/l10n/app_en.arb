@@ -397,6 +397,7 @@
     "renewBookingInfoMessage": "Voucher and payment method can be selected on the next page",
     "renewBookingContinueButton": "Continue to Payment",
     "renewBookingRoomNumber": "Room No.",
+    "renewBookingCutoffPassed": "The renewal window has closed. Daily renewals must be completed by 12:00 PM and monthly renewals by 9:00 PM on your check-out date.",
     "checkInDateLabel": "Check-in Date",
     "checkOutDateLabel": "Check-out Date",
     "selectDateHint": "Select a date",

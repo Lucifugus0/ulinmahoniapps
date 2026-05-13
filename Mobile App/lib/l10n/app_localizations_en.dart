@@ -1051,6 +1051,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get renewBookingRoomNumber => 'Room No.';
 
   @override
+  String get renewBookingCutoffPassed => 'The renewal window has closed. Daily renewals must be completed by 12:00 PM and monthly renewals by 9:00 PM on your check-out date.';
+
+  @override
   String get checkInDateLabel => 'Check-in Date';
 
   @override
