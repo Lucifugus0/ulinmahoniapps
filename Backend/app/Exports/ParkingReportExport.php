@@ -23,8 +23,12 @@ class ParkingReportExport
     {
         $payments = $this->getPayments();
 
+        // Total revenue = sum of (per-month rate × parking_duration). `fee_amount` is
+        // stored as the per-month rate; without the multiplier, multi-month rentals
+        // under-report on the summary line.
         $totalRevenue = $payments->sum(function ($transaction) {
-            return $transaction->fee_amount ?? 0;
+            return ((float) ($transaction->fee_amount ?? 0))
+                * max(1, (int) ($transaction->parking_duration ?? 1));
         });
 
         $excel = new ExcelService();
@@ -267,7 +271,12 @@ class ParkingReportExport
             $transaction->user_phone ?? '-',
             ucfirst($transaction->parking_type ?? '-'),
             $transaction->vehicle_plate ?? '-',
-            round($transaction->fee_amount ?? 0, 0),
+            // Fee = per-month rate × parking_duration (same as controller — see comment there).
+            round(
+                ((float) ($transaction->fee_amount ?? 0))
+                    * max(1, (int) ($transaction->parking_duration ?? 1)),
+                0
+            ),
             // Column meanings (after 2026-05-07 swap, mirrors controller):
             //   Transaction Date column ← paid_at (server clock when row was recorded)
             //   Payment Date column     ← transaction_date (admin-keyed actual money date)

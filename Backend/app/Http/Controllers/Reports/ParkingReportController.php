@@ -119,7 +119,15 @@ class ParkingReportController extends Controller
                 'phone' => $transaction->user_phone ?? '-',
                 'parking_type' => ucfirst($transaction->parking_type ?? '-'),
                 'vehicle_plate' => $transaction->vehicle_plate ?? '-',
-                'fee_amount' => 'Rp ' . number_format($transaction->fee_amount ?? 0, 0, ',', '.'),
+                // Fee Amount = rate-per-month × parking_duration. `fee_amount` is stored
+                // as the per-month rate (matches m_parking_fee.fee); the report needs to
+                // show the total the customer paid for the full rental period.
+                'fee_amount' => 'Rp ' . number_format(
+                    ((float) ($transaction->fee_amount ?? 0)) * max(1, (int) ($transaction->parking_duration ?? 1)),
+                    0,
+                    ',',
+                    '.'
+                ),
                 // Column meanings (after 2026-05-07 swap):
                 //   Transaction Date column ← paid_at (server clock when row was recorded)
                 //   Payment Date column     ← transaction_date (admin-keyed actual money date)
