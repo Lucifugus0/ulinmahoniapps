@@ -72,14 +72,11 @@ class InvoiceNumberService
             return null;
         }
 
-        // Cutoff guard still operates on paid_at (defines when this numbering system started).
+        // Need paid_at present — it is the universal fallback when transaction_date is missing.
         if (empty($transaction->paid_at)) {
             return null;
         }
         $paidAt = Carbon::parse($transaction->paid_at);
-        if ($paidAt->lt(Carbon::parse(self::CUTOFF_DATE))) {
-            return null;
-        }
 
         // The invoice number's year + roman month segments come from transaction_date
         // (the admin-keyed actual money-changed-hands date), so back-dated payments produce
@@ -88,6 +85,19 @@ class InvoiceNumberService
         $invoiceDate = !empty($transaction->transaction_date)
             ? Carbon::parse($transaction->transaction_date)
             : $paidAt;
+
+        // Cutoff guard.
+        // - Bookings + deposits: paid_at >= 2026-03-01 (when numbering went live in the system).
+        // - Parking (add-on):   transaction_date >= 2026-03-01 (admin-keyed money date).
+        //   Rationale: admins routinely backfill standalone parking entries weeks after the
+        //   service was rendered. Using paid_at as the cutoff lets a row paid in March but
+        //   covering a January period acquire a Jan-stamped invoice (e.g. 0002/.../I/2026),
+        //   which contradicts the rule "add-on parking invoices start from 01 March 2026".
+        //   transaction_date (with paid_at fallback) is the authoritative period anchor.
+        $cutoffDate = ($transaction instanceof ParkingFeeTransaction) ? $invoiceDate : $paidAt;
+        if ($cutoffDate->lt(Carbon::parse(self::CUTOFF_DATE))) {
+            return null;
+        }
 
         // Resolve property. Deposit transactions belong to a booking via order_id,
         // so fall back to the linked booking Transaction's property_id for deposits.
