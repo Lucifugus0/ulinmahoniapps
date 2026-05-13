@@ -230,8 +230,12 @@ class BackfillInvoiceNumbers extends Command
      */
     protected function backfillParking($properties, bool $dryRun, bool $includeAll = false, bool $freshCounters = false): int
     {
+        // Filter on status = 1 so soft-deleted duplicate rows (status = 0, created by the
+        // 2026-05-13 dedup migration) never get renumbered — re-numbering them would
+        // re-introduce the duplicate invoice_id collisions the migration just cleaned up.
         $query = ParkingFeeTransaction::whereNotNull('paid_at')
             ->where('paid_at', '>=', self::CUTOFF)
+            ->where('status', 1)
             ->whereIn('property_id', $properties->keys());
         if (!$includeAll) {
             $query->whereNull('invoice_id');
