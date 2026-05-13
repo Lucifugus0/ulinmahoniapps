@@ -286,6 +286,33 @@ class ParkingPaymentController extends Controller
                 }
             }
 
+            /**
+             * Idempotency guard against admin double-submit.
+             *
+             * Locks any existing active row that matches (order_id, vehicle_plate, start_rent)
+             * with `SELECT ... FOR UPDATE` so a parallel request waits here instead of
+             * inserting a second row. Combined with the unique index added in migration
+             * `2026_05_13_100001_add_dedup_unique_to_t_parking_fee_transaction.php`, this
+             * makes the create endpoint safe against accidental retries / duplicate clicks.
+             */
+            $duplicateActive = DB::table('t_parking_fee_transaction')
+                ->where('order_id', $request->order_id)
+                ->where('vehicle_plate', strtoupper($request->vehicle_plate))
+                ->whereDate('start_rent', $startRent->toDateString())
+                ->where('status', 1)
+                ->lockForUpdate()
+                ->first();
+
+            if ($duplicateActive) {
+                throw new \Exception(
+                    "Pembayaran parkir untuk order {$request->order_id} kendaraan " .
+                    strtoupper($request->vehicle_plate) .
+                    " mulai {$startRent->format('d M Y')} sudah pernah dicatat (invoice " .
+                    ($duplicateActive->invoice_id ?: '#' . $duplicateActive->idrec) .
+                    "). Tidak perlu submit ulang."
+                );
+            }
+
             // Check if this order already has a parking transaction for the same vehicle plate
             $existingActiveParking = ParkingFeeTransaction::where('order_id', $request->order_id)
                 ->where('vehicle_plate', strtoupper($request->vehicle_plate))

@@ -372,7 +372,12 @@ Route::middleware(['auth', 'permission'])->group(function () {
         /* Accept both GET (pagination links) and POST (AJAX filter) */
         Route::match(['get', 'post'], '/parking/filter', [ParkingPaymentController::class, 'filter'])->name('admin.parking-payments.filter');
         Route::get('/parking/checked-in-orders', [ParkingPaymentController::class, 'getCheckedInOrders'])->name('admin.parking-payments.checked-in-orders');
-        Route::post('/parking/store', [ParkingPaymentController::class, 'store'])->name('admin.parking-payments.store');
+        // Throttled to 6 req/min/IP — defense-in-depth against admin double-submit
+        // (server-side dedup guard + unique index in `t_parking_fee_transaction` are
+        // the real protection; this just keeps a runaway click out of the controller).
+        Route::post('/parking/store', [ParkingPaymentController::class, 'store'])
+            ->middleware('throttle:6,1')
+            ->name('admin.parking-payments.store');
         Route::post('/parking/approve/{id}', [ParkingPaymentController::class, 'approve'])->name('admin.parking-payments.approve');
         Route::post('/parking/reject/{id}', [ParkingPaymentController::class, 'reject'])->name('admin.parking-payments.reject');
         Route::post('/parking/checkout/{id}', [ParkingPaymentController::class, 'checkout'])->name('admin.parking-payments.checkout');

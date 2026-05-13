@@ -104,6 +104,36 @@ class ExpireBooking implements ShouldQueue
                 ]);
             }
 
+            /**
+             * Soft-delete the bundled-flow `t_parking` row tied to this order.
+             *
+             * Bundled booking + parking inserts a `t_parking` row at booking creation
+             * time (`BookingController::updatePaymentMethod`). Before this guard the
+             * row stayed in the DB as if the slot were occupied even after the
+             * booking expired — orphan rows could survive until `parking:deactivate-expired`
+             * eventually flipped status when `end_rent < CURDATE()` (potentially a
+             * month later for monthly parking). Soft-delete (`deleted_at = NOW()`) makes
+             * the slot release atomically with the transaction expiry.
+             *
+             * Only un-deleted rows are touched; if a late DOKU payment arrives later,
+             * `DokuServiceController::recoverExpiredBookingState` will restore the row.
+             */
+            $parkingRolledBack = DB::table('t_parking')
+                ->where('order_id', $this->orderId)
+                ->whereNull('deleted_at')
+                ->update([
+                    'status'     => 0,
+                    'deleted_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            if ($parkingRolledBack > 0) {
+                Log::info('Parking soft-deleted on booking expiry', [
+                    'order_id'          => $this->orderId,
+                    'rows_soft_deleted' => $parkingRolledBack,
+                ]);
+            }
+
             // Restore voucher usage count if voucher was used
             if ($transaction->voucher_id) {
                 $voucher = \App\Models\Voucher::find($transaction->voucher_id);

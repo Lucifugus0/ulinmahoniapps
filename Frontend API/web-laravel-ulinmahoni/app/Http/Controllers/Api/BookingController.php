@@ -3560,6 +3560,30 @@ class BookingController extends ApiController
                 $this->decrementParkingQuota($transaction->property_id, $transaction->parking_type);
             }
 
+            /**
+             * Soft-delete the bundled-flow `t_parking` row tied to this order.
+             *
+             * Mirrors `ExpireBooking::handle`. Previously only the quota counter was
+             * decremented; the actual `t_parking` row stayed active and only the daily
+             * `parking:deactivate-expired` cron would eventually flip it. Soft-deleting
+             * here releases the slot in lockstep with the cancellation.
+             */
+            $parkingRolledBack = DB::table('t_parking')
+                ->where('order_id', $order_id)
+                ->whereNull('deleted_at')
+                ->update([
+                    'status'     => 0,
+                    'deleted_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            if ($parkingRolledBack > 0) {
+                Log::info('Parking soft-deleted on booking cancellation', [
+                    'order_id'          => $order_id,
+                    'rows_soft_deleted' => $parkingRolledBack,
+                ]);
+            }
+
             // Update payment status
             DB::table('t_payment')
                 ->where('order_id', $order_id)
