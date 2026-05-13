@@ -65,6 +65,13 @@ class InvoiceNumberService
             return null;
         }
 
+        // Must be active (status = 1). A soft-deleted parking-fee row (status = 0,
+        // created by the 2026-05-13 dedup migration) must never re-acquire a number
+        // even if some downstream code path calls assign() on it.
+        if (isset($transaction->status) && (int) $transaction->status !== 1) {
+            return null;
+        }
+
         // Cutoff guard still operates on paid_at (defines when this numbering system started).
         if (empty($transaction->paid_at)) {
             return null;
