@@ -117,10 +117,12 @@ class BackfillInvoiceNumbers extends Command
             ->where('paid_at', '>=', self::CUTOFF)
             ->count();
 
-        $parkingCount = ParkingFeeTransaction::whereNotNull('invoice_id')
-            ->whereNotNull('paid_at')
-            ->where('paid_at', '>=', self::CUTOFF)
-            ->count();
+        // Parking wipe is intentionally broader than the booking wipe: we clear ALL parking
+        // rows that currently carry an invoice_id, not just those with paid_at >= cutoff.
+        // The new parking eligibility rule (transaction_date >= cutoff) may exclude rows
+        // that were numbered under the OLD rule (paid_at >= cutoff but transaction_date < cutoff),
+        // so the wipe has to catch them too — otherwise they'd keep stale numbers post-reset.
+        $parkingCount = ParkingFeeTransaction::whereNotNull('invoice_id')->count();
 
         $this->line("    Booking rows to clear: {$bookingCount}");
         $this->line("    Parking rows to clear: {$parkingCount}");
@@ -142,9 +144,8 @@ class BackfillInvoiceNumbers extends Command
             ->where('paid_at', '>=', self::CUTOFF)
             ->update(['invoice_number' => null, 'updated_at' => now()]);
 
+        // Parking wipe: clear EVERY row with invoice_id (see scope comment above).
         ParkingFeeTransaction::whereNotNull('invoice_id')
-            ->whereNotNull('paid_at')
-            ->where('paid_at', '>=', self::CUTOFF)
             ->update(['invoice_id' => null, 'updated_at' => now()]);
 
         DB::table('m_invoice_sequences')->whereIn('invoice_code', $allKeys)->delete();
@@ -233,8 +234,22 @@ class BackfillInvoiceNumbers extends Command
         // Filter on status = 1 so soft-deleted duplicate rows (status = 0, created by the
         // 2026-05-13 dedup migration) never get renumbered — re-numbering them would
         // re-introduce the duplicate invoice_id collisions the migration just cleaned up.
-        $query = ParkingFeeTransaction::whereNotNull('paid_at')
-            ->where('paid_at', '>=', self::CUTOFF)
+        //
+        // Walk both 'paid' (active rentals) and 'completed' (rentals whose period has ended)
+        // transaction_status values. Both represent money-was-received historical rows that
+        // belong in the invoice sequence. The runtime path (`InvoiceNumberService::assign`)
+        // still only assigns on 'paid' — assignment happens at payment time; the transition
+        // to 'completed' happens later by which point the number is already set.
+        //
+        // Eligibility cutoff for add-on parking uses COALESCE(transaction_date, paid_at)
+        // (not paid_at like bookings/deposits). Admins routinely back-date parking entries
+        // weeks after the actual money date, so paid_at would qualify rows that legitimately
+        // belong to a pre-cutoff period (e.g. a Jan-period parking entered in March).
+        // Per the rule "add-on parking invoices start from 01 March 2026", we anchor on
+        // transaction_date and only fall back to paid_at when transaction_date is null.
+        $query = ParkingFeeTransaction::whereIn('transaction_status', ['paid', 'completed'])
+            ->whereNotNull('paid_at')
+            ->whereRaw('COALESCE(transaction_date, DATE(paid_at)) >= ?', [substr(self::CUTOFF, 0, 10)])
             ->where('status', 1)
             ->whereIn('property_id', $properties->keys());
         if (!$includeAll) {
