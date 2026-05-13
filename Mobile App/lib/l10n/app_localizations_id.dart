@@ -1055,6 +1055,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get renewBookingRoomNumber => 'No. Kamar';
 
   @override
+  String get renewBookingCutoffPassed => 'Periode perpanjangan sewa telah berakhir. Perpanjangan harian harus diselesaikan paling lambat pukul 12:00 dan perpanjangan bulanan pukul 21:00 pada tanggal check-out.';
+
+  @override
   String get checkInDateLabel => 'Tanggal Masuk';
 
   @override

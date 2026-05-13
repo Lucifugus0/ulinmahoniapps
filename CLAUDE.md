@@ -133,12 +133,25 @@ All 5 pricing categories are required at daily room creation: `weekday_price`, `
 
 ### Booking Constraints
 
+**New bookings** — caps on the *check-in* date selected at booking time.
+
 | | Max Check-in Date | Max Stay Duration |
 |---|---|---|
 | **Daily** | 90 days from today | 60 days |
 | **Monthly** | 14 days from today | 12 months |
 
-These limits are enforced in both Frontend API (web datepicker) and Mobile App (date picker + duration stepper).
+**Renewals** — caps on the *new check-out* date (since check-in is locked to the previous booking's check-out).
+
+| | Max New Check-out | Cumulative Cap |
+|---|---|---|
+| **Daily** | today + 60 days | — |
+| **Monthly** | (no cap from today) | today + 15 months (chain) |
+
+**Renewal window guards** — apply to both daily and monthly:
+- Renewal modal opens only if `daysUntilCheckOut ≤ 90` ("too early to renew" block)
+- **Same-day cutoff** on check-out day itself: **12:00 WIB for daily** (new guest arrives after noon checkout), **21:00 WIB for monthly**
+
+All caps are enforced server-side in `Api/BookingController::checkAvailability` and `renewBooking`, and mirrored client-side in the web modal (`bookings/index.blade.php`) and mobile dialog (`renew_booking_dialog.dart` + cutoff check in `mybookingdetails_page.dart`).
 
 ### Booking Flow
 

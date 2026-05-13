@@ -95,9 +95,26 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
       checkInDate: DateFormat('yyyy-MM-dd').format(_checkInDate!),
       checkOutDate: DateFormat('yyyy-MM-dd').format(checkOut),
       isRenewal: true,
+      // Pass booking_type so server applies daily-renewal 60d check_out cap
+      // (monthly renewals: no date cap on the server side either).
+      bookingType: _rentType,
     );
     // Also fetch price breakdown for daily bookings
     if (_rentType == 'daily') _fetchPriceBreakdown();
+  }
+
+  /// Daily renewal cap: check_out must be ≤ today + 60 days. Returns the highest
+  /// _duration the user can pick before exceeding the cap. Monthly is uncapped here
+  /// (months stepper has its own 12-month cap and server 15-month chain cap).
+  int _maxDailyDuration() {
+    if (_checkInDate == null) return 60;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final maxCheckOut = today.add(const Duration(days: 60));
+    // Duration days = maxCheckOut - _checkInDate. Floor at 1 so the button can stay enabled
+    // when check-in is at or beyond the 60-day window (server will then reject anyway).
+    final diff = maxCheckOut.difference(_checkInDate!).inDays;
+    return diff < 1 ? 1 : diff;
   }
 
   /// Fetch per-date price breakdown from price-preview API (daily bookings only)
@@ -410,16 +427,26 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                           ),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() => _duration++);
-                          _triggerAvailabilityCheck();
-                        },
-                        icon: const Icon(Icons.add),
-                        // Use primaryAdaptive for dark/light mode compatibility
-                        color: AppColors.primaryAdaptive(context),
-                        padding: const EdgeInsets.all(12),
-                      ),
+                      Builder(builder: (context) {
+                        // Daily: cap at today + 60d (max stay window). Monthly: no client cap
+                        // here — 12-month per-booking + 15-month chain caps live elsewhere.
+                        final canIncrement = _rentType == 'daily'
+                            ? _duration < _maxDailyDuration()
+                            : true;
+                        return IconButton(
+                          onPressed: canIncrement
+                              ? () {
+                                  setState(() => _duration++);
+                                  _triggerAvailabilityCheck();
+                                }
+                              : null,
+                          icon: const Icon(Icons.add),
+                          color: canIncrement
+                              ? AppColors.primaryAdaptive(context)
+                              : Colors.grey[400],
+                          padding: const EdgeInsets.all(12),
+                        );
+                      }),
                     ],
                   ),
                 ),

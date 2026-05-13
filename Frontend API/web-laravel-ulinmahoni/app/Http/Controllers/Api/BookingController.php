@@ -383,13 +383,35 @@ class BookingController extends ApiController
     }
     public function checkAvailability(Request $request)
     {
+        // Booking-type-aware date constraints:
+        //   New booking (is_renewal=0): check-in cap by type — 90d daily / 14d monthly.
+        //   Renewal (is_renewal=1):     no check-in cap. Daily renewal: check_out ≤ today+60d.
+        //                               Monthly renewal: no date cap at all.
+        $isRenewal   = $request->is_renewal == 1;
+        $bookingType = $request->booking_type ?? 'daily';
+
+        $checkInRules  = ['required', 'date', 'after_or_equal:today'];
+        $checkOutRules = ['required', 'date', 'after:check_in'];
+
+        if ($isRenewal) {
+            // Renewal: cap check_out at today+60d only for daily.
+            if ($bookingType === 'daily') {
+                $checkOutRules[] = 'before_or_equal:' . now()->addDays(60)->format('Y-m-d');
+            }
+        } else {
+            // New booking: cap check_in by type.
+            $checkInRules[] = $bookingType === 'monthly'
+                ? 'before_or_equal:' . now()->addDays(14)->format('Y-m-d')
+                : 'before_or_equal:' . now()->addDays(90)->format('Y-m-d');
+        }
+
         $validator = \Validator::make($request->all(), [
-            'property_id' => 'required|integer|exists:m_properties,idrec',
-            'room_id' => 'required|integer|exists:m_rooms,idrec',
-            // Daily: check-in max 90 days. Monthly: check-in max 14 days.
-            'check_in' => 'required|date|after_or_equal:today|before_or_equal:' . now()->addDays(90)->format('Y-m-d'),
-            'check_out' => 'required|date|after:check_in',
-            'is_renewal' => 'nullable|integer|in:0,1',
+            'property_id'  => 'required|integer|exists:m_properties,idrec',
+            'room_id'      => 'required|integer|exists:m_rooms,idrec',
+            'check_in'     => $checkInRules,
+            'check_out'    => $checkOutRules,
+            'is_renewal'   => 'nullable|integer|in:0,1',
+            'booking_type' => 'nullable|string|in:daily,monthly',
         ]);
 
         if ($validator->fails()) {
@@ -939,6 +961,13 @@ class BookingController extends ApiController
 
     public function renewBooking(Request $request, $orderId)
     {
+        // Daily renewal: check_out capped at today+60d. Monthly renewal: no date cap.
+        // (Monthly's separate 15-month cumulative cap is enforced below after chain-walking.)
+        $checkOutRules = ['required', 'date', 'after:check_in'];
+        if ($request->booking_type === 'daily') {
+            $checkOutRules[] = 'before_or_equal:' . now()->addDays(60)->format('Y-m-d');
+        }
+
         // Validate request - similar to store booking but with is_renewal
         $validator = Validator::make($request->all(), [
             // USER INFO
@@ -956,7 +985,7 @@ class BookingController extends ApiController
             // BOOKING TYPE
             'booking_type' => 'required|in:daily,monthly',
             'check_in' => 'required|date',
-            'check_out' => 'required|date|after:check_in',
+            'check_out' => $checkOutRules,
             // PRICING
             'daily_price' => 'nullable|numeric|min:0',
             'monthly_price' => 'nullable|numeric|min:0',
@@ -1047,13 +1076,15 @@ class BookingController extends ApiController
             }
 
             // Renewal availability window — must be 0-90 days before check-out, with a
-            // hard cutoff at 21:00 on the check-out day itself. Server-side mirror of
-            // the modal's pre-open guard so a tampered client request is still rejected.
+            // type-specific hard cutoff on the check-out day itself: 12:00 WIB for daily
+            // (new guest can arrive after noon checkout), 21:00 WIB for monthly. Server-side
+            // mirror of the modal's pre-open guard so a tampered client request is still rejected.
             if ($latestPaidCheckOut) {
                 $now = Carbon::now(config('app.timezone'));
                 $today0 = $now->copy()->startOfDay();
                 $coDate0 = Carbon::parse($latestPaidCheckOut)->startOfDay();
                 $daysUntilCheckOut = $today0->diffInDays($coDate0, false);
+                $sameDayCutoffHour = $request->booking_type === 'monthly' ? 21 : 12;
 
                 if ($daysUntilCheckOut > 90) {
                     return response()->json([
@@ -1061,7 +1092,7 @@ class BookingController extends ApiController
                         'message' => __('booking.js.renewal_window_too_early'),
                     ], 422);
                 }
-                if ($daysUntilCheckOut < 0 || ($daysUntilCheckOut === 0 && $now->hour >= 21)) {
+                if ($daysUntilCheckOut < 0 || ($daysUntilCheckOut === 0 && $now->hour >= $sameDayCutoffHour)) {
                     return response()->json([
                         'status'  => 'error',
                         'message' => __('booking.js.renewal_window_closed'),

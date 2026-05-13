@@ -1137,6 +1137,30 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 onPressed: () async {
                                                   AppLogger.d('Renew Booking button pressed', 'MYBOOKING-DETAIL');
 
+                                                  // Same-day renewal cutoff: 12:00 WIB for daily
+                                                  // (new guest arrives after noon checkout), 21:00 WIB
+                                                  // for monthly. Mirrors web modal pre-open guard +
+                                                  // server enforcement in Api/BookingController::renewBooking.
+                                                  if (bookingData.checkOut != null) {
+                                                    try {
+                                                      final coParsed = DateTime.parse(bookingData.checkOut!);
+                                                      final now = DateTime.now();
+                                                      final today0 = DateTime(now.year, now.month, now.day);
+                                                      final co0 = DateTime(coParsed.year, coParsed.month, coParsed.day);
+                                                      if (today0.isAtSameMomentAs(co0)) {
+                                                        final cutoffHour = bookingData.bookingType == 'monthly' ? 21 : 12;
+                                                        if (now.hour >= cutoffHour) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(content: Text(localizations.renewBookingCutoffPassed)),
+                                                          );
+                                                          return;
+                                                        }
+                                                      }
+                                                    } catch (e) {
+                                                      AppLogger.e('Error parsing checkout for cutoff check: $e', 'MYBOOKING-DETAIL');
+                                                    }
+                                                  }
+
                                                   // Show simple dialog to select dates
                                                   final result = await showDialog<Map<String, String>>(
                                                     context: context,

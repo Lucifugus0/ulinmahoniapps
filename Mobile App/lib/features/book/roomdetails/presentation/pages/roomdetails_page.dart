@@ -259,6 +259,7 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
     final property = roomState['propertyData'] as DetailPropertyModel?;
     final checkInDate = roomState['checkInDate'] as DateTime?;
     final checkOutDate = roomState['checkOutDate'] as DateTime?;
+    final rentType = roomState['rentType'] as String?;
     if (room != null && property != null && checkInDate != null && checkOutDate != null) {
       AppLogger.d('🔄 Memicu pengecekan ketersediaan...', 'ROOM-DETAILS');
       ref.read(availabilityCheckProvider.notifier).checkRoomAvailability(
@@ -266,6 +267,9 @@ class _RoomDetailsPageState extends ConsumerState<RoomDetailsPage> {
         roomId: room.id!,
         checkInDate: DateFormat('yyyy-MM-dd').format(checkInDate),
         checkOutDate: DateFormat('yyyy-MM-dd').format(checkOutDate),
+        // Pass rentType so the server applies type-specific new-booking check-in
+        // cap (daily ≤ today+90d / monthly ≤ today+14d). Falls back to 'daily'.
+        bookingType: rentType ?? 'daily',
       );
     }
   }

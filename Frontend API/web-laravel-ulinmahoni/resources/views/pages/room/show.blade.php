@@ -890,6 +890,9 @@
                         check_in: checkInDate,
                         check_out: checkOutDate,
                         period: rentType,
+                        // booking_type is what the server uses to pick the type-specific cap
+                        // (new daily ≤+90d / new monthly ≤+14d). period kept for backwards compat.
+                        booking_type: rentType,
                         ...(months !== undefined && { months })
                     });
                     // console.log('Request body:', requestBody);
