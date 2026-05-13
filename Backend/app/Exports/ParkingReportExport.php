@@ -213,7 +213,9 @@ class ParkingReportExport
                 'transaction.room',
                 'verifiedBy',
             ])
-            ->where('transaction_status', 'paid')
+            // Include both 'paid' and 'completed' to match the controller — see note in
+            // ParkingReportController::getData for rationale.
+            ->whereIn('transaction_status', ['paid', 'completed'])
             // Mirror the controller: order + filter by transaction_date so the export matches
             // the web view's Payment Date column.
             ->orderByDesc('transaction_date');

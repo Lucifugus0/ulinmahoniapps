@@ -55,7 +55,10 @@ class ParkingReportController extends Controller
                 'transaction.room',
                 'verifiedBy',
             ])
-            ->where('transaction_status', 'paid')
+            // Include both 'paid' (active rentals) and 'completed' (rentals whose period
+            // has ended) — both represent money-was-received historical rows and belong
+            // on the Parking Report. Mirrors the backfill walk in BackfillInvoiceNumbers.
+            ->whereIn('transaction_status', ['paid', 'completed'])
             // Order + filter by transaction_date so the list, the date filter, and the displayed
             // Payment Date column all agree (Payment Date column sources transaction_date below).
             ->orderByDesc('transaction_date');
