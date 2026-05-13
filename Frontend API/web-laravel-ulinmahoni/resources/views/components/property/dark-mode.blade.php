@@ -4,11 +4,11 @@
     html.dark .bg-white { background-color: #1f2937 !important; }
     html.dark .bg-gray-50 { background-color: #374151 !important; }
     html.dark .bg-gray-100 { background-color: #374151 !important; }
-    html.dark .text-gray-900 { color: #f3f4f6 !important; }
-    html.dark .text-gray-800 { color: #e5e7eb !important; }
-    html.dark .text-gray-700 { color: #d1d5db !important; }
-    html.dark .text-gray-600 { color: #d1d5db !important; }
-    html.dark .text-gray-500 { color: #9ca3af !important; }
+    html.dark .text-gray-900 { color: #ffffff !important; }
+    html.dark .text-gray-800 { color: #f9fafb !important; }
+    html.dark .text-gray-700 { color: #f3f4f6 !important; }
+    html.dark .text-gray-600 { color: #e5e7eb !important; }
+    html.dark .text-gray-500 { color: #d1d5db !important; }
     html.dark .border-gray-100 { border-color: #374151 !important; }
     html.dark .border-gray-200 { border-color: #4b5563 !important; }
     html.dark .border-gray-300 { border-color: #4b5563 !important; }

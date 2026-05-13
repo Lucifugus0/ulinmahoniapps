@@ -47,8 +47,11 @@
         html.dark #dailyBookingComponent h3,
         html.dark #monthlyBookingComponent h3,
         html.dark .text-gray-700 {
-            color: #d1d5db !important;
+            color: #f3f4f6 !important;
         }
+        html.dark .text-gray-800 { color: #f9fafb !important; }
+        html.dark .text-gray-500 { color: #d1d5db !important; }
+        html.dark .text-gray-400 { color: #9ca3af !important; }
         /* Hide scrollbar on thumbnail strip while keeping horizontal scroll */
         .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -107,10 +110,10 @@
             background-color: #1e293b !important;
         }
         html.dark .text-gray-900 {
-            color: #f3f4f6 !important;
+            color: #ffffff !important;
         }
         html.dark .text-gray-600 {
-            color: #9ca3af !important;
+            color: #e5e7eb !important;
         }
         /* Dark mode: price breakdown row hover */
         html.dark #priceBreakdownContainer .hover\:bg-gray-50:hover {
@@ -281,8 +284,8 @@
                             <!-- Room Title and Price -->
                             <div class="flex justify-between items-start mb-8">
                                 <div>
-                                    <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $room['no'] }} - {{ $room['name'] }}</h1>
-                                    <p class="text-gray-500 uppercase tracking-wide">{{ $room['type'] }}</p>
+                                    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">{{ $room['no'] }} - {{ $room['name'] }}</h1>
+                                    <p class="text-gray-700 dark:text-gray-200 font-semibold uppercase tracking-wide">{{ $room['type'] }}</p>
                                 </div>
                                 <div class="space-y-4 text-right">
                                 @if(!empty($room['price_original_daily']) && $room['price_original_daily'] > 0)
@@ -291,38 +294,38 @@
                                     @if(!empty($room['price_weekday']) && !empty($room['price_weekend']) && $room['price_weekday'] != $room['price_weekend'])
                                     <div class="flex items-baseline gap-3">
                                         <div>
-                                            <p class="text-2xl font-bold text-teal-600">Rp {{ number_format($room['price_weekday'], 0, ',', '.') }}</p>
-                                            <p class="text-xs text-gray-500">Weekday</p>
+                                            <p class="text-2xl font-extrabold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_weekday'], 0, ',', '.') }}</p>
+                                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Weekday</p>
                                         </div>
-                                        <span class="text-gray-300">|</span>
+                                        <span class="text-gray-400 dark:text-gray-500">|</span>
                                         <div>
-                                            <p class="text-2xl font-bold text-teal-600">Rp {{ number_format($room['price_weekend'], 0, ',', '.') }}</p>
-                                            <p class="text-xs text-gray-500">Weekend</p>
+                                            <p class="text-2xl font-extrabold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_weekend'], 0, ',', '.') }}</p>
+                                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Weekend</p>
                                         </div>
                                     </div>
                                     @if(!empty($room['has_seasonal_pricing']))
-                                    <p class="text-xs text-orange-500 mt-1"><i class="fas fa-info-circle mr-1"></i>Harga dapat berbeda pada hari libur & musim tertentu</p>
+                                    <p class="text-xs font-semibold text-orange-600 dark:text-orange-300 mt-1"><i class="fas fa-info-circle mr-1"></i>Harga dapat berbeda pada hari libur & musim tertentu</p>
                                     @endif
                                     @else
-                                    <p class="text-3xl font-bold text-teal-600">Rp {{ number_format($room['price_original_daily'], 0, ',', '.') }}</p>
+                                    <p class="text-3xl font-extrabold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_original_daily'], 0, ',', '.') }}</p>
                                     @endif
-                                    <p class="text-sm text-gray-500">{{ __('properties.room_detail.per_night') }}</p>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('properties.room_detail.per_night') }}</p>
                                 </div>
                                 @else
                                 <div class="mt-4">
-                                    <p class="text-3xl font-bold text-teal-600">{{ __('properties.room_detail.contact_us') }}</p>
-                                    <p class="text-sm text-gray-500">{{ __('properties.room_detail.for_price_night') }}</p>
+                                    <p class="text-3xl font-extrabold text-green-700 dark:text-green-400">{{ __('properties.room_detail.contact_us') }}</p>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('properties.room_detail.for_price_night') }}</p>
                                 </div>
                                 @endif
                                 @if(!empty($room['price_original_monthly']) && $room['price_original_monthly'] > 0)
                                 <div class="mt-4">
-                                    <p class="text-3xl font-bold text-teal-600">Rp {{ number_format($room['price_original_monthly'], 0, ',', '.') }}</p>
-                                    <p class="text-sm text-gray-500">{{ __('properties.room_detail.per_month') }}</p>
+                                    <p class="text-3xl font-extrabold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_original_monthly'], 0, ',', '.') }}</p>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('properties.room_detail.per_month') }}</p>
                                 </div>
                                 @else
                                 <div class="mt-4">
-                                    <p class="text-3xl font-bold text-teal-600">{{ __('properties.room_detail.contact_us') }}</p>
-                                    <p class="text-sm text-gray-500">{{ __('properties.room_detail.for_price_month') }}</p>
+                                    <p class="text-3xl font-extrabold text-green-700 dark:text-green-400">{{ __('properties.room_detail.contact_us') }}</p>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('properties.room_detail.for_price_month') }}</p>
                                 </div>
                                 @endif
                             </div>
@@ -331,16 +334,16 @@
                             <!-- Room Facilities -->
                             @if(!empty($room['facility']) && is_array($room['facility']) && count($room['facility']) > 0)
                             <div class="mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('properties.room_detail.room_facilities') }}</h2>
+                                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('properties.room_detail.room_facilities') }}</h2>
                                 <div class="grid grid-cols-2 gap-2">
                                     @foreach($room['facility'] as $facility)
                                         <div class="flex items-center space-x-2 py-1">
                                             @if(is_array($facility) && !empty($facility['icon']))
-                                                <span class="iconify text-teal-600 text-xl" data-icon="{{ $facility['icon'] }}"></span>
+                                                <span class="iconify text-green-700 dark:text-green-400 text-xl" data-icon="{{ $facility['icon'] }}"></span>
                                             @else
-                                                <i class="fas fa-check text-teal-600"></i>
+                                                <i class="fas fa-check text-green-700 dark:text-green-400"></i>
                                             @endif
-                                            <span class="text-gray-600">
+                                            <span class="text-gray-800 dark:text-gray-100 font-semibold">
                                                 @if(is_array($facility))
                                                     {{ strtoupper($facility['name'] ?? '') }}
                                                 @else
@@ -353,45 +356,45 @@
                             </div>
                             @else
                             <div class="mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('properties.room_detail.room_facilities') }}</h2>
-                                <p class="text-gray-500">{{ __('properties.room_detail.no_facilities_listed') }}</p>
+                                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('properties.room_detail.room_facilities') }}</h2>
+                                <p class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.room_detail.no_facilities_listed') }}</p>
                             </div>
                             @endif
 
                             <!-- Room Description -->
                             <div class="space-y-6">
                                 <div class="prose prose-lg max-w-none">
-                                    <h3 class="text-xl font-semibold text-gray-900 mb-4">{{ __('properties.room_detail.room_description') }}</h3>
+                                    <h3 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('properties.room_detail.room_description') }}</h3>
                                     <!-- Multi-language description with line break support -->
-                                    <div class="text-gray-600 leading-relaxed">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
+                                    <div class="text-gray-800 dark:text-gray-100 font-medium leading-relaxed">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
                                 </div>
                             </div>
 
                             <!-- Deposit & Parking Fees Info -->
                             @if(($room['property']['deposit_fee'] ?? 0) > 0 || !empty($room['property']['parking_fees']))
                             <div class="mt-8 mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('Biaya Tambahan') }}</h2>
+                                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('Biaya Tambahan') }}</h2>
                                 <div class="space-y-2">
                                     @if(($room['property']['deposit_fee'] ?? 0) > 0)
                                     <div class="flex items-center space-x-2 py-1">
-                                        <i class="fas fa-money-bill-wave text-teal-600"></i>
-                                        <span class="text-gray-600">Deposit: <span class="font-medium">Rp {{ number_format($room['property']['deposit_fee'], 0, ',', '.') }}</span></span>
+                                        <i class="fas fa-money-bill-wave text-green-700 dark:text-green-400"></i>
+                                        <span class="text-gray-800 dark:text-gray-100 font-medium">Deposit: <span class="font-bold">Rp {{ number_format($room['property']['deposit_fee'], 0, ',', '.') }}</span></span>
                                     </div>
                                     @endif
                                     @if(!empty($room['property']['parking_fees']))
                                         @foreach($room['property']['parking_fees'] as $parkingFee)
                                         <div class="flex items-center space-x-2 py-1">
                                             @if(strtolower($parkingFee['parking_type'] ?? '') == 'motor' || strtolower($parkingFee['parking_type'] ?? '') == 'motorcycle')
-                                                <i class="fas fa-bicycle text-teal-600"></i>
+                                                <i class="fas fa-bicycle text-green-700 dark:text-green-400"></i>
                                             @else
-                                                <i class="fas fa-car text-teal-600"></i>
+                                                <i class="fas fa-car text-green-700 dark:text-green-400"></i>
                                             @endif
-                                            <span class="text-gray-600">Parkir {{ $parkingFee['parking_type'] ?? '' }}: <span class="font-medium">Rp {{ number_format($parkingFee['fee'] ?? 0, 0, ',', '.') }}/bulan</span></span>
+                                            <span class="text-gray-800 dark:text-gray-100 font-medium">Parkir {{ $parkingFee['parking_type'] ?? '' }}: <span class="font-bold">Rp {{ number_format($parkingFee['fee'] ?? 0, 0, ',', '.') }}/bulan</span></span>
                                         </div>
                                         @endforeach
                                     @endif
                                 </div>
-                                <p class="text-xs text-gray-400 mt-3">*Biaya akan ditambahkan saat pembayaran</p>
+                                <p class="text-xs font-semibold text-gray-600 dark:text-gray-300 mt-3">*Biaya akan ditambahkan saat pembayaran</p>
                             </div>
                             @endif
                         </div>
@@ -405,8 +408,8 @@
                         <!-- Status and Price Summary -->
                         <div class="flex items-center justify-between mb-8">
                             <div>
-                                <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ __('properties.booking.book_room') }}</h2>
-                                <p class="text-gray-500">{{ __('properties.booking.fill_details') }}</p>
+                                <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">{{ __('properties.booking.book_room') }}</h2>
+                                <p class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.booking.fill_details') }}</p>
                             </div>
                             <div class="text-right">
                                 <!-- Room Status — green for available, gray for unavailable, with dark mode variants -->
@@ -514,7 +517,7 @@
                                 <div class="bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-gray-600 rounded-lg p-4">
                                     <div class="flex items-center mb-3">
                                         <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
-                                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">{{ __('properties.booking.daily_booking') }}</h3>
+                                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ __('properties.booking.daily_booking') }}</h3>
                                     </div>
 
                                     <!-- Check-in Date -->
@@ -546,7 +549,7 @@
                                 <div class="bg-purple-50 dark:bg-gray-700 border border-purple-200 dark:border-gray-600 rounded-lg p-4">
                                     <div class="flex items-center mb-3">
                                         <i class="fas fa-calendar-alt text-purple-600 mr-2"></i>
-                                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">{{ __('properties.booking.monthly_booking') }}</h3>
+                                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ __('properties.booking.monthly_booking') }}</h3>
                                     </div>
 
                                     {{-- Check-in (editable) + Check-out (read-only, computed) side by side.
@@ -648,52 +651,52 @@
                             
                             <!-- Price Summary -->
                             <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                                <h4 class="font-medium text-gray-900 mb-3">{{ __('properties.booking.total_price') }}</h4>
+                                <h4 class="font-bold text-gray-900 dark:text-white mb-3">{{ __('properties.booking.total_price') }}</h4>
                                 <div class="space-y-3 text-sm">
                                     <!-- Rate row — hidden for daily bookings, shown for monthly -->
                                     <div class="flex items-center justify-between" id="rateRow">
-                                        <span class="text-gray-600" id="rateTypeDisplay">{{ __('properties.booking.daily_rate') }}: </span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-medium" id="rateTypeDisplay">{{ __('properties.booking.daily_rate') }}: </span>
                                         <div class="text-right">
-                                            <div class="text-gray-900" id="rateDisplay">
+                                            <div class="text-gray-900 dark:text-white font-semibold" id="rateDisplay">
                                                 <!-- Daily Rate Display -->
                                                 <div id="dailyRateDisplay" class="hidden">
-                                                    <span class="text-black-600">Rp {{ number_format($room['price_original_daily'], 0, ',', '.') }}</span>
-                                                    <div class="text-xs text-gray-500 mt-1">{{ __('properties.room_detail.per_night') }}</div>
+                                                    <span class="font-bold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_original_daily'], 0, ',', '.') }}</span>
+                                                    <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mt-1">{{ __('properties.room_detail.per_night') }}</div>
                                                 </div>
                                                 <!-- Monthly Rate Display -->
                                                 <div id="monthlyRateDisplay" class="hidden">
-                                                    <span class="text-black-600">Rp {{ number_format($room['price_original_monthly'], 0, ',', '.') }}</span>
-                                                    <div class="text-xs text-gray-500 mt-1">{{ __('properties.room_detail.per_month') }}</div>
+                                                    <span class="font-bold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_original_monthly'], 0, ',', '.') }}</span>
+                                                    <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mt-1">{{ __('properties.room_detail.per_month') }}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">{{ __('properties.booking.duration_label') }} </span>
-                                        <span class="text-gray-900" id="durationDisplay">-</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.booking.duration_label') }} </span>
+                                        <span class="text-gray-900 dark:text-white font-semibold" id="durationDisplay">-</span>
                                     </div>
 
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">{{ __('properties.booking.room_total') }}</span>
-                                        <span class="text-gray-900" id="roomTotal">-</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.booking.room_total') }}</span>
+                                        <span class="text-gray-900 dark:text-white font-semibold" id="roomTotal">-</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">{{ __('properties.booking.service_fees') }} </span>
-                                        <span class="text-gray-900" id="serviceFeesDisplay">-</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.booking.service_fees') }} </span>
+                                        <span class="text-gray-900 dark:text-white font-semibold" id="serviceFeesDisplay">-</span>
                                     </div>
                                     {{-- <div class="flex justify-between">
                                         <span class="text-gray-600">Tax and Fees (20%): </span>
                                         <span class="text-gray-900" id="taxDisplay">-</span>
                                     </div> --}}
-                                    
+
                                     {{-- <div class="flex justify-between">
                                         <span class="text-gray-600">Admin Fee:</span>
                                         <span class="text-gray-900" id="adminFee">{{ number_format($room['admin_fees'], 0, ',', '.') }}</span>
                                     </div> --}}
-                                    
-                                    <div class="flex justify-between font-medium text-lg pt-3 border-t mt-3">
-                                        <span>{{ __('properties.booking.total') }}</span>
-                                        <span class="text-teal-600" id="grandTotal">-</span>
+
+                                    <div class="flex justify-between font-bold text-lg pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
+                                        <span class="text-gray-900 dark:text-white">{{ __('properties.booking.total') }}</span>
+                                        <span class="text-green-700 dark:text-green-400" id="grandTotal">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -710,14 +713,14 @@
                                                 class="w-4 h-4 text-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-teal-500 focus:ring-2">
                                         </div>
                                         <div class="ml-3 text-sm">
-                                            <label for="agreementCheckbox" class="text-gray-700">
+                                            <label for="agreementCheckbox" class="text-gray-800 dark:text-gray-100 font-medium">
                                                 {{-- :terms_link / :privacy_link / :rental_link are substituted with anchor tags
                                                      pointing to the legal pages. {!! !!} is required so the HTML renders;
                                                      route() returns trusted URLs and link text is e()-escaped. --}}
                                                 {!! __('properties.booking.rental_agreement', [
-                                                    'terms_link'   => '<a href="' . route('terms-of-services') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.terms_link_text')) . '</a>',
-                                                    'privacy_link' => '<a href="' . route('privacy-policy') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.privacy_link_text')) . '</a>',
-                                                    'rental_link'  => '<a href="' . route('rental-agreement') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.rental_link_text')) . '</a>',
+                                                    'terms_link'   => '<a href="' . route('terms-of-services') . '" target="_blank" rel="noopener" class="text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-semibold underline">' . e(__('properties.booking.terms_link_text')) . '</a>',
+                                                    'privacy_link' => '<a href="' . route('privacy-policy') . '" target="_blank" rel="noopener" class="text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-semibold underline">' . e(__('properties.booking.privacy_link_text')) . '</a>',
+                                                    'rental_link'  => '<a href="' . route('rental-agreement') . '" target="_blank" rel="noopener" class="text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-semibold underline">' . e(__('properties.booking.rental_link_text')) . '</a>',
                                                 ]) !!}
                                             </label>
                                         </div>

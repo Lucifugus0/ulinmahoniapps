@@ -286,23 +286,23 @@
                     <!-- Left Column - Property Info -->
                     <div class="lg:w-1/2">
                         <div class="mb-6">
-                            <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $house['name'] }}</h1>
+                            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">{{ $house['name'] }}</h1>
                             @if(!empty($house['gender']))
-                            <p class="text-gray-500 text-sm mb-1"><i class="fas fa-venus-mars mr-1"></i>{{ __('properties.gender.' . strtolower($house['gender']), ['default' => $house['gender']]) }}</p>
+                            <p class="text-gray-700 dark:text-gray-200 text-sm font-semibold mb-1"><i class="fas fa-venus-mars mr-1"></i>{{ __('properties.gender.' . strtolower($house['gender']), ['default' => $house['gender']]) }}</p>
                             @endif
-                            <p class="text-gray-600 mb-1">{{ $house['location'] }}</p>
-                            <p class="text-gray-500 text-sm">{{ $house['distance'] }}</p>
+                            <p class="text-gray-800 dark:text-gray-100 font-semibold mb-1">{{ $house['location'] }}</p>
+                            <p class="text-gray-700 dark:text-gray-200 text-sm font-medium">{{ $house['distance'] }}</p>
                         </div>
 
                         <!-- Features/Promotions -->
                         <div class="mb-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-3">{{ __('properties.sections.facilities') }}</h3>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">{{ __('properties.sections.facilities') }}</h3>
                             <div class="flex flex-wrap gap-2">
                                 @if(!empty($house['facility']))
                                     @foreach($house['facility'] as $facility)
-                                        <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm text-gray-700">
+                                        <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
                                             @if(!empty($facility['icon']))
-                                                <span class="iconify mr-1.5 text-teal-600" data-icon="{{ $facility['icon'] }}"></span>
+                                                <span class="iconify mr-1.5 text-teal-600 dark:text-teal-400" data-icon="{{ $facility['icon'] }}"></span>
                                             @endif
                                             {{ $facility['name'] }}
                                         </span>
@@ -334,16 +334,16 @@
                                             <i class="fas {{ $icon }} {{ $isFull ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400' }}"></i>
                                         </div>
                                         <div>
-                                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $label }}</div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">Rp {{ number_format($fee, 0, ',', '.') }}/month</div>
+                                            <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $label }}</div>
+                                            <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">Rp {{ number_format($fee, 0, ',', '.') }}/month</div>
                                         </div>
                                     </div>
                                     <div class="text-right">
                                         @if($isFull)
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Full</span>
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200">Full</span>
                                         @else
-                                            <span class="text-lg font-bold {{ $available <= 3 ? 'text-orange-600' : 'text-teal-600 dark:text-teal-400' }}">{{ $available }}</span>
-                                            <span class="text-xs text-gray-500 dark:text-gray-400">/{{ $total }} available</span>
+                                            <span class="text-lg font-extrabold {{ $available <= 3 ? 'text-orange-600 dark:text-orange-400' : 'text-teal-700 dark:text-teal-300' }}">{{ $available }}</span>
+                                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">/{{ $total }} available</span>
                                         @endif
                                     </div>
                                 </div>
@@ -354,9 +354,9 @@
 
                         <!-- About Property (below parking) -->
                         <div class="mt-8">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{{ __('properties.sections.about_property') }}</h3>
+                            <h3 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('properties.sections.about_property') }}</h3>
                             <div class="prose max-w-none">
-                                <div class="text-gray-600 dark:text-gray-300">
+                                <div class="text-gray-800 dark:text-gray-100 font-medium leading-relaxed">
                                     {!! \App\Helpers\DescriptionHelper::getHtml($house['description'] ?? '', app()->getLocale()) !!}
                                 </div>
                             </div>
@@ -365,7 +365,7 @@
 
                     <!-- Right Column - Price Section -->
                     <div class="lg:w-1/2 lg:border-l lg:pl-8 lg:border-gray-200 dark:lg:border-gray-700">
-                        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">{{ __('properties.sections.rental_price') }}</h3>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">{{ __('properties.sections.rental_price') }}</h3>
 
                         @php
                             $hasDailyPrice = !empty($house['price_original_daily']) && $house['price_original_daily'] > 0;
@@ -384,15 +384,15 @@
                             @if($hasDailyPrice)
                             <!-- Daily Price -->
                             <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4">
-                                <p class="text-base text-gray-500 dark:text-gray-400 mb-1">
+                                <p class="text-base font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     <i class="far fa-calendar mr-2"></i>{{ __('properties.price_info.daily') }}
                                 </p>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-baseline">
-                                        <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        <span class="text-2xl font-extrabold text-green-700 dark:text-green-400">
                                             Rp{{ number_format($house['price_original_daily'], 0, ',', '.') }}
                                         </span>
-                                        <span class="text-gray-500 dark:text-gray-400 ml-2">{{ __('properties.price_info.per_night') }}</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-semibold ml-2">{{ __('properties.price_info.per_night') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -401,22 +401,22 @@
                             @if($hasMonthlyPrice)
                             <!-- Monthly Price -->
                             <div class="{{ $hasDailyPrice ? 'mt-4' : '' }} bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 p-4 rounded-lg">
-                                <p class="text-base text-gray-600 dark:text-gray-300 mb-1">
+                                <p class="text-base font-semibold text-gray-700 dark:text-gray-100 mb-1">
                                     <i class="far fa-calendar-alt mr-2"></i>{{ __('properties.price_info.monthly') }}
                                 </p>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-baseline">
-                                        <span class="text-2xl font-bold text-teal-700 dark:text-teal-400">
+                                        <span class="text-2xl font-extrabold text-green-700 dark:text-green-400">
                                             Rp{{ number_format($house['price_original_monthly'], 0, ',', '.') }}
                                         </span>
-                                        <span class="text-gray-500 dark:text-gray-400 ml-2">{{ __('properties.price_info.per_month_full') }}</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-semibold ml-2">{{ __('properties.price_info.per_month_full') }}</span>
                                     </div>
                                 </div>
                             </div>
                             @endif
 
                             <!-- Additional Info -->
-                            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                            <div class="mt-4 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 <p class="flex items-center">
                                     <i class="fas fa-info-circle mr-2 text-teal-600 dark:text-teal-400"></i>
                                     {{ __('properties.price_info.includes_tax') }}
@@ -424,7 +424,7 @@
                             </div>
                             <!-- Payment Methods from CMS -->
                             @if(isset($footerPayments) && $footerPayments->count() > 0)
-                                <p class="mt-3 text-xs text-gray-500 dark:text-gray-400 font-medium">{{ __('properties.price_info.accepted_payments') }}</p>
+                                <p class="mt-3 text-xs text-gray-700 dark:text-gray-200 font-semibold">{{ __('properties.price_info.accepted_payments') }}</p>
                                 <div class="mt-1.5 flex flex-wrap gap-2">
                                     @foreach($footerPayments as $payment)
                                         @php
@@ -433,7 +433,7 @@
                                                 $iconUrl = rtrim(config('app.admin_url', env('ADMIN_URL', '')), '/') . '/storage/' . $iconUrl;
                                             }
                                         @endphp
-                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-700 dark:text-gray-100 border border-gray-200 dark:border-gray-600">
                                             @if($iconUrl)
                                                 <img src="{{ $iconUrl }}" alt="{{ $payment->name }}" class="h-4 object-contain">
                                             @endif
@@ -449,7 +449,7 @@
                             <button onclick="scrollToRooms()" class="flex-1 bg-teal-600 text-white py-3 px-6 rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center">
                                 <i class="fas fa-calendar-check mr-2"></i> {{ __('properties.buttons.book_now') }}
                             </button>
-                            <a href="https://wa.me/6281188099700/" target="_blank" class="flex-1 border border-teal-600 text-teal-600 py-3 px-6 rounded-lg hover:bg-teal-50 transition-colors flex items-center justify-center">
+                            <a href="https://wa.me/6281188099700/" target="_blank" class="flex-1 border border-green-700 text-green-700 dark:border-green-400 dark:text-green-400 py-3 px-6 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors flex items-center justify-center font-semibold">
                                 <i class="fab fa-whatsapp mr-2"></i> {{ __('properties.buttons.contact_info') }}
                             </a>
                         </div>
@@ -810,7 +810,7 @@
 
                                                             @if(!$hasValidPeriod)
                                                                 <li>
-                                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200">
                                                                         {{ __('properties.room.period_not_available') }}
                                                                         <i class="fas fa-exclamation-circle ml-1"></i>
                                                                     </span>
