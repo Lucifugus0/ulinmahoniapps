@@ -76,8 +76,12 @@
                             class="relative p-2 rounded-lg text-center min-h-[3.5rem] transition-all">
                             <span class="text-sm font-medium" x-text="cell.day || ''"
                                 :class="cell.day ? 'text-gray-800' : 'text-transparent'"></span>
+                            {{-- Primary text = date TYPE (matches legend/color); custom label shown below if present --}}
                             <div x-show="cell.type" class="text-[10px] leading-tight mt-0.5 truncate font-semibold text-white"
-                                x-text="cell.label || (cell.type === 'high_season' ? 'High' : cell.type === 'low_season' ? 'Low' : 'Holiday')">
+                                x-text="typeLabel(cell.type)">
+                            </div>
+                            <div x-show="cell.type && cell.label" class="text-[9px] leading-tight truncate text-white/80"
+                                x-text="cell.label">
                             </div>
                         </div>
                     </template>
@@ -116,7 +120,9 @@
                             }">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
-                                    <span class="font-semibold entry-text" x-text="entry.label || entry.date_type.replace('_', ' ')"></span>
+                                    {{-- Primary = date TYPE (matches legend/color); custom label appended if present --}}
+                                    <span class="font-semibold entry-text" x-text="typeLabel(entry.date_type)"></span>
+                                    <span x-show="entry.label" class="text-xs entry-text-secondary" x-text="'· ' + entry.label"></span>
                                     <span class="text-xs entry-text-secondary" x-text="entry.dateRange"></span>
                                     <span x-show="!entry.isActive" class="text-xs bg-red-500/80 text-white px-1.5 py-0.5 rounded">({{ __('ui.calendar_inactive') }})</span>
                                 </div>
@@ -264,6 +270,18 @@
                 }
 
                 return cells;
+            },
+
+            /* Map a date_type code to its human label.
+               Uses the SAME i18n strings as the legend so the cell/list text
+               always matches the color (date_type), never the free-text label. */
+            typeLabel(type) {
+                const map = {
+                    high_season: @json(__('ui.calendar_high_season')),
+                    low_season: @json(__('ui.calendar_low_season')),
+                    holiday: @json(__('ui.calendar_holiday')),
+                };
+                return map[type] || (type ? type.replace('_', ' ') : '');
             },
 
             /* Format date string to readable format (e.g. "24 Mar 2026") */
