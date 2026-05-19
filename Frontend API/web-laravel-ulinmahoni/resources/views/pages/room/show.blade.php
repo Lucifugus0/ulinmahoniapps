@@ -517,26 +517,30 @@
                                         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">{{ __('properties.booking.daily_booking') }}</h3>
                                     </div>
 
-                                    <!-- Check-in Date -->
-                                    <div class="mb-4">
-                                        <label for="check_in" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            <i class="fas fa-sign-in-alt mr-1 text-gray-500"></i>{{ __('properties.booking.check_in') }}
-                                        </label>
-                                        <input type="text" id="check_in" name="check_in"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
-                                            placeholder="Select check-in date" data-required="true" readonly>
-                                        <div id="check_inError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
-                                    </div>
+                                    {{-- Check-in + Check-out side by side: two columns on tablet/desktop,
+                                         stacked on phones (matches the monthly booking layout). --}}
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <!-- Check-in Date -->
+                                        <div>
+                                            <label for="check_in" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-sign-in-alt mr-1 text-gray-500"></i>{{ __('properties.booking.check_in') }}
+                                            </label>
+                                            <input type="text" id="check_in" name="check_in"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                                placeholder="Select check-in date" data-required="true" readonly>
+                                            <div id="check_inError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                        </div>
 
-                                    <!-- Check-out Date -->
-                                    <div>
-                                        <label for="check_out" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            <i class="fas fa-sign-out-alt mr-1 text-gray-500"></i>{{ __('properties.booking.check_out') }}
-                                        </label>
-                                        <input type="text" id="check_out" name="check_out"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
-                                            placeholder="Select check-out date" data-required="true" readonly>
-                                        <div id="check_outError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                        <!-- Check-out Date -->
+                                        <div>
+                                            <label for="check_out" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-sign-out-alt mr-1 text-gray-500"></i>{{ __('properties.booking.check_out') }}
+                                            </label>
+                                            <input type="text" id="check_out" name="check_out"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                                placeholder="Select check-out date" data-required="true" readonly>
+                                            <div id="check_outError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
