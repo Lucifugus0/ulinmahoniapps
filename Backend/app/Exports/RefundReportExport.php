@@ -16,15 +16,31 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use Carbon\Carbon;
 
 /**
- * Refund Report Excel export — mirrors BookingReportExport styling so admins
- * recognize the layout. Columns A..O = 15 columns covering refund metadata
- * + breakdown + bank info + admin processing fields.
+ * Refund Report Excel export.
+ *
+ * <!-- Restructured to follow the "Template Report refund" layout: a two-row
+ *      header where the "Refund Amount" group spans a 3-column breakdown
+ *      (Harga Kamar / Diskon / Parkir), plus invoice metadata, the original
+ *      invoice figures, refund percentage, deposit and total. A "Keterangan"
+ *      (legend) block is appended below the data, mirroring the template.
+ *      The Reason column is preserved as the final column (after Status). -->
+ *
+ * Columns A..W = 23 columns:
+ *   A Invoice No.   B Booking ID    C Invoice Date  D Refund Date
+ *   E Guest Name    F NIK           G Property Name H Room Type
+ *   I Room Number   J Check In      K Check Out     L Harga Kamar
+ *   M Diskon        N Parkir        O Invoice Amount P Refund (%)
+ *   Q-S Refund Amount {Harga Kamar / Diskon / Parkir}
+ *   T Deposit       U Total Refund  V Status        W Reason
  */
 class RefundReportExport implements FromCollection, WithHeadings, WithMapping, WithEvents, WithColumnWidths
 {
     protected $filters;
     protected $rowCount = 0;
     protected $totalRefunded = 0;
+
+    /** Last spreadsheet column used by the report (A..W). */
+    const LAST_COL = 'W';
 
     public function __construct($filters)
     {
@@ -92,24 +108,36 @@ class RefundReportExport implements FromCollection, WithHeadings, WithMapping, W
         return $collection;
     }
 
+    /**
+     * Top header row. The "Refund Amount" group label sits in column Q and is
+     * merged across Q:S in registerEvents(); the empty strings reserve R and S.
+     */
     public function headings(): array
     {
         return [
+            'Invoice No.',
+            'Booking ID',
+            'Invoice Date',
             'Refund Date',
-            'Order ID',
-            'Tenant Name',
-            'Property',
-            'Room',
-            'Refund Type',
-            'Reason',
-            'Room Refund',
-            'Deposit Refund',
-            'Other Refund',
+            'Guest Name',
+            'NIK',
+            'Property Name',
+            'Room Type',
+            'Room Number',
+            'Check In',
+            'Check Out',
+            'Harga Kamar',
+            'Diskon',
+            'Parkir',
+            'Invoice Amount',
+            'Refund (%)',
+            'Refund Amount', // Q — merged across Q:S
+            '',              // R
+            '',              // S
+            'Deposit',
             'Total Refund',
-            'Bank / Account',
             'Status',
-            'Processed By',
-            'Admin Notes',
+            'Reason',
         ];
     }
 
@@ -117,69 +145,126 @@ class RefundReportExport implements FromCollection, WithHeadings, WithMapping, W
     {
         $transaction = $refund->transaction;
 
-        // <!-- Tenant name: user first+last -> fallback to transaction.user_name -->
-        $tenantName = '-';
+        // <!-- Guest name: user first+last -> fallback to transaction.user_name -->
+        $guestName = '-';
+        $nik = '-';
         if ($transaction) {
             $user = $transaction->user;
             if ($user) {
                 $full = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
-                $tenantName = $full !== '' ? $full : ($transaction->user_name ?? '-');
+                $guestName = $full !== '' ? $full : ($transaction->user_name ?? '-');
+                $nik = $user->nik ?? '-';
             } else {
-                $tenantName = $transaction->user_name ?? '-';
+                $guestName = $transaction->user_name ?? '-';
             }
         }
 
         $propertyName = $transaction && $transaction->property ? $transaction->property->name : '-';
-        $roomName = $transaction && $transaction->room ? $transaction->room->name : '-';
+        $room = $transaction ? $transaction->room : null;
+        $roomType = $room ? ($room->type ?? $room->name ?? '-') : '-';
+        $roomNumber = $room ? ($room->no ?? '-') : '-';
 
-        $bankAccount = '-';
-        if ($refund->refund_bank_name || $refund->refund_account_no) {
-            $bankAccount = trim(
-                ($refund->refund_bank_name ?? '') . ' ' .
-                ($refund->refund_account_no ? '- ' . $refund->refund_account_no : '') . ' ' .
-                ($refund->refund_account_holder ? '(' . $refund->refund_account_holder . ')' : '')
-            );
+        // <!-- Original invoice figures: pull from the linked transaction. -->
+        $invoiceAmount = $transaction ? (float) ($transaction->grandtotal_price ?? 0) : 0;
+        $roomPrice = 0;
+        $discount = 0;
+        $parkingFee = 0;
+        if ($transaction) {
+            $roomPrice = (float) ($transaction->room_price ?? 0);
+            if ($roomPrice <= 0) {
+                $roomPrice = (float) ($transaction->subtotal_before_discount ?? 0);
+            }
+            $discount = (float) ($transaction->discount_amount ?? 0);
+            $parkingFee = (float) ($transaction->parking_fee ?? 0);
         }
 
-        $processedBy = $refund->processedBy ? ($refund->processedBy->username ?? '-') : '-';
+        $totalRefund = (float) ($refund->amount ?? 0);
+
+        // <!-- Refund % is not stored on t_refund — derive it from the refunded
+        //      total against the original invoice amount (fraction, e.g. 0.75). -->
+        $refundPct = $invoiceAmount > 0 ? $totalRefund / $invoiceAmount : 0;
+
+        // <!-- Refund Amount breakdown: prefer the stored per-component refund
+        //      values; when absent, compute base figure x refund %. -->
+        $roomRefund = (float) ($refund->room_refund ?? 0);
+        if ($roomRefund <= 0) {
+            $roomRefund = round($roomPrice * $refundPct);
+        }
+
+        // t_refund has no discount-refund column — always derived.
+        $discountRefund = round($discount * $refundPct);
+
+        // other_refund is treated as the parking portion; fall back to computed.
+        $parkingRefund = (float) ($refund->other_refund ?? 0);
+        if ($parkingRefund <= 0) {
+            $parkingRefund = round($parkingFee * $refundPct);
+        }
+
+        // Deposit returned: stored deposit_refund, else the transaction deposit.
+        $deposit = (float) ($refund->deposit_refund ?? 0);
+        if ($deposit <= 0 && $transaction) {
+            $deposit = (float) ($transaction->deposit_fee ?? 0);
+        }
 
         return [
-            $refund->refund_date ? Carbon::parse($refund->refund_date)->format('d M Y H:i') : '-',
+            $transaction ? ($transaction->invoice_number ?? '-') : '-',
             $refund->id_booking,
-            $tenantName,
+            $transaction && $transaction->transaction_date
+                ? Carbon::parse($transaction->transaction_date)->format('d M Y')
+                : '-',
+            $refund->refund_date ? Carbon::parse($refund->refund_date)->format('d M Y H:i') : '-',
+            $guestName,
+            $nik,
             $propertyName,
-            $roomName,
-            ucfirst($refund->refund_type ?? 'admin'),
-            $refund->reason ?? '-',
-            (float) ($refund->room_refund ?? 0),
-            (float) ($refund->deposit_refund ?? 0),
-            (float) ($refund->other_refund ?? 0),
-            (float) ($refund->amount ?? 0),
-            $bankAccount,
+            $roomType,
+            $roomNumber,
+            $transaction && $transaction->check_in
+                ? Carbon::parse($transaction->check_in)->format('d M Y')
+                : '-',
+            $transaction && $transaction->check_out
+                ? Carbon::parse($transaction->check_out)->format('d M Y')
+                : '-',
+            $roomPrice,
+            $discount,
+            $parkingFee,
+            $invoiceAmount,
+            $refundPct,
+            $roomRefund,
+            $discountRefund,
+            $parkingRefund,
+            $deposit,
+            $totalRefund,
             $refund->status ?? '-',
-            $processedBy,
-            $refund->admin_notes ?? '',
+            $refund->reason ?? '-',
         ];
     }
 
     public function columnWidths(): array
     {
         return [
-            'A' => 18,  // Refund Date
-            'B' => 20,  // Order ID
-            'C' => 22,  // Tenant Name
-            'D' => 24,  // Property
-            'E' => 18,  // Room
-            'F' => 14,  // Refund Type
-            'G' => 30,  // Reason
-            'H' => 16,  // Room Refund
-            'I' => 16,  // Deposit Refund
-            'J' => 16,  // Other Refund
-            'K' => 18,  // Total Refund
-            'L' => 32,  // Bank / Account
-            'M' => 14,  // Status
-            'N' => 18,  // Processed By
-            'O' => 40,  // Admin Notes
+            'A' => 20,  // Invoice No.
+            'B' => 20,  // Booking ID
+            'C' => 14,  // Invoice Date
+            'D' => 18,  // Refund Date
+            'E' => 22,  // Guest Name
+            'F' => 20,  // NIK
+            'G' => 24,  // Property Name
+            'H' => 16,  // Room Type
+            'I' => 14,  // Room Number
+            'J' => 14,  // Check In
+            'K' => 14,  // Check Out
+            'L' => 16,  // Harga Kamar
+            'M' => 14,  // Diskon
+            'N' => 14,  // Parkir
+            'O' => 16,  // Invoice Amount
+            'P' => 12,  // Refund (%)
+            'Q' => 16,  // Refund Amount - Harga Kamar
+            'R' => 14,  // Refund Amount - Diskon
+            'S' => 14,  // Refund Amount - Parkir
+            'T' => 14,  // Deposit
+            'U' => 18,  // Total Refund
+            'V' => 14,  // Status
+            'W' => 36,  // Reason
         ];
     }
 
@@ -188,13 +273,29 @@ class RefundReportExport implements FromCollection, WithHeadings, WithMapping, W
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
+                $last = self::LAST_COL;
 
-                // <!-- Reserve 6 rows above the heading for title + filters -->
-                $sheet->insertNewRowBefore(1, 6);
+                // <!-- Title/filter block sizing: 1 title + 1 generated + 1 blank
+                //      + 1 "FILTERS APPLIED:" + N filter lines + 1 blank spacer. -->
+                $filterTexts = $this->getFilterTexts();
+                $filterLines = max(count($filterTexts), 1);
+                $topRows = 4 + $filterLines + 1;
 
-                // Title
+                // Reserve rows above the heading for title + filters.
+                $sheet->insertNewRowBefore(1, $topRows);
+
+                // Heading row produced by WithHeadings is now at $headerTopRow.
+                $headerTopRow = $topRows + 1;
+                // Insert one extra row for the "Refund Amount" sub-headers.
+                $subHeaderRow = $headerTopRow + 1;
+                $sheet->insertNewRowBefore($subHeaderRow, 1);
+
+                $dataStartRow = $subHeaderRow + 1;
+                $dataEndRow = $dataStartRow + $this->rowCount - 1;
+
+                // ---- Title --------------------------------------------------
                 $sheet->setCellValue('A1', 'REFUND REPORT');
-                $sheet->mergeCells('A1:O1');
+                $sheet->mergeCells('A1:' . $last . '1');
                 $sheet->getStyle('A1')->applyFromArray([
                     'font' => [
                         'bold' => true,
@@ -208,15 +309,15 @@ class RefundReportExport implements FromCollection, WithHeadings, WithMapping, W
                 ]);
                 $sheet->getRowDimension(1)->setRowHeight(30);
 
-                // Generated date
+                // ---- Generated date ----------------------------------------
                 $sheet->setCellValue('A2', 'Generated: ' . now()->format('d M Y, H:i'));
-                $sheet->mergeCells('A2:O2');
+                $sheet->mergeCells('A2:' . $last . '2');
                 $sheet->getStyle('A2')->applyFromArray([
                     'font' => ['size' => 10, 'color' => ['rgb' => '6B7280']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 ]);
 
-                // Filters
+                // ---- Filters ------------------------------------------------
                 $filterRow = 4;
                 $sheet->setCellValue('A' . $filterRow, 'FILTERS APPLIED:');
                 $sheet->getStyle('A' . $filterRow)->applyFromArray([
@@ -224,7 +325,6 @@ class RefundReportExport implements FromCollection, WithHeadings, WithMapping, W
                 ]);
 
                 $filterRow++;
-                $filterTexts = $this->getFilterTexts();
                 if (!empty($filterTexts)) {
                     foreach ($filterTexts as $text) {
                         $sheet->setCellValue('A' . $filterRow, $text);
@@ -240,37 +340,51 @@ class RefundReportExport implements FromCollection, WithHeadings, WithMapping, W
                     ]);
                 }
 
-                // Header row (now at row 7)
-                $headerRow = 7;
-                $sheet->getStyle('A' . $headerRow . ':O' . $headerRow)->applyFromArray([
+                // ---- Two-row header ----------------------------------------
+                // "Refund Amount" group label spans Q:S on the top row; the
+                // sub-header row carries the per-component labels.
+                $sheet->mergeCells('Q' . $headerTopRow . ':S' . $headerTopRow);
+                $sheet->setCellValue('Q' . $subHeaderRow, 'Harga Kamar');
+                $sheet->setCellValue('R' . $subHeaderRow, 'Diskon');
+                $sheet->setCellValue('S' . $subHeaderRow, 'Parkir');
+
+                // Every other column header is merged vertically across both rows.
+                foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+                          'L', 'M', 'N', 'O', 'P', 'T', 'U', 'V', 'W'] as $col) {
+                    $sheet->mergeCells($col . $headerTopRow . ':' . $col . $subHeaderRow);
+                }
+
+                $headerStyle = [
                     'font' => [
                         'bold' => true,
                         'size' => 11,
-                        'color' => ['rgb' => 'FFFFFF'],
+                        'color' => ['rgb' => '1F2937'], // dark text on light-green band
                     ],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => 'DC2626'], // refund-themed red
+                        // Green, Accent 6, Lighter 60% — matches the report template.
+                        'startColor' => ['rgb' => 'C6E0B4'],
                     ],
                     'alignment' => [
-                        'horizontal' => Alignment::HORIZONTAL_LEFT,
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
                         'vertical' => Alignment::VERTICAL_CENTER,
+                        'wrapText' => true,
                     ],
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
-                            'color' => ['rgb' => '991B1B'],
+                            'color' => ['rgb' => '70AD47'],
                         ],
                     ],
-                ]);
-                $sheet->getRowDimension($headerRow)->setRowHeight(25);
+                ];
+                $sheet->getStyle('A' . $headerTopRow . ':' . $last . $subHeaderRow)
+                    ->applyFromArray($headerStyle);
+                $sheet->getRowDimension($headerTopRow)->setRowHeight(22);
+                $sheet->getRowDimension($subHeaderRow)->setRowHeight(20);
 
-                // Data rows
-                $dataStartRow = 8;
-                $dataEndRow = $dataStartRow + $this->rowCount - 1;
-
+                // ---- Data rows ---------------------------------------------
                 if ($this->rowCount > 0) {
-                    $sheet->getStyle('A' . $dataStartRow . ':O' . $dataEndRow)->applyFromArray([
+                    $sheet->getStyle('A' . $dataStartRow . ':' . $last . $dataEndRow)->applyFromArray([
                         'borders' => [
                             'allBorders' => [
                                 'borderStyle' => Border::BORDER_THIN,
@@ -281,61 +395,109 @@ class RefundReportExport implements FromCollection, WithHeadings, WithMapping, W
 
                     for ($row = $dataStartRow; $row <= $dataEndRow; $row++) {
                         if (($row - $dataStartRow) % 2 == 0) {
-                            $sheet->getStyle('A' . $row . ':O' . $row)->applyFromArray([
+                            $sheet->getStyle('A' . $row . ':' . $last . $row)->applyFromArray([
                                 'fill' => [
                                     'fillType' => Fill::FILL_SOLID,
-                                    'startColor' => ['rgb' => 'FFF5F5'],
+                                    'startColor' => ['rgb' => 'EBF3E1'], // light-green zebra stripe
                                 ],
                             ]);
                         }
                     }
 
-                    // Format currency columns
-                    foreach (['H', 'I', 'J', 'K'] as $col) {
+                    // Currency columns: Harga Kamar, Diskon, Parkir, Invoice
+                    // Amount, the 3-part Refund Amount breakdown, Deposit, Total.
+                    foreach (['L', 'M', 'N', 'O', 'Q', 'R', 'S', 'T', 'U'] as $col) {
                         $sheet->getStyle($col . $dataStartRow . ':' . $col . $dataEndRow)
                             ->getNumberFormat()->setFormatCode('#,##0');
                     }
+
+                    // Refund (%) column — stored as a fraction, shown as percent.
+                    $sheet->getStyle('P' . $dataStartRow . ':P' . $dataEndRow)
+                        ->getNumberFormat()->setFormatCode('0.00%');
                 }
 
-                // Summary
+                // ---- Summary ------------------------------------------------
                 $summaryRow = $dataEndRow + 2;
 
                 $sheet->setCellValue('A' . $summaryRow, 'TOTAL REFUNDED:');
-                $sheet->mergeCells('A' . $summaryRow . ':J' . $summaryRow);
+                $sheet->mergeCells('A' . $summaryRow . ':T' . $summaryRow);
                 $sheet->getStyle('A' . $summaryRow)->applyFromArray([
                     'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '1F2937']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
                 ]);
 
-                $sheet->setCellValue('K' . $summaryRow, $this->totalRefunded);
-                $sheet->getStyle('K' . $summaryRow)->applyFromArray([
-                    'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'B91C1C']],
+                $sheet->setCellValue('U' . $summaryRow, $this->totalRefunded);
+                $sheet->getStyle('U' . $summaryRow)->applyFromArray([
+                    'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '0F513D']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => 'FEE2E2'],
+                        'startColor' => ['rgb' => 'D6E9C6'],
                     ],
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_MEDIUM,
-                            'color' => ['rgb' => 'B91C1C'],
+                            'color' => ['rgb' => '70AD47'],
                         ],
                     ],
                 ]);
-                $sheet->getStyle('K' . $summaryRow)->getNumberFormat()->setFormatCode('#,##0');
+                $sheet->getStyle('U' . $summaryRow)->getNumberFormat()->setFormatCode('#,##0');
 
-                // Total records
+                // ---- Total records -----------------------------------------
                 $recordsRow = $summaryRow + 1;
                 $sheet->setCellValue('A' . $recordsRow, 'Total Records: ' . $this->rowCount);
-                $sheet->mergeCells('A' . $recordsRow . ':O' . $recordsRow);
+                $sheet->mergeCells('A' . $recordsRow . ':' . $last . $recordsRow);
                 $sheet->getStyle('A' . $recordsRow)->applyFromArray([
                     'font' => ['bold' => true, 'size' => 10, 'italic' => true, 'color' => ['rgb' => '6B7280']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
                 ]);
 
-                $sheet->freezePane('A8');
+                // ---- Keterangan (legend) block -----------------------------
+                // <!-- Mirrors the template's column-glossary so readers know
+                //      what each grouped figure refers to. -->
+                $this->writeLegend($sheet, $recordsRow + 2);
+
+                $sheet->freezePane('A' . $dataStartRow);
             },
         ];
+    }
+
+    /**
+     * Writes the "Keterangan :" legend block starting at the given row.
+     */
+    private function writeLegend($sheet, int $startRow): void
+    {
+        $sheet->setCellValue('A' . $startRow, 'Keterangan :');
+        $sheet->getStyle('A' . $startRow)->applyFromArray([
+            'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '1F2937']],
+        ]);
+
+        $legend = [
+            ['Invoice No, Invoice Date', 'Mengacu pada invoice awal terbit'],
+            ['Refund Date', 'Tanggal refund'],
+            ['Harga Kamar', 'Harga kamar include tax'],
+            ['Diskon', 'Diskon include tax'],
+            ['Parkir', 'Harga parkir include tax'],
+            ['Invoice Amount', 'Mengacu pada nominal invoice awal terbit'],
+            ['Refund (%)', 'Persentase refund terhadap nominal invoice'],
+            ['Refund Amount', 'Break down perhitungan yang akan direfund'],
+            ['Deposit', 'Nilai deposit (dikembalikan full)'],
+            ['Total Refund', 'Perhitungan total refund setelah ditambahkan deposit'],
+            ['Reason', 'Alasan refund diajukan'],
+        ];
+
+        $row = $startRow + 1;
+        foreach ($legend as $entry) {
+            $sheet->setCellValue('A' . $row, $entry[0]);
+            $sheet->setCellValue('B' . $row, '→ ' . $entry[1]);
+            $sheet->getStyle('A' . $row)->applyFromArray([
+                'font' => ['size' => 10, 'bold' => true, 'color' => ['rgb' => '374151']],
+            ]);
+            $sheet->getStyle('B' . $row)->applyFromArray([
+                'font' => ['size' => 10, 'color' => ['rgb' => '6B7280']],
+            ]);
+            $row++;
+        }
     }
 
     private function getFilterTexts(): array
