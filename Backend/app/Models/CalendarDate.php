@@ -27,7 +27,12 @@ class CalendarDate extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        // <!-- Serialize as plain Y-m-d (no UTC conversion). The default 'date' cast
+        //      serializes via toJSON() in UTC; with app timezone Asia/Jakarta (UTC+7)
+        //      that turns 2026-05-26 00:00 into 2026-05-25T17:00:00Z, so the calendar
+        //      JS (e.date.substring(0,10)) rendered every entry one day early. The
+        //      :Y-m-d format makes Laravel emit the date in its own timezone. -->
+        'date' => 'date:Y-m-d',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

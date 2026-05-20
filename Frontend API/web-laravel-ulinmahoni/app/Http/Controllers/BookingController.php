@@ -12,6 +12,7 @@ use App\Jobs\ExpireBooking;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -36,69 +37,59 @@ class BookingController extends Controller
      */
     private function checkAndExpireBookings()
     {
+        // Safety-net only — the per-minute system cron (expire_transactions.sql)
+        // remains the primary expiry driver. Throttle to at most one sweep per
+        // 60s across the whole app so re-enabling this on the booking-list
+        // request path doesn't run a full sweep on every request.
+        if (! Cache::add('booking_expiry_sweep_lock', 1, 60)) {
+            return;
+        }
+
         try {
             $now = now();
 
-            // Find all pending transactions that are past their expiration time
+            // Same selection as the deployed expire_transactions.sql:
+            //  - pending
+            //  - past deadline (expired_at < now) OR stale (transaction_date < now - 1h)
+            //  - skip if another pending txn on the same room is still within its window
             $expiredTransactions = Transaction::where('transaction_status', 'pending')
-                ->where('expired_at', '<=', $now)
-                ->whereNotNull('expired_at')
+                ->where(function ($q) use ($now) {
+                    $q->where(function ($q2) use ($now) {
+                            $q2->whereNotNull('expired_at')
+                               ->where('expired_at', '<', $now);
+                        })
+                      ->orWhere('transaction_date', '<', $now->copy()->subHour());
+                })
+                ->whereNotExists(function ($sub) use ($now) {
+                    $sub->selectRaw('1')
+                        ->from('t_transactions as t2')
+                        ->whereColumn('t2.room_id', 't_transactions.room_id')
+                        ->whereColumn('t2.idrec', '!=', 't_transactions.idrec')
+                        ->whereRaw("UPPER(t2.transaction_status) = 'PENDING'")
+                        ->where(function ($w) use ($now) {
+                            $w->whereNull('t2.expired_at')
+                              ->orWhere('t2.expired_at', '>=', $now);
+                        });
+                })
                 ->get();
 
             if ($expiredTransactions->isEmpty()) {
                 return;
             }
 
+            // Delegate each order to the canonical ExpireBooking routine.
+            // dispatchSync runs handle() in-process regardless of QUEUE_CONNECTION,
+            // giving the full consistent flow: bundled-parking soft-delete, voucher
+            // restore, GUARDED renewal parent-rollback, push notifications, and —
+            // exactly like the SQL — NO m_rooms.rental_status mutation. handle()
+            // re-checks pending + payment, so it is idempotent if the row changed
+            // between selection and dispatch.
             foreach ($expiredTransactions as $transaction) {
                 try {
-                    DB::beginTransaction();
-
-                    // Double check payment status
-                    $payment = Payment::where('order_id', $transaction->order_id)->first();
-                    if ($payment && $payment->payment_status === 'paid') {
-                        Log::info("Skipping expiration - Payment already completed for order_id: {$transaction->order_id}");
-                        DB::rollBack();
-                        continue;
-                    }
-
-                    // Update transaction status to expired
-                    $transaction->update([
-                        'transaction_status' => 'expired',
-                        'status' => '0', // Inactive
-                    ]);
-
-                    // Update payment status if exists
-                    if ($payment) {
-                        $payment->update([
-                            'payment_status' => 'expired'
-                        ]);
-                    }
-
-                    // Update booking status if exists
-                    $booking = Booking::where('order_id', $transaction->order_id)->first();
-                    if ($booking) {
-                        $booking->update([
-                            'status' => '0' // Inactive
-                        ]);
-                    }
-
-                    // Restore voucher usage count if voucher was used
-                    if ($transaction->voucher_id) {
-                        $voucher = \App\Models\Voucher::find($transaction->voucher_id);
-                        if ($voucher && $voucher->current_usage_count > 0) {
-                            $voucher->decrement('current_usage_count');
-                            Log::info("Restored voucher usage count for voucher_id: {$transaction->voucher_id}");
-                        }
-                    }
-
-                    DB::commit();
-                    Log::info("Auto-expired booking on user access for order_id: {$transaction->order_id}");
-
+                    ExpireBooking::dispatchSync($transaction->order_id);
                 } catch (\Exception $e) {
-                    DB::rollBack();
-                    Log::error("Failed to auto-expire booking for order_id: {$transaction->order_id}", [
+                    Log::error("Fallback expiry failed for order_id: {$transaction->order_id}", [
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
                     ]);
                 }
             }
@@ -728,7 +719,8 @@ class BookingController extends Controller
     public function index()
     {
         // Auto-expire pending bookings when user accesses their bookings
-        // $this->checkAndExpireBookings();
+        // (throttled safety-net; system cron remains the primary driver)
+        $this->checkAndExpireBookings();
 
         $tab = request()->get('tab', 'all');
         $userId = Auth::id();

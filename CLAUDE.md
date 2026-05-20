@@ -399,5 +399,75 @@ Note: `php artisan view:clear` may fail on staging due to PHP version mismatch (
 | **DB Password** | DigitaLL24$$ |
 
 ### Server Repository Paths (Production)
-- **Backend:** `~/repositories/web-laravel-admin-um/`
-- **Frontend API:** `~/repositories/web-laravel-ulinmahoni/`
+
+Production was migrated to the monorepo on **2026-05-13**. Both prod repos now sparse-checkout from this monorepo and track `monorepo/production`. The OUTER directory names are kept for backwards compatibility with cron jobs / scripts, but the Laravel app now lives one level deeper.
+
+- **Backend repo root:** `~/repositories/web-laravel-admin-um/` → Laravel app at `~/repositories/web-laravel-admin-um/Backend/`
+- **Frontend API repo root:** `~/repositories/web-laravel-ulinmahoni/` → Laravel app at `~/repositories/web-laravel-ulinmahoni/Frontend API/web-laravel-ulinmahoni/`
+
+Both repos have `core.sparseCheckout = true` with cone-mode paths set (`Backend` and `Frontend API/web-laravel-ulinmahoni` respectively). Top-level files from the monorepo root (e.g. `CLAUDE.md`, `whatsnew.md`, root-level `.md`s) sit alongside the subdir but are harmless.
+
+### Monorepo deploy-key auth (production only)
+
+Production authenticates to the private monorepo via an SSH deploy key (read-only):
+- **Key location:** `~/.ssh/id_ed25519_ulinmahoni_monorepo` (+ `.pub`)
+- **SSH alias:** `github-ulinmahoni-monorepo` (configured in `~/.ssh/config`)
+- **Remote URL on both repos:** `git@github-ulinmahoni-monorepo:trisnotjhin/Ulin-Mahoni.git` (as remote name `monorepo`)
+- **GitHub config:** Repo Settings → Deploy keys → "ulinmahoni-prod (read-only)"
+
+Original `origin` remotes (pointing at `farhans29/web-laravel-admin-um` and `farhans29/web-laravel-ulinmahoni`) are kept on the repos for historical reference but no longer drive deploys.
+
+### Deploying to Production
+
+```bash
+# 1. Pull latest production branch
+ssh umadminpanel@ulinmahoni.com "cd ~/repositories/web-laravel-admin-um && git pull monorepo production"
+ssh umadminpanel@ulinmahoni.com "cd ~/repositories/web-laravel-ulinmahoni && git pull monorepo production"
+
+# 2. If composer.lock changed, reinstall deps (use --ignore-platform-reqs — see PHP-version note)
+ssh umadminpanel@ulinmahoni.com "cd ~/repositories/web-laravel-admin-um/Backend && ~/bin/composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs"
+ssh umadminpanel@ulinmahoni.com "cd ~/repositories/web-laravel-ulinmahoni/'Frontend API'/web-laravel-ulinmahoni && ~/bin/composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs"
+
+# 3. Clear view + config + route caches
+ssh umadminpanel@ulinmahoni.com "find ~/repositories/web-laravel-admin-um/Backend/storage/framework/views/ -name '*.php' -delete"
+ssh umadminpanel@ulinmahoni.com "find ~/repositories/web-laravel-ulinmahoni/'Frontend API'/web-laravel-ulinmahoni/storage/framework/views/ -name '*.php' -delete"
+ssh umadminpanel@ulinmahoni.com "cd ~/repositories/web-laravel-admin-um/Backend && /usr/local/bin/php artisan config:clear && /usr/local/bin/php artisan route:clear"
+ssh umadminpanel@ulinmahoni.com "cd ~/repositories/web-laravel-ulinmahoni/'Frontend API'/web-laravel-ulinmahoni && /usr/local/bin/php artisan config:clear && /usr/local/bin/php artisan route:clear"
+
+# 4. If frontend CSS/JS assets changed, deploy build/ to webroots
+#    See "Asset deployment" notes below — manifest + hashed assets must land in each webroot's build/
+```
+
+For maintenance windows, use `php artisan down` / `php artisan up` (NOT the `global_title` table — prod's table is a key/value `(idrec, key, mark)` schema and lacks the `maintenance_mode` column from CLAUDE.md's Maintenance Mode section).
+
+### Production webroots
+
+The Laravel app is served via separate webroot directories under `~/public_html/`. The webroot `index.php` files reference the repo paths directly (no symlink); each carries hardcoded paths that must be updated if the repo path layout changes:
+
+| Domain | Webroot | Repo path referenced |
+|---|---|---|
+| admin.ulinmahoni.com | `~/public_html/admin.ulinmahoni.com/` | `repositories/web-laravel-admin-um/Backend/` |
+| ulinmahoni.com (main) | `~/public_html/` | `repositories/web-laravel-ulinmahoni/Frontend API/web-laravel-ulinmahoni/` |
+| web.ulinmahoni.com | `~/public_html/web.ulinmahoni.com/` | same as main |
+| api.ulinmahoni.com | `~/public_html/api.ulinmahoni.com/` | same as main |
+
+### Asset deployment (Vite `build/`)
+
+`public/build/` is `.gitignored` in both apps, so neither manifest nor hashed assets are pulled by `git pull`. Production resolves this with **symlinks**:
+- `~/repositories/web-laravel-admin-um/Backend/public/build` → `~/public_html/admin.ulinmahoni.com/build`
+- `~/repositories/web-laravel-ulinmahoni/Frontend API/web-laravel-ulinmahoni/public/build` → `~/public_html/build`
+
+So `npm run build` output that ships to the webroot's `build/` is automatically visible to Laravel via the symlink. When CSS/JS assets change, scp the new `build/` contents into the appropriate webroot:
+
+```bash
+# Backend
+scp -r Backend/public/build/ umadminpanel@ulinmahoni.com:~/public_html/admin.ulinmahoni.com/build/
+# Frontend (main domain)
+scp -r 'Frontend API/web-laravel-ulinmahoni/public/build/' umadminpanel@ulinmahoni.com:~/public_html/build/
+```
+
+### Known issue: PHP 8.3 prod vs PHP 8.4 composer.lock
+
+Both `composer.lock` files (in `Backend/` and `Frontend API/web-laravel-ulinmahoni/`) were generated on PHP 8.4 — they pin `symfony/clock`, `symfony/string`, etc. at v8.x which require PHP `>=8.4`. Prod runs PHP 8.3.31. The workaround is `composer install --ignore-platform-reqs`, which installs the locked versions anyway; at runtime Laravel 11 still works on 8.3 because no Symfony 8.x package has hit a hard 8.4-only code path yet.
+
+Long-term fix options: (a) upgrade prod to PHP 8.4, (b) regenerate `composer.lock` on PHP 8.3 to pin earlier Symfony 7.x versions. Same gap exists on staging.

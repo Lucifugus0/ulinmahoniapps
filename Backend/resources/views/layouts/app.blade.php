@@ -159,6 +159,15 @@
                     } else if (Notification.permission === 'granted') {
                         registerToken(registration);
                     }
+                })
+                /* Web push is non-critical. If the SW script 404s (e.g. not yet
+                   copied to a webroot), is blocked, or the browser refuses it,
+                   degrade silently — log to console only. Without this .catch()
+                   the rejection bubbles to the global `unhandledrejection`
+                   handler and pops a blocking "Kesalahan Sistem" modal over
+                   the whole admin UI. */
+                .catch(function(err) {
+                    console.warn('FCM service worker registration skipped:', err && err.message ? err.message : err);
                 });
 
             /* Get FCM token and send to server */
@@ -182,6 +191,12 @@
                         }).then(function() {
                             sessionStorage.setItem('fcm_token', token);
                         });
+                    })
+                    /* Same rationale as the SW .catch() above — a getToken
+                       failure (permission, network, missing VAPID) must not
+                       escalate into a blocking system-error modal. */
+                    .catch(function(err) {
+                        console.warn('FCM getToken skipped:', err && err.message ? err.message : err);
                     });
             }
 
