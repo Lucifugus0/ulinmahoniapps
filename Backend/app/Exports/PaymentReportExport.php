@@ -73,9 +73,11 @@ class PaymentReportExport
 
         $excel->addEmptyRow();
 
-        // Add filter section
+        // <!-- Pass endColumn so filter rows merge across the same 30-column span as the rest of the sheet.
+        //      Without this, addFilterSection defaults to 'L' and PhpSpreadsheet throws a mergeCells
+        //      conflict when data rows later style the full A:AD range. -->
         $filterTexts = $this->getFilterTexts();
-        $excel->addFilterSection($filterTexts);
+        $excel->addFilterSection($filterTexts, ['endColumn' => 'AD']);
 
         // Add separator
         $excel->addInfoRow('', []);

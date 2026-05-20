@@ -40,6 +40,8 @@ class Excel extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return 'excel';
+        // <!-- Resolves the custom ExcelService bound under 'custom-excel' by ExcelServiceProvider.
+        //      Must NOT be 'excel' — that key belongs to the maatwebsite/excel package. -->
+        return 'custom-excel';
     }
 }
