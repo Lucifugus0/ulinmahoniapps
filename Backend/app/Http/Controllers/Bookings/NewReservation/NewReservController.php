@@ -372,4 +372,24 @@ class NewReservController extends Controller
         // Return view dengan data invoice number
         return view('pages.bookings.components.invoice', compact('booking', 'invoiceNumberFormatted'));
     }
+
+    /**
+     * Render the invoice from an invoice-number slug.
+     *
+     * The slug is the invoice number with every '/' replaced by '-'
+     * (e.g. "0162/K1/KGA-INV/IV/2026" → "0162-K1-KGA-INV-IV-2026").
+     * Because the invoice number itself also contains '-' (e.g. "KGA-INV"),
+     * the swap is NOT reversible — so we match in SQL via REPLACE() instead
+     * of trying to turn the dashes back into slashes.
+     */
+    public function getInvoiceBySlug($slug)
+    {
+        // Resolve the transaction whose invoice_number (slashes rendered as dashes) matches the slug.
+        $transaction = Transaction::whereNotNull('invoice_number')
+            ->whereRaw("REPLACE(invoice_number, '/', '-') = ?", [$slug])
+            ->firstOrFail();
+
+        // Delegate to the existing order_id-based renderer.
+        return $this->getInvoice($transaction->order_id);
+    }
 }

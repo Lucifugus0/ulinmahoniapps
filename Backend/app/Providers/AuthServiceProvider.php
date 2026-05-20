@@ -65,6 +65,7 @@ class AuthServiceProvider extends ServiceProvider
             'view_parking_report',
             'view_deposit_report',
             'view_rented_rooms_report',
+            'view_refund_report',
             'Settings',
             'view_users',
             'manage_roles',

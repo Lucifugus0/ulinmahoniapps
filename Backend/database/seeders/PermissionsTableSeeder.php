@@ -77,6 +77,8 @@ class PermissionsTableSeeder extends Seeder
             'view_parking_report',
             'view_deposit_report',
             'view_rented_rooms_report',
+            // Refund Report (added 2026-05-20)
+            'view_refund_report',
 
             // Settings
             'Settings',

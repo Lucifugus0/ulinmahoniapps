@@ -276,6 +276,15 @@ class SidebarItemsTableSeeder extends Seeder
             'order' => 5
         ]);
 
+        // <!-- Refund Report — added 2026-05-20, lists all refunds with filters/export -->
+        SidebarItem::create([
+            'name' => 'Refund Report',
+            'route' => 'reports.refund.index',
+            'permission_id' => $permissions['view_refund_report'] ?? null,
+            'parent_id' => $reports->id,
+            'order' => 6
+        ]);
+
         // =====================
         // Masters Group (order 8)
         // =====================
