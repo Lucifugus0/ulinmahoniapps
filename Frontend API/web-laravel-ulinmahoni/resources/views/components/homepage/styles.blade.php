@@ -370,7 +370,7 @@ main > section:first-of-type {
 .section-title h2,
 .section-title h3 {
   font-size: 2.25rem;
-  font-weight: 300;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
@@ -717,6 +717,13 @@ html.dark .section-title h3 {
 
 html.dark .section-title .divider-line {
   background: linear-gradient(to right, transparent, #4b5563, transparent);
+}
+
+/* Dark mode: subtitle text uses --accent (UM Maroon #a83333) which is hard to read on the dark bg.
+   Brighten to a softer red and bump the weight so the line stays legible. */
+html.dark .section-title .divider-text {
+  color: #f87171;
+  font-weight: 500;
 }
 
 /* Dark property cards — scoped to card-level elements only, not body/main/section containers

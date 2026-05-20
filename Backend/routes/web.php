@@ -34,6 +34,7 @@ use App\Http\Controllers\Reports\PaymentReportController;
 use App\Http\Controllers\Reports\ParkingReportController;
 use App\Http\Controllers\Reports\DepositReportController;
 use App\Http\Controllers\Reports\RentedRoomsReportController;
+use App\Http\Controllers\Reports\RefundReportController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\PromoBannerController;
 use App\Http\Controllers\Chat\ChatController;
@@ -214,6 +215,9 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
         Route::get('/newReserv-in/{order_id}/regist', [NewReservController::class, 'getRegist'])->name('newReserv.checkin.regist');
         Route::get('/newReserv-in/{order_id}/invoice', [NewReservController::class, 'getInvoice'])->name('newReserv.checkin.invoice');
+        /* Invoice-number-based URL: /newReserv-in/invoice-{slug} where {slug} is the invoice
+           number with '/' replaced by '-' (e.g. 0162/K1/KGA-INV/IV/2026 → invoice-0162-K1-KGA-INV-IV-2026). */
+        Route::get('/newReserv-in/invoice-{slug}', [NewReservController::class, 'getInvoiceBySlug'])->name('newReserv.checkin.invoice.by-number');
 
         Route::get('/checkin', [CheckInController::class, 'index'])->name('checkin.index');
         Route::get('/checkin/filter', [CheckInController::class, 'filter'])->name('checkin.filter');
@@ -426,6 +430,11 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::get('/rented-rooms-report', [RentedRoomsReportController::class, 'index'])->name('reports.rented-rooms.index');
         Route::get('/rented-rooms-report/data', [RentedRoomsReportController::class, 'getData'])->name('reports.rented-rooms.data');
         Route::get('/rented-rooms-report/export', [RentedRoomsReportController::class, 'export'])->name('reports.rented-rooms.export');
+
+        // <!-- Refund Report — lists t_refund rows with filters and Excel export (added 2026-05-20) -->
+        Route::get('/refund-report', [RefundReportController::class, 'index'])->name('reports.refund.index');
+        Route::get('/refund-report/data', [RefundReportController::class, 'getData'])->name('reports.refund.data');
+        Route::get('/refund-report/export', [RefundReportController::class, 'export'])->name('reports.refund.export');
     });
 
     Route::prefix('vouchers')->group(function () {

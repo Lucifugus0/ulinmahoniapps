@@ -18,7 +18,7 @@
         <div>
             <div class="flex items-center gap-3 mb-4">
                 <!-- Footer logo scaled 50% larger than original h-10 (40px → 60px) -->
-                <img src="{{ asset('images/assets/ulinmahoni-logo-footer.png') }}" alt="Ulin Mahoni" class="w-auto" style="height: 60px;">
+                <img src="{{ asset('images/assets/new-ullinmahoni.PNG') }}" alt="Ulin Mahoni" class="w-auto" style="height: 60px;">
                 <h4 class="text-2xl font-bold text-white tracking-tight">Ulin Mahoni</h4>
             </div>
 

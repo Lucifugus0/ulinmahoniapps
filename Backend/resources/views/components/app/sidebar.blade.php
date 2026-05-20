@@ -512,7 +512,8 @@
                             window.location.href.includes('reports/payment') ||
                             window.location.href.includes('reports/parking') ||
                             window.location.href.includes('reports/deposit') ||
-                            window.location.href.includes('reports/rented-rooms')) { activeMenu = 'reports' }">
+                            window.location.href.includes('reports/rented-rooms') ||
+                            window.location.href.includes('reports/refund')) { activeMenu = 'reports' }">
 
                             <!-- Main Menu Button -->
                             <a @click="activeMenu = activeMenu === 'reports' ? '' : 'reports'"
@@ -521,7 +522,8 @@
                                         'reports.payment.*',
                                         'reports.parking.*',
                                         'reports.deposit.*',
-                                        'reports.rented-rooms.*')) bg-indigo-600 @endif">
+                                        'reports.rented-rooms.*',
+                                        'reports.refund.*')) bg-indigo-600 @endif">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0"
                                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -596,6 +598,15 @@
                                             <a href="{{ route('reports.rented-rooms.index') }}"
                                                 class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('reports.rented-rooms.*')) bg-indigo-600 @endif">
                                                 <span class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_rented_rooms_report') }}</span>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                    {{-- Refund Report — own permission `view_refund_report` (added 2026-05-20). --}}
+                                    @can('view_refund_report')
+                                        <li>
+                                            <a href="{{ route('reports.refund.index') }}"
+                                                class="flex items-center gap-3 px-3 py-2 text-indigo-200 rounded-lg hover:bg-indigo-600/50 transition-all duration-300 @if (Route::is('reports.refund.*')) bg-indigo-600 @endif">
+                                                <span class="text-xs transition-all duration-300 hover:translate-x-1">{{ __('ui.sidebar_refund_report') }}</span>
                                             </a>
                                         </li>
                                     @endcan

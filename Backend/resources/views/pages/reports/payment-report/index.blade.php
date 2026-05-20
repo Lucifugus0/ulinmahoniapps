@@ -314,6 +314,13 @@
                 /* Status badge class comes from controller's resolvePaymentStatus — green/red/orange */
                 const statusClass = row.payment_status_class || 'bg-gray-100 text-gray-700';
 
+                /* Invoice URL: prefer the invoice-number slug (invoice number with '/' → '-'),
+                   fall back to the legacy order_id route for rows with no invoice number yet. */
+                const hasInvoiceNo = row.invoice_number && row.invoice_number !== '-';
+                const invoiceUrl = hasInvoiceNo
+                    ? `${invoiceBaseUrl}/invoice-${row.invoice_number.replace(/\//g, '-')}`
+                    : (row.order_id ? `${invoiceBaseUrl}/${row.order_id}/invoice` : '');
+
                 return `
                 <!-- Row without hover:bg-gray-50 to prevent white bg in dark mode (matches All Bookings) -->
                 <tr class="transition-colors ${rowTintClass}">
@@ -347,7 +354,7 @@
                     <td class="px-3 py-3 text-xs text-gray-700">${row.verified_at}</td>
                     <td class="px-3 py-3 text-xs text-gray-600">${row.notes || '-'}</td>
                     <td class="px-3 py-3 text-xs text-center">
-                        ${row.order_id ? `<a href="${invoiceBaseUrl}/${row.order_id}/invoice" target="_blank" class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none">{{ __('ui.view_invoice') }}</a>` : '-'}
+                        ${invoiceUrl ? `<a href="${invoiceUrl}" target="_blank" class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none">{{ __('ui.view_invoice') }}</a>` : '-'}
                     </td>
                 </tr>
             `}).join('');

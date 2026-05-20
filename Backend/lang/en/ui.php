@@ -76,6 +76,7 @@ return [
     'sidebar_parking_report' => 'Parking Report',
     'sidebar_deposit_report' => 'Deposit Report',
     'sidebar_rented_rooms_report' => 'Rented Rooms Report',
+    'sidebar_refund_report' => 'Refund Report',
     'sidebar_settings' => 'Settings',
     'sidebar_users' => 'Users',
     'sidebar_role_permission' => 'Access Management',
@@ -925,6 +926,8 @@ return [
     'parking_report_desc' => 'View and manage parking fee transaction reports',
     'deposit_report' => 'Deposit Report',
     'deposit_report_desc' => 'View and manage deposit fee transaction reports',
+    'refund_report' => 'Refund Report',
+    'refund_report_desc' => 'View and manage all refund records across bookings',
     'search_parking_report_placeholder' => 'Search invoice ID, order ID, or name...',
     'search_deposit_report_placeholder' => 'Search invoice ID, order ID, or name...',
     'invoice_id' => 'Invoice ID',
@@ -1584,6 +1587,13 @@ return [
     'invoice_transaction_code' => 'Transaction Code:',
     'invoice_payment_date' => 'Payment Date:',
     'invoice_payment_via' => 'Payment via:',
+    // Invoice — redesigned layout (Payment Report)
+    'invoice_issued_in_name_of' => 'ISSUED IN THE NAME OF',
+    'invoice_col_property' => 'PROPERTY',
+    'invoice_col_quantity' => 'QUANTITY',
+    'invoice_discount' => 'DISCOUNT',
+    'invoice_price_includes_tax' => '*Price already includes tax',
+    'invoice_disclaimer' => 'This invoice is issued automatically by the system without a signature and is legally valid and binding. Should there be any errors in the information contained in this invoice, it must be confirmed with us within 3 business days at the latest. This invoice is confidential and is intended solely for the recipient named in this invoice.',
 
     // Change Room (New)
     'changeroom_transferred_count' => ':count Transfer(s)',

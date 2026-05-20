@@ -73,7 +73,7 @@ return [
     ],
 
     'cities' => [
-        'all' => 'Semua',
+        'all' => 'Semua Kota',
         'bogor' => 'Bogor',
         'jakarta' => 'Jakarta',
     ],

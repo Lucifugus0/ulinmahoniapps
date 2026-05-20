@@ -76,6 +76,7 @@ return [
     'sidebar_parking_report' => 'Laporan Parkir',
     'sidebar_deposit_report' => 'Laporan Deposit',
     'sidebar_rented_rooms_report' => 'Laporan Kamar Tersewa',
+    'sidebar_refund_report' => 'Laporan Refund',
     'sidebar_settings' => 'Pengaturan',
     'sidebar_users' => 'Pengguna',
     'sidebar_role_permission' => 'Manajemen Akses',
@@ -925,6 +926,8 @@ return [
     'parking_report_desc' => 'Lihat dan kelola laporan transaksi biaya parkir',
     'deposit_report' => 'Laporan Deposit',
     'deposit_report_desc' => 'Lihat dan kelola laporan transaksi biaya deposit',
+    'refund_report' => 'Laporan Refund',
+    'refund_report_desc' => 'Lihat dan kelola semua catatan refund dari seluruh pemesanan',
     'search_parking_report_placeholder' => 'Cari ID invoice, ID pesanan, atau nama...',
     'search_deposit_report_placeholder' => 'Cari ID invoice, ID pesanan, atau nama...',
     'invoice_id' => 'ID Invoice',
@@ -1584,6 +1587,13 @@ return [
     'invoice_transaction_code' => 'Kode Transaksi:',
     'invoice_payment_date' => 'Tanggal Bayar:',
     'invoice_payment_via' => 'Pembayaran melalui:',
+    // Invoice — redesigned layout (Payment Report)
+    'invoice_issued_in_name_of' => 'DITERBITKAN ATAS NAMA',
+    'invoice_col_property' => 'PROPERTY',
+    'invoice_col_quantity' => 'JUMLAH',
+    'invoice_discount' => 'DISKON',
+    'invoice_price_includes_tax' => '*Harga sudah termasuk pajak',
+    'invoice_disclaimer' => 'Invoice ini diterbitkan secara otomatis oleh sistem tanpa tanda tangan serta berlaku sah dan mengikat. Apabila terdapat kesalahan terhadap informasi di dalam invoice ini, maka wajib dikonfirmasikan kepada kami paling lambat 3 hari kerja. Invoice ini bersifat rahasia dan hanya ditujukan kepada penerima sebagaimana tercantum di dalam invoice.',
 
     // Change Room (New)
     'changeroom_transferred_count' => ':countx Pindah',
