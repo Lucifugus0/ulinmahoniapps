@@ -48,7 +48,12 @@ class RefundController extends Controller
         }
 
         $perPage = $request->get('per_page', 8);
-        $refunds = $query->orderBy('refund_date', 'desc')->paginate($perPage);
+        // <!-- Newest refund first. `id` desc is a tie-breaker because refund_date is only
+        //      second-precision — refunds processed in the same second would otherwise have
+        //      an undefined row order. -->
+        $refunds = $query->orderBy('refund_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
 
         return view('pages.payment.refund.index', compact(
             'refunds',
