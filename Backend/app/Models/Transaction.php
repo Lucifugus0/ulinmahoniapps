@@ -45,6 +45,8 @@ class Transaction extends Model
         'parking_type',
         'voucher_id',
         'voucher_code',
+        'discount_amount',           /* Voucher/promo discount deducted from room_price */
+        'subtotal_before_discount',  /* room_price before discount was applied */
         'virtual_account_no',
         'payment_bank',
         'property_type',

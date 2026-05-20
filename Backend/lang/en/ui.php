@@ -1580,6 +1580,8 @@ return [
     'invoice_col_total' => 'TOTAL',
     'invoice_months' => 'Months',
     'invoice_days' => 'Days',
+    'invoice_parking' => 'Parking',
+    'invoice_parking_addon' => 'Add-on',
     'invoice_subtotal' => 'SUB TOTAL',
     'invoice_tax_service' => 'TAX & SERVICE FEE',
     'invoice_total_payment' => 'TOTAL PAYMENT',

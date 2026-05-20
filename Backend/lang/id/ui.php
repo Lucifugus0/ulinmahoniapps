@@ -1580,6 +1580,8 @@ return [
     'invoice_col_total' => 'TOTAL',
     'invoice_months' => 'Bulan',
     'invoice_days' => 'Hari',
+    'invoice_parking' => 'Parkir',
+    'invoice_parking_addon' => 'Tambahan',
     'invoice_subtotal' => 'SUB TOTAL',
     'invoice_tax_service' => 'TAX & SERVICE FEE',
     'invoice_total_payment' => 'TOTAL PEMBAYARAN',

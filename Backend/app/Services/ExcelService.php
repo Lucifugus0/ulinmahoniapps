@@ -282,26 +282,33 @@ class ExcelService
     }
 
     /**
-     * Add filter info section with box styling
+     * Add filter info section with box styling.
+     * <!-- Pass 'endColumn' in $options to match the sheet's column width (default 'L').
+     *      Must match the endColumn used by addTitleSection/addInfoRow throughout the sheet
+     *      to avoid PhpSpreadsheet mergeCells conflicts when the data rows span more columns. -->
      */
-    public function addFilterSection(array $filters): self
+    public function addFilterSection(array $filters, array $options = []): self
     {
+        $endColumn = $options['endColumn'] ?? 'L';
+
         if (empty($filters)) {
-            $this->addInfoRow('📋 No filters applied - showing all data', [
+            $this->addInfoRow('No filters applied - showing all data', [
                 'italic' => true,
                 'textColor' => '6B7280',
                 'fontSize' => 10,
+                'endColumn' => $endColumn,
             ]);
             $this->currentRow++;
             return $this;
         }
 
         // Filter header
-        $this->addInfoRow('🔍 APPLIED FILTERS', [
+        $this->addInfoRow('APPLIED FILTERS', [
             'bold' => true,
             'bgColor' => 'F3F4F6',
             'textColor' => '1F2937',
             'fontSize' => 11,
+            'endColumn' => $endColumn,
         ]);
 
         // Filter items with indentation
@@ -309,6 +316,7 @@ class ExcelService
             $this->addInfoRow('   ' . $filterText, [
                 'fontSize' => 10,
                 'textColor' => '4B5563',
+                'endColumn' => $endColumn,
             ]);
         }
 

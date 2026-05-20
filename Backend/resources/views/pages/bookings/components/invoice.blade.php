@@ -333,10 +333,20 @@
         $unitPrice = $isMonthly
             ? ($booking->transaction->monthly_price ?? 0)
             : ($booking->transaction->daily_price ?? 0);
+
         // <!-- Money values for the totals block -->
-        $rowTotal = $booking->transaction->room_price ?? 0;
-        $discount = $booking->transaction->discount_amount ?? 0;
-        $grandTotal = $booking->transaction->grandtotal_price ?? 0;
+        $roomPrice  = $booking->transaction->room_price ?? 0;
+        $discount   = $booking->transaction->discount_amount ?? 0;
+        // <!-- Sub Total = room price minus any voucher/promo discount -->
+        $subTotal   = $roomPrice - $discount;
+
+        // <!-- Parking: only show a separate row when parking_fee > 0 -->
+        $parkingFee      = $booking->transaction->parking_fee ?? 0;
+        $parkingType     = $booking->transaction->parking_type ?? null;
+        $parkingDuration = $booking->transaction->parking_duration ?? null;
+
+        // <!-- Total Payment = Sub Total + Parking (excludes service fee & deposit) -->
+        $totalPayment = $subTotal + $parkingFee;
     @endphp
 
     <table class="detail-table">
@@ -352,7 +362,7 @@
             </tr>
         </thead>
         <tbody>
-            {{-- Single purchase line --}}
+            {{-- Room rental line --}}
             <tr class="data-row">
                 <td>{{ $booking->transaction->property_name ?? ($booking->property->name ?? 'N/A') }}</td>
                 <td>{{ $booking->transaction->property_type ?? ($booking->property->type ?? 'N/A') }}</td>
@@ -360,24 +370,42 @@
                 <td class="text-center">{{ $duration }}</td>
                 <td class="text-center">{{ ucfirst($bookingType) }}</td>
                 <td class="text-right">Rp {{ number_format($unitPrice, 0, ',', '.') }}</td>
-                <td class="text-right">Rp {{ number_format($rowTotal, 0, ',', '.') }}</td>
+                <td class="text-right">Rp {{ number_format($roomPrice, 0, ',', '.') }}</td>
             </tr>
 
-            {{-- Totals hang under the last two columns --}}
+            {{-- Discount row: immediately after the room row, before parking --}}
             <tr>
                 <td class="totals-blank" colspan="5"></td>
                 <td class="totals-label">{{ __('ui.invoice_discount') }}</td>
+                {{-- Discount is applied to room price only --}}
                 <td class="text-right">Rp {{ number_format($discount, 0, ',', '.') }}</td>
             </tr>
             <tr>
                 <td class="totals-blank" colspan="5"></td>
                 <td class="totals-label">{{ __('ui.invoice_subtotal') }}</td>
-                <td class="text-right">Rp {{ number_format($rowTotal, 0, ',', '.') }}</td>
+                {{-- Sub Total = room_price - discount_amount (before adding parking) --}}
+                <td class="text-right">Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
             </tr>
+
+            {{-- Parking line: only rendered when a parking fee was charged on this transaction --}}
+            @if ($parkingFee > 0)
+            <tr class="data-row">
+                <td>{{ $booking->transaction->property_name ?? ($booking->property->name ?? 'N/A') }}</td>
+                <td>{{ $booking->transaction->property_type ?? ($booking->property->type ?? 'N/A') }}</td>
+                {{-- Description: "Parkir {type}" e.g. "Parkir Motor" --}}
+                <td>{{ __('ui.invoice_parking') }}{{ $parkingType ? ' ' . ucfirst($parkingType) : '' }}</td>
+                <td class="text-center">{{ $parkingDuration ?? '-' }}</td>
+                <td class="text-center">{{ __('ui.invoice_parking_addon') }}</td>
+                <td class="text-right">Rp {{ number_format($parkingFee, 0, ',', '.') }}</td>
+                <td class="text-right">Rp {{ number_format($parkingFee, 0, ',', '.') }}</td>
+            </tr>
+            @endif
+
+            {{-- Total Payment = Sub Total + Parking (excludes service_fees & deposit_fee) --}}
             <tr>
                 <td class="totals-blank" colspan="5"></td>
                 <td class="totals-label grand">{{ __('ui.invoice_total_payment') }}</td>
-                <td class="totals-value grand text-right">Rp {{ number_format($grandTotal, 0, ',', '.') }}</td>
+                <td class="totals-value grand text-right">Rp {{ number_format($totalPayment, 0, ',', '.') }}</td>
             </tr>
         </tbody>
     </table>
