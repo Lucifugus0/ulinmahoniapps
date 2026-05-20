@@ -4,7 +4,7 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
                 <h1
-                    class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-rose-600">
+                    class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
                     {{ __('ui.refund_report') }}
                 </h1>
                 <p class="text-gray-600 mt-1">{{ __('ui.refund_report_desc') }}</p>
