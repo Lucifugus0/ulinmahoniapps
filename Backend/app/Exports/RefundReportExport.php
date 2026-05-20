@@ -40,7 +40,10 @@ class RefundReportExport implements FromCollection, WithHeadings, WithMapping, W
                 'requestedBy',
                 'processedBy',
             ])
-            ->orderByDesc('refund_date');
+            // <!-- Newest refund first — matches RefundReportController. `id` desc breaks ties
+            //      when refund_date (second-precision) is identical for same-second refunds. -->
+            ->orderByDesc('refund_date')
+            ->orderByDesc('id');
 
         if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
             $query->whereBetween('refund_date', [

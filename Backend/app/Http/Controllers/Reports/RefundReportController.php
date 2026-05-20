@@ -63,7 +63,11 @@ class RefundReportController extends Controller
                 'requestedBy',
                 'processedBy',
             ])
-            ->orderByDesc('refund_date');
+            // <!-- Newest refund first. `id` desc is a tie-breaker because refund_date is only
+            //      second-precision — refunds processed in the same second would otherwise have
+            //      an undefined row order. -->
+            ->orderByDesc('refund_date')
+            ->orderByDesc('id');
 
         // <!-- Date range on refund_date -->
         if ($request->filled('start_date') && $request->filled('end_date')) {
