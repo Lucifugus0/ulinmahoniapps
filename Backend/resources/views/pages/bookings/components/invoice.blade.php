@@ -337,16 +337,22 @@
         // <!-- Money values for the totals block -->
         $roomPrice  = $booking->transaction->room_price ?? 0;
         $discount   = $booking->transaction->discount_amount ?? 0;
-        // <!-- Sub Total = room price minus any voucher/promo discount -->
-        $subTotal   = $roomPrice - $discount;
 
         // <!-- Parking: only show a separate row when parking_fee > 0 -->
         $parkingFee      = $booking->transaction->parking_fee ?? 0;
         $parkingType     = $booking->transaction->parking_type ?? null;
         $parkingDuration = $booking->transaction->parking_duration ?? null;
 
-        // <!-- Total Payment = Sub Total + Parking (excludes service fee & deposit) -->
-        $totalPayment = $subTotal + $parkingFee;
+        // <!-- Room amount before discount: prefer the persisted subtotal_before_discount column,
+        //      fall back to room_price for legacy rows where that column was never written. -->
+        $roomBeforeDiscount = $booking->transaction->subtotal_before_discount ?: $roomPrice;
+        // <!-- Subtotal = room (before discount) + parking — both billed line items above this row -->
+        $beforeDiscount = $roomBeforeDiscount + $parkingFee;
+        // <!-- Sub Total = pre-discount subtotal minus any voucher/promo discount -->
+        $subTotal   = $beforeDiscount - $discount;
+        // <!-- Total Payment = Sub Total (parking already folded into the subtotal;
+        //      still excludes service fee & deposit) -->
+        $totalPayment = $subTotal;
     @endphp
 
     <table class="detail-table">
@@ -373,21 +379,8 @@
                 <td class="text-right">Rp {{ number_format($roomPrice, 0, ',', '.') }}</td>
             </tr>
 
-            {{-- Discount row: immediately after the room row, before parking --}}
-            <tr>
-                <td class="totals-blank" colspan="5"></td>
-                <td class="totals-label">{{ __('ui.invoice_discount') }}</td>
-                {{-- Discount is applied to room price only --}}
-                <td class="text-right">Rp {{ number_format($discount, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
-                <td class="totals-blank" colspan="5"></td>
-                <td class="totals-label">{{ __('ui.invoice_subtotal') }}</td>
-                {{-- Sub Total = room_price - discount_amount (before adding parking) --}}
-                <td class="text-right">Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
-            </tr>
-
-            {{-- Parking line: only rendered when a parking fee was charged on this transaction --}}
+            {{-- Parking line: directly below the room row. Only rendered when a parking fee
+                 was charged on this transaction --}}
             @if ($parkingFee > 0)
             <tr class="data-row">
                 <td>{{ $booking->transaction->property_name ?? ($booking->property->name ?? 'N/A') }}</td>
@@ -401,7 +394,23 @@
             </tr>
             @endif
 
-            {{-- Total Payment = Sub Total + Parking (excludes service_fees & deposit_fee) --}}
+            {{-- Subtotal-before-discount row: room + parking, before any discount is deducted --}}
+            <tr>
+                <td class="totals-blank" colspan="5"></td>
+                <td class="totals-label">{{ __('ui.invoice_subtotal_before_discount') }}</td>
+                <td class="text-right">Rp {{ number_format($beforeDiscount, 0, ',', '.') }}</td>
+            </tr>
+
+            {{-- Discount row: after the before-discount subtotal --}}
+            <tr>
+                <td class="totals-blank" colspan="5"></td>
+                <td class="totals-label">{{ __('ui.invoice_discount') }}</td>
+                <td class="text-right">Rp {{ number_format($discount, 0, ',', '.') }}</td>
+            </tr>
+
+            {{-- "Sub Total" row removed: with parking folded into the subtotal and service fee /
+                 deposit excluded, Sub Total always equals Total Payment, so the row was redundant.
+                 Total Payment = (room + parking) - discount. --}}
             <tr>
                 <td class="totals-blank" colspan="5"></td>
                 <td class="totals-label grand">{{ __('ui.invoice_total_payment') }}</td>

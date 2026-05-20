@@ -1583,6 +1583,7 @@ return [
     'invoice_parking' => 'Parkir',
     'invoice_parking_addon' => 'Tambahan',
     'invoice_subtotal' => 'SUB TOTAL',
+    'invoice_subtotal_before_discount' => 'SUBTOTAL (SEBELUM DISKON)',
     'invoice_tax_service' => 'TAX & SERVICE FEE',
     'invoice_total_payment' => 'TOTAL PEMBAYARAN',
     'invoice_transaction_details' => 'Detail Transaksi :',

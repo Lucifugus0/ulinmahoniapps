@@ -1583,6 +1583,7 @@ return [
     'invoice_parking' => 'Parking',
     'invoice_parking_addon' => 'Add-on',
     'invoice_subtotal' => 'SUB TOTAL',
+    'invoice_subtotal_before_discount' => 'SUBTOTAL (BEFORE DISCOUNT)',
     'invoice_tax_service' => 'TAX & SERVICE FEE',
     'invoice_total_payment' => 'TOTAL PAYMENT',
     'invoice_transaction_details' => 'Transaction Details :',
