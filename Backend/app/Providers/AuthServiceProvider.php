@@ -36,6 +36,7 @@ class AuthServiceProvider extends ServiceProvider
             'view_change_room',
             'view_modify_booking',
             'properties',
+            'view_cities',
             'view_properties',
             'view_daily_pricing',
             'view_property_facilities',
