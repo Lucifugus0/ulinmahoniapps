@@ -39,7 +39,8 @@ class PromoBannerSection extends ConsumerWidget {
             LayoutBuilder(
               builder: (context, constraints) {
                 final cardWidth = MediaQuery.of(context).size.width - 32;
-                final cardHeight = cardWidth * 9 / 16;
+                // 16:7 ratio — shorter banner than the old 16:9
+                final cardHeight = cardWidth * 7 / 16;
                 return SizedBox(
                   height: cardHeight + 10,
                   child: Skeletonizer(
@@ -159,7 +160,8 @@ class _BannerCarouselState extends State<_BannerCarousel> {
             child: Column(
               children: [
                 AspectRatio(
-                  aspectRatio: 16 / 9,
+                  // 16:7 ratio — shorter banner than the old 16:9
+                  aspectRatio: 16 / 7,
                   child: ClipRect(
                     child: GestureDetector(
                       onPanDown: (_) => _stopAutoScroll(),

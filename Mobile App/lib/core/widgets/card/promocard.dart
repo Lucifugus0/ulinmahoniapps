@@ -4,7 +4,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../theme/glass_theme.dart';
 
 /// Promo Banner Card Widget with glass-style border.
-/// Displays promotional banner image in 16:9 aspect ratio.
+/// Displays a promotional banner image; aspect ratio is set by the parent.
 /// Border and shadow adapt to dark/light mode.
 class PromoCard extends StatelessWidget {
   final String imageUrl;
