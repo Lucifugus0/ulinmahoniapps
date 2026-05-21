@@ -139,8 +139,12 @@ class HomeController extends Controller {
         //      Wrapped in try-catch: m_cities is owned by the Backend admin app and may be missing
         //      on a local DB imported without that migration — falls back to an empty list. -->
         try {
+            // <!-- Pin Jakarta first, Bogor second, then every other active city in
+            //      ascending idrec order. The CASE expression gives the two flagship
+            //      cities a fixed priority without renumbering the m_cities primary key. -->
             $cities = DB::table('m_cities')
                 ->where('status', '1')
+                ->orderByRaw("CASE `slug` WHEN 'jakarta' THEN 0 WHEN 'bogor' THEN 1 ELSE 2 END ASC")
                 ->orderBy('idrec', 'asc')
                 ->get(['city_name', 'slug']);
         } catch (\Exception $e) {
