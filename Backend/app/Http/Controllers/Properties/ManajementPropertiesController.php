@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\PropertyFacility;
 use App\Models\City;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ManajementPropertiesController extends Controller
 {
@@ -783,15 +784,33 @@ class ManajementPropertiesController extends Controller
         $validatedData = $request->validate([
             'city_name' => 'required|string|max:255',
             'province' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:m_cities,slug',
+            'slug' => 'nullable|string|max:255',
             'status' => 'required|boolean',
         ]);
+
+        // <!-- Resolve the effective slug the same way the City model boot hook would:
+        //      use the explicit slug if provided, otherwise derive it from city_name.
+        //      Doing this here (instead of relying on the model hook) lets the uniqueness
+        //      check below cover the auto-generated value — otherwise an empty slug field
+        //      bypasses validation and the auto-generated slug hits a DB 1062 duplicate. -->
+        $resolvedSlug = $request->filled('slug')
+            ? Str::slug($validatedData['slug'])
+            : Str::slug($validatedData['city_name']);
+
+        // <!-- Reject a slug already used by another city row before it reaches the DB -->
+        if (City::where('slug', $resolvedSlug)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A city with this name already exists',
+                'errors' => ['slug' => ['The slug "' . $resolvedSlug . '" is already used by another city.']],
+            ], 422);
+        }
 
         try {
             $city = City::create([
                 'city_name' => $validatedData['city_name'],
                 'province' => $validatedData['province'],
-                'slug' => $validatedData['slug'] ?: null, // Let model boot auto-generate if empty
+                'slug' => $resolvedSlug,
                 'status' => $validatedData['status'] ? 1 : 0,
                 'created_by' => Auth::id(),
             ]);
@@ -819,7 +838,7 @@ class ManajementPropertiesController extends Controller
         $validatedData = $request->validate([
             'city_name' => 'required|string|max:255',
             'province' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:m_cities,slug,' . $id . ',idrec',
+            'slug' => 'nullable|string|max:255',
             'status' => 'required|boolean',
         ]);
 
@@ -833,10 +852,27 @@ class ManajementPropertiesController extends Controller
                 ], 404);
             }
 
+            // <!-- Resolve the effective slug exactly as the City model boot hook would
+            //      (explicit slug, else derived from city_name). Validating the resolved
+            //      value here closes the gap where an empty slug field skips the unique
+            //      rule and the auto-generated slug then hits a DB 1062 duplicate. -->
+            $resolvedSlug = $request->filled('slug')
+                ? Str::slug($validatedData['slug'])
+                : Str::slug($validatedData['city_name']);
+
+            // <!-- Reject a slug already owned by a different city row (exclude self) -->
+            if (City::where('slug', $resolvedSlug)->where('idrec', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A city with this name already exists',
+                    'errors' => ['slug' => ['The slug "' . $resolvedSlug . '" is already used by another city.']],
+                ], 422);
+            }
+
             $city->update([
                 'city_name' => $validatedData['city_name'],
                 'province' => $validatedData['province'],
-                'slug' => $validatedData['slug'] ?: null, // Let model boot auto-generate
+                'slug' => $resolvedSlug,
                 'status' => $validatedData['status'] ? 1 : 0,
                 'updated_by' => Auth::id(),
             ]);

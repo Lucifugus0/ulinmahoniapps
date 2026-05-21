@@ -134,6 +134,19 @@ class HomeController extends Controller {
                 ];
             });
 
+        // <!-- Fetch active cities from the m_cities master table (admin-managed location list).
+        //      Drives the homepage location filter tabs instead of a hardcoded Jakarta/Bogor list.
+        //      Wrapped in try-catch: m_cities is owned by the Backend admin app and may be missing
+        //      on a local DB imported without that migration — falls back to an empty list. -->
+        try {
+            $cities = DB::table('m_cities')
+                ->where('status', '1')
+                ->orderBy('idrec', 'asc')
+                ->get(['city_name', 'slug']);
+        } catch (\Exception $e) {
+            $cities = collect();
+        }
+
         try {
             // Get active properties (status = 1)
             $properties = Property::where('status', 1)
@@ -165,10 +178,7 @@ class HomeController extends Controller {
                 return $this->formatPropertyForArea($property);
             })->values()->toArray();
 
-            // Prepare property data by type and location for property-types component
-            $propertyTypesByLocation = $this->getPropertiesByTypeAndLocation($propertyTypes);
-
-            // Merge all property types into a single array for the "All" tab
+            // Merge all property types into a single array for the "All" type tab
             $allProperties = array_merge(
                 $propertyTypes['Kos'],
                 $propertyTypes['House'],
@@ -177,27 +187,14 @@ class HomeController extends Controller {
                 $propertyTypes['Hotel']
             );
 
-            // Merge all properties by location for the "All" tab location filters
-            $allJakarta = array_merge(
-                $propertyTypesByLocation['kos']['jakarta'],
-                $propertyTypesByLocation['house']['jakarta'],
-                $propertyTypesByLocation['apartment']['jakarta'],
-                $propertyTypesByLocation['villa']['jakarta'],
-                $propertyTypesByLocation['hotel']['jakarta']
-            );
-            $allBogor = array_merge(
-                $propertyTypesByLocation['kos']['bogor'],
-                $propertyTypesByLocation['house']['bogor'],
-                $propertyTypesByLocation['apartment']['bogor'],
-                $propertyTypesByLocation['villa']['bogor'],
-                $propertyTypesByLocation['hotel']['bogor']
-            );
+            // <!-- Build the property-by-location matrix keyed by city slug, driven by m_cities.
+            //      Each property card is queried against its city name so the homepage location
+            //      tabs filter live data instead of the previous hardcoded Jakarta/Bogor split. -->
+            $propertiesByLocation = $this->getPropertiesByLocation($propertyTypes, $allProperties, $cities);
 
             // Use the same view for all locales - the view will detect locale via app()->getLocale()
             return view("pages.homepage.index", [
                 'allProperties' => $allProperties,
-                'allJakarta' => $allJakarta,
-                'allBogor' => $allBogor,
                 'kos' => $propertyTypes['Kos'],
                 'houses' => $propertyTypes['House'],
                 'apartments' => $propertyTypes['Apartment'],
@@ -210,17 +207,10 @@ class HomeController extends Controller {
                 'promos' => $promos,
                 'propertyAreas' => $propertyAreas,
                 'nearbyProperties' => $nearbyProperties,
-                // Property types by location
-                'kosJakarta' => $propertyTypesByLocation['kos']['jakarta'],
-                'kosBogor' => $propertyTypesByLocation['kos']['bogor'],
-                'housesJakarta' => $propertyTypesByLocation['house']['jakarta'],
-                'housesBogor' => $propertyTypesByLocation['house']['bogor'],
-                'apartmentsJakarta' => $propertyTypesByLocation['apartment']['jakarta'],
-                'apartmentsBogor' => $propertyTypesByLocation['apartment']['bogor'],
-                'villasJakarta' => $propertyTypesByLocation['villa']['jakarta'],
-                'villasBogor' => $propertyTypesByLocation['villa']['bogor'],
-                'hotelsJakarta' => $propertyTypesByLocation['hotel']['jakarta'],
-                'hotelsBogor' => $propertyTypesByLocation['hotel']['bogor'],
+                // <!-- Active cities from m_cities — render the location filter tabs -->
+                'cities' => $cities,
+                // <!-- Properties grouped by city slug then property type — render tab contents -->
+                'propertiesByLocation' => $propertiesByLocation,
             ]);
 
         } catch (Exception $e) {
@@ -228,11 +218,10 @@ class HomeController extends Controller {
                 'exception' => $e
             ]);
 
-            // Use the same view for all locales - the view will detect locale via app()->getLocale()
+            // <!-- Empty-state fallback: still expose the "all" location bucket so the
+            //      location filter renders with just the "Semua Kota" tab. -->
             return view("pages.homepage.index", [
                 'allProperties' => [],
-                'allJakarta' => [],
-                'allBogor' => [],
                 'kos' => [],
                 'houses' => [],
                 'apartments' => [],
@@ -251,17 +240,13 @@ class HomeController extends Controller {
                     'bekasi' => []
                 ],
                 'nearbyProperties' => [],
-                // Property types by location
-                'kosJakarta' => [],
-                'kosBogor' => [],
-                'housesJakarta' => [],
-                'housesBogor' => [],
-                'apartmentsJakarta' => [],
-                'apartmentsBogor' => [],
-                'villasJakarta' => [],
-                'villasBogor' => [],
-                'hotelsJakarta' => [],
-                'hotelsBogor' => [],
+                'cities' => collect(),
+                'propertiesByLocation' => [
+                    'all' => [
+                        'all' => [], 'kos' => [], 'house' => [],
+                        'apartment' => [], 'villa' => [], 'hotel' => [],
+                    ],
+                ],
             ]);
         }
     }
@@ -355,25 +340,60 @@ class HomeController extends Controller {
     }
 
     /**
-     * Get properties grouped by type and location.
+     * Get properties grouped by city slug and property type for the homepage location filter.
      *
-     * @param array $propertyTypes Array of properties grouped by type
-     * @return array Properties grouped by type and location
+     * Builds a matrix the property-types component iterates over:
+     *   [ 'all' => ['all' => [...], 'kos' => [...], ...],
+     *     '<city-slug>' => ['all' => [...], 'kos' => [...], ...] ]
+     *
+     * The 'all' bucket holds every property; each city bucket holds only the properties
+     * whose city name (matched against the formatted subLocation string) contains the
+     * m_cities `city_name`. Matching is case-insensitive so "Jakarta" still captures
+     * properties stored as "Jakarta Selatan", "Jakarta Pusat", etc.
+     *
+     * @param array $propertyTypes  Properties grouped by type (Kos/House/Apartment/Villa/Hotel)
+     * @param array $allProperties  Flat list of every formatted property
+     * @param \Illuminate\Support\Collection $cities  Active rows from m_cities
+     * @return array Properties grouped by city slug then property type
      */
-    private function getPropertiesByTypeAndLocation($propertyTypes)
+    private function getPropertiesByLocation($propertyTypes, $allProperties, $cities)
     {
-        $result = [];
-        $cities = ['jakarta', 'bogor'];
+        // 'all' location bucket — every property, untouched by city filtering
+        $result = [
+            'all' => [
+                'all' => $allProperties,
+                'kos' => $propertyTypes['Kos'],
+                'house' => $propertyTypes['House'],
+                'apartment' => $propertyTypes['Apartment'],
+                'villa' => $propertyTypes['Villa'],
+                'hotel' => $propertyTypes['Hotel'],
+            ],
+        ];
 
-        foreach ($propertyTypes as $type => $properties) {
-            $typeLower = strtolower($type);
-            $result[$typeLower] = [];
-
-            foreach ($cities as $city) {
-                $result[$typeLower][$city] = array_values(array_filter($properties, function($property) use ($city) {
-                    return stripos($property['subLocation'] ?? '', $city) !== false;
-                }));
+        // One bucket per active city from m_cities — cards queried by city name
+        foreach ($cities as $city) {
+            $cityName = $city->city_name ?? '';
+            $slug = $city->slug ?? '';
+            if ($slug === '') {
+                continue;
             }
+
+            // Filter a list of formatted properties down to those in this city
+            $filterByCity = function ($properties) use ($cityName) {
+                return array_values(array_filter($properties, function ($property) use ($cityName) {
+                    return $cityName !== ''
+                        && stripos($property['subLocation'] ?? '', $cityName) !== false;
+                }));
+            };
+
+            $result[$slug] = [
+                'all' => $filterByCity($allProperties),
+                'kos' => $filterByCity($propertyTypes['Kos']),
+                'house' => $filterByCity($propertyTypes['House']),
+                'apartment' => $filterByCity($propertyTypes['Apartment']),
+                'villa' => $filterByCity($propertyTypes['Villa']),
+                'hotel' => $filterByCity($propertyTypes['Hotel']),
+            ];
         }
 
         return $result;

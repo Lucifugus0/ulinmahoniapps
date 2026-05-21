@@ -39,85 +39,54 @@
                 <i class="fas fa-map-marker-alt"></i>
                 <span>{{ __('homepage.sections.location') }}</span>
             </div>
+            {{-- Location tabs are driven by the m_cities master table ($cities, passed from
+                 HomeController). "Semua Kota" (all) is always first and selected by default;
+                 one pill is rendered per active city. --}}
             <div class="location-tabs-row">
                 <button class="location-tab-trigger active" data-location="all">
                     {{ __('homepage.cities.all') }}
                 </button>
-                <button class="location-tab-trigger" data-location="jakarta">
-                    {{ __('homepage.cities.jakarta') }}
+                @foreach($cities ?? [] as $city)
+                <button class="location-tab-trigger" data-location="{{ $city->slug }}">
+                    {{ $city->city_name }}
                 </button>
-                <button class="location-tab-trigger" data-location="bogor">
-                    {{ __('homepage.cities.bogor') }}
-                </button>
+                @endforeach
             </div>
         </div>
 
-        <!-- Property Type Content -->
+        {{-- Property Type Content — one block of type panels per location bucket.
+             $propertiesByLocation is keyed by 'all' + each city slug, and each value is
+             keyed by property type ('all', 'kos', 'apartment', 'villa', 'hotel'). The
+             scripts.blade.php filter shows the panel matching the active tab + location. --}}
         <div class="property-tab-contents">
-            <!-- All Properties Content — shows every property type combined, selected by default -->
-            <div class="property-tab-content active" data-tab="all" data-location="all">
-                @include('components.homepage.property-cards.kos', ['kos' => $allProperties ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="all" data-location="jakarta">
-                @include('components.homepage.property-cards.kos', ['kos' => $allJakarta ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="all" data-location="bogor">
-                @include('components.homepage.property-cards.kos', ['kos' => $allBogor ?? []])
+            @foreach($propertiesByLocation ?? [] as $locKey => $byType)
+            <!-- All Properties — every type combined for this location -->
+            <div class="property-tab-content {{ $locKey === 'all' ? 'active' : '' }}" data-tab="all" data-location="{{ $locKey }}">
+                @include('components.homepage.property-cards.kos', ['kos' => $byType['all'] ?? []])
             </div>
 
-            <!-- Kos Content -->
-            <div class="property-tab-content" data-tab="kos" data-location="all">
-                @include('components.homepage.property-cards.kos', ['kos' => $kos ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="kos" data-location="jakarta">
-                @include('components.homepage.property-cards.kos', ['kos' => $kosJakarta ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="kos" data-location="bogor">
-                @include('components.homepage.property-cards.kos', ['kos' => $kosBogor ?? []])
+            <!-- Kos -->
+            <div class="property-tab-content" data-tab="kos" data-location="{{ $locKey }}">
+                @include('components.homepage.property-cards.kos', ['kos' => $byType['kos'] ?? []])
             </div>
 
-            <!-- Apartment Content -->
-            <div class="property-tab-content" data-tab="apartment" data-location="all">
-                @include('components.homepage.property-cards.apartment', ['apartments' => $apartments ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="apartment" data-location="jakarta">
-                @include('components.homepage.property-cards.apartment', ['apartments' => $apartmentsJakarta ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="apartment" data-location="bogor">
-                @include('components.homepage.property-cards.apartment', ['apartments' => $apartmentsBogor ?? []])
+            <!-- Apartment -->
+            <div class="property-tab-content" data-tab="apartment" data-location="{{ $locKey }}">
+                @include('components.homepage.property-cards.apartment', ['apartments' => $byType['apartment'] ?? []])
             </div>
 
-            <!-- Villa Content -->
-            <div class="property-tab-content" data-tab="villa" data-location="all">
-                @include('components.homepage.property-cards.villa', ['villas' => $villas ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="villa" data-location="jakarta">
-                @include('components.homepage.property-cards.villa', ['villas' => $villasJakarta ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="villa" data-location="bogor">
-                @include('components.homepage.property-cards.villa', ['villas' => $villasBogor ?? []])
+            <!-- Villa -->
+            <div class="property-tab-content" data-tab="villa" data-location="{{ $locKey }}">
+                @include('components.homepage.property-cards.villa', ['villas' => $byType['villa'] ?? []])
             </div>
 
-            <!-- Hotel Content -->
-            <div class="property-tab-content" data-tab="hotel" data-location="all">
-                @include('components.homepage.property-cards.hotel', ['hotels' => $hotels ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="hotel" data-location="jakarta">
-                @include('components.homepage.property-cards.hotel', ['hotels' => $hotelsJakarta ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="hotel" data-location="bogor">
-                @include('components.homepage.property-cards.hotel', ['hotels' => $hotelsBogor ?? []])
+            <!-- Hotel -->
+            <div class="property-tab-content" data-tab="hotel" data-location="{{ $locKey }}">
+                @include('components.homepage.property-cards.hotel', ['hotels' => $byType['hotel'] ?? []])
             </div>
 
-            {{-- House Content (commented out since House tab is not active) --}}
-            {{--
-            <div class="property-tab-content" data-tab="house" data-location="jakarta">
-                @include('components.homepage.property-cards.house', ['houses' => $housesJakarta ?? []])
-            </div>
-            <div class="property-tab-content" data-tab="house" data-location="bogor">
-                @include('components.homepage.property-cards.house', ['houses' => $housesBogor ?? []])
-            </div>
-            --}}
+            {{-- House content omitted — the House type tab is currently disabled above --}}
+            @endforeach
         </div>
 
         <!-- Browse All Button (outside tab contents) -->
