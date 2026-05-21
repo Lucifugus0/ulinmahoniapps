@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../../core/constants/app_asset_constants.dart';
-import '../../../../../core/constants/appcolor_constants.dart';
 import 'searchfilter.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/utils/app_logger.dart';
@@ -97,24 +96,6 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
     super.dispose();
   }
 
-  /// Builds tagline text spans — uses API tagline if available, otherwise falls back to localized 3-part text
-  List<TextSpan> _buildTaglineSpans(AppLocalizations localizations) {
-    final taglineAsync = ref.watch(taglineProvider);
-    final apiTagline = taglineAsync.value;
-
-    if (apiTagline != null && apiTagline.isNotEmpty) {
-      // Single text span with API tagline
-      return [TextSpan(text: apiTagline, style: const TextStyle(color: Colors.white))];
-    }
-
-    // Fallback: localized 3-part tagline with highlighted middle word
-    return [
-      TextSpan(text: localizations.homeBannerPart1, style: const TextStyle(color: Colors.white)),
-      TextSpan(text: localizations.homeBannerPart2, style: TextStyle(color: AppColors.primaryAdaptive(context))),
-      TextSpan(text: localizations.homeBannerPart3, style: const TextStyle(color: Colors.white)),
-    ];
-  }
-
   void _showFilterDialog() {
     showDialog(
       context: context,
@@ -140,34 +121,15 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
         // Greeting text — top padding accounts for navbar overlap since SafeArea top is off
         Padding(
           padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 16, 24, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$greeting',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Show dynamic tagline from API, fallback to localized subtitle
-              Builder(builder: (context) {
-                final taglineAsync = ref.watch(taglineProvider);
-                final apiTagline = taglineAsync.value;
-                final text = (apiTagline != null && apiTagline.isNotEmpty)
-                    ? apiTagline
-                    : localizations.homeSubtitle;
-                return Text(
-                  text,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                );
-              }),
-            ],
+          // Tagline moved out of the greeting block — it now floats,
+          // centered, just above the search bar over the video banner.
+          child: Text(
+            greeting,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
           ),
         ),
         // Video banner — natural 16:9 aspect ratio, no cropping
@@ -183,7 +145,39 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
               ),
             ),
             // Dark shadow gradient removed — video plays without overlay
-            // Tagline removed from video overlay — now shown above video in greeting section
+            // Floating tagline — centered, sits just above the search bar.
+            // search bar: bottom 16 + height 50 + 12 gap = 78
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: 78,
+              child: Builder(builder: (context) {
+                final taglineAsync = ref.watch(taglineProvider);
+                final apiTagline = taglineAsync.value;
+                final text = (apiTagline != null && apiTagline.isNotEmpty)
+                    ? apiTagline
+                    : localizations.homeSubtitle;
+                return Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    // Inter font (matches Frontend web hero tagline), bold weight
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    // Shadow keeps the tagline legible over any video frame
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        blurRadius: 8,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
             // Glass-style search bar at bottom
             Positioned(
               left: 24,
@@ -270,21 +264,12 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
           // Greeting skeleton — top padding accounts for navbar overlap
           Padding(
             padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 16, 24, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 24,
-                  width: 200,
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  height: 16,
-                  width: 250,
-                  color: Colors.grey,
-                ),
-              ],
+            // Only the greeting remains here — tagline skeleton now floats
+            // above the search bar to match the real layout.
+            child: Container(
+              height: 24,
+              width: 200,
+              color: Colors.grey,
             ),
           ),
           // Banner skeleton
@@ -298,6 +283,19 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(32),
                     bottomRight: Radius.circular(32),
+                  ),
+                ),
+              ),
+              // Floating tagline skeleton — centered above the search bar
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 78,
+                child: Center(
+                  child: Container(
+                    height: 16,
+                    width: 250,
+                    color: Colors.grey,
                   ),
                 ),
               ),
