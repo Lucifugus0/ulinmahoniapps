@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'router/router.dart';
-import 'features/error/presentation/pages/errorpage.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'l10n/app_localizations.dart';
@@ -110,14 +109,42 @@ void main() async {
 
   await fetchEarlyData();
 
+  // Global build/layout error handler.
+  //
+  // IMPORTANT: `ErrorWidget.builder` substitutes the *failed widget in its own
+  // slot* — so it must return a MINIMAL, self-contained, slot-safe widget.
+  // It must NOT return a full-page `Scaffold`/`MainLayout` (as `ErrorPage`
+  // does): a heavy widget cannot reliably mount in single-child slots such as
+  // a `LayoutBuilder` child, and if its own build throws it re-invokes this
+  // builder, recursing infinitely (the `slot == null` / thousands-of-frames
+  // crash). The friendly full-page `ErrorPage` is still shown for *route*
+  // errors via the router — that is the correct place for it.
   ErrorWidget.builder = (FlutterErrorDetails details) {
     debugPrint('--- Global Flutter Error Caught ---');
     debugPrint('Exception: ${details.exception.toString()}');
     debugPrint('Stack: ${details.stack.toString()}');
     debugPrint('----------------------------------');
-    return ErrorPage(
-      errorMessage: details.exception.toString(),
-      errorStack: details.stack,
+    AppLogger.e(
+      'Global widget error (ErrorWidget.builder)',
+      details.exception,
+      details.stack,
+      'GLOBAL-ERROR',
+    );
+    // Minimal, dependency-free widget: no Theme/MediaQuery/assets/navigation,
+    // so it cannot itself throw and cannot recurse.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        color: Colors.white,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(24),
+        child: const Text(
+          'Terjadi kesalahan teknis.\n'
+          'Silakan tutup dan buka kembali aplikasi.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.black87, fontSize: 14, height: 1.5),
+        ),
+      ),
     );
   };
 

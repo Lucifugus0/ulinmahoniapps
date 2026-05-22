@@ -2062,7 +2062,7 @@ abstract class AppLocalizations {
   /// **'No. Kamar'**
   String get renewBookingRoomNumber;
 
-  /// Same-day cutoff message shown when the user tries to renew past 12:00 (daily) or 21:00 (monthly) on the check-out day.
+  /// No description provided for @renewBookingCutoffPassed.
   ///
   /// In id, this message translates to:
   /// **'Periode perpanjangan sewa telah berakhir. Perpanjangan harian harus diselesaikan paling lambat pukul 12:00 dan perpanjangan bulanan pukul 21:00 pada tanggal check-out.'**

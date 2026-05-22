@@ -14,6 +14,53 @@ class ApiConfig {
     final port = uri.hasPort && uri.port != 80 && uri.port != 443 ? ':${uri.port}' : '';
     return '${uri.scheme}://${uri.host}$port';
   }
+  /// Origin (scheme + host) of the Backend/admin server that serves
+  /// `/storage/...` media (hero video, property & room images, etc.).
+  ///
+  /// The Frontend API embeds an absolute media host built from its OWN
+  /// server-side `ADMIN_URL`. On staging that value is misconfigured to point
+  /// at the production admin (`admin.ulinmahoni.com`). To stay correct
+  /// regardless of server config, the app derives the admin origin from the
+  /// active API host:
+  ///   staging.ulinmahoni.com   -> staging-admin.ulinmahoni.com
+  ///   ulinmahoni.com / api.*   -> admin.ulinmahoni.com
+  /// An explicit `ADMIN_URL` in `.env` overrides the derivation when present.
+  /// Returns '' for unknown hosts (e.g. local dev) so media URLs are left as-is.
+  static String get adminBaseUrl {
+    final override = dotenv.env['ADMIN_URL'];
+    if (override != null && override.isNotEmpty) {
+      return override.replaceAll(RegExp(r'/+$'), '');
+    }
+
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null || uri.host.isEmpty) return '';
+    final host = uri.host;
+    String adminHost;
+    if (host.startsWith('staging.')) {
+      adminHost = 'staging-admin.${host.substring('staging.'.length)}';
+    } else if (host == 'ulinmahoni.com' || host.startsWith('api.')) {
+      adminHost = 'admin.ulinmahoni.com';
+    } else {
+      return ''; // unknown host (local dev etc.) — don't rewrite
+    }
+    return '${uri.scheme}://$adminHost';
+  }
+
+  /// Rewrites the origin of a server-returned media URL to [adminBaseUrl],
+  /// keeping the path + query intact. This corrects URLs that point at the
+  /// wrong admin host due to a server-side `ADMIN_URL` misconfiguration.
+  /// Returns [url] unchanged if it cannot be resolved (empty, unparseable,
+  /// or [adminBaseUrl] is unknown).
+  static String resolveMediaUrl(String url) {
+    if (url.isEmpty) return url;
+    final admin = adminBaseUrl;
+    if (admin.isEmpty) return url;
+    final src = Uri.tryParse(url);
+    if (src == null) return url;
+    final path = src.path.isEmpty ? url : src.path;
+    return '$admin$path${src.hasQuery ? '?${src.query}' : ''}';
+  }
+
   static String get loginUrl => '$baseUrl/auth/login';
   static String get registerUrl => '$baseUrl/auth/register';
   static String get forgotPasswordUrl => '$baseUrl/forgot-password';

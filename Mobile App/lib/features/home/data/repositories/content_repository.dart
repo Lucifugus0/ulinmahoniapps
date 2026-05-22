@@ -58,7 +58,13 @@ class ContentRepository {
       if (response.statusCode == 200) {
         final data = response.data;
         if (data is Map<String, dynamic> && data['data'] != null) {
-          final videoUrl = data['data']['video_url'] as String?;
+          final rawUrl = data['data']['video_url'] as String?;
+          // The Frontend API builds this URL from its own server-side
+          // ADMIN_URL, which on staging wrongly points at production admin.
+          // Rewrite the host to the admin origin derived from BASE_URL.
+          final videoUrl = (rawUrl != null && rawUrl.isNotEmpty)
+              ? ApiConfig.resolveMediaUrl(rawUrl)
+              : rawUrl;
           AppLogger.s('Fetched hero video URL: $videoUrl', 'CONTENT-REPO');
           return Success(videoUrl);
         }
