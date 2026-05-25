@@ -30,7 +30,9 @@ class CheckAvailabilityRepository {
         // Server uses booking_type to apply type-specific caps:
         //   new daily: check_in ≤ today+90d. new monthly: check_in ≤ today+14d.
         //   renewal daily: check_out ≤ today+60d. renewal monthly: no date cap.
-        "booking_type": bookingType,
+        // Lowercase: Laravel's `in:daily,monthly` rule is case-sensitive and
+        // the search filter still stores capitalized "Daily"/"Monthly".
+        "booking_type": bookingType.toLowerCase(),
       };
 
       final response = await _dioClient.post(
