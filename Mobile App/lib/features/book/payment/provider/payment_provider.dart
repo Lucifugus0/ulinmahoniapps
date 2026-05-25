@@ -345,7 +345,9 @@ class PaymentNotifier extends Notifier<PaymentState> {
       monthlyPrice: roomDetails['monthly_price'],
       serviceFee: 30000.0,
       propertyType: roomDetails['propertyType']?.toString() ?? '',
-      bookingType: roomDetails['rentType']?.toString() ?? '',
+      // Lowercase: server expects 'daily'/'monthly'; the homepage search
+      // filter still stores capitalized 'Daily'/'Monthly'.
+      bookingType: roomDetails['rentType']?.toString().toLowerCase() ?? '',
       bookingDays: roomDetails['booking_days'],
       bookingMonths: roomDetails['booking_months'],
       transactionType: transactionType.toString(),
