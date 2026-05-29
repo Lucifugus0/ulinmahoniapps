@@ -364,147 +364,146 @@ class ParkingPaymentController extends Controller
                 );
             }
 
-            // Find or create parking registration in t_parking
-            $parking = Parking::withTrashed()
+            /**
+             * Look up the most-recent prior `t_parking` row for this vehicle at this
+             * property — **read-only**. Used for:
+             *   1. carrying forward owner_name / owner_phone if the booking transaction
+             *      doesn't supply them,
+             *   2. detecting whether the previously-held slot was claimed via Parking
+             *      Management (`management_only=1`) so we don't double-count quota.
+             *
+             * Per the post-2026-05-08 multi-row design (see CLAUDE.md "Parking System"),
+             * we **never** mutate the prior row. Each paid period is preserved as its
+             * own audit record. The cron `parking:deactivate-expired` flips old rows to
+             * `status=0` once `end_rent` passes — we don't touch them here.
+             */
+            $priorParking = Parking::withTrashed()
                 ->where('property_id', $bookingTransaction->property_id)
                 ->where('vehicle_plate', strtoupper($request->vehicle_plate))
+                ->orderByDesc('idrec')
                 ->first();
 
-            // Cek apakah quota sudah dikonsumsi oleh Parking Management (management_only=1)
-            // Jika ya, PP tidak perlu increment quota lagi (slot sudah terpakai)
-            $quotaAlreadyConsumedByManagement = false;
+            // If the prior live row was registered via Parking Management (no invoice,
+            // `management_only=1`), its slot was already counted against capacity. The
+            // new paid period takes over that slot — skip a second quota increment.
+            $quotaAlreadyConsumedByManagement = (
+                $priorParking
+                && !$priorParking->trashed()
+                && (int) $priorParking->management_only === 1
+            );
 
-            if ($parking && $parking->trashed()) {
-                $parking->restore();
-                // Restored = treat as new, quota perlu di-increment
-                $quotaAlreadyConsumedByManagement = false;
-            } elseif ($parking && $parking->management_only) {
-                // Kendaraan sebelumnya didaftarkan via Parking Management (tanpa invoice)
-                // Quota sudah dikonsumsi oleh PM → PP tidak increment lagi
-                // PP mengambil alih pengelolaan quota → reset flag management_only
-                $quotaAlreadyConsumedByManagement = true;
-                $parking->update(['management_only' => 0, 'updated_by' => Auth::id()]);
-            }
-
-            if (!$parking) {
-                $parking = Parking::create([
-                    'property_id' => $bookingTransaction->property_id,
-                    'parking_type' => $request->parking_type,
-                    'vehicle_plate' => strtoupper($request->vehicle_plate),
-                    'owner_name' => $bookingTransaction->user_name,
-                    'owner_phone' => $bookingTransaction->user_phone_number,
-                    'user_id' => $bookingTransaction->user_id,
-                    'order_id' => $request->order_id,
-                    'status' => 1,
-                    'management_only' => 0,
-                    'created_by' => Auth::id(),
-                ]);
-            }
+            // NOTE: `$parking` is created **after** the renewal-detection block below
+            // so that the lookup queries don't accidentally pick up the freshly-inserted
+            // row as a "prior" record. See the `Parking::create([...])` call further down.
+            $parking = null;
 
             // Determine if this is a renewal booking (user extending their stay, same vehicle/slot)
             $isRenewalBooking = $bookingTransaction->is_renewal == 1;
             $existingParkingType = null; // Tipe parkir lama yang dimiliki user (jika ada)
 
-            if ($isRenewalBooking) {
-                // Check if user already has active parking of the SAME type being requested.
-                // A user may have multiple parking spots (e.g. 1 car + 1 motorcycle),
-                // so we must match by parking_type to avoid false "type changed" detection.
+            /**
+             * Prior-parking detection runs **unconditionally** — not gated on
+             * `$isRenewalBooking`. A customer may continue holding their parking slot
+             * across non-renewal bookings (e.g. consecutive month-to-month bookings
+             * booked separately, or a fresh booking after a previous stay where they
+             * never released the slot). The quota counter must not double-count
+             * a slot the customer already holds, regardless of how the new booking
+             * is flagged. See CLAUDE.md "m_parking_fee.quota_used is legacy/drifted"
+             * — historical upward drift came from increments firing on renewals.
+             */
 
-                // Cek 1: dari t_parking_fee_transaction (Alur PP - beli via Parking Payment)
-                // First check for same type (exact renewal)
-                $prevParkingTxn = ParkingFeeTransaction::where('user_id', $bookingTransaction->user_id)
+            // Cek 1: dari t_parking_fee_transaction (Alur PP - beli via Parking Payment)
+            // First check for same type (exact renewal)
+            $prevParkingTxn = ParkingFeeTransaction::where('user_id', $bookingTransaction->user_id)
+                ->where('property_id', $bookingTransaction->property_id)
+                ->where('parking_type', $request->parking_type)
+                ->where('transaction_status', 'paid')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($prevParkingTxn) {
+                $existingParkingType = $prevParkingTxn->parking_type;
+            }
+
+            // Cek 2: dari t_transactions order sebelumnya (Alur booking kamar + parkir)
+            if (!$existingParkingType) {
+                $prevTxn = \App\Models\Transaction::where('user_id', $bookingTransaction->user_id)
                     ->where('property_id', $bookingTransaction->property_id)
-                    ->where('parking_type', $request->parking_type)
                     ->where('transaction_status', 'paid')
+                    ->where('parking_type', $request->parking_type)
+                    ->where('parking_fee', '>', 0)
+                    ->whereNotNull('parking_duration')
+                    ->where('order_id', '!=', $request->order_id)
                     ->orderBy('created_at', 'desc')
                     ->first();
 
-                if ($prevParkingTxn) {
-                    $existingParkingType = $prevParkingTxn->parking_type;
-                }
-
-                // Cek 2: dari t_transactions order sebelumnya (Alur booking kamar + parkir)
-                if (!$existingParkingType) {
-                    $prevTxn = \App\Models\Transaction::where('user_id', $bookingTransaction->user_id)
-                        ->where('property_id', $bookingTransaction->property_id)
-                        ->where('transaction_status', 'paid')
-                        ->where('parking_type', $request->parking_type)
-                        ->where('parking_fee', '>', 0)
-                        ->whereNotNull('parking_duration')
-                        ->where('order_id', '!=', $request->order_id)
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-
-                    if ($prevTxn) {
-                        $existingParkingType = $prevTxn->parking_type;
-                    }
-                }
-
-                // Cek 3: dari t_parking langsung (Parking Management atau record aktif)
-                if (!$existingParkingType) {
-                    $existingParkingRecord = Parking::where('user_id', $bookingTransaction->user_id)
-                        ->where('property_id', $bookingTransaction->property_id)
-                        ->where('parking_type', $request->parking_type)
-                        ->where('status', 1)
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-
-                    if ($existingParkingRecord) {
-                        $existingParkingType = $existingParkingRecord->parking_type;
-                    }
-                }
-
-                // Fallback: check for ANY existing parking type (for type-change detection)
-                if (!$existingParkingType) {
-                    $anyPrevParking = ParkingFeeTransaction::where('user_id', $bookingTransaction->user_id)
-                        ->where('property_id', $bookingTransaction->property_id)
-                        ->where('transaction_status', 'paid')
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-                    if ($anyPrevParking) {
-                        $existingParkingType = $anyPrevParking->parking_type;
-                    }
-                }
-                if (!$existingParkingType) {
-                    $anyPrevTxn = \App\Models\Transaction::where('user_id', $bookingTransaction->user_id)
-                        ->where('property_id', $bookingTransaction->property_id)
-                        ->where('transaction_status', 'paid')
-                        ->whereNotNull('parking_type')
-                        ->where('parking_fee', '>', 0)
-                        ->where('order_id', '!=', $request->order_id)
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-                    if ($anyPrevTxn) {
-                        $existingParkingType = $anyPrevTxn->parking_type;
-                    }
-                }
-                if (!$existingParkingType) {
-                    $anyPrevRecord = Parking::where('user_id', $bookingTransaction->user_id)
-                        ->where('property_id', $bookingTransaction->property_id)
-                        ->where('status', 1)
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-                    if ($anyPrevRecord) {
-                        $existingParkingType = $anyPrevRecord->parking_type;
-                    }
+                if ($prevTxn) {
+                    $existingParkingType = $prevTxn->parking_type;
                 }
             }
 
-            // User sudah punya parkir sebelumnya → ini renewal sesungguhnya
-            $isRenewal = $isRenewalBooking && !is_null($existingParkingType);
+            // Cek 3: dari t_parking langsung (Parking Management atau record aktif)
+            if (!$existingParkingType) {
+                $existingParkingRecord = Parking::where('user_id', $bookingTransaction->user_id)
+                    ->where('property_id', $bookingTransaction->property_id)
+                    ->where('parking_type', $request->parking_type)
+                    ->where('status', 1)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($existingParkingRecord) {
+                    $existingParkingType = $existingParkingRecord->parking_type;
+                }
+            }
+
+            // Fallback: check for ANY existing parking type (for type-change detection)
+            if (!$existingParkingType) {
+                $anyPrevParking = ParkingFeeTransaction::where('user_id', $bookingTransaction->user_id)
+                    ->where('property_id', $bookingTransaction->property_id)
+                    ->where('transaction_status', 'paid')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                if ($anyPrevParking) {
+                    $existingParkingType = $anyPrevParking->parking_type;
+                }
+            }
+            if (!$existingParkingType) {
+                $anyPrevTxn = \App\Models\Transaction::where('user_id', $bookingTransaction->user_id)
+                    ->where('property_id', $bookingTransaction->property_id)
+                    ->where('transaction_status', 'paid')
+                    ->whereNotNull('parking_type')
+                    ->where('parking_fee', '>', 0)
+                    ->where('order_id', '!=', $request->order_id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                if ($anyPrevTxn) {
+                    $existingParkingType = $anyPrevTxn->parking_type;
+                }
+            }
+            if (!$existingParkingType) {
+                $anyPrevRecord = Parking::where('user_id', $bookingTransaction->user_id)
+                    ->where('property_id', $bookingTransaction->property_id)
+                    ->where('status', 1)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                if ($anyPrevRecord) {
+                    $existingParkingType = $anyPrevRecord->parking_type;
+                }
+            }
+
+            // Treat as renewal whenever prior parking exists, regardless of the
+            // booking's `is_renewal` flag. The slot was already counted against
+            // `m_parking_fee.quota_used` — do not increment again.
+            $isRenewal = !is_null($existingParkingType);
 
             // Tipe parkir berubah saat renewal (misal motor → mobil)?
             // Jika ya: bebaskan kuota tipe lama, ambil kuota tipe baru.
             // If existingParkingType matches the requested type, this is a same-type renewal → no quota change.
             $isParkingTypeChanged = $isRenewal && ($existingParkingType !== $request->parking_type);
 
-            // Update order_id pada record t_parking agar selalu menunjuk ke order terbaru
-            if ($isRenewal && $parking && $parking->order_id !== $request->order_id) {
-                $parking->update([
-                    'order_id' => $request->order_id,
-                    'updated_by' => Auth::id(),
-                ]);
-            }
+            // (Removed pre-2026-05-08 `order_id` rewrite on the existing t_parking row.
+            // Under the multi-row design, the new row created below already carries
+            // the correct `order_id`, so an in-place update is no longer needed.)
 
             // Cek ketersediaan kuota:
             // - Parkir baru atau renewal ganti tipe → cek kuota tipe baru
@@ -527,6 +526,30 @@ class ParkingPaymentController extends Controller
                     );
                 }
             }
+
+            /**
+             * INSERT a fresh `t_parking` row for this paid period (post-2026-05-08
+             * multi-row design — see CLAUDE.md "Parking System / Storage: one row per
+             * paid period"). Owner data falls back to the prior row when the booking
+             * transaction is missing it. `status=1` so the row is immediately active;
+             * the daily cron will flip it to 0 when `end_rent` passes.
+             */
+            $parking = Parking::create([
+                'property_id'      => $bookingTransaction->property_id,
+                'parking_type'     => $request->parking_type,
+                'vehicle_plate'    => strtoupper($request->vehicle_plate),
+                'owner_name'       => $bookingTransaction->user_name        ?? ($priorParking->owner_name  ?? null),
+                'owner_phone'      => $bookingTransaction->user_phone_number ?? ($priorParking->owner_phone ?? null),
+                'user_id'          => $bookingTransaction->user_id,
+                'order_id'         => $request->order_id,
+                'parking_duration' => (int) $request->parking_duration,
+                'start_rent'       => $startRent->toDateString(),
+                'end_rent'         => $endRent->toDateString(),
+                'fee_amount'       => $request->fee_amount,
+                'status'           => 1,
+                'management_only'  => 0,
+                'created_by'       => Auth::id(),
+            ]);
 
             // Create parking fee transaction with status 'paid' and already verified.
             // invoice_id is left null here — InvoiceNumberService::assign() below
@@ -554,15 +577,10 @@ class ParkingPaymentController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
-            // Mirror the new payment's period onto the t_parking row (current active rental).
-            // Extension behavior: overwrite. History stays preserved on past txn rows.
-            $parking->forceFill([
-                'start_rent' => $startRent->toDateString(),
-                'end_rent' => $endRent->toDateString(),
-                'parking_duration' => (int) $request->parking_duration,
-                'fee_amount' => $request->fee_amount,
-                'updated_by' => Auth::id(),
-            ])->save();
+            // (Removed pre-2026-05-08 `forceFill` of the existing t_parking row.
+            // Under the multi-row design, start_rent / end_rent / parking_duration /
+            // fee_amount were already written into the freshly-INSERTed row above —
+            // we never overwrite the prior period's record.)
 
             // Assign persisted invoice number (per-invoice-code shared counter)
             InvoiceNumberService::assign($transaction);

@@ -1956,26 +1956,32 @@ class BookingController extends ApiController
                         $endRent = $endCarbon->toDateString();
                     }
 
-                    // For renewals, look up the most-recent prior parking row to detect
-                    // a type change (quota swap) and to carry forward plate/owner data
-                    // when the request omits them. Initial bookings always increment quota.
-                    $isRenewal = (int) ($booking->is_renewal ?? 0) === 1;
-                    $existingParking = $isRenewal
-                        ? DB::table('t_parking')
-                            ->where('user_id', Auth::id())
-                            ->where('property_id', $booking->property_id)
-                            ->whereNull('deleted_at')
-                            ->orderByDesc('idrec')
-                            ->first()
-                        : null;
+                    /**
+                     * Prior-parking lookup runs **regardless of `is_renewal`** — a customer
+                     * can keep using their slot across non-renewal bookings (e.g. consecutive
+                     * month-to-month bookings, or a fresh booking after a previous stay where
+                     * the slot was never released). Quota must not double-count a held slot.
+                     * See CLAUDE.md "m_parking_fee.quota_used is legacy/drifted" — historical
+                     * upward drift came from increments firing on renewals.
+                     *   - existing same type   → no quota change
+                     *   - existing other type  → swap (decrement old, increment new)
+                     *   - no existing row      → fresh increment
+                     */
+                    $existingParking = DB::table('t_parking')
+                        ->where('user_id', Auth::id())
+                        ->where('property_id', $booking->property_id)
+                        ->where('status', 1)
+                        ->whereNull('deleted_at')
+                        ->orderByDesc('idrec')
+                        ->first();
 
                     if ($existingParking && $existingParking->parking_type !== $request->parking_type) {
                         $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
                         $this->incrementParkingQuota($booking->property_id, $request->parking_type);
                     } elseif (!$existingParking) {
-                        // Initial booking, OR first-time parking purchase on a renewal
                         $this->incrementParkingQuota($booking->property_id, $request->parking_type);
                     }
+                    // else: same-type renewal — quota unchanged, slot already counted
 
                     DB::table('t_parking')->insert([
                         'property_id' => $booking->property_id,
