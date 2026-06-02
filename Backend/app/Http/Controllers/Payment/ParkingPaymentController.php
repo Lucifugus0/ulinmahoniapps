@@ -264,25 +264,33 @@ class ParkingPaymentController extends Controller
             // Get transaction details from order_id
             $bookingTransaction = \App\Models\Transaction::where('order_id', $request->order_id)->firstOrFail();
 
-            // Compute the parking period (start_rent + duration months) and enforce date-based caps
-            // against the booking's stay window. End is exclusive — last covered day is end_rent - 1.
+            // Compute the parking period (start_rent + duration months) date-to-date.
+            // End is exclusive — last covered day is end_rent - 1.
             $startRent = \Carbon\Carbon::parse($request->start_rent)->startOfDay();
             $endRent = $startRent->copy()->addMonths((int) $request->parking_duration);
+
+            // Non-blocking notice surfaced to the admin when the parking period runs past
+            // the booking check-out. Per product decision (2026-06-02) overshoot is ALLOWED:
+            // the parking is recorded date-to-date (start_rent + duration) and we only warn,
+            // instead of rejecting. This unblocks sub-month stays where the minimum 1-month
+            // parking duration would otherwise always exceed a short stay.
+            $checkoutOvershootWarning = null;
 
             if ($bookingTransaction->check_in && $bookingTransaction->check_out) {
                 $checkIn = \Carbon\Carbon::parse($bookingTransaction->check_in)->startOfDay();
                 $checkOut = \Carbon\Carbon::parse($bookingTransaction->check_out)->startOfDay();
 
+                // Start before check-in is still rejected — parking cannot begin before the guest arrives.
                 if ($startRent->lt($checkIn)) {
                     throw new \Exception(
                         "Parking start date ({$startRent->format('d M Y')}) cannot be earlier than booking check-in ({$checkIn->format('d M Y')})."
                     );
                 }
+
+                // End beyond check-out is permitted (admin override) — flag it for a non-blocking notice.
                 if ($endRent->gt($checkOut)) {
-                    throw new \Exception(
-                        "Parking end date ({$endRent->format('d M Y')}) cannot exceed booking check-out ({$checkOut->format('d M Y')}). " .
-                        "Choose a shorter duration or earlier start date."
-                    );
+                    $checkoutOvershootWarning =
+                        "Catatan: Tanggal akhir parkir ({$endRent->format('d M Y')}) melebihi check-out booking ({$checkOut->format('d M Y')}).";
                 }
             }
 
@@ -669,9 +677,15 @@ class ParkingPaymentController extends Controller
                 $message .= ". Parking quota: {$remaining}/{$parkingFee->capacity} available.";
             }
 
+            // Append the checkout-overshoot notice (if any) so the admin sees it in the success toast.
+            if ($checkoutOvershootWarning) {
+                $message .= ' ⚠️ ' . $checkoutOvershootWarning;
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => $message,
+                'warning' => $checkoutOvershootWarning, // null when period fits within the stay
                 'data' => $transaction,
                 'parking_info' => [
                     'capacity' => $parkingFee->capacity,

@@ -1034,7 +1034,7 @@
                 orderInfoSection.classList.remove('hidden');
 
                 // Stash the booking's stay window on the form so recomputeParkingPeriod()
-                // (driven by start_rent and parking_duration inputs) can cap end_rent ≤ check_out.
+                // (driven by start_rent and parking_duration inputs) can warn when end_rent > check_out.
                 const formEl = document.getElementById('addPaymentForm');
                 if (formEl) {
                     formEl.dataset.checkIn = selectedOption.dataset.checkIn || '';
@@ -1052,7 +1052,7 @@
                     startInput.value = minStart;
                 }
 
-                // Compute the period preview (start_rent + duration months, capped at check_out)
+                // Compute the period preview (start_rent + duration months, warns if past check_out)
                 recomputeParkingPeriod();
 
                 // Show parking status badge (informational only)
@@ -1118,8 +1118,8 @@
         }
 
         // Recompute the parking period preview live. Reads start_rent input + parking_duration
-        // input + the stashed booking check_in/check_out from the form. Auto-caps duration
-        // so end_rent ≤ check_out, and writes a "Period: X → Y" hint under the duration field.
+        // input + the stashed booking check_in/check_out from the form. Overshoot past check_out
+        // is allowed; writes a "Period: X → Y" hint (amber + warning) under the duration field.
         function recomputeParkingPeriod() {
             const startInput = document.getElementById('add_start_rent');
             const durationInput = document.getElementById('add_parking_duration');
@@ -1137,34 +1137,24 @@
                 return;
             }
 
-            // Auto-cap duration so the resulting end_rent never exceeds booking check_out.
-            // We probe upward from 1mo until the next addition would overshoot.
-            let maxDuration = null;
-            if (checkOutIso) {
-                const checkOutDate = new Date(checkOutIso);
-                let m = 1;
-                while (m <= 60) { // Hard ceiling (5y) — booking constraints prevent stays this long anyway
-                    const candidate = addMonths(startIso, m);
-                    if (candidate > checkOutDate) {
-                        break;
-                    }
-                    m++;
-                }
-                maxDuration = Math.max(1, m - 1);
-                durationInput.setAttribute('max', maxDuration);
-                if (duration > maxDuration) {
-                    duration = maxDuration;
-                    durationInput.value = duration;
-                }
-            } else {
-                durationInput.removeAttribute('max');
-            }
+            // Compute end_rent = start_rent + duration months (date-to-date). Overshooting the
+            // booking check_out is ALLOWED (admin override, per 2026-06-02 decision) — we no
+            // longer auto-cap the duration. The `max` attribute is removed so neither the input
+            // handler nor the submit handler block on it; instead we show a non-blocking warning.
+            durationInput.removeAttribute('max');
 
             const endDate = addMonths(startIso, duration);
             const endIso = endDate.toISOString().slice(0, 10);
+            const exceedsCheckout = checkOutIso && new Date(endIso) > new Date(checkOutIso);
+
             const periodLabel = `Period: ${isoToDisplay(startIso)} → ${isoToDisplay(endIso)}`;
-            const capLabel = maxDuration ? ` — Max ${maxDuration} month(s) up to check-out (${checkOutDisp})` : '';
-            maxHint.textContent = periodLabel + capLabel;
+            const warnLabel = exceedsCheckout
+                ? ` — ⚠️ End date exceeds check-out (${checkOutDisp})`
+                : '';
+            maxHint.textContent = periodLabel + warnLabel;
+            // Amber when the period runs past check-out, otherwise the default blue hint colour.
+            maxHint.classList.toggle('text-amber-600', !!exceedsCheckout);
+            maxHint.classList.toggle('text-blue-600', !exceedsCheckout);
             maxHint.classList.remove('hidden');
 
             if (durationError) durationError.classList.add('hidden');

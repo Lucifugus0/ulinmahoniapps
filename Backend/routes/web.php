@@ -376,11 +376,12 @@ Route::middleware(['auth', 'permission'])->group(function () {
         /* Accept both GET (pagination links) and POST (AJAX filter) */
         Route::match(['get', 'post'], '/parking/filter', [ParkingPaymentController::class, 'filter'])->name('admin.parking-payments.filter');
         Route::get('/parking/checked-in-orders', [ParkingPaymentController::class, 'getCheckedInOrders'])->name('admin.parking-payments.checked-in-orders');
-        // Throttled to 6 req/min/IP — defense-in-depth against admin double-submit
-        // (server-side dedup guard + unique index in `t_parking_fee_transaction` are
-        // the real protection; this just keeps a runaway click out of the controller).
+        // No per-route throttle override — this POST uses the same global `web` group limit
+        // (throttle:500,1 in app/Http/Kernel.php) as every GET route on this page, so submits
+        // and reads share one consistent ceiling. The old per-route override (6→30/min) tripped
+        // a "Too Many Attempts" 429 during normal bulk entry. Double-submit is already prevented
+        // by the server-side dedup guard (lockForUpdate + unique index on t_parking_fee_transaction).
         Route::post('/parking/store', [ParkingPaymentController::class, 'store'])
-            ->middleware('throttle:6,1')
             ->name('admin.parking-payments.store');
         Route::post('/parking/approve/{id}', [ParkingPaymentController::class, 'approve'])->name('admin.parking-payments.approve');
         Route::post('/parking/reject/{id}', [ParkingPaymentController::class, 'reject'])->name('admin.parking-payments.reject');
