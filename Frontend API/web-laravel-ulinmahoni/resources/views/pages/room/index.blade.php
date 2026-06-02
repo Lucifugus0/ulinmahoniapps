@@ -260,47 +260,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white p-12 mt-8">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-                <h4 class="text-xl font-medium mb-4">Ulin Mahoni</h4>
-                <p class="text-gray-400">Luxury living redefined for those who appreciate the finer things in life.</p>
-            </div>
-            
-            <div>
-                <h4 class="text-xl font-medium mb-4">Quick Links</h4>
-                <ul class="space-y-2 text-gray-400">
-                    <li><a href="/" class="hover:text-white transition">Home</a></li>
-                    <li><a href="/about" class="hover:text-white transition">About Us</a></li>
-                    <li><a href="/rooms" class="hover:text-white transition">Rooms</a></li>
-                    <li><a href="/contact" class="hover:text-white transition">Contact</a></li>
-                </ul>
-            </div>
-            
-            <div>
-                <h4 class="text-xl font-medium mb-4">Contact</h4>
-                <ul class="space-y-2 text-gray-400">
-                    <li><i class="fas fa-map-marker-alt mr-2"></i> Jl. Luxury Boulevard No. 123</li>
-                    <li><i class="fas fa-phone mr-2"></i> +62 123 4567 890</li>
-                    <li><i class="fas fa-envelope mr-2"></i> info@ulinmahoni.com</li>
-                </ul>
-            </div>
-            
-            <div>
-                <h4 class="text-xl font-medium mb-4">Follow Us</h4>
-                <div class="flex space-x-4">
-                    <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-youtube"></i></a>
-                </div>
-            </div>
-        </div>
-        
-        <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 Ulin Mahoni. All rights reserved.</p>
-        </div>
-    </footer>
+    @include('components.homepage.footer')
 
     <script>
         function toggleDropdown() {

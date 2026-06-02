@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\api\AuthController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\PropertyController;
 use App\Http\Controllers\Api\UserController;
@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\PromoBannerController;
 use App\Http\Controllers\Api\DepositFeeController;
 use App\Http\Controllers\Api\ParkingFeeController;
+use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\ContentController;
 
 use App\Http\Middleware\VerifyApiKey;
 use Illuminate\Support\Facades\Auth;
@@ -75,6 +77,16 @@ Route::prefix('v1')->group(function () {
     // ROUTES THAT REQUIRE API KEY (MIDDLEWARE)
     Route::middleware([VerifyApiKey::class])->group(function () {
 
+        // <!-- Content API routes: public tagline, hero video, footer, and legal page endpoints -->
+        Route::prefix('content')->group(function () {
+            Route::get('/tagline', [ContentController::class, 'randomTagline']);
+            // <!-- Returns one random active tagline description from m_tagline_desc; paired with /tagline on home hero -->
+            Route::get('/tagline-desc', [ContentController::class, 'randomTaglineDesc']);
+            Route::get('/hero-video', [ContentController::class, 'activeHeroVideo']);
+            Route::get('/footer', [ContentController::class, 'footer']);
+            Route::get('/legal/{slug}', [ContentController::class, 'legalPage']);
+        });
+
         // BANNER API ROUTES
         Route::prefix('banner')->group(function () {
             Route::get('/', [BannerController::class, 'index']);
@@ -107,7 +119,9 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}/payment-method', [BookingController::class, 'updatePaymentMethod']);
             Route::post('/{order_id}/check-in', [BookingController::class, 'checkInByOrderId']);
             Route::post('/{order_id}/renew', [BookingController::class, 'renewBooking']);
-            // Removed duplicate check-availability route
+            // Cancellation & refund endpoints
+            Route::get('/{order_id}/cancel-preview', [BookingController::class, 'previewCancelRefund']);
+            Route::post('/{order_id}/cancel', [BookingController::class, 'cancelBooking']);
         });
 
         // DOKU PAYMENT API ROUTES
@@ -190,6 +204,26 @@ Route::prefix('v1')->group(function () {
             Route::post('/conversations/{id}/participants', [ChatController::class, 'assignParticipant']);
         });
 
+        /** TICKET API ROUTES — customer service ticketing system */
+        Route::prefix('tickets')->group(function () {
+            Route::get('/categories', [\App\Http\Controllers\Api\TicketController::class, 'getCategories']);
+            Route::get('/eligibility', [\App\Http\Controllers\Api\TicketController::class, 'checkEligibility']);
+            Route::get('/eligible-bookings', [\App\Http\Controllers\Api\TicketController::class, 'getEligibleBookings']);
+            Route::get('/', [\App\Http\Controllers\Api\TicketController::class, 'listTickets']);
+            Route::post('/', [\App\Http\Controllers\Api\TicketController::class, 'createTicket']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\TicketController::class, 'getTicket'])->where('id', '[0-9]+');
+            Route::post('/{id}/messages', [\App\Http\Controllers\Api\TicketController::class, 'sendMessage'])->where('id', '[0-9]+');
+            Route::post('/{id}/read', [\App\Http\Controllers\Api\TicketController::class, 'markAsRead'])->where('id', '[0-9]+');
+            Route::post('/{id}/close', [\App\Http\Controllers\Api\TicketController::class, 'closeTicket'])->where('id', '[0-9]+');
+            Route::post('/{id}/reopen', [\App\Http\Controllers\Api\TicketController::class, 'reopenTicket'])->where('id', '[0-9]+');
+        });
+
+        /** BROADCAST API ROUTES — one-way announcements visible to users */
+        Route::prefix('broadcasts')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\TicketController::class, 'listBroadcasts']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\TicketController::class, 'getBroadcast'])->where('id', '[0-9]+');
+        });
+
         // PROMO BANNER API ROUTES
         // Use ?id= query param to get single banner
         Route::prefix('promo-banner')->group(function () {
@@ -220,6 +254,15 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}', [ParkingFeeController::class, 'update']);
             Route::delete('/{id}', [ParkingFeeController::class, 'destroy']);
         });
+
+        // DEVICE TOKEN API ROUTES (Push Notifications)
+        Route::prefix('device-token')->group(function () {
+            Route::post('/', [DeviceTokenController::class, 'store']);
+            Route::delete('/', [DeviceTokenController::class, 'destroy']);
+        });
+
+        // PUSH NOTIFICATION API ROUTES (Manual send)
+        Route::post('/push-notification/send', [NotificationController::class, 'sendPushNotification']);
 
         // COMMENTED FOR REVIEW
         // NOTIFICATIONS API ROUTES

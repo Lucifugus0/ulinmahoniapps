@@ -32,31 +32,33 @@ class GoogleSignInResult {
   final bool isNewUser;
   final String message;
   final bool requiresEmailVerification;
+  /// True when the user account has status = 0 (deactivated)
+  final bool isAccountDeactivated;
 
   GoogleSignInResult({
     required this.isNewUser,
     required this.message,
     this.requiresEmailVerification = false,
+    this.isAccountDeactivated = false,
   });
 }
 
-/// Provider for GoogleSignInController
+/// Migrated from StateNotifierProvider to NotifierProvider for Riverpod 3.x
 final googleSignInControllerProvider =
-    StateNotifierProvider<GoogleSignInController, AsyncValue<GoogleSignInResult?>>((ref) {
-  return GoogleSignInController(ref);
-});
+    NotifierProvider<GoogleSignInController, AsyncValue<GoogleSignInResult?>>(GoogleSignInController.new);
 
 /// Controller for Google Sign-In flow with auto-register
+/// Migrated from StateNotifier to Notifier for Riverpod 3.x.
 /// FLOW (without API login):
 /// 1. Get user data from Google SDK (email, displayName, photoUrl)
 /// 2. Check if user exists via GET /users?email={email}
 /// 3. If user NOT exists -> Auto-register via POST /auth/register -> Show notification (must verify email)
 /// 4. If user exists -> Save user data directly to local storage (no API login)
 /// 5. Navigate to /home (handled by login_page.dart)
-class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult?>> {
-  final Ref _ref;
-
-  GoogleSignInController(this._ref) : super(const AsyncValue.data(null));
+class GoogleSignInController extends Notifier<AsyncValue<GoogleSignInResult?>> {
+  /// Returns initial state via build method (Riverpod 3.x pattern)
+  @override
+  AsyncValue<GoogleSignInResult?> build() => const AsyncValue.data(null);
 
   /// Sign in with Google and auto-register if needed
   /// FLOW:
@@ -69,7 +71,7 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
 
     try {
       // Step 1: Get user from Google SDK
-      final googleRepo = _ref.read(googleSignInRepositoryProvider);
+      final googleRepo = ref.read(googleSignInRepositoryProvider);
       final googleResult = await googleRepo.signInWithGoogle();
 
       switch (googleResult) {
@@ -90,7 +92,7 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
           );
 
           // Step 2: Check if user exists via GET /users?email={email}
-          final userFilterRepo = _ref.read(userFilterRepositoryProvider);
+          final userFilterRepo = ref.read(userFilterRepositoryProvider);
           final filterResult = await userFilterRepo.getUserByEmail(email);
 
           switch (filterResult) {
@@ -124,7 +126,7 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
                   displayName: displayName,
                 );
 
-                final userRegRepo = _ref.read(userRegistrationRepositoryProvider);
+                final userRegRepo = ref.read(userRegistrationRepositoryProvider);
                 final registerResult =
                     await userRegRepo.registerUser(registrationRequest);
 
@@ -183,6 +185,24 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
                   return;
                 }
 
+                // Step 3.6: Check if account is active (status == 0 means deactivated)
+                if (existingUser.status == 0) {
+                  AppLogger.w(
+                    'Account deactivated for user: ${existingUser.email}',
+                    'GOOGLE-SIGNIN-CTRL',
+                  );
+                  // Sign out from Google so account is not cached on device
+                  final googleRepo = ref.read(googleSignInRepositoryProvider);
+                  await googleRepo.signOut();
+
+                  state = AsyncValue.data(GoogleSignInResult(
+                    isNewUser: false,
+                    message: 'ACCOUNT_DEACTIVATED',
+                    isAccountDeactivated: true,
+                  ));
+                  return;
+                }
+
                 // Step 4: Handle Remember Me
                 if (rememberMe) {
                   // Save to SharedPreferences for persistent login
@@ -200,7 +220,7 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
                   );
 
                   // Update auth provider from SharedPreferences
-                  final authNotifier = _ref.read(authProvider.notifier);
+                  final authNotifier = ref.read(authProvider.notifier);
                   authNotifier.checkAuthStatus();
 
                   AppLogger.s('Google Sign-In with Remember Me completed', 'GOOGLE-SIGNIN-CTRL');
@@ -220,7 +240,7 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
                   );
 
                   // Set user in memory only (no SharedPreferences)
-                  final authNotifier = _ref.read(authProvider.notifier);
+                  final authNotifier = ref.read(authProvider.notifier);
                   authNotifier.setUserInMemoryOnly(user);
 
                   AppLogger.s('Google Sign-In without Remember Me completed (memory only)', 'GOOGLE-SIGNIN-CTRL');
@@ -301,7 +321,7 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
   /// Sign out from Google
   Future<void> signOut() async {
     try {
-      final googleRepo = _ref.read(googleSignInRepositoryProvider);
+      final googleRepo = ref.read(googleSignInRepositoryProvider);
       await googleRepo.signOut();
 
       AppLogger.s('Google Sign-Out successful', 'GOOGLE-SIGNIN-CTRL');
@@ -323,7 +343,7 @@ class GoogleSignInController extends StateNotifier<AsyncValue<GoogleSignInResult
   /// Disconnect from Google (revoke access)
   Future<void> disconnect() async {
     try {
-      final googleRepo = _ref.read(googleSignInRepositoryProvider);
+      final googleRepo = ref.read(googleSignInRepositoryProvider);
       await googleRepo.disconnect();
 
       AppLogger.s('Google disconnect successful', 'GOOGLE-SIGNIN-CTRL');

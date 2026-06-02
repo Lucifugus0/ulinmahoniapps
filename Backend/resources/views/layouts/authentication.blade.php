@@ -46,10 +46,19 @@
             position: relative;
             z-index: 1;
         }
+
+        /* Override theme toggle icon color for login page visibility on dark background */
+        .login-controls .light-switch + label svg {
+            color: rgba(255, 255, 255, 0.85) !important;
+        }
+        .login-controls .light-switch + label:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+        }
     </style>
 
     <script>
-        if (localStorage.getItem('dark-mode') === 'false' || !('dark-mode' in localStorage)) {
+        // <!-- Default to dark mode — only switch to light if explicitly set -->
+        if (localStorage.getItem('dark-mode') === 'false') {
             document.querySelector('html').classList.remove('dark');
             document.querySelector('html').style.colorScheme = 'light';
         } else {
@@ -61,8 +70,9 @@
 
 <body class="font-inter antialiased text-white">
 
-    <!-- Language Switcher -->
-    <div class="fixed top-4 right-4 z-50">
+    <!-- Dark mode toggle + Language Switcher -->
+    <div class="login-controls fixed top-4 right-4 z-50 flex items-center gap-2">
+        <x-theme-toggle />
         <x-language-switcher />
     </div>
 
@@ -72,7 +82,8 @@
             <!-- Logo Container -->
             <div class="flex justify-center mb-8">
                 <a class="block" href="{{ route('dashboard') }}">
-                    <div class="bg-white p-4 rounded-full shadow-lg">
+                    <!-- Liquid glass: translucent logo container -->
+                    <div class="p-4 rounded-full shadow-lg" style="background: rgba(255,255,255,0.35); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.4);">
                         <img src="/images/apple-touch-icon.png" alt="Logo" class="w-20 h-20">
                     </div>
 

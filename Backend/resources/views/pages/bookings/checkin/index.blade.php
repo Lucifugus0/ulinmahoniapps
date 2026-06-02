@@ -7,14 +7,17 @@
                     class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                     {{ __('ui.checked_in') }}
                 </h1>
+                <!-- Description text explaining what checked-in bookings are -->
+                <p class="text-sm text-gray-500 mt-1">{{ __('ui.checked_in_desc') }}</p>
             </div>
         </div>
 
         <!-- Search and Filter Section -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
+        <!-- Search and filter container - lighter bg in dark mode to differentiate from page background -->
+        <div class="search-filter-container bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
             <form method="GET" action="{{ route('checkin.filter') }}"
                 onsubmit="event.preventDefault(); fetchFilteredBookings();"
-                class="flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                class="search-filter-form flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
 
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                     <!-- Search Booking -->
@@ -48,8 +51,8 @@
                             <label for="per_page" class="text-sm text-gray-600">{{ __('ui.show') }}:</label>
                             <select name="per_page" id="per_page"
                                 class="border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="8" {{ request('per_page') == 8 ? 'selected' : '' }}>8</option>
-                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                <option value="8" {{ request('per_page', 25) == 8 ? 'selected' : '' }}>8</option>
+                                <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25</option>
                                 <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
                             </select>
                         </div>
@@ -63,7 +66,8 @@
         <div class="overflow-x-auto" id="bookingsTable">
             @include('pages.bookings.checkin.partials.checkin_table', [
                 'checkOuts' => $checkOuts,
-                'per_page' => request('per_page', 8),
+                'per_page' => request('per_page', 25),
+                'showActions' => false,
             ])
         </div>
 
@@ -213,15 +217,19 @@
                             this.scheduledCheckoutTime = new Date(data.check_out);
                         }
 
+                        /* Build booking details with price breakdown for checkout modal */
                         this.bookingDetails = {
                             order_id: data.order_id,
                             guest_name: data.user_name,
                             property_name: data.property_name,
                             room_name: data.room_name,
                             check_in: formatDate(data.actual_check_in || data.check_in),
-                            check_out: formatDate(data.check_out), // Scheduled check-out
+                            check_out: formatDate(data.check_out),
                             duration: this.calculateDuration(data.actual_check_in || data
                                 .check_in, data.check_out),
+                            total_booking: data.room_price ? this.formatRupiah(data.room_price) : 'N/A',
+                            deposit: data.deposit_fee ? this.formatRupiah(data.deposit_fee) : 'Rp 0',
+                            service_fee: data.service_fees ? this.formatRupiah(data.service_fees) : 'Rp 0',
                             total_payment: this.formatRupiah(data.grandtotal_price)
                         };
 
@@ -520,4 +528,5 @@
             attachPaginationListeners();
         });
     </script>
+    @include('pages.bookings.partials.dark-badge-styles')
 </x-app-layout>

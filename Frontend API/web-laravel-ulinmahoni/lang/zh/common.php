@@ -39,9 +39,17 @@ return [
     'footer' => [
         'tagline' => '为城市爱好者打造舒适现代的居住空间。',
         'quick_links' => '快速链接',
+        'business' => 'Ulin Mahoni 商务',
+        'business_partnership' => '合作伙伴',
+        'business_corporate' => '企业',
         'contact_us' => '联系我们',
         'follow_us' => '关注我们',
-        'copyright' => '&copy; 2025 Ulin Mahoni. 版权所有。',
+        'support' => '支持',
+        'payment_methods' => '支付方式',
+        'login_register' => '登录 / 注册',
+        'terms' => '条款与条件',
+        'privacy' => '隐私政策',
+        'copyright' => '&copy; 2026 Ulin Mahoni. 版权所有。',
     ],
 
     'language' => [

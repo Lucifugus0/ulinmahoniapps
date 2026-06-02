@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pembayaran QRIS - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
 </head>
 <body>
     @include('components.homepage.header')
@@ -130,9 +131,9 @@
             document.getElementById('qrisExpiry').textContent = expiryDate.toLocaleString('id-ID');
         }
 
-        // Countdown — capped at 5 minutes from page load
+        // Countdown — capped at 30 minutes from page load (matches server expired_at)
         const countdownEl = document.getElementById('qrisCountdown');
-        const maxMs = 5 * 60 * 1000;
+        const maxMs = 30 * 60 * 1000;
         const displayExpiryDate = expiryDate
             ? new Date(Math.min(expiryDate.getTime(), Date.now() + maxMs))
             : null;

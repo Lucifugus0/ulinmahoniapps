@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Booking;
-use App\Models\Room;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,28 +14,36 @@ class ResetExpiredBookingRooms extends Command
      *
      * @var string
      */
-    protected $signature = 'bookings:reset-expired-rooms {--force : Force reset without confirmation}';
+    protected $signature = 'bookings:reset-expired-rooms {--force : Force run without confirmation}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Reset rental_status to 0 for rooms with expired bookings';
+    protected $description = 'Deactivate t_booking rows whose transaction has expired (sets t_booking.status = 0).';
 
     /**
      * Execute the console command.
+     *
+     * Per the rental_status rule: physical occupancy is owned exclusively by
+     * admin check-in / check-out actions. Booking lifecycle events (expiry,
+     * cancellation, renewal, payment) MUST NOT auto-flip m_rooms.rental_status.
+     *
+     * This command therefore only deactivates expired t_booking rows so the
+     * booking lists stop showing them — it does NOT touch m_rooms.rental_status.
+     * The check-out path (CheckOutController) is the sole writer that flips
+     * a room back to 0.
      */
     public function handle()
     {
-        $this->info('Starting to check for expired bookings...');
+        $this->info('Starting to deactivate expired bookings...');
 
         try {
             DB::beginTransaction();
 
-            // Find all active bookings with expired transactions
-            $expiredBookings = Booking::with(['transaction', 'room'])
-                ->where('status', 1) // Active bookings
+            $expiredBookings = Booking::with(['transaction'])
+                ->where('status', 1)
                 ->whereHas('transaction', function ($q) {
                     $q->where('transaction_status', 'expired');
                 })
@@ -50,57 +57,26 @@ class ResetExpiredBookingRooms extends Command
 
             $this->info("Found {$expiredBookings->count()} expired booking(s).");
 
-            $processedRooms = [];
             $updatedBookings = 0;
-            $updatedRooms = 0;
 
             foreach ($expiredBookings as $booking) {
-                // Update booking status to inactive
                 $booking->status = 0;
                 $booking->save();
                 $updatedBookings++;
 
                 $this->line("- Updated booking {$booking->order_id} to inactive");
-
-                // Check if room needs rental_status reset
-                if ($booking->room_id && !in_array($booking->room_id, $processedRooms)) {
-                    // Check if there are other active bookings for this room
-                    $hasOtherActiveBooking = Booking::where('room_id', $booking->room_id)
-                        ->where('status', 1)
-                        ->whereHas('transaction', function ($q) {
-                            $q->where('transaction_status', '!=', 'expired');
-                        })
-                        ->exists();
-
-                    if (!$hasOtherActiveBooking) {
-                        $room = Room::find($booking->room_id);
-                        if ($room && $room->rental_status == 1) {
-                            $room->rental_status = 0;
-                            $room->save();
-                            $updatedRooms++;
-
-                            $roomName = $room->name . ' No. ' . $room->no;
-                            $this->line("  → Reset rental_status for room: {$roomName}");
-                        }
-                    }
-
-                    $processedRooms[] = $booking->room_id;
-                }
             }
 
             DB::commit();
 
-            // Log the operation
             Log::info('Reset expired booking rooms completed', [
                 'updated_bookings' => $updatedBookings,
-                'updated_rooms' => $updatedRooms,
                 'timestamp' => now()
             ]);
 
             $this->newLine();
             $this->info("✓ Successfully processed:");
             $this->line("  - {$updatedBookings} booking(s) set to inactive");
-            $this->line("  - {$updatedRooms} room(s) rental_status reset to 0");
 
             return Command::SUCCESS;
 

@@ -131,7 +131,9 @@ class ApartController extends Controller {
                 'price_original_daily' => $room->price_original_daily,
                 'price_original_monthly' => $room->price_original_monthly,
                 'status' => $room->status,
-                'rental_status' => $room->rental_status
+                'rental_status' => $room->rental_status,
+                /* Computed availability: daily rooms always available, monthly checks active bookings */
+                'is_available' => \App\Models\Room::computeAvailability($room->idrec, $room->periode_daily)
             ];
         })->toArray();
     }

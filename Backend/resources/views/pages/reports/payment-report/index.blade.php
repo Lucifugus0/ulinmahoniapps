@@ -34,7 +34,7 @@
         <!-- Filter Section -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
             <form id="filterForm" class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                     <!-- Search -->
                     <div class="relative">
                         <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.search') }}</label>
@@ -47,15 +47,27 @@
                             class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
-                    <!-- Date Range -->
+                    <!-- Transaction Date Range — filters on COALESCE(paid_at, cancel_at, created_at) -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.payment_date_range') }}</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.payment_report_date_range_label') }}</label>
                         <div class="relative">
                             <input type="text" id="date_picker" placeholder="{{ __('ui.select_date_range') }}" data-input
                                 class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
                             <input type="hidden" id="start_date" name="start_date" value="{{ $startDate }}">
                             <input type="hidden" id="end_date" name="end_date" value="{{ $endDate }}">
                         </div>
+                    </div>
+
+                    <!-- Status filter — narrows to one of paid/cancelled/rejected; empty = all 3 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.payment_report_status_filter') }}</label>
+                        <select id="status_filter" name="status"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">{{ __('ui.payment_report_status_all') }}</option>
+                            <option value="paid">{{ __('ui.payment_report_status_paid') }}</option>
+                            <option value="cancelled">{{ __('ui.payment_report_status_cancelled') }}</option>
+                            <option value="rejected">{{ __('ui.payment_report_status_rejected') }}</option>
+                        </select>
                     </div>
 
                     <!-- Property Filter (only for super admin and HO users) -->
@@ -120,9 +132,8 @@
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.dpp_parking') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.vatt') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.grand_total') }}</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.deposit') }}</th>
+                            {{-- Removed standalone "Deposit" column; "Deposit" header below shows the deposit fee value --}}
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.deposit_fee') }}</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.dpp_deposit_fee') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.service_fee') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.payment_status') }}</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.verified_by') }}</th>
@@ -131,9 +142,10 @@
                             <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">{{ __('ui.actions') }}</th>
                         </tr>
                     </thead>
-                    <tbody id="reportTableBody" class="divide-y divide-gray-200">
+                    <!-- Table body with bg-white for dark mode glass treatment (matches All Bookings reference) -->
+                    <tbody id="reportTableBody" class="bg-white divide-y divide-gray-200">
                         <tr>
-                            <td colspan="32" class="px-4 py-8 text-center text-gray-500">
+                            <td colspan="31" class="px-4 py-8 text-center text-gray-500">
                                 <div class="flex flex-col items-center gap-2">
                                     <svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -193,7 +205,7 @@
             fetchReportData();
 
             // Listen for select filter changes (instant)
-            ['property_id', 'per_page'].forEach(id => {
+            ['property_id', 'per_page', 'status_filter'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
                     element.addEventListener('change', function() {
@@ -233,6 +245,8 @@
             formData.append('search', document.getElementById('search').value);
             formData.append('per_page', document.getElementById('per_page').value);
             formData.append('page', page);
+            // Status filter — empty value means "all 3 statuses" (paid + cancelled + rejected)
+            formData.append('status', document.getElementById('status_filter')?.value || '');
 
             const tbody = document.getElementById('reportTableBody');
             tbody.innerHTML = `
@@ -290,14 +304,28 @@
             }
 
             tbody.innerHTML = data.map(row => {
-                const refundClass = row.is_refund ? 'bg-red-50' : '';
+                /* Row tint: rejected (stronger red) takes precedence over refund (light red) */
+                const rowTintClass = row.is_rejected ? 'bg-red-100/60' : (row.is_refund ? 'bg-red-50' : '');
+                /* Inline badges next to invoice number — Rejected gets its own; refund retains existing pill */
+                const rejectedBadge = row.is_rejected ?
+                    '<span class="ml-1 px-1 py-0.5 text-xs bg-red-200 text-red-900 rounded font-semibold">REJECTED</span>' : '';
                 const refundBadge = row.is_refund ?
                     '<span class="ml-1 px-1 py-0.5 text-xs bg-red-100 text-red-800 rounded font-semibold">REFUND</span>' : '';
+                /* Status badge class comes from controller's resolvePaymentStatus — green/red/orange */
+                const statusClass = row.payment_status_class || 'bg-gray-100 text-gray-700';
+
+                /* Invoice URL: prefer the invoice-number slug (invoice number with '/' → '-'),
+                   fall back to the legacy order_id route for rows with no invoice number yet. */
+                const hasInvoiceNo = row.invoice_number && row.invoice_number !== '-';
+                const invoiceUrl = hasInvoiceNo
+                    ? `${invoiceBaseUrl}/invoice-${row.invoice_number.replace(/\//g, '-')}`
+                    : (row.order_id ? `${invoiceBaseUrl}/${row.order_id}/invoice` : '');
 
                 return `
-                <tr class="hover:bg-gray-50 transition-colors ${refundClass}">
+                <!-- Row without hover:bg-gray-50 to prevent white bg in dark mode (matches All Bookings) -->
+                <tr class="transition-colors ${rowTintClass}">
                     <td class="px-3 py-3 text-xs text-gray-900">${row.no}</td>
-                    <td class="px-3 py-3 text-xs font-medium text-blue-600">${row.invoice_number}${refundBadge}</td>
+                    <td class="px-3 py-3 text-xs font-medium text-blue-600">${row.invoice_number}${rejectedBadge}${refundBadge}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.invoice_date}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.transaction_code}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.property_name}</td>
@@ -319,16 +347,14 @@
                     <td class="px-3 py-3 text-xs text-gray-900">${row.dpp_parkir}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.vatt}</td>
                     <td class="px-3 py-3 text-xs font-semibold text-gray-900">${row.grand_total}</td>
-                    <td class="px-3 py-3 text-xs text-gray-900">${row.deposit}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.deposit_fee}</td>
-                    <td class="px-3 py-3 text-xs text-gray-900">${row.dpp_deposit_fee}</td>
                     <td class="px-3 py-3 text-xs text-gray-900">${row.service_fee}</td>
-                    <td class="px-3 py-3 text-xs text-gray-700">${row.payment_status}</td>
+                    <td class="px-3 py-3 text-xs"><span class="px-2 py-1 inline-block text-xs leading-4 font-semibold rounded-md ${statusClass}">${row.payment_status}</span></td>
                     <td class="px-3 py-3 text-xs text-gray-700">${row.verified_by}</td>
                     <td class="px-3 py-3 text-xs text-gray-700">${row.verified_at}</td>
                     <td class="px-3 py-3 text-xs text-gray-600">${row.notes || '-'}</td>
                     <td class="px-3 py-3 text-xs text-center">
-                        ${row.order_id ? `<a href="${invoiceBaseUrl}/${row.order_id}/invoice" target="_blank" class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none">{{ __('ui.view_invoice') }}</a>` : '-'}
+                        ${invoiceUrl ? `<a href="${invoiceUrl}" target="_blank" class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none">{{ __('ui.view_invoice') }}</a>` : '-'}
                     </td>
                 </tr>
             `}).join('');
@@ -434,16 +460,25 @@
                 filterInfo += `<p><strong>{{ __('ui.search') }}:</strong> ${searchValue}</p>`;
             }
 
+            // Status filter — only include in print header if narrowed
+            const statusSelect = document.getElementById('status_filter');
+            if (statusSelect && statusSelect.value) {
+                const selectedStatus = statusSelect.options[statusSelect.selectedIndex].text;
+                filterInfo += `<p><strong>{{ __('ui.payment_report_status_filter') }}:</strong> ${selectedStatus}</p>`;
+            }
+
             // Build table rows from reportData
             let tableRows = '';
             if (reportData && reportData.length > 0) {
                 tableRows = reportData.map(row => {
-                    const refundClass = row.is_refund ? 'refund-row' : '';
+                    /* Print row tinting: rejected (stronger red) > refund (light red) > none */
+                    const rowClass = row.is_rejected ? 'rejected-row' : (row.is_refund ? 'refund-row' : '');
+                    const rejectedBadge = row.is_rejected ? ' [REJECTED]' : '';
                     const refundBadge = row.is_refund ? ' [REFUND]' : '';
                     return `
-                        <tr class="${refundClass}">
+                        <tr class="${rowClass}">
                             <td>${row.no}</td>
-                            <td>${row.invoice_number}${refundBadge}</td>
+                            <td>${row.invoice_number}${rejectedBadge}${refundBadge}</td>
                             <td>${row.invoice_date}</td>
                             <td>${row.transaction_code}</td>
                             <td>${row.property_name}</td>
@@ -465,9 +500,7 @@
                             <td>${row.dpp_parkir}</td>
                             <td>${row.vatt}</td>
                             <td>${row.grand_total}</td>
-                            <td>${row.deposit}</td>
                             <td>${row.deposit_fee}</td>
-                            <td>${row.dpp_deposit_fee}</td>
                             <td>${row.service_fee}</td>
                             <td>${row.payment_status}</td>
                             <td>${row.verified_by}</td>
@@ -550,6 +583,9 @@
                         tr.refund-row {
                             background-color: #FEE2E2 !important;
                         }
+                        tr.rejected-row {
+                            background-color: #FECACA !important;
+                        }
                         .footer {
                             margin-top: 20px;
                             text-align: center;
@@ -581,6 +617,11 @@
                             }
                             tr.refund-row {
                                 background-color: #FEE2E2 !important;
+                                -webkit-print-color-adjust: exact;
+                                print-color-adjust: exact;
+                            }
+                            tr.rejected-row {
+                                background-color: #FECACA !important;
                                 -webkit-print-color-adjust: exact;
                                 print-color-adjust: exact;
                             }
@@ -626,9 +667,7 @@
                                 <th>{{ __('ui.dpp_parking') }}</th>
                                 <th>{{ __('ui.vatt') }}</th>
                                 <th>{{ __('ui.grand_total') }}</th>
-                                <th>{{ __('ui.deposit') }}</th>
                                 <th>{{ __('ui.deposit_fee') }}</th>
-                                <th>{{ __('ui.dpp_deposit_fee') }}</th>
                                 <th>{{ __('ui.service_fee') }}</th>
                                 <th>{{ __('ui.status') }}</th>
                                 <th>{{ __('ui.verified_by') }}</th>
@@ -669,7 +708,9 @@
                 start_date: document.getElementById('start_date').value,
                 end_date: document.getElementById('end_date').value,
                 property_id: document.getElementById('property_id')?.value || '',
-                search: document.getElementById('search').value
+                search: document.getElementById('search').value,
+                /* Status filter — pass through so the Excel export matches the on-screen view */
+                status: document.getElementById('status_filter')?.value || ''
             });
 
             window.location.href = '{{ route('reports.payment.export') }}?' + params.toString();

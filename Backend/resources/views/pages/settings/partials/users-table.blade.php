@@ -145,21 +145,23 @@
                     </button>
                 @endif
 
-                <!-- Edit button -->
-                <button class="p-2 rounded-xl text-indigo-600 hover:bg-gray-100 transition"
-                    type="button"
-                    onclick="openEditModal({{ $user->id }}, {{ json_encode([
-                        'first_name' => $user->first_name,
-                        'last_name' => $user->last_name,
-                        'username' => $user->username,
-                        'email' => $user->email,
-                        'nik' => $user->nik,
-                        'role_id' => $user->role_id,
-                        'user_type' => $user->user_type,
-                        'property_id' => $user->property_id
-                    ]) }})">
-                    <i class="fas fa-edit"></i>
-                </button>
+                {{-- Edit button — hidden for customer accounts (role_id NULL = no staff role assigned). The Account Settings list shows admins, site staff, and registered guests in the same table; customers shouldn't be edited via this admin form. --}}
+                @if (!is_null($user->role_id))
+                    <button class="p-2 rounded-xl text-indigo-600 hover:bg-gray-100 transition"
+                        type="button"
+                        onclick="openEditModal({{ $user->id }}, {{ json_encode([
+                            'first_name' => $user->first_name,
+                            'last_name' => $user->last_name,
+                            'username' => $user->username,
+                            'email' => $user->email,
+                            'nik' => $user->nik,
+                            'role_id' => $user->role_id,
+                            'user_type' => $user->user_type,
+                            'property_id' => $user->property_id
+                        ]) }})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                @endif
             </div>
         </td>
     </tr>

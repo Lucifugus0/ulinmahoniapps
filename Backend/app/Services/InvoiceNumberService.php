@@ -2,16 +2,39 @@
 
 namespace App\Services;
 
+use App\Models\DepositFeeTransaction;
+use App\Models\ParkingFeeTransaction;
+use App\Models\Property;
 use App\Models\Transaction;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * Generates and persists invoice numbers using the format:
+ *   Booking: {seq:4}/{property_initial}/{invoice_code}-INV/{roman_month}/{year}
+ *   Parking: {seq:4}/PRK-{property_initial}/{invoice_code}-INV/{roman_month}/{year}
+ *   Deposit: {seq:4}/DEP-{property_initial}/{invoice_code}-INV/{roman_month}/{year}
+ *
+ * Rules:
+ * - Only paid transactions get an invoice number.
+ * - Transactions with paid_at < 2026-03-01 are skipped (no number assigned). The cutoff
+ *   guard still uses paid_at — it defines when this numbering system became active.
+ * - The {roman_month}/{year} segments are derived from transaction_date (admin-keyed
+ *   actual money-changed-hands date), with paid_at as a defensive fallback when
+ *   transaction_date is missing. So a back-dated payment recorded May 6 with
+ *   transaction_date=Apr 15 gets numbered IV/2026 (April), not V/2026 (May).
+ * - Sequence is per (counter_key, year) and resets each January 1. Each
+ *   transaction type has its OWN counter so the three sequences are independent
+ *   (no shared gaps, each type starts from 1 per year per property):
+ *   - Booking (t_transactions):              counter_key = invoice_code         e.g. "KGA"
+ *   - Parking (t_parking_fee_transaction):   counter_key = "PRK-{invoice_code}" e.g. "PRK-KGA"
+ *   - Deposit (t_deposit_fee_transaction):   counter_key = "DEP-{invoice_code}" e.g. "DEP-KGA"
+ * - The number is assigned once and never recomputed; refunds keep it.
+ */
 class InvoiceNumberService
 {
-    /**
-     * The cutoff date from which the new annual reset system applies.
-     * Transactions on or after this date use the new per-year sequence.
-     * Transactions before this date retain their legacy sequential numbering.
-     */
+    /** First date eligible for the new persisted invoice numbering. */
     const CUTOFF_DATE = '2026-03-01';
 
     protected static array $romanMonths = [
@@ -20,177 +43,163 @@ class InvoiceNumberService
     ];
 
     /**
-     * Generate invoice number based on paid_at date.
-     * Format: 0001/{property_initial}/KGA-INV/III/2026
-     *
-     * @param Transaction $transaction
-     * @param int|null $sequenceNumber Optional override for sequence number
-     * @return string
+     * Assign and persist an invoice number for a paid transaction.
+     * Accepts a booking Transaction, ParkingFeeTransaction, or DepositFeeTransaction.
+     * Returns the assigned number, or null if the transaction is ineligible
+     * (not paid, paid_at before cutoff, or property without invoice_code).
      */
-    public static function generate(Transaction $transaction, ?int $sequenceNumber = null): string
+    public static function assign($transaction): ?string
     {
-        $paidAt = $transaction->paid_at ? Carbon::parse($transaction->paid_at) : now();
-        $year = $paidAt->format('Y');
-        $month = (int) $paidAt->format('n');
-        $romanMonth = self::$romanMonths[$month];
-
-        // Get sequence number if not provided
-        if ($sequenceNumber === null) {
-            $sequenceNumber = self::getSequenceNumber($transaction, $year);
+        if (!$transaction) {
+            return null;
         }
 
-        // Get property initial from transaction's property relationship (uppercase)
-        $propertyInitial = 'PK1'; // Default fallback
-        if ($transaction->property && $transaction->property->initial) {
-            $propertyInitial = strtoupper($transaction->property->initial);
+        // Already assigned — never recompute (refunds preserve the number)
+        $existing = self::getStoredNumber($transaction);
+        if (!empty($existing)) {
+            return $existing;
         }
 
-        // Format: 0001/{property_initial}/KGA-INV/III/2026
-        $formattedSequence = str_pad($sequenceNumber, 4, '0', STR_PAD_LEFT);
-
-        return "{$formattedSequence}/{$propertyInitial}/KGA-INV/{$romanMonth}/{$year}";
-    }
-
-    /**
-     * Determine the sequence start boundary for a given year.
-     *
-     * - Transactions BEFORE the cutoff date use legacy counting (all of that year).
-     * - For year 2026 (new system): sequence starts from CUTOFF_DATE (March 1, 2026).
-     * - For 2027 and beyond: sequence starts from January 1 of that year.
-     *
-     * @param string $year
-     * @param bool $isLegacy Whether this is a legacy (pre-cutoff) transaction
-     * @return string|null Start datetime string, or null for legacy (count all year)
-     */
-    protected static function getSequenceStart(string $year, bool $isLegacy): ?string
-    {
-        if ($isLegacy) {
-            return null; // Legacy: count all transactions in that year before cutoff
+        // Must be paid
+        if (($transaction->transaction_status ?? null) !== 'paid') {
+            return null;
         }
 
-        if ($year === '2026') {
-            return self::CUTOFF_DATE . ' 00:00:00';
+        // Must be active (status = 1). A soft-deleted parking-fee row (status = 0,
+        // created by the 2026-05-13 dedup migration) must never re-acquire a number
+        // even if some downstream code path calls assign() on it.
+        if (isset($transaction->status) && (int) $transaction->status !== 1) {
+            return null;
         }
 
-        return $year . '-01-01 00:00:00';
-    }
-
-    /**
-     * Get sequence number for a single transaction.
-     *
-     * @param Transaction $transaction
-     * @param string $year
-     * @return int
-     */
-    protected static function getSequenceNumber(Transaction $transaction, string $year): int
-    {
-        $cutoff = Carbon::parse(self::CUTOFF_DATE);
+        // Need paid_at present — it is the universal fallback when transaction_date is missing.
+        if (empty($transaction->paid_at)) {
+            return null;
+        }
         $paidAt = Carbon::parse($transaction->paid_at);
-        $isLegacy = $paidAt->lt($cutoff);
 
-        $query = Transaction::where('transaction_status', 'paid')
-            ->whereNotNull('paid_at')
-            ->whereYear('paid_at', $year);
+        // The invoice number's year + roman month segments come from transaction_date
+        // (the admin-keyed actual money-changed-hands date), so back-dated payments produce
+        // invoices in the month the customer actually paid, not the month admin recorded the row.
+        // Falls back to paid_at when transaction_date is missing (legacy data safety).
+        $invoiceDate = !empty($transaction->transaction_date)
+            ? Carbon::parse($transaction->transaction_date)
+            : $paidAt;
 
-        if ($isLegacy) {
-            // Legacy: only count transactions before the cutoff in that year
-            $query->where('paid_at', '<', self::CUTOFF_DATE . ' 00:00:00');
-        } else {
-            // New system: count from the sequence start for that year
-            $sequenceStart = self::getSequenceStart($year, false);
-            $query->where('paid_at', '>=', $sequenceStart);
+        // Cutoff guard.
+        // - Bookings + deposits: paid_at >= 2026-03-01 (when numbering went live in the system).
+        // - Parking (add-on):   transaction_date >= 2026-03-01 (admin-keyed money date).
+        //   Rationale: admins routinely backfill standalone parking entries weeks after the
+        //   service was rendered. Using paid_at as the cutoff lets a row paid in March but
+        //   covering a January period acquire a Jan-stamped invoice (e.g. 0002/.../I/2026),
+        //   which contradicts the rule "add-on parking invoices start from 01 March 2026".
+        //   transaction_date (with paid_at fallback) is the authoritative period anchor.
+        $cutoffDate = ($transaction instanceof ParkingFeeTransaction) ? $invoiceDate : $paidAt;
+        if ($cutoffDate->lt(Carbon::parse(self::CUTOFF_DATE))) {
+            return null;
         }
 
-        $count = $query->where(function ($q) use ($transaction) {
-            $q->where('paid_at', '<', $transaction->paid_at)
-                ->orWhere(function ($q2) use ($transaction) {
-                    $q2->where('paid_at', '=', $transaction->paid_at)
-                        ->where('idrec', '<=', $transaction->idrec);
-                });
-        })->count();
+        // Resolve property. Deposit transactions belong to a booking via order_id,
+        // so fall back to the linked booking Transaction's property_id for deposits.
+        $propertyId = $transaction->property_id ?? null;
+        if (empty($propertyId) && $transaction instanceof DepositFeeTransaction) {
+            $linkedBooking = Transaction::where('order_id', $transaction->order_id)->first();
+            $propertyId = $linkedBooking?->property_id;
+        }
 
-        return $count > 0 ? $count : 1;
+        $property = $propertyId ? Property::find($propertyId) : null;
+        if (!$property || empty($property->invoice_code)) {
+            Log::warning('InvoiceNumberService: missing property or invoice_code', [
+                'transaction_type'  => get_class($transaction),
+                'transaction_idrec' => $transaction->idrec ?? null,
+                'property_id'       => $propertyId,
+            ]);
+            return null;
+        }
+
+        $invoiceCode     = strtoupper($property->invoice_code);
+        $propertyInitial = strtoupper($property->initial ?? '');
+        // Year + month derived from transaction_date (with paid_at fallback) — see $invoiceDate above.
+        $year            = (int) $invoiceDate->format('Y');
+        $month           = (int) $invoiceDate->format('n');
+        $romanMonth      = self::$romanMonths[$month];
+
+        // Each transaction type uses its own counter key + its own initial-segment
+        // marker so the three sequences are independent and visually distinct.
+        //   Deposit  -> "DEP-..."   Parking -> "PRK-..."   Booking -> "..."
+        if ($transaction instanceof DepositFeeTransaction) {
+            $counterKey        = 'DEP-' . $invoiceCode;
+            $formatInitialPart = 'DEP-' . $propertyInitial;
+        } elseif ($transaction instanceof ParkingFeeTransaction) {
+            $counterKey        = 'PRK-' . $invoiceCode;
+            $formatInitialPart = 'PRK-' . $propertyInitial;
+        } else {
+            $counterKey        = $invoiceCode;
+            $formatInitialPart = $propertyInitial;
+        }
+
+        // Atomically increment per (counter_key, year) counter and write back
+        return DB::transaction(function () use ($transaction, $counterKey, $formatInitialPart, $invoiceCode, $year, $romanMonth) {
+            // Ensure the counter row exists, then lock + increment
+            DB::table('m_invoice_sequences')->insertOrIgnore([
+                'invoice_code' => $counterKey,
+                'year'         => $year,
+                'last_seq'     => 0,
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ]);
+
+            $row = DB::table('m_invoice_sequences')
+                ->where('invoice_code', $counterKey)
+                ->where('year', $year)
+                ->lockForUpdate()
+                ->first();
+
+            $next = ((int) $row->last_seq) + 1;
+
+            DB::table('m_invoice_sequences')
+                ->where('idrec', $row->idrec)
+                ->update(['last_seq' => $next, 'updated_at' => now()]);
+
+            $invoiceNumber = sprintf(
+                '%s/%s/%s-INV/%s/%d',
+                str_pad((string) $next, 4, '0', STR_PAD_LEFT),
+                $formatInitialPart,
+                $invoiceCode,
+                $romanMonth,
+                $year
+            );
+
+            self::storeNumber($transaction, $invoiceNumber);
+
+            return $invoiceNumber;
+        });
     }
 
     /**
-     * Generate invoice numbers for a collection of transactions.
-     * Uses true global rank so the number is stable regardless of filters or per_page.
-     *
-     * Sequencing rules:
-     * - Before 2026-03-01 (legacy): sequences are counted per-year, excluding new-system transactions.
-     * - From 2026-03-01 (year 2026): sequence starts at 001, counting from March 1, 2026.
-     * - From 2027 onwards: sequence starts at 001 each January 1.
-     *
-     * @param \Illuminate\Support\Collection $transactions
-     * @return array Map of transaction idrec => invoice number
+     * Reads the persisted invoice number from whichever column the model uses
+     * (t_transactions.invoice_number vs t_parking_fee_transaction.invoice_id vs
+     * t_deposit_fee_transaction.invoice_id).
      */
-    public static function generateBatch($transactions): array
+    protected static function getStoredNumber($transaction): ?string
     {
-        $invoiceNumbers = [];
-        $cutoff = Carbon::parse(self::CUTOFF_DATE);
-
-        // Split into legacy (before cutoff) and new (from cutoff onwards)
-        $legacy = $transactions->filter(
-            fn($t) => $t->paid_at && Carbon::parse($t->paid_at)->lt($cutoff)
-        );
-        $newTxns = $transactions->filter(
-            fn($t) => $t->paid_at && Carbon::parse($t->paid_at)->gte($cutoff)
-        );
-
-        // --- Handle legacy transactions ---
-        $legacyByYear = $legacy->groupBy(
-            fn($t) => Carbon::parse($t->paid_at)->format('Y')
-        );
-
-        foreach ($legacyByYear as $year => $yearTxns) {
-            // Count only legacy (pre-cutoff) paid transactions in this year
-            $orderedIdrecs = Transaction::where('transaction_status', 'paid')
-                ->whereNotNull('paid_at')
-                ->whereYear('paid_at', $year)
-                ->where('paid_at', '<', self::CUTOFF_DATE . ' 00:00:00')
-                ->orderBy('paid_at', 'asc')
-                ->orderBy('idrec', 'asc')
-                ->pluck('idrec')
-                ->toArray();
-
-            $rankMap = array_flip($orderedIdrecs);
-
-            foreach ($yearTxns as $transaction) {
-                $rank = isset($rankMap[$transaction->idrec])
-                    ? $rankMap[$transaction->idrec] + 1
-                    : 1;
-                $invoiceNumbers[$transaction->idrec] = self::generate($transaction, $rank);
-            }
+        if ($transaction instanceof ParkingFeeTransaction || $transaction instanceof DepositFeeTransaction) {
+            return $transaction->invoice_id;
         }
-
-        // --- Handle new-system transactions ---
-        $newByYear = $newTxns->groupBy(
-            fn($t) => Carbon::parse($t->paid_at)->format('Y')
-        );
-
-        foreach ($newByYear as $year => $yearTxns) {
-            $sequenceStart = self::getSequenceStart($year, false);
-
-            $orderedIdrecs = Transaction::where('transaction_status', 'paid')
-                ->whereNotNull('paid_at')
-                ->whereYear('paid_at', $year)
-                ->where('paid_at', '>=', $sequenceStart)
-                ->orderBy('paid_at', 'asc')
-                ->orderBy('idrec', 'asc')
-                ->pluck('idrec')
-                ->toArray();
-
-            $rankMap = array_flip($orderedIdrecs);
-
-            foreach ($yearTxns as $transaction) {
-                $rank = isset($rankMap[$transaction->idrec])
-                    ? $rankMap[$transaction->idrec] + 1
-                    : 1;
-                $invoiceNumbers[$transaction->idrec] = self::generate($transaction, $rank);
-            }
-        }
-
-        return $invoiceNumbers;
+        return $transaction->invoice_number ?? null;
     }
 
+    /**
+     * Persists the invoice number to the correct column for the given model.
+     */
+    protected static function storeNumber($transaction, string $invoiceNumber): void
+    {
+        if ($transaction instanceof ParkingFeeTransaction || $transaction instanceof DepositFeeTransaction) {
+            $transaction->invoice_id = $invoiceNumber;
+            $transaction->save();
+            return;
+        }
+        $transaction->invoice_number = $invoiceNumber;
+        $transaction->save();
+    }
 }

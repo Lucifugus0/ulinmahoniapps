@@ -40,7 +40,7 @@
                         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                         x-transition:leave-end="opacity-0 translate-y-4 scale-95" x-cloak>
 
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-auto w-3/4 max-h-full flex flex-col text-left"
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-auto w-3/4 max-h-full flex flex-col text-left"
                             @click.outside="modalOpenDetail = false" @keydown.escape.window="modalOpenDetail = false">
 
                             <!-- Modal header with step indicator -->
@@ -167,119 +167,142 @@
                                         x-transition:enter-start="opacity-0 translate-x-4"
                                         x-transition:enter-end="opacity-100 translate-x-0">
                                         <div class="space-y-6">
-                                            <!-- Nama Properti & Initial -->
-                                            <div class="grid grid-cols-12 gap-4">
-                                                <!-- Nama Properti -->
-                                                <div class="col-span-10">
-                                                    <label for="property_name"
+                                            <!-- Property Name — full-width on its own row so the
+                                                 name input can breathe regardless of modal size. -->
+                                            <div>
+                                                <label for="property_name"
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                    {{ __('ui.property_name') }} <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" id="property_name" name="property_name"
+                                                    required
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                    placeholder="{{ __('ui.enter_property_name') }}">
+                                            </div>
+
+                                            <!-- Property Invoice Code + Property Initial — own row,
+                                                 each half-width (50/50) so both inputs comfortably
+                                                 fit their 10-character max + long labels. -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <!-- Property Invoice Code -->
+                                                <div>
+                                                    <label for="invoice_code"
                                                         class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        {{ __('ui.property_name') }} <span
-                                                            class="text-red-500">*</span>
+                                                        {{ __('ui.property_invoice_code') }}
                                                     </label>
-                                                    <input type="text" id="property_name" name="property_name"
-                                                        required
-                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                        placeholder="{{ __('ui.enter_property_name') }}">
+                                                    {{-- Invoice Code: optional, max 10 chars, auto-uppercase --}}
+                                                    <input type="text" id="invoice_code" name="invoice_code"
+                                                        maxlength="10"
+                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase"
+                                                        placeholder="{{ __('ui.enter_invoice_code') }}"
+                                                        oninput="this.value = this.value.toUpperCase()">
+                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                        Max 10 characters</p>
                                                 </div>
 
-                                                <!-- Initial -->
-                                                <div class="col-span-2">
+                                                <!-- Property Initial -->
+                                                <div>
                                                     <label for="initial"
                                                         class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        Initial <span class="text-red-500">*</span>
+                                                        {{ __('ui.property_initial') }} <span class="text-red-500">*</span>
                                                     </label>
-                                                    <div class="flex items-center">
-                                                        <input type="text" id="initial" name="initial" required
-                                                            maxlength="3"
-                                                            class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-center"
-                                                            placeholder="ABC"
-                                                            oninput="this.value = this.value.toUpperCase()">
-                                                    </div>
+                                                    {{-- Initial field: max 10 chars, auto-uppercase --}}
+                                                    <input type="text" id="initial" name="initial" required
+                                                        maxlength="10"
+                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase"
+                                                        placeholder="UMKOST001"
+                                                        oninput="this.value = this.value.toUpperCase()">
                                                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                        {{ __('ui.max_3_chars') }}</p>
+                                                        Max 10 characters</p>
                                                 </div>
                                             </div>
 
-                                            <!-- Jenis Properti -->
-                                            <div>
-                                                <label
-                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                                    {{ __('ui.property_type') }} <span class="text-red-500">*</span>
-                                                </label>
-                                                <div class="grid grid-cols-2 gap-4">
-                                                    <template x-for="type in types" :key="type.value">
-                                                        <div class="relative">
-                                                            <input :id="'type-' + type.value" name="property_type"
-                                                                type="radio" :value="type.value"
-                                                                x-model="selectedPropertyType"
-                                                                class="sr-only peer" required>
-                                                            <label :for="'type-' + type.value"
-                                                                class="flex items-center justify-center p-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-blue-600 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 peer-checked:text-blue-600 dark:peer-checked:text-blue-400 transition-all duration-200">
-                                                                <span x-text="type.label"></span>
-                                                            </label>
+                                            <!-- Property Type (dropdown) + Tenant Gender — single row.
+                                                 Gender column is only active when property type === 'Kos';
+                                                 otherwise it shows a muted placeholder. -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <!-- Jenis Properti -->
+                                                <div>
+                                                    <label for="property_type"
+                                                        class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                                        {{ __('ui.property_type') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <select id="property_type" name="property_type" required
+                                                        x-model="selectedPropertyType"
+                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                        <option value="" disabled>{{ __('ui.property_type') }}</option>
+                                                        <template x-for="type in types" :key="type.value">
+                                                            <option :value="type.value" x-text="type.label"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Gender Penghuni (khusus Kos) -->
+                                                <div>
+                                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                                        {{ __('ui.gender_tenant') }} <span class="text-xs font-normal text-gray-500 ml-1">{{ __('ui.gender_optional') }}</span>
+                                                    </label>
+                                                    <div x-show="selectedPropertyType === 'Kos'"
+                                                        x-transition:enter="transition ease-out duration-200"
+                                                        x-transition:enter-start="opacity-0 -translate-y-2"
+                                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                                        x-transition:leave="transition ease-in duration-150"
+                                                        x-transition:leave-start="opacity-100 translate-y-0"
+                                                        x-transition:leave-end="opacity-0 -translate-y-2">
+                                                        <div class="flex gap-3 flex-wrap">
+                                                            <!-- Laki-laki -->
+                                                            <button type="button"
+                                                                @click="gender = (gender === 'male' ? null : 'male')"
+                                                                :class="gender === 'male'
+                                                                    ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 shadow-sm'
+                                                                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-green-300 hover:bg-green-50/50'"
+                                                                class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
+                                                                <span class="text-xl font-bold leading-none" :class="gender === 'male' ? 'text-green-500' : 'text-gray-400'">♂</span>
+                                                                <span>{{ __('ui.gender_male') }}</span>
+                                                            </button>
+
+                                                            <!-- Perempuan -->
+                                                            <button type="button"
+                                                                @click="gender = (gender === 'female' ? null : 'female')"
+                                                                :class="gender === 'female'
+                                                                    ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 shadow-sm'
+                                                                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-pink-300 hover:bg-pink-50/50'"
+                                                                class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
+                                                                <span class="text-xl font-bold leading-none" :class="gender === 'female' ? 'text-pink-500' : 'text-gray-400'">♀</span>
+                                                                <span>{{ __('ui.gender_female') }}</span>
+                                                            </button>
+
+                                                            <!-- Campur -->
+                                                            <button type="button"
+                                                                @click="gender = (gender === 'mixed' ? null : 'mixed')"
+                                                                :class="gender === 'mixed'
+                                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 shadow-sm'
+                                                                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-purple-300 hover:bg-purple-50/50'"
+                                                                class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
+                                                                <span class="text-base font-bold leading-none" :class="gender === 'mixed' ? 'text-green-500' : 'text-gray-400'">♂</span><span class="text-base font-bold leading-none -ml-1" :class="gender === 'mixed' ? 'text-pink-500' : 'text-gray-400'">♀</span>
+                                                                <span>{{ __('ui.gender_mixed') }}</span>
+                                                            </button>
                                                         </div>
-                                                    </template>
+                                                        <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">{{ __('ui.gender_hint') }}</p>
+                                                    </div>
+                                                    {{-- Placeholder when property type is not Kos --}}
+                                                    <p x-show="selectedPropertyType !== 'Kos'" class="text-xs text-gray-400 dark:text-gray-500 italic">
+                                                        {{ __('ui.gender_only_for_kos') }}
+                                                    </p>
+                                                    <input type="hidden" name="gender" :value="gender ?? ''">
                                                 </div>
                                             </div>
 
-                                            <!-- Gender Penghuni (khusus Kos) -->
-                                            <div x-show="selectedPropertyType === 'Kos'"
-                                                x-transition:enter="transition ease-out duration-200"
-                                                x-transition:enter-start="opacity-0 -translate-y-2"
-                                                x-transition:enter-end="opacity-100 translate-y-0"
-                                                x-transition:leave="transition ease-in duration-150"
-                                                x-transition:leave-start="opacity-100 translate-y-0"
-                                                x-transition:leave-end="opacity-0 -translate-y-2">
-                                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                                    {{ __('ui.gender_tenant') }} <span class="text-xs font-normal text-gray-500 ml-1">{{ __('ui.gender_optional') }}</span>
-                                                </label>
-                                                <div class="flex gap-3 flex-wrap">
-                                                    <!-- Laki-laki -->
-                                                    <button type="button"
-                                                        @click="gender = (gender === 'male' ? null : 'male')"
-                                                        :class="gender === 'male'
-                                                            ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 shadow-sm'
-                                                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-green-300 hover:bg-green-50/50'"
-                                                        class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
-                                                        <span class="text-xl font-bold leading-none" :class="gender === 'male' ? 'text-green-500' : 'text-gray-400'">♂</span>
-                                                        <span>{{ __('ui.gender_male') }}</span>
-                                                    </button>
-
-                                                    <!-- Perempuan -->
-                                                    <button type="button"
-                                                        @click="gender = (gender === 'female' ? null : 'female')"
-                                                        :class="gender === 'female'
-                                                            ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 shadow-sm'
-                                                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-pink-300 hover:bg-pink-50/50'"
-                                                        class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
-                                                        <span class="text-xl font-bold leading-none" :class="gender === 'female' ? 'text-pink-500' : 'text-gray-400'">♀</span>
-                                                        <span>{{ __('ui.gender_female') }}</span>
-                                                    </button>
-
-                                                    <!-- Campur -->
-                                                    <button type="button"
-                                                        @click="gender = (gender === 'mixed' ? null : 'mixed')"
-                                                        :class="gender === 'mixed'
-                                                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 shadow-sm'
-                                                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-purple-300 hover:bg-purple-50/50'"
-                                                        class="flex items-center gap-2 px-5 py-3 border-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none">
-                                                        <span class="text-base font-bold leading-none" :class="gender === 'mixed' ? 'text-green-500' : 'text-gray-400'">♂</span><span class="text-base font-bold leading-none -ml-1" :class="gender === 'mixed' ? 'text-pink-500' : 'text-gray-400'">♀</span>
-                                                        <span>{{ __('ui.gender_mixed') }}</span>
-                                                    </button>
-                                                </div>
-                                                <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">{{ __('ui.gender_hint') }}</p>
-                                                <input type="hidden" name="gender" :value="gender ?? ''">
-                                            </div>
-
-                                            <!-- Deskripsi -->
+                                            <!-- Deskripsi Multi-language -->
                                             <div>
-                                                <label for="description"
-                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                    {{ __('ui.description') }} <span class="text-red-500">*</span>
-                                                </label>
-                                                <textarea id="description" name="description" rows="4" required
-                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                    placeholder="{{ __('ui.describe_your_property') }}"></textarea>
+                                                <x-multilang-textarea
+                                                    name="description"
+                                                    :value="''"
+                                                    :required="true"
+                                                    :rows="4"
+                                                    :placeholder="__('ui.describe_your_property')"
+                                                    :label="__('ui.description')"
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -389,6 +412,9 @@
                                                         class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                                 </div>
 
+                                                {{-- City input with datalist: auto-fills from map pin via reverseGeocode,
+                                                     allows typing existing cities or entering new ones.
+                                                     New cities are saved to m_cities master table on form submit. --}}
                                                 <div>
                                                     <label for="city"
                                                         class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -396,8 +422,18 @@
                                                             class="text-red-500">*</span>
                                                     </label>
                                                     <input type="text" id="city" name="city" required
-                                                        placeholder="{{ __('ui.enter_city_regency') }}"
-                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                                        list="city-list"
+                                                        autocomplete="off"
+                                                        placeholder="{{ __('ui.select_city') }}"
+                                                        class="w-full border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                    <datalist id="city-list">
+                                                        @foreach($cities as $city)
+                                                            <option value="{{ $city->city_name }}">{{ $city->city_name }} ({{ $city->province }})</option>
+                                                        @endforeach
+                                                    </datalist>
+                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                        {{ __('ui.city_hint') ?? 'Select from list or type a new city name' }}
+                                                    </p>
                                                 </div>
                                             </div>
 
@@ -576,15 +612,16 @@
                                                             <input id="general-{{ $facility->idrec }}"
                                                                 name="general_facilities[]" type="checkbox"
                                                                 value="{{ $facility->idrec }}" class="sr-only peer">
+                                                            {{-- General facility: solid blue bg when selected for clear visibility --}}
                                                             <label for="general-{{ $facility->idrec }}"
-                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-blue-600 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 peer-checked:text-blue-600 dark:peer-checked:text-blue-400 transition-all duration-200">
+                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-blue-500 peer-checked:bg-blue-600 peer-checked:text-white dark:peer-checked:bg-blue-600 dark:peer-checked:text-white dark:peer-checked:border-blue-500 peer-checked:shadow-md transition-all duration-200">
                                                                 <div class="flex-1 overflow-hidden">
                                                                     <span
                                                                         class="block break-words flex items-center gap-1.5">
                                                                         @if (!empty($facility->icon))
                                                                             <span class="iconify text-lg" data-icon="{{ $facility->icon }}"></span>
                                                                         @endif
-                                                                        {{ $facility->facility }}
+                                                                        {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                                                                     </span>
                                                                     @if (!empty($facility->description))
                                                                         <span
@@ -632,15 +669,16 @@
                                                             <input id="security-{{ $facility->idrec }}"
                                                                 name="security_facilities[]" type="checkbox"
                                                                 value="{{ $facility->idrec }}" class="sr-only peer">
+                                                            {{-- Security facility: solid green bg when selected for clear visibility --}}
                                                             <label for="security-{{ $facility->idrec }}"
-                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-green-600 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/30 peer-checked:text-green-600 dark:peer-checked:text-green-400 transition-all duration-200">
+                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-green-500 peer-checked:bg-green-600 peer-checked:text-white dark:peer-checked:bg-green-600 dark:peer-checked:text-white dark:peer-checked:border-green-500 peer-checked:shadow-md transition-all duration-200">
                                                                 <div class="flex-1 overflow-hidden">
                                                                     <span
                                                                         class="block break-words flex items-center gap-1.5">
                                                                         @if (!empty($facility->icon))
                                                                             <span class="iconify text-lg" data-icon="{{ $facility->icon }}"></span>
                                                                         @endif
-                                                                        {{ $facility->facility }}
+                                                                        {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                                                                     </span>
                                                                     @if (!empty($facility->description))
                                                                         <span
@@ -688,15 +726,16 @@
                                                             <input id="amenities-{{ $facility->idrec }}"
                                                                 name="amenities_facilities[]" type="checkbox"
                                                                 value="{{ $facility->idrec }}" class="sr-only peer">
+                                                            {{-- Amenity: solid purple bg when selected for clear visibility --}}
                                                             <label for="amenities-{{ $facility->idrec }}"
-                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-purple-600 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/30 peer-checked:text-purple-600 dark:peer-checked:text-purple-400 transition-all duration-200">
+                                                                class="flex items-start p-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 peer-checked:border-purple-500 peer-checked:bg-purple-600 peer-checked:text-white dark:peer-checked:bg-purple-600 dark:peer-checked:text-white dark:peer-checked:border-purple-500 peer-checked:shadow-md transition-all duration-200">
                                                                 <div class="flex-1 overflow-hidden">
                                                                     <span
                                                                         class="block break-words flex items-center gap-1.5">
                                                                         @if (!empty($facility->icon))
                                                                             <span class="iconify text-lg" data-icon="{{ $facility->icon }}"></span>
                                                                         @endif
-                                                                        {{ $facility->facility }}
+                                                                        {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                                                                     </span>
                                                                     @if (!empty($facility->description))
                                                                         <span
@@ -808,13 +847,13 @@
                                                             class="flex text-sm text-gray-600 dark:text-gray-400 justify-center">
                                                             <label for="property_images"
                                                                 class="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                                                <span>Upload foto</span>
+                                                                <span>{{ __('ui.upload_photo') }}</span>
                                                                 <input id="property_images" name="property_images[]"
                                                                     type="file" multiple accept="image/*"
                                                                     @change="handleFileSelect($event)"
                                                                     class="sr-only">
                                                             </label>
-                                                            <p class="pl-1">atau drag and drop</p>
+                                                            <p class="pl-1">{{ __('ui.or_drag_and_drop') }}</p>
                                                         </div>
                                                         <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG,
                                                             JPEG up to 5MB</p>
@@ -834,10 +873,8 @@
                                                         </svg>
                                                         <p
                                                             class="text-sm text-green-600 dark:text-green-400 font-medium">
-                                                            10 foto telah
-                                                            diupload!</p>
-                                                        <p class="text-xs text-green-500 dark:text-green-400">Maksimal
-                                                            foto telah tercapai
+                                                            <span x-text="maxImages"></span> {{ __('ui.photos_uploaded') }}!</p>
+                                                        <p class="text-xs text-green-500 dark:text-green-400">{{ __('ui.max_photos_reached') }}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -846,7 +883,7 @@
                                                 <div x-show="images.length > 0" class="mt-4">
                                                     <h4
                                                         class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        Foto Terupload
+                                                        {{ __('ui.uploaded_photos') }}
                                                     </h4>
                                                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3"
                                                         x-transition:enter="transition ease-out duration-300"
@@ -921,8 +958,7 @@
 
                                                     <p class="text-sm text-green-600"
                                                         x-show="images.length === 3 && thumbnailIndex !== null">
-                                                        <span class="font-medium">Sempurna!</span>
-                                                        Semua foto telah diupload dan thumbnail telah dipilih.
+                                                        {{ __('ui.validation_perfect') }}
                                                     </p>
                                                 </div>
                                             </div>
@@ -939,12 +975,12 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         stroke-width="2" d="M15 19l-7-7 7-7"></path>
                                                 </svg>
-                                                Sebelumnya
+                                                {{ __('ui.previous') }}
                                             </button>
                                             <button type="button" x-show="step < 4"
                                                 @click="validateStep(step) && step++"
                                                 class="px-6 py-2 border-2 border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                                                Selanjutnya
+                                                {{ __('ui.next') }}
                                                 <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor"
                                                     viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -958,7 +994,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                 </svg>
-                                                Simpan
+                                                {{ __('ui.save') }}
                                             </button>
                                         </div>
                                     </div>
@@ -971,7 +1007,8 @@
         </div>
 
         <!-- Property Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <!-- Property table container -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-visible no-backdrop-filter">
             <!-- Search and Filter Section -->
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                 <form id="searchForm">
@@ -1059,6 +1096,7 @@
             <div class="overflow-x-auto" id="propertyTableContainer">
                 @include('pages.Properties.m-Properties.partials.property_table', [
                     'properties' => $properties,
+                    'cities' => $cities,
                     'per_page' => request('per_page', 5),
                 ])
             </div>
@@ -1070,7 +1108,47 @@
         </div>
     </div>
 
+    {{-- Property View Modal — placed at page level to avoid backdrop-filter clipping --}}
+    <div x-data="modalView()" @open-property-view-modal.window="openModal($event.detail)" x-cloak>
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
+            x-show="modalOpenDetail" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-out duration-200"
+            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        </div>
+        <!-- Dialog -->
+        <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4"
+            x-show="modalOpenDetail"
+            x-transition:enter="transition ease-in-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in-out duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-y-auto w-full max-w-4xl max-h-[90vh] flex flex-col"
+                @click.outside="modalOpenDetail = false" @keydown.escape.window="modalOpenDetail = false">
+                @include('pages.Properties.m-Properties.partials.property_view_modal_content')
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Sort state — tracks current column and direction
+        let currentSortBy = '{{ request('sort_by', 'name') }}';
+        let currentSortDir = '{{ request('sort_dir', 'asc') }}';
+
+        // Toggle sort for a column and reload data
+        function sortProperties(column) {
+            if (currentSortBy === column) {
+                currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortBy = column;
+                currentSortDir = 'asc';
+            }
+            loadPropertiesData();
+        }
+
         // Fungsi global untuk memuat data dengan AJAX
         function loadPropertiesData() {
             const searchInput = document.getElementById('searchInput');
@@ -1094,6 +1172,8 @@
             formData.append('search', searchInput.value);
             formData.append('status', statusFilter.value);
             formData.append('per_page', perPageSelect.value);
+            formData.append('sort_by', currentSortBy);
+            formData.append('sort_dir', currentSortDir);
             formData.append('_token', '{{ csrf_token() }}');
 
             // Kirim request AJAX
@@ -1231,7 +1311,7 @@
                     { label: 'Hotel', value: 'Hotel' }
                 ],
                 images: [],
-                maxImages: 10,
+                maxImages: 30,
                 minImages: 3,
                 map: null,
                 marker: null,
@@ -1941,9 +2021,8 @@
                     });
 
                     // Clear the file input to allow re-selection
-                    if (event.target) {
-                        event.target.value = '';
-                    }
+                    const fileInput = document.querySelector('#propertyForm input[type="file"]');
+                    if (fileInput) fileInput.value = '';
                 },
 
                 removeImage(index, event) {
@@ -2198,7 +2277,7 @@
                 editModalOpen: false,
                 editStep: 1,
                 editMinImages: 3,
-                editMaxImages: 10,
+                editMaxImages: 30,
                 editImages: [],
                 map: null,
                 marker: null,
@@ -2249,6 +2328,7 @@
                 propertyData: {
                     name: property.name || '',
                     initial: property.initial || '',
+                    invoice_code: property.invoice_code || '',
                     tags: property.tags || 'Kos',
                     gender: property.gender || null,
                     description: property.description || '',
@@ -2969,9 +3049,8 @@
                     });
 
                     // Clear the file input to allow re-selection
-                    if (event.target) {
-                        event.target.value = '';
-                    }
+                    const editInput = this.$el?.querySelector('input[type="file"]');
+                    if (editInput) editInput.value = '';
                 },
 
                 // Get the actual index in the combined array
@@ -3225,8 +3304,9 @@
                         }
                     });
 
-                    // Clear the file input
-                    event.target.value = '';
+                    // Clear the file input (use DOM query since event is not available here)
+                    const editFileInput = document.querySelector(`#propertyFormEdit-${property.idrec} input[type="file"]`);
+                    if (editFileInput) editFileInput.value = '';
                 },
 
                 showAlert(type, message) {
@@ -3266,6 +3346,7 @@
                         // Add basic property data
                         formData.append('name', this.propertyData.name);
                         formData.append('initial', this.propertyData.initial);
+                        formData.append('invoice_code', this.propertyData.invoice_code || '');
                         formData.append('tags', this.propertyData.tags);
                         formData.append('gender', this.propertyData.gender || '');
                         formData.append('description', this.propertyData.description);

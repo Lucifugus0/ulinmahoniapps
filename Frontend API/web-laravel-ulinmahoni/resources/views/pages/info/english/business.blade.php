@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ulin Mahoni for Business - Property Solutions for Business</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         .login-container {
             position: relative;
@@ -14,6 +15,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+        }
+        /* Video background fixed below header (header ~72px tall) */
+        .video-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
             overflow: hidden;
         }
         .video-background {
@@ -34,10 +45,17 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
             z-index: 2;
         }
+        /* Push page content below the fixed header */
+        main.flex-grow {
+            padding-top: 72px;
+        }
+        /* Glass login panel — highly transparent with strong blur */
         .login-box {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(48px);
+            -webkit-backdrop-filter: blur(48px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 2rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             padding: 2.5rem;
             max-width: 28rem;
@@ -52,22 +70,48 @@
                 padding: 1.5rem;
             }
         }
+        /* Glass content card — translucent panel */
+        .content-card {
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        /* Dark mode overrides for glass content cards — remove white outline */
+        html.dark .content-card {
+            background: rgba(255, 255, 255, 0.06) !important;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: none !important;
+            color: #e5e7eb;
+        }
+        html.dark .content-card h1,
+        html.dark .content-card h2,
+        html.dark .content-card h3,
+        html.dark .content-card h4 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .content-card p,
+        html.dark .content-card span,
+        html.dark .content-card li {
+            color: #d1d5db !important;
+        }
     </style>
 </head>
-<body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
+<body class="font-inter antialiased text-gray-900 tracking-tight">
     <!-- Header -->
     @include('components.homepage.header')
 
     <main class="flex-grow relative">
-        <!-- Video Background -->
+        <!-- Image Background — fixed behind content -->
         <div class="video-wrapper">
-            <video class="video-background" autoplay loop muted playsinline>
-                <source src="{{ asset('images/assets/My_Movie.mp4') }}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+            <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" alt="Background" class="video-background">
             <div class="video-overlay"></div>
         </div>
-        
+
         <!-- Hero Section -->
         <section class="relative pt-32 pb-12 md:pt-40 md:pb-20">
             <div class="max-w-6xl mx-auto px-4 sm:px-6">
@@ -89,8 +133,8 @@
             <div class="max-w-6xl mx-auto px-4 sm:px-6">
                 <!-- Business Solutions -->
                 <div class="grid md:grid-cols-2 gap-12 mb-16">
-                    <!-- Corporate Housing -->
-                    <div class="bg-white p-8 rounded-lg shadow-md">
+                    <!-- Corporate Housing — glass card styling -->
+                    <div class="content-card">
                         <h3 class="text-2xl font-bold mb-4">Corporate Housing</h3>
                         <p class="text-gray-600 mb-6">Accommodation solutions for your employees and corporate guests</p>
                         <ul class="space-y-4">
@@ -124,8 +168,8 @@
                         </ul>
                     </div>
 
-                    <!-- Office Space -->
-                    <div class="bg-white p-8 rounded-lg shadow-md">
+                    <!-- Office Space — glass card styling -->
+                    <div class="content-card">
                         <h3 class="text-2xl font-bold mb-4">Office Space</h3>
                         <p class="text-gray-600 mb-6">Workspace solutions tailored to your business needs</p>
                         <ul class="space-y-4">

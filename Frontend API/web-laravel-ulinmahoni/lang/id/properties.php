@@ -46,6 +46,7 @@ return [
         'education' => 'Pendidikan',
         'worship' => 'Tempat Ibadah',
         'shopping' => 'Perbelanjaan',
+        'custom' => 'Lainnya',
     ],
 
     'navigation' => [
@@ -61,7 +62,7 @@ return [
         'facilities' => 'Fasilitas',
         'rental_price' => 'Harga Sewa',
         'about_property' => 'Tentang Properti',
-        'available_rooms' => 'Kamar Tersedia',
+        'available_rooms' => 'Semua Kamar',
     ],
 
     'buttons' => [
@@ -79,6 +80,7 @@ return [
         'contact_us' => 'Silakan hubungi kami untuk informasi lebih lanjut',
         'includes_tax' => 'Harga sudah termasuk PPN',
         'payment_method' => 'Pembayaran dengan metode transfer bank',
+        'accepted_payments' => 'Metode pembayaran yang diterima',
     ],
 
     'address' => [
@@ -93,6 +95,8 @@ return [
 
     'room' => [
         'rooms_count' => 'kamar',
+        'available_count' => 'tersedia',
+        'show_all_rooms' => 'Tampilkan semua kamar',
         'room_facilities' => 'Fasilitas Kamar:',
         'period_price' => 'Periode Sewa & Harga:',
         'no_facilities' => 'Fasilitas Tidak Tersedia',
@@ -139,6 +143,8 @@ return [
         'monthly_rate' => 'Harga Bulanan',
         'room_total' => 'Total Harga Kamar:',
         'service_fees' => 'Biaya Layanan:',
+        /* Daily Multi Tier Pricing: per-date breakdown title */
+        'price_breakdown_title' => 'Rincian Harga per Tanggal',
         'total' => 'Total:',
         'duration_label' => 'Durasi:',
         'complete_profile' => 'Lengkapi Profil Anda',
@@ -148,9 +154,13 @@ return [
         'last_name' => 'Nama Belakang',
         'full_name' => 'Nama Lengkap',
         'phone_number' => 'Nomor Telepon',
-        'rental_agreement' => 'Saya setuju dengan',
+        // :terms_link, :privacy_link, :rental_link are substituted with anchor tags by the blade.
+        'rental_agreement' => 'Saya menyatakan telah membaca, mengerti, memahami dan menyetujui :terms_link, :privacy_link, dan :rental_link',
+        'terms_link_text' => 'S&K Sewa',
+        'privacy_link_text' => 'Kebijakan Privasi',
+        'rental_link_text' => 'Perjanjian Sewa',
         'rental_agreement_link' => 'Perjanjian Sewa Menyewa',
-        'must_agree' => 'Anda harus menyetujui Perjanjian Sewa Menyewa untuk melanjutkan.',
+        'must_agree' => 'Anda harus menyetujui Syarat & Ketentuan untuk melanjutkan.',
         'login_to_book' => 'Masuk untuk memesan',
         'please_login' => 'Mohon login atau register untuk membuat pemesanan',
         'check_availability' => 'Cek Ketersediaan Kamar',
@@ -224,10 +234,16 @@ return [
         'pay_with_bank' => 'Bayar dengan {bank}',
         'please_select_bank' => 'Silakan pilih bank',
         'voucher_applied' => 'Voucher berhasil diterapkan!',
+        'confirm_title' => 'Konfirmasi Pembayaran',
+        'confirm_data_correct' => 'Saya menyatakan bahwa seluruh data yang tercantum di atas adalah benar dan akurat. Saya bertanggung jawab penuh atas kebenaran data tersebut.',
+        'confirm_read_agreed' => 'Saya telah membaca, memahami sepenuhnya, dan menyetujui seluruh rincian transaksi sebagaimana tercantum di atas.',
+        'confirm_rental_agreement' => 'Saya menyatakan setuju dan tunduk pada Perjanjian Sewa Ulin Mahoni yang berlaku.',
+        'confirm_proceed' => 'Setuju & Lanjutkan Pembayaran',
+        'confirm_cancel' => 'Batal',
     ],
 
     'index' => [
-        'page_title' => 'Kamar Tersedia',
+        'page_title' => 'Semua Kamar',
         'page_subtitle' => 'Cari kamar yang ideal untuk Anda',
         'filters' => 'Filter',
         'active_filters' => 'Filter Aktif:',

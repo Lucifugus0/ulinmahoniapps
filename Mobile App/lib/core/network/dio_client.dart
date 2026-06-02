@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../constants/api_constants.dart';
 import 'interceptors/logging_interceptor.dart';
 import 'interceptors/retry_interceptor.dart';
@@ -36,6 +37,7 @@ class DioClient {
       sendTimeout: const Duration(seconds: 30),
       headers: {
         'x-api-key': ApiConfig.apiKey,
+        'X-App-Version': dotenv.env['VERSION_NAME']?.replaceAll('Release ', '') ?? '0.0.0',
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },

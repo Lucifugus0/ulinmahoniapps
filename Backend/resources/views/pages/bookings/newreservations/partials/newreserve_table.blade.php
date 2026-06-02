@@ -1,30 +1,28 @@
+{{-- Confirmed Bookings page table — column structure matches All Bookings (Booking ID |
+     Booking Period | Name | Property/Room | Status | Action). The big inline check-in modal
+     in the Action cell is preserved as-is below; only the columns leading up to it changed. --}}
 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
     <thead class="bg-gray-50 dark:bg-gray-700">
         <tr>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.check_in') }}
+                {{ __('ui.allbookings_col_booking_id') }}
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.check_out') }}
+                {{ __('ui.allbookings_dates_col') }}
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.order_id') }}
+                {{ __('ui.allbookings_col_name') }}
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.name') }}
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                {{ __('ui.property_room') }}
+                {{ __('ui.allbookings_col_property_room') }}
             </th>
             @if ($showStatus ?? true)
-                <th scope="col"
-                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    {{ __('ui.status') }}
+                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    {{ __('ui.allbookings_col_status') }}
                 </th>
             @endif
             @if ($showActions ?? true)
-                <th scope="col"
-                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     {{ __('ui.actions') }}
                 </th>
             @endif
@@ -33,93 +31,158 @@
     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
         @forelse ($checkIns as $booking)
             <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
+                {{-- Booking ID cell with at-a-glance badges (Deposit / Renewed / Checked Out). --}}
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium align-top">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $booking->order_id }}</div>
+                    @if ($booking->created_at)
+                        <div class="text-xs text-gray-400">{{ $booking->created_at->format('Y-m-d H:i') }}</div>
+                    @endif
+                    @php
+                        $depositFee = (int) ($booking->transaction->deposit_fee ?? 0);
+                        $isRenewed = ($booking->transaction?->renewal_status ?? 0) == 1;
+                        $isCheckedOut = $booking->check_out_at && !$isRenewed;
+                    @endphp
+                    @if ($depositFee > 0 || $isRenewed || $isCheckedOut)
+                        <div class="flex flex-wrap items-center gap-1 mt-1">
+                            @if ($depositFee > 0)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                                    {{ __('ui.allbookings_badge_deposit') }}
+                                </span>
+                            @endif
+                            @if ($isRenewed)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                                    {{ __('ui.allbookings_badge_renewed') }}
+                                </span>
+                            @endif
+                            @if ($isCheckedOut)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                                    {{ __('ui.allbookings_badge_checked_out') }}
+                                </span>
+                            @endif
+                        </div>
+                    @endif
+                </td>
+                {{-- Booking Period cell — same 3-row stacked format as All Bookings. --}}
+                <td class="px-6 py-4 text-sm text-gray-500 text-left align-top">
+                    @php
+                        $checkedInBy = $booking->checkedInByUser;
+                        $checkedInByName = $checkedInBy
+                            ? (trim(($checkedInBy->first_name ?? '') . ' ' . ($checkedInBy->last_name ?? '')) ?: ($checkedInBy->username ?? null))
+                            : null;
+                        $checkedOutBy = $booking->checkedOutByUser;
+                        $checkedOutByName = $checkedOutBy
+                            ? (trim(($checkedOutBy->first_name ?? '') . ' ' . ($checkedOutBy->last_name ?? '')) ?: ($checkedOutBy->username ?? null))
+                            : null;
+                    @endphp
                     @if ($booking->transaction && $booking->transaction->check_in)
-                        <div class="flex flex-col">
-                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                                {{ \Carbon\Carbon::parse($booking->transaction->check_in)->format('Y M d') }}
-                            </span>
-                            <span class="text-xs text-gray-500 mt-0.5">
-                                {{ \Carbon\Carbon::parse($booking->transaction->check_in)->format('H:i') }}
-                            </span>
+                        <div class="flex items-baseline gap-2 flex-wrap">
+                            <div class="whitespace-nowrap">
+                                <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ \Carbon\Carbon::parse($booking->transaction->check_in)->format('Y M d') }}</span>
+                                <span class="text-xs text-gray-500 ml-1">{{ \Carbon\Carbon::parse($booking->transaction->check_in)->format('H:i') }}</span>
+                            </div>
+                            <span class="text-gray-400">|</span>
+                            @if ($booking->transaction->check_out)
+                                <div class="whitespace-nowrap">
+                                    <span class="text-sm font-medium text-gray-900 dark:text-gray-200">{{ $booking->transaction->check_out->format('Y M d') }}</span>
+                                    <span class="text-xs text-gray-400 ml-1">{{ $booking->transaction->check_out->format('H:i') }}</span>
+                                </div>
+                            @else
+                                <span class="text-xs text-gray-400 italic">{{ __('ui.allbookings_not_checked_out') }}</span>
+                            @endif
                         </div>
                     @else
-                        <span
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
-                            {{ __('ui.not_checked_in') }}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:text-gray-100">
+                            {{ __('ui.allbookings_not_checked_in') }}
                         </span>
                     @endif
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
-                    @if ($booking->transaction->check_out)
-                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {{ $booking->transaction->check_out->format('Y M d') }}
+
+                    @if ($booking->check_in_at)
+                        <div class="text-xs font-medium text-green-600 dark:text-green-400 mt-1.5">
+                            {{ __('ui.allbookings_checkin_at') }} {{ $booking->check_in_at->format('Y-m-d H:i') }}
+                            @if ($checkedInByName)
+                                <span class="text-gray-500 dark:text-gray-400 font-normal">{{ __('ui.allbookings_by') }}</span>
+                                <span>{{ $checkedInByName }}</span>
+                            @endif
                         </div>
-                        <div class="text-xs text-gray-400">
-                            {{ $booking->transaction->check_out->format('H:i') }}
-                        </div>
-                    @else
-                        <div class="text-sm text-gray-500 italic">{{ __('ui.not_checked_out') }}</div>
+                    @endif
+
+                    @if ($booking->check_out_at)
+                        @if ($booking->transaction?->renewal_status == 1)
+                            <div class="text-xs font-medium text-amber-600 dark:text-amber-400 mt-1">
+                                {{ __('ui.allbookings_renewed_at') }} {{ $booking->check_out_at->format('Y-m-d H:i') }}
+                            </div>
+                        @else
+                            <div class="text-xs font-medium text-indigo-600 dark:text-indigo-400 mt-1">
+                                {{ __('ui.allbookings_checkout_at') }} {{ $booking->check_out_at->format('Y-m-d H:i') }}
+                                @if ($checkedOutByName)
+                                    <span class="text-gray-500 dark:text-gray-400 font-normal">{{ __('ui.allbookings_by') }}</span>
+                                    <span>{{ $checkedOutByName }}</span>
+                                @endif
+                            </div>
+                        @endif
                     @endif
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                    <div class="text-sm font-medium text-indigo-600">{{ $booking->order_id }}</div>
-                </td>
+                {{-- Name cell with full fallback chain. --}}
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                         </div>
                         <div class="ml-4">
                             <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {{ $booking->transaction->user_name ?? 'N/A' }}</div>
-                            <div class="text-sm text-gray-500">{{ $booking->transaction->user_email ?? '-' }}</div>
-                            <div class="text-sm text-gray-500">{{ $booking->transaction->user_phone_number ?? '-' }}</div>
+                                {{ trim(($booking->user->first_name ?? '') . ' ' . ($booking->user->last_name ?? '')) ?: ($booking->transaction->user_name ?? 'N/A') }}
+                            </div>
+                            <div class="text-sm text-gray-500">{{ $booking->transaction->user_email ?? $booking->user_email ?? $booking->user->email ?? '-' }}</div>
+                            <div class="text-sm text-gray-500">{{ $booking->transaction->user_phone_number ?? $booking->user_phone_number ?? $booking->user->phone_number ?? '-' }}</div>
                         </div>
                     </div>
                 </td>
+                {{-- Property/Room. --}}
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {{ $booking->property->name ?? 'N/A' }}</div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $booking->property->name ?? 'N/A' }}</div>
                     <div class="text-sm text-gray-500">{{ $booking->room->name ?? 'N/A' }}</div>
                     @if($booking->room->no ?? null)
                         <div class="text-xs text-gray-400">No. {{ $booking->room->no }}</div>
                     @endif
                 </td>
+                {{-- Status — page semantics: paid bookings awaiting check-in. Use the same Renewed
+                     override as All Bookings so renewed parents read as Renewed. --}}
                 @if ($showStatus ?? true)
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
                         @php
-                            $statusClasses = [
-                                'Waiting For Check-In' => 'bg-yellow-100 text-yellow-800',
-                                'Checked-In' => 'bg-green-100 text-green-800',
-                                'Checked-Out' => 'bg-blue-100 text-blue-800',
+                            $statusClassesCB = [
+                                'Waiting For Check-In' => 'bg-cyan-100 text-cyan-800',
+                                'Checked-In' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+                                'Checked-Out' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+                                'Renewed' => 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
                                 'Unknown' => 'bg-gray-100 text-gray-800',
                             ];
+                            $displayStatus = $booking->status;
+                            if ($displayStatus === 'Checked-Out' && ($booking->transaction?->renewal_status ?? 0) == 1) {
+                                $displayStatus = 'Renewed';
+                            }
                         @endphp
-                        <div class="flex flex-col items-center">
-                            <span
-                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClasses[$booking->status] ?? 'bg-gray-100 text-gray-800' }}">
-                                {{ $booking->status }}
-                            </span>
-                            @if ($booking->check_in_at)
-                                <div
-                                    class="inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {{ $booking->check_in_at->format('Y-m-d H:i') }}
-                                </div>
-                            @endif
-                        </div>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClassesCB[$displayStatus] ?? 'bg-gray-100 text-gray-800' }}">
+                            {{ $displayStatus }}
+                        </span>
                     </td>
                 @endif
                 @if ($showActions ?? true)
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        @php
+                            // <!-- Print Registration Form availability window:
+                            //      Allowed only up to and including end-of-day on (scheduled check-in + 3 days).
+                            //      Past that window, the registration form is no longer relevant — guest is settled in. -->
+                            $scheduledCheckIn = $booking->transaction?->check_in;
+                            $printAllowed = !$scheduledCheckIn
+                                || now()->lte(\Carbon\Carbon::parse($scheduledCheckIn)->copy()->addDays(3)->endOfDay());
+                        @endphp
                         @if (is_null($booking->check_in_at))
                             <div class="flex flex-col items-center space-y-2">
-                                @if (!is_null($booking->doc_path) && $booking->is_printed != 1)
-                                    {{-- Document exists and not yet printed - Show Print Registration Form button --}}
+                                @if (!is_null($booking->doc_path) && $booking->is_printed != 1 && $printAllowed)
+                                    {{-- Document exists, not yet printed, and within 3-day window — Show Print Registration Form button --}}
                                     <a href="{{ route('newReserv.checkin.regist', $booking->order_id) }}"
                                         onclick="event.preventDefault();
                                                  window.open(this.href, 'RegistrationForm', 'width=800,height=600');
@@ -136,7 +199,10 @@
                                     </a>
                                 @endif
                                 <div x-data="checkInModal('{{ $booking->order_id }}', {{ is_null($booking->doc_path) ? 'true' : 'false' }})"
-                                     class="{{ (!is_null($booking->doc_path) && $booking->is_printed != 1) ? 'hidden' : '' }}"
+                                     {{-- <!-- Hide Check-In button only when the Print button is *actually* showing.
+                                              Once the 3-day print window has passed, the print button is suppressed,
+                                              so the Check-In button must remain available. --> --}}
+                                     class="{{ (!is_null($booking->doc_path) && $booking->is_printed != 1 && $printAllowed) ? 'hidden' : '' }}"
                                      id="checkin-btn-{{ $booking->order_id }}">
                                     <!-- Tombol Trigger -->
                                     <button type="button"
@@ -170,14 +236,15 @@
                                         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                                         x-transition:leave-end="opacity-0 translate-y-4 scale-95" x-cloak>
 
-                                        <div class="bg-white rounded-lg shadow-xl overflow-auto w-full overflow-auto max-h-full flex flex-col text-left max-w-7xl"
+                                        {{-- Check-in modal body: added dark:bg-gray-800 for dark mode --}}
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-auto w-full overflow-auto max-h-full flex flex-col text-left max-w-7xl"
                                             @click.outside="closeModal" @keydown.escape.window="closeModal">
 
-                                            <!-- Header Modal -->
+                                            <!-- Header Modal - dark mode uses darker bg for readability -->
                                             <div
-                                                class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
+                                                class="checkin-modal-header px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
                                                 <div class="flex justify-between items-center">
-                                                    <div class="font-bold text-xl text-gray-800">{{ __('ui.process_checkin') }}</div>
+                                                    <div class="font-bold text-xl text-gray-800 dark:text-white">{{ __('ui.process_checkin') }}</div>
                                                     <button type="button"
                                                         class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
                                                         @click="closeModal">
@@ -188,8 +255,8 @@
                                                         </svg>
                                                     </button>
                                                 </div>
-                                                <p class="text-sm text-gray-600 mt-1">{{ __('ui.review_complete_checkin') }}</p>
-                                                <p class="text-lg font-bold text-gray-800 mt-1"
+                                                <p class="text-sm text-gray-600 dark:text-gray-200 mt-1">{{ __('ui.review_complete_checkin') }}</p>
+                                                <p class="text-lg font-bold text-gray-800 dark:text-green-300 mt-1"
                                                     x-text="currentDateTime">
                                                 </p>
                                             </div>
@@ -211,49 +278,65 @@
                                                             {{ __('ui.booking_details') }}
                                                         </h3>
 
-                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.order_id') }}:</span>
-                                                                <span class="text-sm text-gray-800 font-mono"
-                                                                    x-text="bookingDetails.order_id"></span>
+                                                        {{-- 3-column layout grouped by relevancy: Booking | Stay | Payment --}}
+                                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            {{-- Column 1: Booking Info --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Booking</h4>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.order_id') }}</span>
+                                                                    <p class="text-sm font-mono font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.order_id"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.guest_name') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.guest_name"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.property') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.property_name"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.room') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.room_name"></p>
+                                                                </div>
                                                             </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.check_in_date') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.check_in"></span>
+
+                                                            {{-- Column 2: Stay Details --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Stay</h4>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.check_in_date') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.check_in"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.check_out_date') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.check_out"></p>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('ui.duration') }}</span>
+                                                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="bookingDetails.duration"></p>
+                                                                </div>
                                                             </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.check_out_date') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.check_out"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.guest_name') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.guest_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.property') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.property_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.room') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.room_name"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span
-                                                                    class="text-sm font-medium text-gray-600">{{ __('ui.duration') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.duration"></span>
-                                                            </div>
-                                                            <div class="flex justify-between">
-                                                                <span class="text-sm font-medium text-gray-600">{{ __('ui.total_payment') }}:</span>
-                                                                <span class="text-sm text-gray-800"
-                                                                    x-text="bookingDetails.total_payment"></span>
+
+                                                            {{-- Column 3: Payment --}}
+                                                            <div class="space-y-3">
+                                                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Payment</h4>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Total Booking</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.total_booking"></span>
+                                                                </div>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Deposit</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.deposit"></span>
+                                                                </div>
+                                                                <div class="flex justify-between">
+                                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Service Fee</span>
+                                                                    <span class="text-sm text-gray-800 dark:text-gray-200" x-text="bookingDetails.service_fee"></span>
+                                                                </div>
+                                                                <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                                                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('ui.total_payment') }}</span>
+                                                                    <span class="text-sm font-bold text-green-600 dark:text-green-400" x-text="bookingDetails.total_payment"></span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -261,7 +344,7 @@
                                                     <!-- Bagian 2: Profil Tamu dan Unggah Identifikasi Berdampingan -->
                                                     <div class="grid grid-cols-1 gap-8" :class="docRequired ? 'lg:grid-cols-2' : 'lg:grid-cols-1'">
                                                         <!-- Profil Tamu -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600">
                                                             <h3
                                                                 class="font-semibold text-lg text-gray-800 mb-4 flex items-center">
                                                                 <svg class="w-5 h-5 mr-2 text-purple-600"
@@ -364,7 +447,7 @@
                                                         </div>
 
                                                         <!-- Unggah Identifikasi -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200" x-show="docRequired">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600" x-show="docRequired">
                                                             <h3
                                                                 class="font-semibold text-lg text-gray-800 mb-4 flex items-center">
                                                                 <svg class="w-5 h-5 mr-2 text-green-600"
@@ -632,7 +715,7 @@
                                                         </div>
 
                                                         <!-- Informasi Dokumen Sudah Tersimpan -->
-                                                        <div class="bg-white p-6 rounded-lg border border-gray-200" x-show="!docRequired">
+                                                        <div class="bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600" x-show="!docRequired">
                                                             <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
                                                                 <div class="flex items-start">
                                                                     <svg class="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -682,19 +765,30 @@
                                         {{ __('ui.view_invoice') }}
                                     </a>
 
-                                    @if ($booking->is_printed < 2)
-                                        <a href="{{ route('newReserv.checkin.regist', $booking->order_id) }}"
-                                            target="_blank"
-                                            class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-700 focus:outline-none">
-                                            {{ __('ui.print_regist_form') }}
-                                            <span class="ml-1 px-1 py-0.5 text-[10px] bg-amber-800 rounded">{{ $booking->is_printed }}/2</span>
-                                        </a>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 bg-gray-200 rounded cursor-not-allowed"
-                                            title="{{ __('ui.print_limit_reached') }}">
-                                            {{ __('ui.print_regist_form') }}
-                                            <span class="ml-1 px-1 py-0.5 text-[10px] bg-gray-300 text-gray-500 rounded">2/2</span>
-                                        </span>
+                                    {{-- <!-- Print Registration Form is suppressed entirely once the 3-day window past
+                                             scheduled check-in has elapsed; admins won't need to print at that point. --> --}}
+                                    @if ($printAllowed)
+                                        @if (($booking->is_printed ?? 0) < 2)
+                                            {{-- <!-- Auto-refresh table after print so the counter advances without manual reload (mirrors pre-checkin button behavior). --> --}}
+                                            <a href="{{ route('newReserv.checkin.regist', $booking->order_id) }}"
+                                                onclick="event.preventDefault();
+                                                         window.open(this.href, 'RegistrationForm', 'width=800,height=600');
+                                                         setTimeout(() => {
+                                                             if (typeof fetchFilteredBookings === 'function') { fetchFilteredBookings(); }
+                                                             else { window.location.reload(); }
+                                                         }, 2000);"
+                                                class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-700 focus:outline-none">
+                                                {{ __('ui.print_regist_form') }}
+                                                {{-- <!-- High-contrast counter pill: white bg + bold amber text reads clearly against the amber-600 button. --> --}}
+                                                <span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-white text-amber-700 rounded">{{ $booking->is_printed ?? 0 }}/2</span>
+                                            </a>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 bg-gray-200 rounded cursor-not-allowed"
+                                                title="{{ __('ui.print_limit_reached') }}">
+                                                {{ __('ui.print_regist_form') }}
+                                                <span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-white text-gray-500 rounded">2/2</span>
+                                            </span>
+                                        @endif
                                     @endif
                                 </div>
                             </div>
@@ -707,7 +801,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
                     {{ __('ui.no_new_reservations') }}
                 </td>
             </tr>

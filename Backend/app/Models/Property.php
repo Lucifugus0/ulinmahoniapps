@@ -21,6 +21,7 @@ class Property extends Model
         'gender',
         'name',
         'initial',
+        'invoice_code',
         'description',
         'level_count',
         'province',
@@ -68,6 +69,11 @@ class Property extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
     public function roomTypes()
     {
         return $this->hasMany(RoomType::class, 'property_id', 'idrec');
@@ -102,6 +108,18 @@ class Property extends Model
     public function getAmenityFacilities()
     {
         return PropertyFacility::whereIn('idrec', $this->amenities ?? [])->get();
+    }
+
+    /* Relationship: one deposit fee per property */
+    public function depositFee()
+    {
+        return $this->hasOne(DepositFee::class, 'property_id', 'idrec');
+    }
+
+    /* Relationship: parking fees (car + motorcycle) for this property */
+    public function parkingFees()
+    {
+        return $this->hasMany(ParkingFee::class, 'property_id', 'idrec');
     }
 
     public function getImageUrlAttribute()

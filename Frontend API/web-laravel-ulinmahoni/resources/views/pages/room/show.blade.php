@@ -6,14 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('properties.room_detail.room_details') }} - {{ $room['name'] }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker.min.css">
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
     <!-- Styles -->
     @include('components.property.styles')
+    @include('components.property.dark-mode')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -21,6 +23,101 @@
         }
         .fa-spin {
             animation: spin 1s linear infinite;
+        }
+
+        /* Dark mode overrides for booking form card, containers, and inputs */
+        html.dark .bg-white { background-color: #1e293b !important; }
+        html.dark .bg-blue-50 { background-color: #374151 !important; }
+        html.dark .bg-purple-50 { background-color: #374151 !important; }
+        html.dark .border-gray-100,
+        html.dark .border-blue-200,
+        html.dark .border-purple-200,
+        html.dark .border-gray-300 { border-color: #4b5563 !important; }
+        html.dark #dailyBookingComponent input,
+        html.dark #dailyBookingComponent select,
+        html.dark #monthlyBookingComponent input,
+        html.dark #monthlyBookingComponent select,
+        html.dark #bookingForm select {
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+            border-color: #4b5563 !important;
+        }
+        html.dark #dailyBookingComponent label,
+        html.dark #monthlyBookingComponent label,
+        html.dark #dailyBookingComponent h3,
+        html.dark #monthlyBookingComponent h3,
+        html.dark .text-gray-700 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .text-gray-800 { color: #f9fafb !important; }
+        html.dark .text-gray-500 { color: #d1d5db !important; }
+        html.dark .text-gray-400 { color: #9ca3af !important; }
+        /* Hide scrollbar on thumbnail strip while keeping horizontal scroll */
+        .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* Datepicker popup z-index — must be above the leafy background overlay
+           (main::after z-index:1, main > * z-index:2) */
+        .datepicker {
+            z-index: 100 !important;
+        }
+
+        /* Dark mode: vanillajs-datepicker calendar popup.
+           Targets .datepicker-picker (the actual calendar panel) since the CDN CSS
+           sets background-color:#fff on .datepicker-picker, not .datepicker. */
+        html.dark .datepicker-picker {
+            background-color: #1f2937 !important;
+            border: 1px solid #4b5563 !important;
+        }
+        html.dark .datepicker-header {
+            background-color: #1f2937 !important;
+        }
+        html.dark .datepicker-controls .button {
+            color: #f3f4f6 !important;
+            background-color: transparent !important;
+            border-color: #4b5563 !important;
+        }
+        html.dark .datepicker-controls .button:hover {
+            background-color: #374151 !important;
+        }
+        /* Enabled dates — bright white for clear visibility */
+        html.dark .datepicker-cell {
+            color: #ffffff !important;
+        }
+        html.dark .datepicker-cell:hover {
+            background-color: #374151 !important;
+        }
+        html.dark .datepicker-cell.focused,
+        html.dark .datepicker-cell.selected {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+        }
+        html.dark .datepicker-cell.today:not(.selected) {
+            background-color: #374151 !important;
+            color: #60a5fa !important;
+        }
+        /* Disabled/out-of-range dates — dim grey to distinguish from enabled */
+        html.dark .datepicker-cell.disabled,
+        html.dark .datepicker-cell.prev,
+        html.dark .datepicker-cell.next {
+            color: #4b5563 !important;
+        }
+        html.dark .datepicker .dow {
+            color: #9ca3af !important;
+        }
+        /* Price summary section dark mode */
+        html.dark .bg-gray-50 {
+            background-color: #1e293b !important;
+        }
+        html.dark .text-gray-900 {
+            color: #ffffff !important;
+        }
+        html.dark .text-gray-600 {
+            color: #e5e7eb !important;
+        }
+        /* Dark mode: price breakdown row hover */
+        html.dark #priceBreakdownContainer .hover\:bg-gray-50:hover {
+            background-color: #374151 !important;
         }
     </style>
 </head>
@@ -46,7 +143,8 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <!-- Room Details (left) -->
                 <div class="lg:col-span-7">
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                    <!-- Liquid glass room detail card — frosted container with glass tokens -->
+                    <div class="overflow-hidden" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                         <!-- Room Image Gallery -->
                         @php
                             $roomImages = $room['images'] ?? [];
@@ -159,7 +257,7 @@
                                 <!-- Thumbnails (if multiple images) -->
                                 @if($totalImages > 1)
                                     <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent py-4 px-6">
-                                        <div class="flex space-x-3 overflow-x-auto">
+                                        <div class="flex space-x-3 overflow-x-auto no-scrollbar">
                                             @if($mainImage)
                                                 <div class="flex-shrink-0 w-32 h-20 rounded overflow-hidden border-2 border-white shadow-md mb-2 flex-none">
                                                     <img src="{{ env('ADMIN_URL') }}/storage/{{ $mainImage }}"
@@ -186,8 +284,8 @@
                             <!-- Room Title and Price -->
                             <div class="flex justify-between items-start mb-8">
                                 <div>
-                                    <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $room['no'] }} - {{ $room['name'] }}</h1>
-                                    <p class="text-gray-500 uppercase tracking-wide">{{ $room['type'] }}</p>
+                                    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">{{ $room['no'] }} - {{ $room['name'] }}</h1>
+                                    <p class="text-gray-700 dark:text-gray-200 font-semibold uppercase tracking-wide">{{ $room['type'] }}</p>
                                 </div>
                                 <div class="space-y-4 text-right">
                                 @if(!empty($room['price_original_daily']) && $room['price_original_daily'] > 0)
@@ -196,38 +294,38 @@
                                     @if(!empty($room['price_weekday']) && !empty($room['price_weekend']) && $room['price_weekday'] != $room['price_weekend'])
                                     <div class="flex items-baseline gap-3">
                                         <div>
-                                            <p class="text-2xl font-bold text-teal-600">Rp {{ number_format($room['price_weekday'], 0, ',', '.') }}</p>
-                                            <p class="text-xs text-gray-500">Weekday</p>
+                                            <p class="text-2xl font-extrabold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_weekday'], 0, ',', '.') }}</p>
+                                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Weekday</p>
                                         </div>
-                                        <span class="text-gray-300">|</span>
+                                        <span class="text-gray-400 dark:text-gray-500">|</span>
                                         <div>
-                                            <p class="text-2xl font-bold text-teal-600">Rp {{ number_format($room['price_weekend'], 0, ',', '.') }}</p>
-                                            <p class="text-xs text-gray-500">Weekend</p>
+                                            <p class="text-2xl font-extrabold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_weekend'], 0, ',', '.') }}</p>
+                                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Weekend</p>
                                         </div>
                                     </div>
                                     @if(!empty($room['has_seasonal_pricing']))
-                                    <p class="text-xs text-orange-500 mt-1"><i class="fas fa-info-circle mr-1"></i>Harga dapat berbeda pada hari libur & musim tertentu</p>
+                                    <p class="text-xs font-semibold text-orange-600 dark:text-orange-300 mt-1"><i class="fas fa-info-circle mr-1"></i>Harga dapat berbeda pada hari libur & musim tertentu</p>
                                     @endif
                                     @else
-                                    <p class="text-3xl font-bold text-teal-600">Rp {{ number_format($room['price_original_daily'], 0, ',', '.') }}</p>
+                                    <p class="text-3xl font-extrabold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_original_daily'], 0, ',', '.') }}</p>
                                     @endif
-                                    <p class="text-sm text-gray-500">{{ __('properties.room_detail.per_night') }}</p>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('properties.room_detail.per_night') }}</p>
                                 </div>
                                 @else
                                 <div class="mt-4">
-                                    <p class="text-3xl font-bold text-teal-600">{{ __('properties.room_detail.contact_us') }}</p>
-                                    <p class="text-sm text-gray-500">{{ __('properties.room_detail.for_price_night') }}</p>
+                                    <p class="text-3xl font-extrabold text-green-700 dark:text-green-400">{{ __('properties.room_detail.contact_us') }}</p>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('properties.room_detail.for_price_night') }}</p>
                                 </div>
                                 @endif
                                 @if(!empty($room['price_original_monthly']) && $room['price_original_monthly'] > 0)
                                 <div class="mt-4">
-                                    <p class="text-3xl font-bold text-teal-600">Rp {{ number_format($room['price_original_monthly'], 0, ',', '.') }}</p>
-                                    <p class="text-sm text-gray-500">{{ __('properties.room_detail.per_month') }}</p>
+                                    <p class="text-3xl font-extrabold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_original_monthly'], 0, ',', '.') }}</p>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('properties.room_detail.per_month') }}</p>
                                 </div>
                                 @else
                                 <div class="mt-4">
-                                    <p class="text-3xl font-bold text-teal-600">{{ __('properties.room_detail.contact_us') }}</p>
-                                    <p class="text-sm text-gray-500">{{ __('properties.room_detail.for_price_month') }}</p>
+                                    <p class="text-3xl font-extrabold text-green-700 dark:text-green-400">{{ __('properties.room_detail.contact_us') }}</p>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('properties.room_detail.for_price_month') }}</p>
                                 </div>
                                 @endif
                             </div>
@@ -236,16 +334,16 @@
                             <!-- Room Facilities -->
                             @if(!empty($room['facility']) && is_array($room['facility']) && count($room['facility']) > 0)
                             <div class="mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('properties.room_detail.room_facilities') }}</h2>
+                                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('properties.room_detail.room_facilities') }}</h2>
                                 <div class="grid grid-cols-2 gap-2">
                                     @foreach($room['facility'] as $facility)
                                         <div class="flex items-center space-x-2 py-1">
                                             @if(is_array($facility) && !empty($facility['icon']))
-                                                <span class="iconify text-teal-600 text-xl" data-icon="{{ $facility['icon'] }}"></span>
+                                                <span class="iconify text-green-700 dark:text-green-400 text-xl" data-icon="{{ $facility['icon'] }}"></span>
                                             @else
-                                                <i class="fas fa-check text-teal-600"></i>
+                                                <i class="fas fa-check text-green-700 dark:text-green-400"></i>
                                             @endif
-                                            <span class="text-gray-600">
+                                            <span class="text-gray-800 dark:text-gray-100 font-semibold">
                                                 @if(is_array($facility))
                                                     {{ strtoupper($facility['name'] ?? '') }}
                                                 @else
@@ -258,44 +356,45 @@
                             </div>
                             @else
                             <div class="mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('properties.room_detail.room_facilities') }}</h2>
-                                <p class="text-gray-500">{{ __('properties.room_detail.no_facilities_listed') }}</p>
+                                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('properties.room_detail.room_facilities') }}</h2>
+                                <p class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.room_detail.no_facilities_listed') }}</p>
                             </div>
                             @endif
 
                             <!-- Room Description -->
                             <div class="space-y-6">
                                 <div class="prose prose-lg max-w-none">
-                                    <h3 class="text-xl font-semibold text-gray-900 mb-4">{{ __('properties.room_detail.room_description') }}</h3>
-                                    <pre class="text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{!! $room['descriptions'] !!}</pre>
+                                    <h3 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('properties.room_detail.room_description') }}</h3>
+                                    <!-- Multi-language description with line break support -->
+                                    <div class="text-gray-800 dark:text-gray-100 font-medium leading-relaxed">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
                                 </div>
                             </div>
 
                             <!-- Deposit & Parking Fees Info -->
                             @if(($room['property']['deposit_fee'] ?? 0) > 0 || !empty($room['property']['parking_fees']))
                             <div class="mt-8 mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('Biaya Tambahan') }}</h2>
+                                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('Biaya Tambahan') }}</h2>
                                 <div class="space-y-2">
                                     @if(($room['property']['deposit_fee'] ?? 0) > 0)
                                     <div class="flex items-center space-x-2 py-1">
-                                        <i class="fas fa-money-bill-wave text-teal-600"></i>
-                                        <span class="text-gray-600">Deposit: <span class="font-medium">Rp {{ number_format($room['property']['deposit_fee'], 0, ',', '.') }}</span></span>
+                                        <i class="fas fa-money-bill-wave text-green-700 dark:text-green-400"></i>
+                                        <span class="text-gray-800 dark:text-gray-100 font-medium">Deposit: <span class="font-bold">Rp {{ number_format($room['property']['deposit_fee'], 0, ',', '.') }}</span></span>
                                     </div>
                                     @endif
                                     @if(!empty($room['property']['parking_fees']))
                                         @foreach($room['property']['parking_fees'] as $parkingFee)
                                         <div class="flex items-center space-x-2 py-1">
                                             @if(strtolower($parkingFee['parking_type'] ?? '') == 'motor' || strtolower($parkingFee['parking_type'] ?? '') == 'motorcycle')
-                                                <i class="fas fa-bicycle text-teal-600"></i>
+                                                <i class="fas fa-bicycle text-green-700 dark:text-green-400"></i>
                                             @else
-                                                <i class="fas fa-car text-teal-600"></i>
+                                                <i class="fas fa-car text-green-700 dark:text-green-400"></i>
                                             @endif
-                                            <span class="text-gray-600">Parkir {{ $parkingFee['parking_type'] ?? '' }}: <span class="font-medium">Rp {{ number_format($parkingFee['fee'] ?? 0, 0, ',', '.') }}/bulan</span></span>
+                                            <span class="text-gray-800 dark:text-gray-100 font-medium">Parkir {{ $parkingFee['parking_type'] ?? '' }}: <span class="font-bold">Rp {{ number_format($parkingFee['fee'] ?? 0, 0, ',', '.') }}/bulan</span></span>
                                         </div>
                                         @endforeach
                                     @endif
                                 </div>
-                                <p class="text-xs text-gray-400 mt-3">*Biaya akan ditambahkan saat pembayaran</p>
+                                <p class="text-xs font-semibold text-gray-600 dark:text-gray-300 mt-3">*Biaya akan ditambahkan saat pembayaran</p>
                             </div>
                             @endif
                         </div>
@@ -304,22 +403,23 @@
 
                 <!-- Booking Form (right) -->
                 <div class="lg:col-span-5 lg:pl-4">
-                    <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-8 sticky top-8">
+                    <!-- Liquid glass booking form card -->
+                    <div class="p-8 sticky top-8" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                         <!-- Status and Price Summary -->
                         <div class="flex items-center justify-between mb-8">
                             <div>
-                                <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ __('properties.booking.book_room') }}</h2>
-                                <p class="text-gray-500">{{ __('properties.booking.fill_details') }}</p>
+                                <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">{{ __('properties.booking.book_room') }}</h2>
+                                <p class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.booking.fill_details') }}</p>
                             </div>
                             <div class="text-right">
-                                <!-- Room Status -->
-                                @if($room['rental_status'] == 1)
-                                    <span id="roomStatus" class="px-4 py-2 rounded-full text-sm font-medium bg-gray-400 text-white">
-                                        Tidak Tersedia
+                                <!-- Room Status — green for available, gray for unavailable, with dark mode variants -->
+                                @if(!($room['is_available'] ?? ($room['rental_status'] != 1)))
+                                    <span id="roomStatus" class="px-4 py-2 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+                                        {{ __('properties.status.unavailable') }}
                                     </span>
                                 @else
                                     <span id="roomStatus" class="px-4 py-2 rounded-full text-sm font-medium
-                                        {{ $room['status'] == 1 ? 'bg-green-100 text-green-800' : 'bg-gray-400 text-white' }}">
+                                        {{ $room['status'] == 1 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' }}">
                                         {{ $room['status'] == 1 ? __('properties.status.available') : __('properties.status.unavailable') }}
                                     </span>
                                 @endif
@@ -395,7 +495,7 @@
                             {{-- <input type="hidden" name="tax_fees" id="taxFees" value="{{ $room['tax_fees'] ?? 0 }}"> --}}
                             <!-- Rental Type -->
                             <div class="mb-6">
-                                <label for="rent_type" class="block text-sm font-medium text-gray-700 mb-2">{{ __('properties.booking.booking_type') }}</label>
+                                <label for="rent_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('properties.booking.booking_type') }}</label>
                                 <select id="rent_type" name="rent_type"
                                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                                     onchange="updateRentalType()">
@@ -414,62 +514,82 @@
 
                             <!-- Daily Booking Component -->
                             <div id="dailyBookingComponent" class="space-y-4 hidden">
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-gray-600 rounded-lg p-4">
                                     <div class="flex items-center mb-3">
                                         <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
-                                        <h3 class="text-sm font-semibold text-gray-800">{{ __('properties.booking.daily_booking') }}</h3>
+                                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ __('properties.booking.daily_booking') }}</h3>
                                     </div>
 
-                                    <!-- Check-in Date -->
-                                    <div class="mb-4">
-                                        <label for="check_in" class="block text-sm font-medium text-gray-700 mb-2">
-                                            <i class="fas fa-sign-in-alt mr-1 text-gray-500"></i>{{ __('properties.booking.check_in') }}
-                                        </label>
-                                        <input type="text" id="check_in" name="check_in"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
-                                            placeholder="Select check-in date" data-required="true" readonly>
-                                        <div id="check_inError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
-                                    </div>
+                                    {{-- Check-in + Check-out side by side: two columns on tablet/desktop,
+                                         stacked on phones (matches the monthly booking layout). --}}
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <!-- Check-in Date -->
+                                        <div>
+                                            <label for="check_in" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-sign-in-alt mr-1 text-gray-500"></i>{{ __('properties.booking.check_in') }}
+                                            </label>
+                                            <input type="text" id="check_in" name="check_in"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                                placeholder="Select check-in date" data-required="true" readonly>
+                                            <div id="check_inError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                        </div>
 
-                                    <!-- Check-out Date -->
-                                    <div>
-                                        <label for="check_out" class="block text-sm font-medium text-gray-700 mb-2">
-                                            <i class="fas fa-sign-out-alt mr-1 text-gray-500"></i>{{ __('properties.booking.check_out') }}
-                                        </label>
-                                        <input type="text" id="check_out" name="check_out"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
-                                            placeholder="Select check-out date" data-required="true" readonly>
-                                        <div id="check_outError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                        <!-- Check-out Date -->
+                                        <div>
+                                            <label for="check_out" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-sign-out-alt mr-1 text-gray-500"></i>{{ __('properties.booking.check_out') }}
+                                            </label>
+                                            <input type="text" id="check_out" name="check_out"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                                placeholder="Select check-out date" data-required="true" readonly>
+                                            <div id="check_outError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Monthly Booking Component -->
                             <div id="monthlyBookingComponent" class="space-y-4 hidden">
-                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <div class="bg-purple-50 dark:bg-gray-700 border border-purple-200 dark:border-gray-600 rounded-lg p-4">
                                     <div class="flex items-center mb-3">
                                         <i class="fas fa-calendar-alt text-purple-600 mr-2"></i>
-                                        <h3 class="text-sm font-semibold text-gray-800">{{ __('properties.booking.monthly_booking') }}</h3>
+                                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ __('properties.booking.monthly_booking') }}</h3>
                                     </div>
 
-                                    <!-- Check-in Date -->
-                                    <div class="mb-4">
-                                        <label for="check_in_monthly" class="block text-sm font-medium text-gray-700 mb-2">
-                                            <i class="fas fa-calendar-check mr-1 text-gray-500"></i>{{ __('properties.booking.check_in') }}
-                                        </label>
-                                        <input type="text" id="check_in_monthly" name="check_in_monthly"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
-                                            placeholder="Select check-in date" data-required="true" readonly>
-                                        <div id="check_in_monthlyError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                    {{-- Check-in (editable) + Check-out (read-only, computed) side by side.
+                                         Two columns on tablet/desktop, stacked on phones. The check-out is derived
+                                         by updatePriceSummary() using the same clamped-month math the server applies
+                                         in BookingController::store (so Jan 31 + 1 mo → Feb 28, not Mar 3). --}}
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <!-- Check-in Date -->
+                                        <div>
+                                            <label for="check_in_monthly" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-calendar-check mr-1 text-gray-500"></i>{{ __('properties.booking.check_in') }}
+                                            </label>
+                                            <input type="text" id="check_in_monthly" name="check_in_monthly"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                                placeholder="Select check-in date" data-required="true" readonly>
+                                            <div id="check_in_monthlyError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
+                                        </div>
+
+                                        <!-- Check-out Date (computed, read-only) -->
+                                        <div>
+                                            <label for="check_out_monthly_display" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-calendar-times mr-1 text-gray-500"></i>{{ __('properties.booking.check_out') }}
+                                            </label>
+                                            <input type="text" id="check_out_monthly_display" readonly
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 cursor-not-allowed opacity-90"
+                                                placeholder="—">
+                                        </div>
                                     </div>
 
                                     <!-- Months Selection -->
                                     <div>
-                                        <label for="months" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="months" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-hourglass-half mr-1 text-gray-500"></i>{{ __('properties.booking.duration') }}
                                         </label>
                                         <select id="months" name="months"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             onchange="updatePriceSummary()">
                                             @for ($i = 1; $i <= 12; $i++)
                                                 <option value="{{ $i }}">{{ $i }} {{ __('properties.booking.months') }}</option>
@@ -535,51 +655,52 @@
                             
                             <!-- Price Summary -->
                             <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                                <h4 class="font-medium text-gray-900 mb-3">{{ __('properties.booking.total_price') }}</h4>
+                                <h4 class="font-bold text-gray-900 dark:text-white mb-3">{{ __('properties.booking.total_price') }}</h4>
                                 <div class="space-y-3 text-sm">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-gray-600" id="rateTypeDisplay">{{ __('properties.booking.daily_rate') }}: </span>
+                                    <!-- Rate row — hidden for daily bookings, shown for monthly -->
+                                    <div class="flex items-center justify-between" id="rateRow">
+                                        <span class="text-gray-700 dark:text-gray-200 font-medium" id="rateTypeDisplay">{{ __('properties.booking.daily_rate') }}: </span>
                                         <div class="text-right">
-                                            <div class="text-gray-900" id="rateDisplay">
+                                            <div class="text-gray-900 dark:text-white font-semibold" id="rateDisplay">
                                                 <!-- Daily Rate Display -->
                                                 <div id="dailyRateDisplay" class="hidden">
-                                                    <span class="text-black-600">Rp {{ number_format($room['price_original_daily'], 0, ',', '.') }}</span>
-                                                    <div class="text-xs text-gray-500 mt-1">{{ __('properties.room_detail.per_night') }}</div>
+                                                    <span class="font-bold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_original_daily'], 0, ',', '.') }}</span>
+                                                    <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mt-1">{{ __('properties.room_detail.per_night') }}</div>
                                                 </div>
                                                 <!-- Monthly Rate Display -->
                                                 <div id="monthlyRateDisplay" class="hidden">
-                                                    <span class="text-black-600">Rp {{ number_format($room['price_original_monthly'], 0, ',', '.') }}</span>
-                                                    <div class="text-xs text-gray-500 mt-1">{{ __('properties.room_detail.per_month') }}</div>
+                                                    <span class="font-bold text-green-700 dark:text-green-400">Rp {{ number_format($room['price_original_monthly'], 0, ',', '.') }}</span>
+                                                    <div class="text-xs font-semibold text-gray-600 dark:text-gray-300 mt-1">{{ __('properties.room_detail.per_month') }}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">{{ __('properties.booking.duration_label') }} </span>
-                                        <span class="text-gray-900" id="durationDisplay">-</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.booking.duration_label') }} </span>
+                                        <span class="text-gray-900 dark:text-white font-semibold" id="durationDisplay">-</span>
                                     </div>
 
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">{{ __('properties.booking.room_total') }}</span>
-                                        <span class="text-gray-900" id="roomTotal">-</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.booking.room_total') }}</span>
+                                        <span class="text-gray-900 dark:text-white font-semibold" id="roomTotal">-</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">{{ __('properties.booking.service_fees') }} </span>
-                                        <span class="text-gray-900" id="serviceFeesDisplay">-</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-medium">{{ __('properties.booking.service_fees') }} </span>
+                                        <span class="text-gray-900 dark:text-white font-semibold" id="serviceFeesDisplay">-</span>
                                     </div>
                                     {{-- <div class="flex justify-between">
                                         <span class="text-gray-600">Tax and Fees (20%): </span>
                                         <span class="text-gray-900" id="taxDisplay">-</span>
                                     </div> --}}
-                                    
+
                                     {{-- <div class="flex justify-between">
                                         <span class="text-gray-600">Admin Fee:</span>
                                         <span class="text-gray-900" id="adminFee">{{ number_format($room['admin_fees'], 0, ',', '.') }}</span>
                                     </div> --}}
-                                    
-                                    <div class="flex justify-between font-medium text-lg pt-3 border-t mt-3">
-                                        <span>{{ __('properties.booking.total') }}</span>
-                                        <span class="text-teal-600" id="grandTotal">-</span>
+
+                                    <div class="flex justify-between font-bold text-lg pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
+                                        <span class="text-gray-900 dark:text-white">{{ __('properties.booking.total') }}</span>
+                                        <span class="text-green-700 dark:text-green-400" id="grandTotal">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -596,8 +717,15 @@
                                                 class="w-4 h-4 text-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-teal-500 focus:ring-2">
                                         </div>
                                         <div class="ml-3 text-sm">
-                                            <label for="agreementCheckbox" class="text-gray-700">
-                                                {{ __('properties.booking.rental_agreement') }} <a href="/rental-agreement" target="_blank" class="text-teal-600 hover:text-teal-700 underline">{{ __('properties.booking.rental_agreement_link') }}</a>
+                                            <label for="agreementCheckbox" class="text-gray-800 dark:text-gray-100 font-medium">
+                                                {{-- :terms_link / :privacy_link / :rental_link are substituted with anchor tags
+                                                     pointing to the legal pages. {!! !!} is required so the HTML renders;
+                                                     route() returns trusted URLs and link text is e()-escaped. --}}
+                                                {!! __('properties.booking.rental_agreement', [
+                                                    'terms_link'   => '<a href="' . route('terms-of-services') . '" target="_blank" rel="noopener" class="text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-semibold underline">' . e(__('properties.booking.terms_link_text')) . '</a>',
+                                                    'privacy_link' => '<a href="' . route('privacy-policy') . '" target="_blank" rel="noopener" class="text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-semibold underline">' . e(__('properties.booking.privacy_link_text')) . '</a>',
+                                                    'rental_link'  => '<a href="' . route('rental-agreement') . '" target="_blank" rel="noopener" class="text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-semibold underline">' . e(__('properties.booking.rental_link_text')) . '</a>',
+                                                ]) !!}
                                             </label>
                                         </div>
                                     </div>
@@ -618,7 +746,7 @@
                                     </button>
                                     <p class="text-sm text-gray-500 text-center mt-2">{{ __('properties.booking.please_login') }}</p>
                                 @else
-                                    @if($room['rental_status'] == 1)
+                                    @if(!($room['is_available'] ?? ($room['rental_status'] != 1)))
                                         <button type="button" id="checkAvailabilityButton"
                                             class="w-full bg-gray-400 text-white py-4 px-6 rounded-lg text-lg font-medium cursor-not-allowed"
                                             disabled>
@@ -659,17 +787,30 @@
     @include('components.homepage.footer')
 
     <script>
+        // Clamped month addition: avoids overflow when target month has fewer days
+        // e.g. Jan 31 + 1 month = Feb 28, Mar 31 + 1 month = Apr 30, Feb 29 + 1 month = Mar 29
+        function addMonthsClamped(date, months) {
+            const d = new Date(date);
+            const day = d.getDate();
+            d.setDate(1); // set to 1st to avoid overflow during setMonth
+            d.setMonth(d.getMonth() + months);
+            // clamp day to last day of target month
+            const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(day, maxDay));
+            return d;
+        }
+
         // --- Global variables ---
         let bookingForm, errorAlert, loadingOverlay, submitButton, monthInput, dateInputs, monthsSelect, rentTypeSelect;
         let checkInInput, checkOutInput, roomStatusSpan;
         let availabilityCheckTimeout;
 
         // --- Global Room Availability Function ---
-        const rentalStatus = {{ $room['rental_status'] ?? 0 }};
+        const isAvailable = {{ ($room['is_available'] ?? ($room['rental_status'] != 1)) ? 'true' : 'false' }};
 
         async function checkRoomAvailability() {
-            // Skip availability check if room is already rented (rental_status = 1)
-            if (rentalStatus == 1) {
+            // Skip availability check if room is not available
+            if (!isAvailable) {
                 showAvailabilityStatus('unavailable', 'Kamar sedang disewa');
                 updateSubmitButton(false, 'Tidak Tersedia');
                 return;
@@ -753,6 +894,9 @@
                         check_in: checkInDate,
                         check_out: checkOutDate,
                         period: rentType,
+                        // booking_type is what the server uses to pick the type-specific cap
+                        // (new daily ≤+90d / new monthly ≤+14d). period kept for backwards compat.
+                        booking_type: rentType,
                         ...(months !== undefined && { months })
                     });
                     // console.log('Request body:', requestBody);
@@ -840,31 +984,33 @@
             return `Rp ${num.toLocaleString('id-ID')}`;
         }
         
+        /* Badge color map — dark mode aware via isDark flag */
         function showAvailabilityStatus(type, message) {
             if (!roomStatusSpan) return;
 
-            let className = 'px-4 py-2 rounded-full text-sm font-medium ';
+            const isDark = document.documentElement.classList.contains('dark');
+            let className = 'px-4 py-2 rounded-full text-sm font-medium border ';
             let statusText = '';
 
             switch (type) {
                 case 'loading':
-                    className += 'bg-blue-100 text-blue-800';
-                    statusText = '<i class="fas fa-spinner fa-spin mr-1"></i> Memeriksa...';
+                    className += isDark ? 'bg-blue-900/40 text-blue-300 border-blue-800' : 'bg-blue-100 text-blue-700 border-blue-200';
+                    statusText = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("properties.booking.checking_availability") }}';
                     break;
                 case 'available':
-                    className += 'bg-green-100 text-green-800';
+                    className += isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200';
                     statusText = '{{ __("properties.status.available") }}';
                     break;
                 case 'unavailable':
-                    className += 'bg-red-100 text-red-800';
+                    className += isDark ? 'bg-red-900/40 text-red-300 border-red-800' : 'bg-red-100 text-red-700 border-red-200';
                     statusText = '{{ __("properties.status.unavailable") }}';
                     break;
                 case 'error':
-                    className += 'bg-yellow-100 text-yellow-800';
+                    className += isDark ? 'bg-yellow-900/40 text-yellow-300 border-yellow-800' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
                     statusText = 'Error';
                     break;
                 default:
-                    className += 'bg-gray-100 text-gray-600';
+                    className += isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-gray-100 text-gray-600 border-gray-200';
                     statusText = '{{ __("properties.booking.waiting_date_selection") }}';
             }
 
@@ -874,13 +1020,13 @@
 
         function resetAvailabilityStatus() {
             if (!roomStatusSpan) return;
-            // Reset to initial state based on room status
-            const isAvailable = {{ $room['status'] == 1 && $room['rental_status'] != 1 ? 'true' : 'false' }};
+            const isRoomAvailable = {{ $room['status'] == 1 && ($room['is_available'] ?? ($room['rental_status'] != 1)) ? 'true' : 'false' }};
+            const isDark = document.documentElement.classList.contains('dark');
             if (isAvailable) {
-                roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800';
+                roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200');
                 roomStatusSpan.innerHTML = '{{ __("properties.status.available") }}';
             } else {
-                roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium bg-gray-400 text-white';
+                roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-red-900/40 text-red-300 border-red-800' : 'bg-red-100 text-red-700 border-red-200');
                 roomStatusSpan.innerHTML = '{{ __("properties.status.unavailable") }}';
             }
         }
@@ -964,28 +1110,29 @@
             function showAvailabilityStatus(type, message) {
                 if (!roomStatusSpan) return;
 
-                let className = 'px-4 py-2 rounded-full text-sm font-medium ';
+                const isDark = document.documentElement.classList.contains('dark');
+                let className = 'px-4 py-2 rounded-full text-sm font-medium border ';
                 let statusText = '';
 
                 switch (type) {
                     case 'loading':
-                        className += 'bg-blue-100 text-blue-800';
+                        className += isDark ? 'bg-blue-900/40 text-blue-300 border-blue-800' : 'bg-blue-100 text-blue-700 border-blue-200';
                         statusText = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("properties.booking.checking_availability") }}';
                         break;
                     case 'available':
-                        className += 'bg-green-100 text-green-800';
+                        className += isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200';
                         statusText = '{{ __("properties.status.available") }}';
                         break;
                     case 'unavailable':
-                        className += 'bg-gray-400 text-white';
+                        className += isDark ? 'bg-red-900/40 text-red-300 border-red-800' : 'bg-red-100 text-red-700 border-red-200';
                         statusText = '{{ __("properties.status.unavailable") }}';
                         break;
                     case 'error':
-                        className += 'bg-yellow-100 text-yellow-800';
+                        className += isDark ? 'bg-yellow-900/40 text-yellow-300 border-yellow-800' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
                         statusText = '{{ __("properties.booking.date_invalid") }}';
                         break;
                     default:
-                        className += 'bg-gray-100 text-gray-600';
+                        className += isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-gray-100 text-gray-600 border-gray-200';
                         statusText = '{{ __("properties.booking.waiting_date_selection") }}';
                 }
 
@@ -995,13 +1142,13 @@
 
             function resetAvailabilityStatus() {
                 if (!roomStatusSpan) return;
-                // Reset to initial state based on room status
-                const isAvailable = {{ $room['status'] == 1 && $room['rental_status'] != 1 ? 'true' : 'false' }};
+                const isRoomAvailable = {{ $room['status'] == 1 && ($room['is_available'] ?? ($room['rental_status'] != 1)) ? 'true' : 'false' }};
+                const isDark = document.documentElement.classList.contains('dark');
                 if (isAvailable) {
-                    roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800';
+                    roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-green-900/40 text-green-300 border-green-800' : 'bg-green-100 text-green-700 border-green-200');
                     roomStatusSpan.innerHTML = '{{ __("properties.status.available") }}';
                 } else {
-                    roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium bg-gray-400 text-white';
+                    roomStatusSpan.className = 'px-4 py-2 rounded-full text-sm font-medium border ' + (isDark ? 'bg-red-900/40 text-red-300 border-red-800' : 'bg-red-100 text-red-700 border-red-200');
                     roomStatusSpan.innerHTML = '{{ __("properties.status.unavailable") }}';
                 }
             }
@@ -1064,6 +1211,9 @@
                 }
                 if (dailyRateDisplay) dailyRateDisplay.classList.toggle('hidden', rentType !== 'daily');
                 if (monthlyRateDisplay) monthlyRateDisplay.classList.toggle('hidden', rentType !== 'monthly');
+                // Hide the entire rate row for daily bookings (price breakdown per date is shown instead)
+                const rateRow = document.getElementById('rateRow');
+                if (rateRow) rateRow.classList.toggle('hidden', rentType === 'daily');
 
                 let duration = 0, roomTotal = 0;
 
@@ -1075,7 +1225,10 @@
 
                         /* Call price-preview API for per-date breakdown */
                         const roomId = document.getElementById('roomId').value;
-                        fetch(`/api/v1/rooms/${roomId}/price-preview?check_in=${checkInInput.value}&check_out=${checkOutInput.value}`)
+                        /* Daily Multi Tier Pricing: fetch per-date price breakdown with API key */
+                        fetch(`/api/v1/rooms/${roomId}/price-preview?check_in=${checkInInput.value}&check_out=${checkOutInput.value}`, {
+                            headers: { 'X-API-KEY': '{{ env('API_KEY') }}', 'Accept': 'application/json' }
+                        })
                             .then(res => res.json())
                             .then(json => {
                                 if (json.status === 'success' && json.data.breakdown.length > 0) {
@@ -1120,6 +1273,42 @@
                         roomTotal = duration * rate;
                         if (durationDisplay) durationDisplay.textContent = `${duration} {{ __("properties.booking.months") }}`;
                         hidePriceBreakdown();
+
+                        /* Compute the projected check-out date and surface it under "Durasi Sewa"
+                           so the guest can sanity-check their stay length before paying. Mirrors
+                           the clamp logic in BookingController::store() (Jan 31 + 1 month →
+                           Feb 28, not Mar 3) so what we display equals what the server will store. */
+                        const monthlyCheckInEl = document.getElementById('check_in_monthly');
+                        const monthlyCheckOutDisplay = document.getElementById('check_out_monthly_display');
+                        if (monthlyCheckInEl && monthlyCheckOutDisplay) {
+                            const raw = (monthlyCheckInEl.value || '').trim();
+                            if (raw) {
+                                /* check_in_monthly is rendered by flatpickr as YYYY-MM-DD. Anything
+                                   else (placeholder text, garbage) falls through to '—'. */
+                                const parts = raw.split('-');
+                                if (parts.length === 3) {
+                                    const y0 = parseInt(parts[0], 10);
+                                    const m0 = parseInt(parts[1], 10);
+                                    const d0 = parseInt(parts[2], 10);
+                                    if (!isNaN(y0) && !isNaN(m0) && !isNaN(d0)) {
+                                        const targetMonthIdx = (m0 - 1) + duration; // 0-based month index
+                                        const targetYear = y0 + Math.floor(targetMonthIdx / 12);
+                                        const targetMonth = (targetMonthIdx % 12) + 1; // 1-based
+                                        const lastDay = new Date(targetYear, targetMonth, 0).getDate();
+                                        const clampedDay = Math.min(d0, lastDay);
+                                        const mm = String(targetMonth).padStart(2, '0');
+                                        const dd = String(clampedDay).padStart(2, '0');
+                                        monthlyCheckOutDisplay.value = `${targetYear}-${mm}-${dd}`;
+                                    } else {
+                                        monthlyCheckOutDisplay.value = '';
+                                    }
+                                } else {
+                                    monthlyCheckOutDisplay.value = '';
+                                }
+                            } else {
+                                monthlyCheckOutDisplay.value = '';
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error('Error updating price summary:', error);
@@ -1138,17 +1327,21 @@
             }
 
             /* Multi-Tier Pricing: Render per-date price breakdown table */
+            /* Inserted ABOVE the grand total line so user sees breakdown before final price */
             function renderPriceBreakdown(breakdown) {
                 let container = document.getElementById('priceBreakdownContainer');
                 if (!container) {
-                    /* Create container if it doesn't exist yet */
+                    /* Create container and insert ABOVE the Total Price summary box */
                     container = document.createElement('div');
                     container.id = 'priceBreakdownContainer';
-                    container.className = 'mt-4 border-t pt-4';
-                    const roomTotalEl = document.getElementById('roomTotal')?.closest('.space-y-3') || document.getElementById('roomTotal')?.parentElement?.parentElement;
-                    if (roomTotalEl) roomTotalEl.insertAdjacentElement('afterend', container);
+                    container.className = 'bg-gray-50 p-4 rounded-lg mb-4';
+                    const priceSummaryBox = document.getElementById('grandTotal')?.closest('.bg-gray-50');
+                    if (priceSummaryBox) {
+                        priceSummaryBox.parentElement.insertBefore(container, priceSummaryBox);
+                    }
                 }
 
+                /* Badge colors per price type — with dark mode support via inline styles */
                 const typeColors = {
                     weekday: 'bg-blue-100 text-blue-700',
                     weekend: 'bg-purple-100 text-purple-700',
@@ -1158,16 +1351,29 @@
                     manual: 'bg-yellow-100 text-yellow-700',
                 };
 
-                let html = '<p class="text-xs font-semibold text-gray-500 mb-2">Rincian Harga per Tanggal:</p>';
+                /* Dark mode badge colors */
+                const typeDarkColors = {
+                    weekday: 'background-color: rgba(30,58,138,0.3); color: #93c5fd;',
+                    weekend: 'background-color: rgba(88,28,135,0.3); color: #d8b4fe;',
+                    high_season: 'background-color: rgba(127,29,29,0.3); color: #fca5a5;',
+                    low_season: 'background-color: rgba(20,83,45,0.3); color: #86efac;',
+                    holiday: 'background-color: rgba(154,52,18,0.3); color: #fdba74;',
+                    manual: 'background-color: rgba(113,63,18,0.3); color: #fde047;',
+                };
+
+                const isDark = document.documentElement.classList.contains('dark');
+
+                let html = '<h4 class="font-medium text-gray-900 mb-3">{{ __("properties.booking.price_breakdown_title") }}</h4>';
                 html += '<div class="space-y-1 max-h-48 overflow-y-auto text-xs">';
                 breakdown.forEach(d => {
-                    const color = typeColors[d.type] || 'bg-gray-100 text-gray-700';
+                    const lightColor = typeColors[d.type] || 'bg-gray-100 text-gray-700';
+                    const darkStyle = isDark ? (typeDarkColors[d.type] || 'background-color: rgba(55,65,81,0.4); color: #d1d5db;') : '';
                     const label = d.label ? ` — ${d.label}` : '';
                     html += `<div class="flex justify-between items-center py-1 px-2 rounded hover:bg-gray-50">
                         <div class="flex items-center gap-2">
                             <span>${d.date}</span>
                             <span class="text-gray-400">${d.day_name}</span>
-                            <span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${color}">${d.type}${label}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${lightColor}" ${isDark ? `style="${darkStyle}"` : ''}>${d.type}${label}</span>
                         </div>
                         <span class="font-medium">${formatRupiah(d.price)}</span>
                     </div>`;
@@ -1237,8 +1443,7 @@
                     if (checkInMonthlyInput && checkOutInput) {
                         const checkInDate = new Date(checkInMonthlyInput.value);
                         const months = parseInt(monthsSelect.value, 10) || 1;
-                        const checkOutDate = new Date(checkInDate);
-                        checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                        const checkOutDate = addMonthsClamped(checkInDate, months);
                         checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                     }
 
@@ -1329,8 +1534,7 @@
                     // For monthly, update check-out based on months
                     const checkInDate = new Date(checkInInput.value);
                     const months = parseInt(monthsSelect.value, 10) || 1;
-                    const checkOutDate = new Date(checkInDate);
-                    checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                    const checkOutDate = addMonthsClamped(checkInDate, months);
                     checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                 } else {
                     // For daily, apply month boundary and 14-day limit
@@ -1340,11 +1544,9 @@
 
                     // Calculate max checkout: 14 days OR end of month, whichever is earlier
                     const maxCheckoutDate = new Date(checkInDate);
-                    maxCheckoutDate.setDate(checkInDate.getDate() + 14);
+                    maxCheckoutDate.setDate(checkInDate.getDate() + 60);
 
-                    const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                    const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
+                    const actualMaxCheckout = maxCheckoutDate;
 
                     checkOutInput.min = minCheckout.toISOString().split('T')[0];
                     checkOutInput.max = actualMaxCheckout.toISOString().split('T')[0];
@@ -1392,33 +1594,9 @@
                     checkInInput.value = defaultCheckIn;
                     checkInInput.min = minCheckInStr;
 
-                    // Handle check-in date changes
+                    // Check-in change handler — only triggers availability check.
+                    // Check-out constraints are managed by Datepicker changeDate handler.
                     checkInInput.addEventListener('change', function() {
-                        if (checkInInput.value) {
-                            const checkInDate = new Date(checkInInput.value);
-                            const minCheckout = new Date(checkInDate);
-                            minCheckout.setDate(checkInDate.getDate() + 1);
-
-                            // Calculate max checkout: 14 days OR end of month, whichever is earlier
-                            const maxCheckoutDate = new Date(checkInDate);
-                            maxCheckoutDate.setDate(checkInDate.getDate() + 14);
-
-                            const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                            const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
-
-                            if (checkOutInput) {
-                                checkOutInput.min = formatDate(minCheckout);
-                                checkOutInput.max = formatDate(actualMaxCheckout);
-
-                                // If current check-out is before new min date or after max date, update it
-                                if (!checkOutInput.value ||
-                                    new Date(checkOutInput.value) <= new Date(checkInInput.value) ||
-                                    new Date(checkOutInput.value) > actualMaxCheckout) {
-                                    checkOutInput.value = formatDate(minCheckout);
-                                }
-                            }
-                        }
                         checkRoomAvailability();
                     });
                 }
@@ -1438,8 +1616,7 @@
                         if (checkOutInput && monthsSelect) {
                             const checkInDate = new Date(checkInMonthlyInput.value);
                             const months = parseInt(monthsSelect.value, 10) || 1;
-                            const checkOutDate = new Date(checkInDate);
-                            checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                            const checkOutDate = addMonthsClamped(checkInDate, months);
                             checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                         }
 
@@ -1473,8 +1650,7 @@
                             if (checkInMonthlyInput && checkOutInput && checkInMonthlyInput.value) {
                                 const checkInDate = new Date(checkInMonthlyInput.value);
                                 const months = parseInt(monthsSelect.value, 10) || 1;
-                                const checkOutDate = new Date(checkInDate);
-                                checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                                const checkOutDate = addMonthsClamped(checkInDate, months);
                                 checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                             }
                         }
@@ -1528,23 +1704,13 @@
                         isValid = false;
                     }
 
-                    // Validate month boundaries and 14-day maximum
+                    // Validate max 60-day booking period (cross-month is allowed)
                     if (checkInInput.value && checkOutInput.value) {
                         const checkIn = new Date(checkInInput.value);
                         const checkOut = new Date(checkOutInput.value);
-
-                        // Check if dates are in the same month
-                        if (checkIn.getMonth() !== checkOut.getMonth() || checkIn.getFullYear() !== checkOut.getFullYear()) {
-                            document.getElementById('check_outError').textContent = 'Booking cannot cross month boundaries';
-                            document.getElementById('check_outError').classList.remove('hidden');
-                            checkOutInput.classList.add('border-red-500');
-                            isValid = false;
-                        }
-
-                        // Check if booking period exceeds 14 days
                         const daysDiff = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-                        if (daysDiff > 14) {
-                            document.getElementById('check_outError').textContent = 'Booking period cannot exceed 14 days';
+                        if (daysDiff > 60) {
+                            document.getElementById('check_outError').textContent = 'Booking period cannot exceed 60 days';
                             document.getElementById('check_outError').classList.remove('hidden');
                             checkOutInput.classList.add('border-red-500');
                             isValid = false;
@@ -1767,33 +1933,9 @@
                 checkInInput.value = formatDate(minCheckInDate);
                 checkInInput.min = formatDate(minCheckInDate);
 
-                // Handle check-in date changes
+                // Check-in change handler — only triggers price update.
+                // Check-out constraints are managed by Datepicker changeDate handler.
                 checkInInput.addEventListener('change', function() {
-                    if (checkInInput.value) {
-                        const checkInDate = new Date(checkInInput.value);
-                        const minCheckout = new Date(checkInDate);
-                        minCheckout.setDate(checkInDate.getDate() + 1);
-
-                        // Calculate max checkout: 14 days OR end of month, whichever is earlier
-                        const maxCheckoutDate = new Date(checkInDate);
-                        maxCheckoutDate.setDate(checkInDate.getDate() + 14);
-
-                        const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                        const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
-
-                        if (checkOutInput) {
-                            checkOutInput.min = formatDate(minCheckout);
-                            checkOutInput.max = formatDate(actualMaxCheckout);
-
-                            // If current check-out is before new min date or after max date, update it
-                            if (!checkOutInput.value ||
-                                new Date(checkOutInput.value) <= new Date(checkInInput.value) ||
-                                new Date(checkOutInput.value) > actualMaxCheckout) {
-                                checkOutInput.value = formatDate(minCheckout);
-                            }
-                        }
-                    }
                     updatePriceSummary();
                 });
             }
@@ -1820,8 +1962,7 @@
                         if (checkInMonthlyInput && checkOutInput && checkInMonthlyInput.value) {
                             const checkInDate = new Date(checkInMonthlyInput.value);
                             const months = parseInt(monthsSelect.value, 10) || 1;
-                            const checkOutDate = new Date(checkInDate);
-                            checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                            const checkOutDate = addMonthsClamped(checkInDate, months);
                             checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                         }
                     }
@@ -1853,9 +1994,12 @@
             const maxDate = new Date();
             maxDate.setDate(today.getDate() + 365); // Allow booking up to 1 year ahead
 
-            // Max check-in date is 14 days from today
-            const maxCheckInDate = new Date();
-            maxCheckInDate.setDate(today.getDate() + 14);
+            // Max check-in dates differ by booking type:
+            // Daily booking — up to 90 days from today. Monthly — up to 14 days ahead.
+            const maxCheckInDaily = new Date();
+            maxCheckInDaily.setDate(today.getDate() + 90);
+            const maxCheckInMonthly = new Date();
+            maxCheckInMonthly.setDate(today.getDate() + 14);
 
             // Set default dates (check-in defaults to today)
             const minCheckInDate = new Date(today);
@@ -1870,7 +2014,7 @@
                 checkInPicker = new Datepicker(checkInElem, {
                     format: 'yyyy-mm-dd',
                     minDate: today,
-                    maxDate: maxCheckInDate,
+                    maxDate: maxCheckInDaily,
                     autohide: true,
                     todayHighlight: true,
                     weekStart: 0
@@ -1879,7 +2023,10 @@
                 // Set default date
                 checkInPicker.setDate(minCheckInDate);
 
-                // Update check-out picker when check-in changes
+                // Update check-out picker when check-in changes.
+                // Destroys and recreates the check-out datepicker because
+                // vanillajs-datepicker's setOptions() does not reliably update
+                // min/max constraints, leaving the picker unresponsive.
                 checkInElem.addEventListener('changeDate', function(e) {
                     if (e.detail.date) {
                         const selectedCheckIn = new Date(e.detail.date);
@@ -1888,27 +2035,34 @@
 
                         // Calculate max checkout: 14 days from check-in OR end of month
                         const maxCheckOutDate = new Date(selectedCheckIn);
-                        maxCheckOutDate.setDate(selectedCheckIn.getDate() + 14);
+                        maxCheckOutDate.setDate(selectedCheckIn.getDate() + 60);
 
-                        const endOfMonth = new Date(selectedCheckIn.getFullYear(), selectedCheckIn.getMonth() + 1, 0);
-                        const actualMaxCheckOut = maxCheckOutDate < endOfMonth ? maxCheckOutDate : endOfMonth;
+                        const actualMaxCheckOut = maxCheckOutDate;
 
-                        // Update check-out datepicker options
+                        // Destroy and recreate check-out datepicker with new constraints.
+                        // setOptions() breaks the picker in vanillajs-datepicker v1.3.4.
+                        // Pass Date objects directly (not strings) to avoid timezone issues
+                        // where toISOString() shifts dates back a day in Asian timezones.
                         if (checkOutPicker) {
-                            checkOutPicker.setOptions({
+                            checkOutPicker.destroy();
+                        }
+                        const coElem = document.getElementById('check_out');
+                        if (coElem) {
+                            checkOutPicker = new Datepicker(coElem, {
+                                format: 'yyyy-mm-dd',
                                 minDate: minCheckOut,
-                                maxDate: actualMaxCheckOut
+                                maxDate: actualMaxCheckOut,
+                                autohide: true,
+                                todayHighlight: true,
+                                weekStart: 0
                             });
-
-                            // Auto-set check-out to min date if current value is invalid
-                            const currentCheckOut = checkOutPicker.getDate();
-                            if (!currentCheckOut || currentCheckOut <= selectedCheckIn || currentCheckOut > actualMaxCheckOut) {
-                                checkOutPicker.setDate(minCheckOut);
-                            }
+                            checkOutPicker.setDate(minCheckOut);
                         }
 
-                        // Trigger change event for form validation
-                        checkInElem.dispatchEvent(new Event('change', { bubbles: true }));
+                        // Update price summary and availability directly
+                        // (don't dispatch 'change' event — that would conflict with Datepicker)
+                        updatePriceSummary();
+                        checkRoomAvailability();
                     }
                 });
             }
@@ -1944,7 +2098,7 @@
                 checkInMonthlyPicker = new Datepicker(checkInMonthlyElem, {
                     format: 'yyyy-mm-dd',
                     minDate: today,
-                    maxDate: maxCheckInDate,
+                    maxDate: maxCheckInMonthly,
                     autohide: true,
                     todayHighlight: true,
                     weekStart: 0

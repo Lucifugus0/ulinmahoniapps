@@ -31,13 +31,31 @@ import '../../../../../core/network/api_result.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/utils/app_logger.dart';
 import '../widgets/renew_booking_dialog.dart';
+import '../widgets/cancel_booking_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/utils/payment_cache_utils.dart';
 import 'dart:ui' as ui;
+
+/// Notifier for attachment upload status — tracks async upload state.
+/// Migrated from inline StateProvider to top-level Notifier for Riverpod 3.x.
+class _UploadStatusNotifier extends Notifier<AsyncValue<bool>> {
+  @override
+  AsyncValue<bool> build() => const AsyncData(false);
+
+  /// Update the upload status state.
+  void setState(AsyncValue<bool> newState) {
+    state = newState;
+  }
+}
+
+/// Provider for attachment upload status.
+final _uploadStatusProvider =
+    NotifierProvider<_UploadStatusNotifier, AsyncValue<bool>>(_UploadStatusNotifier.new);
 
 class MyBookingDetail extends ConsumerStatefulWidget {
   final Map<String, dynamic> bookingData;
@@ -51,8 +69,6 @@ class MyBookingDetail extends ConsumerStatefulWidget {
 class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
   File? selectedImage;
   Uint8List? _decodedAttachmentImageBytes;
-
-  final StateProvider<AsyncValue<bool>> _uploadStatusProvider = StateProvider<AsyncValue<bool>>((ref) => const AsyncData(false));
 
   // Payment cache state
   Map<String, String>? _cachedQRData;
@@ -96,7 +112,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
       return;
     }
 
-    ref.read(_uploadStatusProvider.notifier).state = const AsyncLoading();
+    ref.read(_uploadStatusProvider.notifier).setState(const AsyncLoading());
 
     try {
       List<int> imageBytes = await selectedImage!.readAsBytes();
@@ -107,12 +123,13 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
 
       switch (result) {
         case Success(:final data):
-          ref.read(_uploadStatusProvider.notifier).state = const AsyncData(true);
+          ref.read(_uploadStatusProvider.notifier).setState(const AsyncData(true));
           showNotificationDialog(
             context,
             localizations.myBookingDetailUploadSuccess,
             defaultIcon: Icons.check_circle_outline,
-            iconColor: AppColors.primaryColor,
+            // Use primaryAdaptive for dark/light mode compatibility
+            iconColor: AppColors.primaryAdaptive(context),
           );
 
           ref.invalidate(myBookingByIdProvider(bookingIdrec));
@@ -123,7 +140,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
           });
 
         case Failure(:final message):
-          ref.read(_uploadStatusProvider.notifier).state = AsyncError(message, StackTrace.current);
+          ref.read(_uploadStatusProvider.notifier).setState(AsyncError(message, StackTrace.current));
           showNotificationDialog(
             context,
             '${localizations.myBookingDetailUploadFailed}: $message',
@@ -132,7 +149,7 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
           );
       }
     } catch (e, stackTrace) {
-      ref.read(_uploadStatusProvider.notifier).state = AsyncError(e, stackTrace);
+      ref.read(_uploadStatusProvider.notifier).setState(AsyncError(e, stackTrace));
       showNotificationDialog(
         context,
         '${localizations.myBookingDetailUploadFailed}: $e',
@@ -149,7 +166,8 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
         context,
         localizations.vaResultDialogCopySuccess,
         defaultIcon: Icons.check_circle_outline,
-        iconColor: AppColors.primaryColor,
+        // Use primaryAdaptive for dark/light mode compatibility
+        iconColor: AppColors.primaryAdaptive(context),
       );
     }
   }
@@ -197,6 +215,17 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
         });
         _startCountdownTimer(ccData['expiredAt']!);
       }
+    }
+
+    // For all other pending payment types (VA, Transfer Manual, etc.)
+    // Calculate expiry from transaction_date + 30 minutes so the timer is
+    // consistent across devices, instead of resetting to 30 min from now.
+    if (mounted && _remainingTime == Duration.zero) {
+      final transactionDate = bookingData['transaction_date'] as String?;
+      final expiredAt = transactionDate != null
+          ? DateTime.parse(transactionDate).add(const Duration(minutes: 30)).toIso8601String()
+          : DateTime.now().add(const Duration(minutes: 30)).toIso8601String();
+      _startCountdownTimer(expiredAt);
     }
   }
 
@@ -262,18 +291,20 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
         throw Exception('Failed to convert QR code to PNG');
       }
 
-      // Save to gallery
-      await Gal.putImageBytes(
-        pngBytes,
-        name: 'ulinmahoni_qr_${DateTime.now().millisecondsSinceEpoch}',
-      );
+      // Save to gallery using gal package (replaces deprecated image_gallery_saver)
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/ulinmahoni_qr_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File(filePath);
+      await file.writeAsBytes(pngBytes);
+      await Gal.putImage(filePath);
 
       if (mounted) {
         showNotificationDialog(
           context,
-          localizations.downloadQRSuccess,
+          localizations.downloadQRSuccess ?? 'QR code saved to gallery',
           defaultIcon: Icons.check_circle_outline,
-          iconColor: AppColors.primaryColor,
+          // Use primaryAdaptive for dark/light mode compatibility
+          iconColor: AppColors.primaryAdaptive(context),
         );
       }
     } catch (e) {
@@ -342,7 +373,8 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!; 
+    final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final int bookingIdrec = widget.bookingData['idrec'] as int;
     final AsyncValue<MyBookingModel?> bookingDataAsync = ref.watch(myBookingByIdProvider(bookingIdrec));
 
@@ -515,11 +547,11 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDark ? AppColors.surfaceDark : Colors.white,
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.12),
+                                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                                   blurRadius: 16,
                                   offset: const Offset(0, 4),
                                 ),
@@ -568,46 +600,79 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                       ],
                                     ),
                                   ),
-                                sectionTitle(localizations.myBookingDetailTitle),
-                                info(localizations.myBookingDetailOrderId, bookingData.orderId ?? "-"),
-                                info(localizations.myBookingDetailPhoneNumber, bookingData.userPhoneNumber ?? "-"),
+                                // 15-minute countdown — shown for all pending bookings, above Detail Pemesanan
+                                if (bookingData.transactionStatus?.toLowerCase().trim() == 'pending' && _remainingTime.inSeconds > 0)
+                                  Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 20),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.orange.shade200),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.timer, size: 18, color: Colors.orange.shade700),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '${localizations.expiresIn ?? 'Expires in'}: ${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.orange.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                sectionTitle(context, localizations.myBookingDetailTitle),
+                                info(context, localizations.myBookingDetailOrderId, bookingData.orderId ?? "-"),
+                                info(context, localizations.myBookingDetailPhoneNumber, bookingData.userPhoneNumber ?? "-"),
                                 info(
+                                  context,
                                   localizations.myBookingDetailBookingType,
                                   bookingData.bookingType == 'daily'
                                     ? localizations.dailyRentType
                                     : localizations.monthlyRentType,
                                 ),
                                 info(
+                                  context,
                                   localizations.myBookingDetailDuration,
                                   bookingData.bookingType == 'daily'
                                       ? '${bookingData.bookingDays?.toString() ?? "0"} ${localizations.dailyDurationUnit}'
                                       : '${bookingData.bookingMonths?.toString() ?? "0"} ${localizations.monthlyDurationUnit}',
                                 ),
                                 const Divider(height: 30),
-                                sectionTitle(localizations.myBookingDetailTimeTitle),
-                                info(localizations.myBookingDetailCheckIn, formatDate(bookingData.checkIn) ?? "-"),
-                                info(localizations.myBookingDetailCheckOut, formatDate(bookingData.checkOut) ?? "-"),
+                                sectionTitle(context, localizations.myBookingDetailTimeTitle),
+                                info(context, localizations.myBookingDetailCheckIn, formatDate(bookingData.checkIn) ?? "-"),
+                                info(context, localizations.myBookingDetailCheckOut, formatDate(bookingData.checkOut) ?? "-"),
                                 const Divider(height: 30),
-                                sectionTitle(localizations.myBookingDetailBookingPriceTitle),
+                                sectionTitle(context, localizations.myBookingDetailBookingPriceTitle),
                                 info(
+                                  context,
                                   bookingData.bookingType == 'daily' ? localizations.myBookingDetailPricePerDay : localizations.myBookingDetailPricePerMonth,
                                   bookingData.bookingType == 'daily'
                                       ? formatCurrency(bookingData.dailyPrice) ?? "0"
                                       : formatCurrency(bookingData.monthlyPrice) ?? "0",
                                 ),
-                                info(localizations.myBookingDetailSubtotal, formatCurrency(bookingData.roomPrice) ?? "-"),
+                                info(context, localizations.myBookingDetailSubtotal, formatCurrency(bookingData.roomPrice) ?? "-"),
 
                                 // Voucher Section (if voucher is applied)
                                 if (bookingData.voucherCode != null && bookingData.voucherCode!.isNotEmpty) ...[
                                   const Divider(height: 20, thickness: 0.5, color: Colors.grey),
                                   info(
-                                    'Subtotal Sebelum Diskon',
+                                    context,
+                                    localizations.myBookingDetailSubtotalBeforeDiscount,
                                     formatCurrency(bookingData.subtotalBeforeDiscount),
                                   ),
                                   info(
-                                    'Voucher (${bookingData.voucherCode})',
+                                    context,
+                                    '${localizations.myBookingDetailVoucher} (${bookingData.voucherCode})',
                                     '- ${formatCurrency(bookingData.discountAmount)}',
-                                    color: AppColors.primaryColor,
+                                    // Use primaryAdaptive for dark/light mode compatibility
+                                    color: AppColors.primaryAdaptive(context),
                                     isBold: true,
                                   ),
                                   const Divider(height: 20, thickness: 0.5, color: Colors.grey),
@@ -618,13 +683,15 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                 // Deposit Fee (if not 0)
                                 if (bookingData.depositFee != null && bookingData.depositFee! > 0)
                                   info(
-                                    'Deposit',
+                                    context,
+                                    localizations.myBookingDetailDeposit,
                                     formatCurrency(bookingData.depositFee) ?? "0",
                                   ),
 
                                 // Parking Fee (if not 0)
                                 if (bookingData.parkingFee != null && bookingData.parkingFee! > 0)
                                   info(
+                                    context,
                                     () {
                                       final parkingType = bookingData.parkingType?.toLowerCase();
                                       final parkingLabel = parkingType == 'car'
@@ -641,30 +708,33 @@ class _MyBookingDetailState extends ConsumerState<MyBookingDetail> {
                                   ),
 
                                 info(
+                                  context,
                                   localizations.myBookingDetailServiceFee,
                                   formatCurrency(bookingData.serviceFees) ?? "30.000",
                                 ),
 
                                 const Divider(height: 30),
-                                sectionTitle(localizations.myBookingDetailTotalPriceTitle),
+                                sectionTitle(context, localizations.myBookingDetailTotalPriceTitle),
                                 info(
+                                  context,
                                   localizations.myBookingDetailGrandtotal,
                                   formatCurrency(bookingData.grandtotalPrice) ?? "0",
                                   isBold: true,
-                                  color: AppColors.primaryColor,
+                                  // Use primaryAdaptive for dark/light mode compatibility
+                                  color: AppColors.primaryAdaptive(context),
                                 ),
 // Payment Method Section - Show for all transaction types
 const Divider(height: 30),
-sectionTitle(localizations.paymentMethodTitle),
+sectionTitle(context, localizations.paymentMethodTitle),
 const SizedBox(height: 8),
 
 // Sub Header: Transaction Type (always show)
 Text(
   bookingData.transactionType,
-  style: const TextStyle(
+  style: TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
-    color: Colors.black87,
+    color: isDark ? Colors.white : Colors.black87,
   ),
 ),
 const SizedBox(height: 12),
@@ -686,17 +756,18 @@ if (bookingData.virtualaccountnumber != null && bookingData.virtualaccountnumber
         children: [
           Text(
             bookingData.virtualaccountnumber!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(width: 8),
           IconButton(
             onPressed: () => _copyToClipboard(bookingData.virtualaccountnumber!),
             icon: const Icon(Icons.copy, size: 20),
-            color: AppColors.primaryColor,
+            // Use primaryAdaptive for dark/light mode compatibility
+            color: AppColors.primaryAdaptive(context),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -721,10 +792,10 @@ if (bookingData.virtualaccountnumber != null && bookingData.virtualaccountnumber
         ),
         Text(
           bookingData.virtualaccountbank!,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
       ],
@@ -735,31 +806,6 @@ if (bookingData.virtualaccountnumber != null && bookingData.virtualaccountnumber
 // QR Code Display (QRIS only, status pending)
 if (_cachedQRData != null && _remainingTime.inSeconds > 0) ...[
   const SizedBox(height: 20),
-  // Timer
-  Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    decoration: BoxDecoration(
-      color: Colors.orange.shade50,
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.orange.shade200),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.timer, size: 18, color: Colors.orange.shade700),
-        const SizedBox(width: 8),
-        Text(
-          '${localizations.expiresIn ?? 'Expires in'}: ${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.orange.shade700,
-          ),
-        ),
-      ],
-    ),
-  ),
-  const SizedBox(height: 16),
   // QR Code
   Center(
     child: RepaintBoundary(
@@ -794,7 +840,8 @@ if (_cachedQRData != null && _remainingTime.inSeconds > 0) ...[
       icon: const Icon(Icons.download, size: 20),
       label: Text(localizations.downloadQR ?? 'Download QR Code'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryColor,
+        // Use primaryAdaptive for dark/light mode compatibility
+        backgroundColor: AppColors.primaryAdaptive(context),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
@@ -818,31 +865,6 @@ if (_cachedQRData != null && _remainingTime.inSeconds > 0) ...[
 // Credit Card Payment Link (CC only, status pending)
 if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
   const SizedBox(height: 20),
-  // Timer
-  Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    decoration: BoxDecoration(
-      color: Colors.orange.shade50,
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.orange.shade200),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.timer, size: 18, color: Colors.orange.shade700),
-        const SizedBox(width: 8),
-        Text(
-          '${localizations.expiresIn ?? 'Expires in'}: ${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.orange.shade700,
-          ),
-        ),
-      ],
-    ),
-  ),
-  const SizedBox(height: 16),
   // Continue Payment button
   Center(
     child: ElevatedButton.icon(
@@ -865,7 +887,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
       icon: const Icon(Icons.credit_card, size: 20),
       label: Text(localizations.continuePayment ?? 'Continue Payment'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryColor,
+        // Use primaryAdaptive for dark/light mode compatibility
+        backgroundColor: AppColors.primaryAdaptive(context),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
@@ -912,7 +935,7 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Divider(height: 30),
-                                        sectionTitle(localizations.myBookingDetailPaymentProofTitle),
+                                        sectionTitle(context, localizations.myBookingDetailPaymentProofTitle),
                                         ImageViewerWidget(
                                           decodedAttachmentImageBytes: _decodedAttachmentImageBytes,
                                           shouldShowUpdateButton: shouldShowUploadButton,
@@ -978,7 +1001,7 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           const Divider(height: 30),
-                                          sectionTitle(localizations.checkInSectionTitle),
+                                          sectionTitle(context, localizations.checkInSectionTitle),
                                           Center(
                                             child: Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -1022,7 +1045,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                           context,
                                                           'Check-in berhasil! Selamat menikmati penginapan Anda.',
                                                           defaultIcon: Icons.check_circle_outline,
-                                                          iconColor: AppColors.primaryColor,
+                                                          // Use primaryAdaptive for dark/light mode compatibility
+                                                          iconColor: AppColors.primaryAdaptive(context),
                                                         );
                                                       }
                                                     } catch (e) {
@@ -1040,7 +1064,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 },
                                                 icon: Icons.login,
                                                 text: localizations.checkInSectionTitle,
-                                                buttonColor: AppColors.primaryColor,
+                                                // Use primaryAdaptive for dark/light mode compatibility
+                                                buttonColor: AppColors.primaryAdaptive(context),
                                                 textColor: Colors.white,
                                                 iconColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1064,23 +1089,23 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                     final isPaid = _isTransactionPaid(bookingData.transactionStatus);
                                     final hasCheckedIn = bookingData.checked_in_at != null && bookingData.checked_in_at!.isNotEmpty;
 
-                                    // Check if today is between check-in and checkout
+                                    // Check if today is still before checkout.
+                                    // Lower bound (check-in date) is intentionally NOT checked here
+                                    // because admin may check guests in earlier than the scheduled date.
+                                    // Since hasCheckedIn already confirms the guest is in the room,
+                                    // we only need to ensure they haven't passed their checkout date.
                                     bool isWithinRenewPeriod = false;
-                                    if (bookingData.checkIn != null && bookingData.checkIn!.isNotEmpty &&
-                                        bookingData.checkOut != null && bookingData.checkOut!.isNotEmpty) {
+                                    if (bookingData.checkOut != null && bookingData.checkOut!.isNotEmpty) {
                                       try {
-                                        final checkInDate = DateTime.parse(bookingData.checkIn!);
                                         final checkoutDate = DateTime.parse(bookingData.checkOut!);
                                         final today = DateTime.now();
                                         final todayDate = DateTime(today.year, today.month, today.day);
-                                        final checkInDateOnly = DateTime(checkInDate.year, checkInDate.month, checkInDate.day);
                                         final checkoutDateOnly = DateTime(checkoutDate.year, checkoutDate.month, checkoutDate.day);
 
-                                        // Show button if today is between check-in and checkout (inclusive)
-                                        isWithinRenewPeriod = (todayDate.isAfter(checkInDateOnly) || todayDate.isAtSameMomentAs(checkInDateOnly)) &&
-                                                             (todayDate.isBefore(checkoutDateOnly) || todayDate.isAtSameMomentAs(checkoutDateOnly));
+                                        // Allow renewal as long as today has not passed the checkout date
+                                        isWithinRenewPeriod = todayDate.isBefore(checkoutDateOnly) || todayDate.isAtSameMomentAs(checkoutDateOnly);
                                       } catch (e) {
-                                        AppLogger.e('Error parsing dates: $e', 'MYBOOKING-DETAIL');
+                                        AppLogger.e('Error parsing checkout date: $e', 'MYBOOKING-DETAIL');
                                       }
                                     }
 
@@ -1104,13 +1129,37 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           const Divider(height: 30),
-                                          sectionTitle(localizations.renewBookingButton),
+                                          sectionTitle(context, localizations.renewBookingButton),
                                           Center(
                                             child: Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                                               child: CustomIconButton(
                                                 onPressed: () async {
                                                   AppLogger.d('Renew Booking button pressed', 'MYBOOKING-DETAIL');
+
+                                                  // Same-day renewal cutoff: 12:00 WIB for daily
+                                                  // (new guest arrives after noon checkout), 21:00 WIB
+                                                  // for monthly. Mirrors web modal pre-open guard +
+                                                  // server enforcement in Api/BookingController::renewBooking.
+                                                  if (bookingData.checkOut != null) {
+                                                    try {
+                                                      final coParsed = DateTime.parse(bookingData.checkOut!);
+                                                      final now = DateTime.now();
+                                                      final today0 = DateTime(now.year, now.month, now.day);
+                                                      final co0 = DateTime(coParsed.year, coParsed.month, coParsed.day);
+                                                      if (today0.isAtSameMomentAs(co0)) {
+                                                        final cutoffHour = bookingData.bookingType == 'monthly' ? 21 : 12;
+                                                        if (now.hour >= cutoffHour) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(content: Text(localizations.renewBookingCutoffPassed)),
+                                                          );
+                                                          return;
+                                                        }
+                                                      }
+                                                    } catch (e) {
+                                                      AppLogger.e('Error parsing checkout for cutoff check: $e', 'MYBOOKING-DETAIL');
+                                                    }
+                                                  }
 
                                                   // Show simple dialog to select dates
                                                   final result = await showDialog<Map<String, String>>(
@@ -1150,7 +1199,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 },
                                                 icon: Icons.refresh,
                                                 text: localizations.renewBookingButton,
-                                                buttonColor: AppColors.primaryColor,
+                                                // Use primaryAdaptive for dark/light mode compatibility
+                                                buttonColor: AppColors.primaryAdaptive(context),
                                                 textColor: Colors.white,
                                                 iconColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1236,7 +1286,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 },
                                                 icon: Icons.camera_alt,
                                                 text: localizations.myBookingDetailUploadPaymentProof,
-                                                buttonColor: AppColors.primaryColor,
+                                                // Use primaryAdaptive for dark/light mode compatibility
+                                                buttonColor: AppColors.primaryAdaptive(context),
                                                 textColor: Colors.white,
                                                 iconColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
@@ -1255,7 +1306,8 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                   onPressed: () => _uploadImage(bookingIdrec, bookingData),
                                                   icon: Icons.cloud_upload,
                                                   text: localizations.myBookingDetailUploadThisImage,
-                                                  buttonColor: AppColors.primaryColor,
+                                                  // Use primaryAdaptive for dark/light mode compatibility
+                                                  buttonColor: AppColors.primaryAdaptive(context),
                                                   textColor: Colors.white,
                                                   iconColor: Colors.white,
                                                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
@@ -1266,6 +1318,60 @@ if (_cachedCCData != null && _remainingTime.inSeconds > 0) ...[
                                                 ),
                                               ),
                                             ),
+                                        ],
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
+                                // Cancel Booking section
+                                Builder(
+                                  builder: (context) {
+                                    final status = bookingData.transactionStatus?.toLowerCase().trim() ?? '';
+                                    final isPaid = _isTransactionPaid(bookingData.transactionStatus);
+                                    final hasCheckedIn = bookingData.checked_in_at != null && bookingData.checked_in_at!.isNotEmpty;
+                                    final isPendingOrWaiting = status == 'pending' || status == 'waiting';
+
+                                    // Can cancel if: pending/waiting, OR paid+not-checked-in
+                                    final canCancel = isPendingOrWaiting || (isPaid && !hasCheckedIn);
+
+                                    if (canCancel) {
+                                      return Column(
+                                        children: [
+                                          const Divider(height: 32, thickness: 1),
+                                          sectionTitle(context, 'Batalkan Booking'),
+                                          const SizedBox(height: 12),
+                                          Center(
+                                            child: SizedBox(
+                                              width: 250,
+                                              child: ElevatedButton.icon(
+                                                onPressed: () async {
+                                                  final result = await showDialog<bool>(
+                                                    context: context,
+                                                    barrierDismissible: false,
+                                                    builder: (_) => CancelBookingDialog(
+                                                      orderId: bookingData.orderId,
+                                                      transactionStatus: status,
+                                                      idrec: bookingData.idrec,
+                                                    ),
+                                                  );
+                                                  // If cancelled successfully, go back to booking list
+                                                  if (result == true && mounted) {
+                                                    Navigator.of(context).pop();
+                                                  }
+                                                },
+                                                icon: const Icon(Icons.cancel_outlined, size: 20),
+                                                label: const Text('Batalkan Booking', style: TextStyle(fontSize: 16)),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.red,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
                                         ],
                                       );
                                     }

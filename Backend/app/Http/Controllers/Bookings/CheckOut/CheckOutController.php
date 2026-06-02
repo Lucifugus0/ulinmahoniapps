@@ -19,27 +19,56 @@ class CheckOutController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 8);
+        $perPage = $request->input('per_page', 25);
 
-        // Show checked-out bookings (status=0 after checkout, check_out_at NOT NULL)
-        $query = Booking::with(['transaction', 'property', 'room', 'user'])
-            ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
-            })
+        /* Show bookings due for check-out today or overdue:
+           - Checked in (check_in_at NOT NULL), not yet checked out (check_out_at IS NULL)
+           - Transaction check_out date is today or earlier */
+        $today = Carbon::today()->endOfDay();
+
+        /* checkedInByUser / checkedOutByUser eager-loaded so the merged Booking Period column
+           can render "Check-in at ... by <admin>" without N+1. checked_out_by is always NULL on
+           this page (rows shown are not yet checked out) but the relation is still loaded for
+           consistency with the shared row template. */
+        $query = Booking::with(['transaction', 'property', 'room', 'user', 'checkedInByUser', 'checkedOutByUser'])
+            ->latestPerOrder()
+            ->where('t_booking.status', 1)
             ->whereNotNull('check_in_at')
-            ->whereNotNull('check_out_at');
+            ->whereNull('check_out_at');
+
+        /* If show_all_checkin is checked, show ALL checked-in bookings.
+           Otherwise only show bookings due today or overdue.
+           In both cases exclude transactions that have been renewed
+           (renewal_status = 1) — a renewed transaction has been
+           superseded by a later one with a new order_id, so the
+           guest has effectively extended their stay and is no
+           longer in the "due for check-out" cohort for this row. */
+        if (!$request->filled('show_all_checkin')) {
+            $query->whereHas('transaction', function ($q) use ($today) {
+                $q->where('transaction_status', 'paid')
+                  ->where('renewal_status', 0)
+                  ->where('check_out', '<=', $today);
+            });
+        } else {
+            $query->whereHas('transaction', function ($q) {
+                $q->where('transaction_status', 'paid')
+                  ->where('renewal_status', 0);
+            });
+        }
 
         // Filter by property_id for site users
         $user = Auth::user();
         if ($user && $user->isSiteRole() && $user->property_id) {
-            $query->where('property_id', $user->property_id);
+            /* Use fully-qualified column to avoid ambiguity with joined tables */
+            $query->where('t_booking.property_id', $user->property_id);
         }
 
         // Search by order_id or user name
         if ($request->filled('search')) {
             $search = $request->search;
+            /* Use t_booking.order_id to avoid ambiguity with t_transactions.order_id from leftJoin */
             $query->where(function ($q) use ($search) {
-                $q->where('order_id', 'like', "%{$search}%")
+                $q->where('t_booking.order_id', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
                         $q->where('username', 'like', "%{$search}%")
                             ->orWhere('first_name', 'like', "%{$search}%")
@@ -48,47 +77,67 @@ class CheckOutController extends Controller
             });
         }
 
-        // Date range filter - using check_in_at from booking table (only if user provides dates)
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $startDate = $request->start_date;
-            $endDate = $request->end_date;
-
-            $query->whereBetween('check_in_at', [
-                $startDate,
-                Carbon::parse($endDate)->endOfDay()
-            ]);
-        }
-
         $bookings = $query
-            // ->orderByRaw('CASE WHEN check_out_at IS NULL THEN 0 ELSE 1 END') // NULL values first
-            ->orderBy('check_out_at', 'desc') // Then sort by check_out_at
+            ->select('t_booking.*')
+            ->leftJoin('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+            ->orderBy('t_transactions.check_out', 'asc')
             ->paginate($perPage);
 
         return view('pages.bookings.checkout.index', compact('bookings'));
     }
 
+    /**
+     * Filter checkout bookings via AJAX — returns JSON with rendered HTML partial.
+     * Redirects non-AJAX requests to index to prevent raw JSON on pagination click.
+     */
     public function filter(Request $request)
     {
-        // Show checked-out bookings (status=0 after checkout, check_out_at NOT NULL)
-        $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
-            })
+        /* Redirect non-AJAX requests to index to prevent raw JSON display */
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return redirect()->route('checkout.index', $request->query());
+        }
+
+        /* Show bookings due for check-out today or overdue:
+           - Checked in, not yet checked out
+           - Transaction check_out date is today or earlier */
+        $today = Carbon::today()->endOfDay();
+
+        $query = Booking::with(['user', 'room', 'property', 'transaction', 'checkedInByUser', 'checkedOutByUser'])
+            ->latestPerOrder()
+            ->where('t_booking.status', 1)
             ->whereNotNull('check_in_at')
-            ->whereNotNull('check_out_at')
-            ->orderBy('check_out_at', 'desc');
+            ->whereNull('check_out_at');
+
+        /* Mirror of the index() filter — exclude renewed transactions
+           (renewal_status = 1) so a renewed parent booking does not
+           appear as overdue when the guest already has a newer
+           paid order_id covering the current period. */
+        if (!$request->filled('show_all_checkin')) {
+            $query->whereHas('transaction', function ($q) use ($today) {
+                $q->where('transaction_status', 'paid')
+                  ->where('renewal_status', 0)
+                  ->where('check_out', '<=', $today);
+            });
+        } else {
+            $query->whereHas('transaction', function ($q) {
+                $q->where('transaction_status', 'paid')
+                  ->where('renewal_status', 0);
+            });
+        }
 
         // Filter by property_id for site users
         $user = Auth::user();
         if ($user && $user->isSiteRole() && $user->property_id) {
-            $query->where('property_id', $user->property_id);
+            /* Use fully-qualified column to avoid ambiguity with joined tables */
+            $query->where('t_booking.property_id', $user->property_id);
         }
 
         // Search by order_id or user name
         if ($request->filled('search')) {
             $search = $request->search;
+            /* Use t_booking.order_id to avoid ambiguity with t_transactions.order_id from leftJoin */
             $query->where(function ($q) use ($search) {
-                $q->where('order_id', 'like', "%{$search}%")
+                $q->where('t_booking.order_id', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
                         $q->where('username', 'like', "%{$search}%")
                             ->orWhere('first_name', 'like', "%{$search}%")
@@ -97,25 +146,29 @@ class CheckOutController extends Controller
             });
         }
 
-        // Date range filter - using check_in_at from booking table (only if user provides dates)
+        // Date range filter
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $startDate = $request->start_date;
             $endDate = $request->end_date;
 
-            $query->where(function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('check_in_at', [
+            $query->whereHas('transaction', function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('check_out', [
                     $startDate,
                     Carbon::parse($endDate)->endOfDay()
                 ]);
             });
         }
 
-        $bookings = $query->paginate($request->input('per_page', 8));
+        $bookings = $query
+            ->select('t_booking.*')
+            ->leftJoin('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+            ->orderBy('t_transactions.check_out', 'asc')
+            ->paginate($request->input('per_page', 25));
 
         return response()->json([
             'table' => view('pages.bookings.checkout.partials.checkout_table', [
                 'bookings' => $bookings,
-                'per_page' => $request->input('per_page', 8),
+                'per_page' => $request->input('per_page', 25),
             ])->render(),
             'pagination' => $bookings->appends($request->input())->links()->toHtml()
         ]);
@@ -155,14 +208,36 @@ class CheckOutController extends Controller
                 ], 400);
             }
 
+            /* Save check-out timestamp and the admin who performed the check-out */
             $booking->check_out_at = now();
+            $booking->checked_out_by = Auth::id();
             $booking->status = 0; // Mark booking as inactive after checkout
             $booking->save();
 
-            // Checkout selalu membebaskan kamar (rental_status = 0)
+            /* Flip rental_status to 0 (room empty) only if no OTHER active
+               booking on this room is currently checked in. Guards against
+               edge cases like same-day room swaps where another booking row
+               has check_in_at set but hasn't been checked out yet.
+               Transaction must be paid + renewal_status=0 — otherwise expired/
+               pending renewal-attempt rows that inherited check_in_at from
+               their parent (and never got check_out_at set) would falsely
+               keep the flag at 1 (e.g. KOST 2 #202 case 2026-04-30). */
             if ($booking->room_id) {
-                Room::where('idrec', $booking->room_id)
-                    ->update(['rental_status' => 0]);
+                $hasOtherOccupant = Booking::where('room_id', $booking->room_id)
+                    ->where('idrec', '!=', $booking->idrec)
+                    ->where('status', 1)
+                    ->whereNotNull('check_in_at')
+                    ->whereNull('check_out_at')
+                    ->whereHas('transaction', function ($q) {
+                        $q->where('transaction_status', 'paid')
+                          ->where('renewal_status', 0);
+                    })
+                    ->exists();
+
+                if (!$hasOtherOccupant) {
+                    Room::where('idrec', $booking->room_id)
+                        ->update(['rental_status' => 0]);
+                }
             }
 
             // Simpan kondisi barang
@@ -210,6 +285,7 @@ class CheckOutController extends Controller
 
         $transaction = Transaction::where('order_id', $orderId)->firstOrFail();
 
+        /* Return booking details including price breakdown for checkout modal */
         return response()->json([
             'order_id' => $booking->order_id,
             'user_name' => $transaction->user_name,
@@ -217,10 +293,12 @@ class CheckOutController extends Controller
             'room_name' => $transaction->room_name,
             'check_in' => $transaction->check_in,
             'check_out' => $transaction->check_out,
+            'room_price' => $transaction->room_price,
+            'deposit_fee' => $transaction->deposit_fee,
+            'service_fees' => $transaction->service_fees,
             'grandtotal_price' => $transaction->grandtotal_price,
-            // Add any other fields you need from either model
-            'actual_check_in' => $booking->check_in_at, // From booking model
-            'actual_check_out' => $booking->check_out_at // Will be null until checked out
+            'actual_check_in' => $booking->check_in_at,
+            'actual_check_out' => $booking->check_out_at,
         ]);
     }
 

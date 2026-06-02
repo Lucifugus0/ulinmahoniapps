@@ -18,6 +18,7 @@ class Transaction extends Model
         'property_id',
         'room_id',
         'order_id',
+        'invoice_number',
         'user_id',
         'user_name',
         'user_phone_number',
@@ -25,6 +26,7 @@ class Transaction extends Model
         'transaction_date',
         'check_in',
         'check_out',
+        'original_checkin_day',
         'room_name',
         'user_email',
         'booking_days',
@@ -43,6 +45,8 @@ class Transaction extends Model
         'parking_type',
         'voucher_id',
         'voucher_code',
+        'discount_amount',           /* Voucher/promo discount deducted from room_price */
+        'subtotal_before_discount',  /* room_price before discount was applied */
         'virtual_account_no',
         'payment_bank',
         'property_type',
@@ -76,7 +80,13 @@ class Transaction extends Model
 
     public function booking()
     {
-        return $this->hasOne(Booking::class, 'order_id', 'order_id');
+        return $this->hasOne(Booking::class, 'order_id', 'order_id')
+            ->orderByDesc('idrec');
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'order_id', 'order_id');
     }
 
     public function getAttachmentBase64Attribute()

@@ -19,6 +19,47 @@ class HealthCheckController extends Controller
 
     public function check()
     {
+        // <!-- Check if maintenance mode is enabled in global_title table -->
+        $maintenanceMode = false;
+        try {
+            $maintenance = DB::table('global_title')
+                ->whereRaw('`key` = ?', ['maintenance_mode'])
+                ->first();
+            $maintenanceMode = $maintenance && $maintenance->mark === '1';
+        } catch (\Exception $e) {
+            // <!-- DB check failed, assume not in maintenance -->
+        }
+
+        // <!-- If in maintenance mode, return 503 with maintenance flag for mobile app popup -->
+        // <!-- Get minimum app version from database -->
+        $minAppVersion = null;
+        try {
+            $versionRow = DB::table('global_title')
+                ->whereRaw('`key` = ?', ['min_app_version'])
+                ->first();
+            $minAppVersion = $versionRow ? $versionRow->mark : null;
+        } catch (\Exception $e) {}
+
+        if ($maintenanceMode) {
+            return response()->json([
+                'status' => 'maintenance',
+                'maintenance' => true,
+                'min_app_version' => $minAppVersion,
+                'message' => 'The application is currently under maintenance. Please try again later.',
+                'uptime' => $this->getUptime(),
+                'timestamp' => now()->toIso8601String(),
+            ], 503);
+        }
+
+        // <!-- Get minimum app version from database for force update check -->
+        $minAppVersion = null;
+        try {
+            $versionRow = DB::table('global_title')
+                ->whereRaw('`key` = ?', ['min_app_version'])
+                ->first();
+            $minAppVersion = $versionRow ? $versionRow->mark : null;
+        } catch (\Exception $e) {}
+
         $status = 'ok';
         $services = [
             'database' => $this->checkDatabase(),
@@ -26,7 +67,6 @@ class HealthCheckController extends Controller
             'cache' => $this->checkCache(),
         ];
 
-        // If any service is not ok, set overall status to error
         if (in_array('error', $services)) {
             $status = 'error';
         } elseif (in_array('slow', $services)) {
@@ -35,6 +75,8 @@ class HealthCheckController extends Controller
 
         return response()->json([
             'status' => $status,
+            'maintenance' => false,
+            'min_app_version' => $minAppVersion,
             'uptime' => $this->getUptime(),
             'timestamp' => now()->toIso8601String(),
             'services' => $services,

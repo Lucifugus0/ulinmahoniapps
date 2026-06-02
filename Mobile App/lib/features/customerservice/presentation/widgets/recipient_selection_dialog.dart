@@ -19,9 +19,12 @@ class RecipientSelectionDialog extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
     final propertyName = booking.propertyName;
     final orderId = booking.orderId;
+    // Dark mode detection for dialog background and text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
-      backgroundColor: Colors.white,
+      // Use dark-aware dialog background color
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -42,10 +45,11 @@ class RecipientSelectionDialog extends StatelessWidget {
             // Title
             Text(
               localizations.csSelectRecipient,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                // Use dark-aware title text color
+                color: isDark ? Colors.white : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -56,7 +60,8 @@ class RecipientSelectionDialog extends StatelessWidget {
               orderId,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                // Use dark-aware subtitle text color
+                color: isDark ? Colors.grey[400] : Colors.grey.shade600,
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
@@ -76,7 +81,8 @@ class RecipientSelectionDialog extends StatelessWidget {
               icon: Icons.business_center,
               title: localizations.csHeadOffice,
               subtitle: localizations.csHeadOfficeDesc,
-              color: AppColors.primaryColor,
+              // Use primaryAdaptive for dark/light mode compatibility
+              color: AppColors.primaryAdaptive(context),
               onTap: () => onRecipientSelected('ho'),
             ),
             const SizedBox(height: 16),
@@ -88,7 +94,8 @@ class RecipientSelectionDialog extends StatelessWidget {
                 localizations.cancel,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  // Use dark-aware cancel button text color
+                  color: isDark ? Colors.grey[400] : Colors.grey.shade600,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -125,10 +132,10 @@ class _RecipientOption extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
+            color: color.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               width: 1.5,
             ),
           ),

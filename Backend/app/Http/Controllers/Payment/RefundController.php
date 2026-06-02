@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\Booking;
 use App\Models\Room;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 
 class RefundController extends Controller
@@ -47,7 +48,12 @@ class RefundController extends Controller
         }
 
         $perPage = $request->get('per_page', 8);
-        $refunds = $query->orderBy('refund_date', 'desc')->paginate($perPage);
+        // <!-- Newest refund first. `id` desc is a tie-breaker because refund_date is only
+        //      second-precision — refunds processed in the same second would otherwise have
+        //      an undefined row order. -->
+        $refunds = $query->orderBy('refund_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
 
         return view('pages.payment.refund.index', compact(
             'refunds',
@@ -56,20 +62,24 @@ class RefundController extends Controller
     }
 
     /**
-     * Store a newly created refund
+     * Confirm a pending refund by uploading proof image.
+     * Updates existing pending refund record (from cancel flow) instead of creating a duplicate.
      */
     public function store(Request $request)
     {
         $request->validate([
             'order_id' => 'required|exists:t_transactions,order_id',
-            'refund_image' => 'required|image|mimes:jpeg,png,jpg|max:5120' // Maks 5MB
+            'refund_image' => 'required|image|mimes:jpeg,png,jpg|max:5120', // Maks 5MB
+            'admin_notes' => 'nullable|string|max:1000',
         ]);
 
         return DB::transaction(function () use ($request) {
 
-            // Cek apakah refund sudah ada untuk order_id ini
+            // Find existing pending refund (created during cancel flow)
             $existingRefund = Refund::where('id_booking', $request->order_id)->first();
-            if ($existingRefund) {
+
+            // If refund already marked as 'refunded', reject duplicate
+            if ($existingRefund && $existingRefund->status === 'refunded') {
                 return response()->json([
                     'message' => 'Refund untuk order ini sudah dilakukan.'
                 ], 422);
@@ -85,8 +95,6 @@ class RefundController extends Controller
                     ], 422);
                 }
 
-                $fileContents = file_get_contents($image->getRealPath());
-                $imageBase64 = base64_encode($fileContents);
                 $imageCaption = $image->getClientOriginalName();
                 $imagePath = $image->store('refund_images', 'public');
             } else {
@@ -95,15 +103,34 @@ class RefundController extends Controller
                 ], 422);
             }
 
-            // Simpan data refund
-            $refund = Refund::create([
-                'id_booking' => $request->order_id,
-                'status' => 'refunded',
-                'img' => $imageBase64,
-                'image_caption' => $imageCaption,
-                'image_path' => $imagePath,
-                'refund_date' => now()->format('Y-m-d H:i:s'),
-            ]);
+            // Update existing pending refund or create new one
+            if ($existingRefund) {
+                $existingRefund->update([
+                    'status' => 'refunded',
+                    'img' => $imageCaption,
+                    'image_caption' => $imageCaption,
+                    'image_path' => $imagePath,
+                    'refund_date' => now()->format('Y-m-d H:i:s'),
+                    'admin_notes' => $request->input('admin_notes'),
+                    'processed_by' => Auth::id(),
+                    'processed_at' => now(),
+                ]);
+                $refund = $existingRefund;
+            } else {
+                // Fallback: create new refund if no pending record exists
+                $refund = Refund::create([
+                    'id_booking' => $request->order_id,
+                    'status' => 'refunded',
+                    'refund_type' => 'admin',
+                    'img' => $imageCaption,
+                    'image_caption' => $imageCaption,
+                    'image_path' => $imagePath,
+                    'refund_date' => now()->format('Y-m-d H:i:s'),
+                    'admin_notes' => $request->input('admin_notes'),
+                    'processed_by' => Auth::id(),
+                    'processed_at' => now(),
+                ]);
+            }
 
             // Update booking to inactive after refund
             $booking = Booking::where('order_id', $request->order_id)
@@ -115,22 +142,9 @@ class RefundController extends Controller
                     'reason' => 'refunded'
                 ]);
 
-                // Reset rental_status on room if no other active bookings
-                if ($booking->room_id) {
-                    $hasOtherActiveBooking = Booking::where('room_id', $booking->room_id)
-                        ->where('status', 1)
-                        ->where('idrec', '!=', $booking->idrec)
-                        ->whereHas('transaction', function ($q) {
-                            $q->where('transaction_status', 'paid')
-                              ->orWhere('transaction_status', 'waiting');
-                        })
-                        ->exists();
-
-                    if (!$hasOtherActiveBooking) {
-                        Room::where('idrec', $booking->room_id)
-                            ->update(['rental_status' => 0]);
-                    }
-                }
+                /* rental_status untouched — refund follows cancellation, and
+                   cancellation is disallowed after check-in. Only check-out
+                   flips the physical-occupancy flag. */
             }
 
             // Update status transaksi

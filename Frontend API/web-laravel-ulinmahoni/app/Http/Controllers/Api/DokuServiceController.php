@@ -290,17 +290,31 @@ class DokuServiceController extends ApiController
                 return response()->json($response, 200);
             }
 
+            // Capture pre-update state to detect late payment on expired transaction
+            $wasExpired = $transaction->transaction_status === 'expired';
+
             // Update transaction status to success
             $transaction->update([
                 'transaction_status' => 'paid',
                 'paid_at' => now(),
             ]);
 
+            // Assign persisted invoice number now that this booking is paid.
+            // Service is idempotent — safe to call even if a prior retry already assigned.
+            \App\Services\InvoiceNumberService::assign($transaction->fresh());
+
+            // Late payment recovery: DOKU callback arrived after ExpireBooking
+            // already rolled back booking/room state. Re-apply those updates.
+            if ($wasExpired) {
+                $this->recoverExpiredBookingState($transaction);
+            }
+
             \Log::info('DOKU Payment Notification: Transaction status updated to success', [
                 'order_id' => $trxId,
                 'transaction_id' => $transaction->idrec,
                 'amount' => $paidValue,
-                'paid_at' => now()
+                'paid_at' => now(),
+                'was_expired' => $wasExpired,
             ]);
 
             if (!$user) {
@@ -705,10 +719,16 @@ class DokuServiceController extends ApiController
 
             // Update transaction status to paid if payment is successful
             if ($transactionStatus === 'SUCCESS' && $transaction) {
+                // Capture pre-update state to detect late payment on expired transaction
+                $wasExpired = $transaction->transaction_status === 'expired';
+
                 $transaction->update([
                     'transaction_status' => 'paid',
                     'paid_at' => now(),
                 ]);
+
+                // Assign persisted invoice number now that this booking is paid.
+                \App\Services\InvoiceNumberService::assign($transaction->fresh());
 
                 // Update payment status
                 $payment = \App\Models\Payment::where('order_id', $invoiceNumber)->first();
@@ -719,11 +739,18 @@ class DokuServiceController extends ApiController
                     ]);
                 }
 
+                // Late payment recovery: DOKU callback arrived after ExpireBooking
+                // already rolled back booking/room state. Re-apply those updates.
+                if ($wasExpired) {
+                    $this->recoverExpiredBookingState($transaction);
+                }
+
                 \Log::info('DOKU QR Payment Notification: Transaction status updated to paid', [
                     'order_id' => $invoiceNumber,
                     'transaction_id' => $transaction->idrec,
                     'amount' => $amount,
-                    'paid_at' => now()
+                    'paid_at' => now(),
+                    'was_expired' => $wasExpired,
                 ]);
             }
 
@@ -1112,6 +1139,9 @@ class DokuServiceController extends ApiController
                     'paid_at' => now(),
                 ]);
 
+                // Assign persisted invoice number now that this booking is paid.
+                \App\Services\InvoiceNumberService::assign($transaction->fresh());
+
                 // Update payment status
                 $payment = \App\Models\Payment::where('order_id', $invoiceNumber)->first();
                 if ($payment) {
@@ -1390,6 +1420,97 @@ class DokuServiceController extends ApiController
      * @param string $trxId
      * @return string
      */
+    /**
+     * Recover booking state after a late payment on an already-expired transaction.
+     * When ExpireBooking runs before the DOKU callback arrives, it rolls back
+     * booking/room/renewal state. This method re-applies those updates so the
+     * paid transaction has a consistent booking record.
+     */
+    private function recoverExpiredBookingState($transaction)
+    {
+        $orderId = $transaction->order_id;
+        $roomId  = (int) $transaction->room_id;
+        $userId  = (int) $transaction->user_id;
+
+        // Reactivate the transaction record
+        \Illuminate\Support\Facades\DB::table('t_transactions')
+            ->where('order_id', $orderId)
+            ->update(['status' => '1']);
+
+        // Reactivate the booking record
+        $booking = \App\Models\Booking::where('order_id', $orderId)
+            ->orderByDesc('idrec')
+            ->first();
+        if ($booking) {
+            $booking->update(['status' => 1]);
+        }
+
+        /* rental_status untouched — physical occupancy is owned by check-in /
+           check-out. A late DOKU payment on an expired booking doesn't change
+           whether the guest is physically in the room. */
+
+        // For renewals: re-flag the parent transaction and deactivate old bookings
+        if ((int) $transaction->is_renewal === 1) {
+            $previousTransaction = \Illuminate\Support\Facades\DB::table('t_transactions')
+                ->where('room_id', $roomId)
+                ->where('user_id', $userId)
+                ->where('order_id', '!=', $orderId)
+                ->whereRaw('UPPER(transaction_status) IN (?, ?)', ['PAID', 'CONFIRMED'])
+                ->where('created_at', '<', $transaction->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($previousTransaction) {
+                // Mark parent as renewed
+                \Illuminate\Support\Facades\DB::table('t_transactions')
+                    ->where('idrec', $previousTransaction->idrec)
+                    ->update(['renewal_status' => 1]);
+
+                // Deactivate parent's booking (superseded by renewal)
+                \Illuminate\Support\Facades\DB::table('t_booking')
+                    ->where('order_id', $previousTransaction->order_id)
+                    ->where('status', 1)
+                    ->update(['status' => 0]);
+            }
+        }
+
+        // Restore voucher usage if ExpireBooking decremented it
+        if ($transaction->voucher_id) {
+            $voucher = \App\Models\Voucher::find($transaction->voucher_id);
+            if ($voucher) {
+                $voucher->increment('current_usage_count');
+            }
+        }
+
+        /**
+         * Restore the bundled-flow `t_parking` row that `ExpireBooking::handle`
+         * soft-deleted. Without this, a late DOKU payment would mark the booking
+         * paid but leave the customer without a parking slot — they'd need an
+         * admin to re-create the parking entry manually.
+         */
+        $parkingRestored = \Illuminate\Support\Facades\DB::table('t_parking')
+            ->where('order_id', $orderId)
+            ->whereNotNull('deleted_at')
+            ->update([
+                'status'     => 1,
+                'deleted_at' => null,
+                'updated_at' => now(),
+            ]);
+
+        if ($parkingRestored > 0) {
+            \Illuminate\Support\Facades\Log::info('Parking restored on late-payment recovery', [
+                'order_id'      => $orderId,
+                'rows_restored' => $parkingRestored,
+            ]);
+        }
+
+        \Illuminate\Support\Facades\Log::warning('Late payment recovery: re-applied booking state after ExpireBooking rollback', [
+            'order_id'   => $orderId,
+            'room_id'    => $roomId,
+            'is_renewal' => $transaction->is_renewal,
+        ]);
+    }
+
     private function getVirtualAccountPaymentMessage($amount, $currency, $accountName, $trxId)
     {
         $formattedAmount = number_format((float)$amount, 2) . ' ' . strtoupper($currency);

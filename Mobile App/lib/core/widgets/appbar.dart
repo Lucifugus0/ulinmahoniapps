@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'button/backbutton.dart';
 import '../constants/appcolor_constants.dart';
 import '../constants/appfontweight_constants.dart';
+import '../theme/glass_theme.dart';
 import '../utils/formatdate.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -108,13 +110,41 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // In light mode use black text for readability; in dark mode keep white
+    final effectiveTextColor = isDark ? AppColors.white : Colors.black87;
+    final effectiveBackButtonColor = isDark ? Colors.white : Colors.black87;
     return AppBar(
-      backgroundColor: backgroundColor,
+      // Transparent so the glass flexibleSpace shows through
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      toolbarHeight: preferredSize.height, 
+      scrolledUnderElevation: 0,
+      // Liquid glass backdrop blur
+      flexibleSpace: ClipRect(
+        child: BackdropFilter(
+          filter: GlassTheme.standardBlur,
+          child: Container(
+            decoration: BoxDecoration(
+              // Light mode: glass-style semi-transparent with dark text for readability
+              color: isDark
+                  ? const Color(0xFF1F2937).withValues(alpha: 0.45)
+                  : Colors.white.withValues(alpha: 0.65),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? GlassTheme.glassBorderDark
+                      : GlassTheme.glassBorderLight,
+                  width: GlassTheme.borderWidth,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      toolbarHeight: preferredSize.height,
       leading: showBackButton
           ? CustomBackButton(
-        iconColor: backButtonColor,
+        iconColor: effectiveBackButtonColor,
         redirectRoute: redirectRoute,
         isInAppBar: true,
       )
@@ -130,7 +160,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: AppFontWeight.semiBold,
-                color: textColor,
+                color: effectiveTextColor,
               ),
               textAlign: TextAlign.left,
             ),
@@ -143,7 +173,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: textColor.withValues(alpha: 0.85),
+                    color: effectiveTextColor.withValues(alpha: 0.85),
                   ),
                   textAlign: TextAlign.left,
                   maxLines: 1,
@@ -175,22 +205,22 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                   
                   if (rentalType != null && rentalType!.isNotEmpty)
-                    _buildSimpleText(rentalType!),
+                    _buildSimpleText(rentalType!, color: effectiveTextColor),
                   
                   if (category != null && category!.isNotEmpty)
-                    _buildSimpleText(category!),
+                    _buildSimpleText(category!, color: effectiveTextColor),
                   
                   if (duration != null && duration! > 0)
-                    _buildSimpleText('$duration ${rentalType == 'Monthly' ? 'Bulan' : 'Hari'}'),
+                    _buildSimpleText('$duration ${rentalType == 'Monthly' ? 'Bulan' : 'Hari'}', color: effectiveTextColor),
                   
                   if (checkInDate != null && checkInDate!.isNotEmpty)
-                    _buildSimpleText('CheckIn : ${formatDate(checkInDate)}'),
+                    _buildSimpleText('CheckIn : ${formatDate(checkInDate)}', color: effectiveTextColor),
                   
                   if (checkOutDate != null && checkOutDate!.isNotEmpty)
-                    _buildSimpleText('CheckOut : ${formatDate(checkOutDate)}'),
+                    _buildSimpleText('CheckOut : ${formatDate(checkOutDate)}', color: effectiveTextColor),
                   
                   if (province != null && province!.isNotEmpty)
-                    _buildSimpleText(_capitalizeEachWord(province!)),
+                    _buildSimpleText(_capitalizeEachWord(province!), color: effectiveTextColor),
                 ],
               ),
             ),
@@ -198,6 +228,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       centerTitle: false,
+      /* With back button: small 8px gap between arrow and title for breathing room.
+         Without back button: 16px from the left edge. */
+      titleSpacing: showBackButton ? 8.0 : 16.0,
     );
   }
 }

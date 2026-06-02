@@ -1,13 +1,16 @@
+import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../../core/constants/app_asset_constants.dart';
-import '../../../../../core/constants/appcolor_constants.dart';
 import 'searchfilter.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/utils/app_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/utils/greeting_helper.dart';
+import '../../../../../core/services/video_cache_service.dart';
+import '../../../provider/content_provider.dart';
 
 class VideoSearchBanner extends ConsumerStatefulWidget {
   const VideoSearchBanner({super.key});
@@ -23,31 +26,63 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset(AppVideo.homeVideo)
-      ..initialize().then((_) async {
-        // CRITICAL FIX: Check if widget AND controller still valid
-        if (!mounted) return;
-        if (!_controller.value.isInitialized) return;
+    _initializeVideo();
+  }
 
-        try {
-          await _controller.setLooping(true);
-          await _controller.setVolume(0.0);
+  /// Initialize video player — check for cached video first, fallback to bundled asset.
+  /// After init, check for new video in background and cache for next launch.
+  Future<void> _initializeVideo() async {
+    // Check for cached video file from previous background download
+    final cachedPath = await VideoCacheService.getCachedVideoPath();
 
-          // MEDIATEK FIX: Add delay before play to ensure codec ready
-          await Future.delayed(const Duration(milliseconds: 100));
+    if (cachedPath != null) {
+      _controller = VideoPlayerController.file(File(cachedPath));
+    } else {
+      _controller = VideoPlayerController.asset(AppVideo.homeVideo);
+    }
 
-          if (mounted && _controller.value.isInitialized) {
-            await _controller.play();
-            if (mounted) {
-              setState(() {});
-            }
+    _controller.initialize().then((_) async {
+      // CRITICAL FIX: Check if widget AND controller still valid
+      if (!mounted) return;
+      if (!_controller.value.isInitialized) return;
+
+      try {
+        await _controller.setLooping(true);
+        await _controller.setVolume(0.0);
+
+        // MEDIATEK FIX: Add delay before play to ensure codec ready
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        if (mounted && _controller.value.isInitialized) {
+          await _controller.play();
+          if (mounted) {
+            setState(() {});
           }
-        } catch (e) {
-          AppLogger.e("Error setting up video playback", e, StackTrace.current, 'VIDEO-BANNER');
         }
-      }).catchError((error) {
-        AppLogger.e("Error loading video", error, StackTrace.current, 'VIDEO-BANNER');
-      });
+      } catch (e) {
+        AppLogger.e("Error setting up video playback", e, StackTrace.current, 'VIDEO-BANNER');
+      }
+    }).catchError((error) {
+      AppLogger.e("Error loading video", error, StackTrace.current, 'VIDEO-BANNER');
+    });
+
+    // Background: check for new video URL and cache for next launch
+    _checkAndCacheNewVideo();
+  }
+
+  /// Fetches active video URL from API and caches it in background for next launch
+  void _checkAndCacheNewVideo() {
+    Future.microtask(() async {
+      try {
+        final videoUrlAsync = ref.read(heroVideoUrlProvider.future);
+        final videoUrl = await videoUrlAsync;
+        if (videoUrl != null && videoUrl.isNotEmpty) {
+          await VideoCacheService.checkAndCacheVideo(videoUrl);
+        }
+      } catch (e) {
+        AppLogger.e('Error checking hero video', e, null, 'VIDEO-BANNER');
+      }
+    });
   }
 
   @override
@@ -76,169 +111,143 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
     final double bannerHeight = screenHeight * 0.5;
     final localizations = AppLocalizations.of(context)!;
     final greeting = getTimeBasedGreeting(localizations);
+    // Detect dark/light mode for theme-aware text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return _controller.value.isInitialized
         ? Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Greeting text
+        // Greeting text — top padding accounts for navbar overlap since SafeArea top is off
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$greeting 👋',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                localizations.homeSubtitle,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
+          padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 16, 24, 8),
+          // Tagline moved out of the greeting block — it now floats,
+          // centered, just above the search bar over the video banner.
+          child: Text(
+            greeting,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
           ),
         ),
-        // Video banner with text overlay
+        // Video banner — natural 16:9 aspect ratio, no cropping
         Stack(
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
               child: SizedBox(
-                height: bannerHeight,
                 width: double.infinity,
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: _controller.value.size.width,
-                    height: _controller.value.size.height,
-                    child: AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
-                    ),
-                  ),
+                child: AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio,
+                  child: VideoPlayer(_controller),
                 ),
               ),
             ),
-            // Dark shadow gradient at bottom of video
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 250,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.4),
-                      Colors.black.withOpacity(0.75),
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
-                ),
-              ),
-            ),
-            // Banner title text above search bar - single line
+            // Dark shadow gradient removed — video plays without overlay
+            // Floating tagline — centered, sits just above the search bar.
+            // search bar: bottom 16 + height 50 + 12 gap = 78
             Positioned(
               left: 24,
               right: 24,
-              bottom: 80,
-              child: RichText(
-                text: TextSpan(
+              bottom: 78,
+              child: Builder(builder: (context) {
+                final taglineAsync = ref.watch(taglineProvider);
+                final apiTagline = taglineAsync.value;
+                final text = (apiTagline != null && apiTagline.isNotEmpty)
+                    ? apiTagline
+                    : localizations.homeSubtitle;
+                return Text(
+                  text,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 32,
+                    // Inter font (matches Frontend web hero tagline), bold weight
+                    fontFamily: 'Inter',
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    // Shadow keeps the tagline legible over any video frame
                     shadows: [
                       Shadow(
-                        offset: Offset(2, 2),
-                        blurRadius: 6,
-                        color: Colors.black87,
+                        color: Colors.black54,
+                        blurRadius: 8,
+                        offset: Offset(0, 1),
                       ),
                     ],
                   ),
-                  children: [
-                    TextSpan(
-                      text: localizations.homeBannerPart1,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    TextSpan(
-                      text: localizations.homeBannerPart2,
-                      style: const TextStyle(color: AppColors.primaryColor),
-                    ),
-                    TextSpan(
-                      text: localizations.homeBannerPart3,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
+                );
+              }),
             ),
-            // Search bar at bottom
+            // Glass-style search bar at bottom
             Positioned(
               left: 24,
               right: 24,
               bottom: 16,
-              child: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _searchController,
-                          readOnly: true,
-                          onTap: _showFilterDialog,
-                          cursorColor: Colors.grey,
-                          textAlign: TextAlign.left,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.normal,
-                            color: Colors.black45,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: localizations.searchBannerTitle,
-                            hintStyle: TextStyle(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.4),
+                        width: isDark ? 1.0 : 0.5,
+                      ),
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _searchController,
+                            readOnly: true,
+                            onTap: _showFilterDialog,
+                            cursorColor: Colors.grey,
+                            textAlign: TextAlign.left,
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.normal,
-                              color: Colors.black45,
+                              color: isDark ? Colors.white70 : Colors.black45,
                             ),
-                            border: InputBorder.none,
-                            isCollapsed: true,
-                            contentPadding:
-                            EdgeInsets.symmetric(vertical: 12),
+                            decoration: InputDecoration(
+                              hintText: localizations.searchBannerTitle,
+                              hintStyle: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.normal,
+                                color: isDark ? Colors.white54 : Colors.black45,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              filled: false,
+                              isCollapsed: true,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.search,
-                            size: 28, color: Colors.black),
-                        onPressed: _showFilterDialog,
-                      ),
-                    ],
+                        IconButton(
+                          icon: Icon(Icons.search,
+                              size: 28, color: isDark ? Colors.white : Colors.black),
+                          onPressed: _showFilterDialog,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -252,24 +261,15 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Greeting skeleton
+          // Greeting skeleton — top padding accounts for navbar overlap
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 24,
-                  width: 200,
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  height: 16,
-                  width: 250,
-                  color: Colors.grey,
-                ),
-              ],
+            padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 16, 24, 16),
+            // Only the greeting remains here — tagline skeleton now floats
+            // above the search bar to match the real layout.
+            child: Container(
+              height: 24,
+              width: 200,
+              color: Colors.grey,
             ),
           ),
           // Banner skeleton
@@ -283,6 +283,19 @@ class _VideoSearchBannerState extends ConsumerState<VideoSearchBanner> {
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(32),
                     bottomRight: Radius.circular(32),
+                  ),
+                ),
+              ),
+              // Floating tagline skeleton — centered above the search bar
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 78,
+                child: Center(
+                  child: Container(
+                    height: 16,
+                    width: 250,
+                    color: Colors.grey,
                   ),
                 ),
               ),

@@ -193,63 +193,30 @@ class DashboardController extends Controller
 
     private function getRoomTypesBreakdown($propertyId)
     {
-        // Get booked room IDs (transaction paid, belum check-out)
-        // status=1: hanya booking aktif, booking lama dari pindah kamar (status=0) tidak dihitung
-        $bookedRoomIds = Booking::where('property_id', $propertyId)
-            ->where('status', 1)
-            ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
-            })
-            ->whereNull('check_out_at')   // Belum check out
-            ->pluck('room_id')
-            ->toArray();
-
-        // Get occupied room IDs (sudah check-in fisik)
-        // status=1: hanya booking aktif, booking lama dari pindah kamar (status=0) tidak dihitung
-        $occupiedRoomIds = Booking::where('property_id', $propertyId)
-            ->where('status', 1)
-            ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
-            })
-            ->whereNotNull('check_in_at') // Sudah check-in fisik
-            ->whereNull('check_out_at')   // Belum check out
-            ->pluck('room_id')
-            ->toArray();
-
-        // Get all rooms and group by room name (type)
+        /* Room availability widget uses m_rooms.rental_status as the single source of truth:
+             0 = available (Tersedia)
+             1 = occupied  (Terisi)
+           Booking/transaction lookups are intentionally avoided — rental_status is kept
+           in sync by check-in/check-out and booking lifecycle code. */
         $rooms = Room::where('property_id', $propertyId)
             ->where('status', 1)
             ->orderBy('name')
             ->orderBy('no')
             ->get()
             ->groupBy('name')
-            ->map(function ($roomGroup, $roomName) use ($bookedRoomIds, $occupiedRoomIds) {
-                $roomDetails = $roomGroup->map(function ($room) use ($bookedRoomIds, $occupiedRoomIds) {
-                    $isBooked = in_array($room->idrec, $bookedRoomIds);
-                    $isOccupied = in_array($room->idrec, $occupiedRoomIds);
-
-                    // Determine status
-                    $status = 'available';
-                    if ($isOccupied) {
-                        $status = 'occupied';
-                    } elseif ($isBooked) {
-                        $status = 'booked';
-                    } else {
-                        $status = $room->rental_status == 0 ? 'available' : 'unavailable';
-                    }
-
+            ->map(function ($roomGroup, $roomName) {
+                $roomDetails = $roomGroup->map(function ($room) {
                     return [
                         'room_number' => $room->no ?? '-',
-                        'status' => $status,
+                        'status' => $room->rental_status == 1 ? 'occupied' : 'available',
                     ];
                 });
 
-                // Count status
                 $statusCounts = [
                     'available' => $roomDetails->where('status', 'available')->count(),
-                    'booked' => $roomDetails->where('status', 'booked')->count(),
+                    'booked' => 0,
                     'occupied' => $roomDetails->where('status', 'occupied')->count(),
-                    'unavailable' => $roomDetails->where('status', 'unavailable')->count(),
+                    'unavailable' => 0,
                 ];
 
                 return [
@@ -290,10 +257,14 @@ class DashboardController extends Controller
 
     private function getOccupiedRoomsDetails($propertyId = null)
     {
+        // status=1 filters out renewed/superseded parent bookings — when a renewal is created
+        // the parent's t_booking.status is flipped to 0, so without this the parent (whose
+        // check_out is today) would keep appearing here and falsely show "Check-Out Today".
         return Booking::with(['room', 'property', 'transaction', 'user'])
             ->when($propertyId, function ($q) use ($propertyId) {
                 $q->where('property_id', $propertyId);
             })
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->where('transaction_status', 'paid')
                     ->whereDate('check_in', '<=', now()->toDateString())
@@ -352,9 +323,11 @@ class DashboardController extends Controller
 
             // Count rooms occupied on this specific date
             // Only count rooms where guest has actually checked in
+            // status=1 filters out renewed/superseded parent bookings (renewal flips parent to 0).
             $occupied = Booking::when($propertyId, function ($q) use ($propertyId) {
                     $q->where('property_id', $propertyId);
                 })
+                ->where('status', 1)
                 ->whereHas('transaction', function ($q) use ($date) {
                     $q->where('transaction_status', 'paid')
                         ->whereDate('check_in', '<=', $date)
@@ -448,10 +421,12 @@ class DashboardController extends Controller
         $today = now()->toDateString();
 
         // Get bookings that are currently occupied (checked in but not checked out)
+        // status=1 filters out renewed/superseded parent bookings (renewal flips parent to 0).
         $occupiedBookings = Booking::with('transaction')
             ->when($propertyId, function ($q) use ($propertyId) {
                 $q->where('property_id', $propertyId);
             })
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) use ($today) {
                 $q->where('transaction_status', 'paid')
                     ->whereDate('check_in', '<=', $today)
@@ -810,7 +785,9 @@ class DashboardController extends Controller
         $currentOccupancy = 0;
         $propertyName = null;
         if ($isSite && $userPropertyId) {
+            // status=1 filters out renewed/superseded parent bookings (renewal flips parent to 0).
             $currentOccupancy = Booking::where('property_id', $userPropertyId)
+                ->where('status', 1)
                 ->whereHas('transaction', fn($q) => $q->where('transaction_status', 'paid'))
                 ->whereNotNull('check_in_at')
                 ->whereNull('check_out_at')
@@ -834,14 +811,24 @@ class DashboardController extends Controller
             ->limit(4)
             ->get();
 
-        // Get upcoming check-outs (paid bookings with check-out date within 3 days, checked in but not checked out)
+        /* Pending check-outs widget — mirrors the Today's Check-out page logic but with a forward-3-day
+           preview added on top:
+           - status=1 + latestPerOrder() collapses renewed/superseded parent bookings (the parent's
+             t_booking.status is flipped to 0 on renewal, and latestPerOrder picks the active row in
+             a renewal chain).
+           - renewal_status = 0 on the transaction excludes parent transactions that have been
+             superseded by a newer paid order_id (matches CheckOutController).
+           - Date window: check_out <= today+3 with no lower bound, so the widget includes both
+             overdue (check_out < today, not yet physically checked out) and the next 3 days. */
         $checkOuts = Booking::with(['user', 'room', 'property', 'transaction'])
+            ->latestPerOrder()
             ->when($userPropertyId, function ($q) use ($userPropertyId) {
-                $q->where('property_id', $userPropertyId);
+                $q->where('t_booking.property_id', $userPropertyId);
             })
+            ->where('t_booking.status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->where('transaction_status', 'paid')
-                    ->whereDate('check_out', '>=', now()->toDateString())
+                    ->where('renewal_status', 0)
                     ->whereDate('check_out', '<=', now()->addDays(3)->toDateString());
             })
             ->whereNotNull('check_in_at')
@@ -851,7 +838,7 @@ class DashboardController extends Controller
                     ->whereColumn('t_transactions.order_id', 't_booking.order_id')
                     ->limit(1)
             )
-            ->limit(4)
+            ->limit(5)
             ->get();
 
         $stats = [
@@ -877,6 +864,7 @@ class DashboardController extends Controller
             'checkin' => Booking::when($userPropertyId, function ($q) use ($userPropertyId) {
                     $q->where('property_id', $userPropertyId);
                 })
+                ->where('status', 1)
                 ->whereHas('transaction', fn($q) => $q->where('transaction_status', 'paid'))
                 ->whereNotNull('check_in_at')
                 ->whereNull('check_out_at')
@@ -885,6 +873,7 @@ class DashboardController extends Controller
             'checkout' => Booking::when($userPropertyId, function ($q) use ($userPropertyId) {
                     $q->where('property_id', $userPropertyId);
                 })
+                ->where('status', 1)
                 ->whereHas('transaction', fn($q) => $q->where('transaction_status', 'paid'))
                 ->whereNotNull('check_in_at')
                 ->whereNull('check_out_at')

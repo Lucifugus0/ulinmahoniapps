@@ -15,14 +15,13 @@ import 'dart:typed_data';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:intl_phone_field/countries.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../../core/utils/app_logger.dart';
 
-Widget inputField(String hint, TextEditingController controller, {String? Function(String?)? validator, TextInputType? keyboardType}) {
+Widget inputField(String hint, TextEditingController controller, {String? Function(String?)? validator, TextInputType? keyboardType, required bool isDark}) {
   return Container(
     decoration: BoxDecoration(
-      color: Colors.grey[100], 
+      color: isDark ? const Color(0xFF374151) : Colors.grey[100],
       borderRadius: BorderRadius.circular(8),
     ),
     child: Padding(
@@ -30,10 +29,16 @@ Widget inputField(String hint, TextEditingController controller, {String? Functi
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
         decoration: InputDecoration(
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          filled: false,
           hintText: hint,
           labelText: hint,
+          labelStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+          hintStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[400]),
         ),
         validator: validator,
       ),
@@ -54,7 +59,6 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
   final TextEditingController _phoneNumberController = TextEditingController();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
 
   final ImagePicker _picker = ImagePicker();
   Uint8List? _selectedImageBytes;
@@ -209,6 +213,7 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
     final authState = ref.watch(authProvider);
     final user = authState.user.value;
     final updateProfileState = ref.watch(updateProfileNotifierProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen<UpdateProfileState>(
       updateProfileNotifierProvider,
@@ -217,7 +222,8 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
           showNotificationDialog(
             context,
             localizations.updateProfileSuccessMessage,
-            iconColor: AppColors.primaryColor,
+            // Use primaryAdaptive for dark/light mode compatibility
+            iconColor: AppColors.primaryAdaptive(context),
             defaultIcon: Icons.check_circle_outline,
           );
           _initializeControllers();
@@ -238,7 +244,8 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
-                color: AppColors.primaryColor,
+                // Use primaryAdaptive for dark/light mode compatibility
+                color: AppColors.primaryAdaptive(context),
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
@@ -254,7 +261,7 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 4,
-                        color: AppColors.white,
+                        color: isDark ? const Color(0xFF1F2937) : Colors.white,
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
@@ -268,9 +275,9 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                                   width: double.infinity,
                                   height: 200,
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[100],
+                                    color: isDark ? const Color(0xFF374151) : Colors.grey[100],
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.grey[400]!),
+                                    border: Border.all(color: isDark ? Colors.grey[600]! : Colors.grey[400]!),
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
@@ -306,11 +313,11 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                               const SizedBox(height: 16),
                               Text(localizations.firstNameLabel, style: const TextStyle(fontSize: 14)),
                               const SizedBox(height: 6),
-                              inputField(localizations.firstNameHint, _firstNameController),
+                              inputField(localizations.firstNameHint, _firstNameController, isDark: isDark),
                               const SizedBox(height: 12),
                               Text(localizations.lastNameLabel, style: const TextStyle(fontSize: 14)),
                               const SizedBox(height: 6),
-                              inputField(localizations.lastNameHint, _lastNameController),
+                              inputField(localizations.lastNameHint, _lastNameController, isDark: isDark),
                               const SizedBox(height: 12),
                               // Text(localizations.usernameLabel, style: const TextStyle(fontSize: 14)),
                               // const SizedBox(height: 6),
@@ -318,13 +325,13 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                               // const SizedBox(height: 12),
                               Text(localizations.emailLabel, style: const TextStyle(fontSize: 14)),
                               const SizedBox(height: 6),
-                              inputField(localizations.emailHint, _emailController),
+                              inputField(localizations.emailHint, _emailController, isDark: isDark),
                               const SizedBox(height: 12),
                               Text(localizations.phoneNumberLabel, style: const TextStyle(fontSize: 14)),
                               const SizedBox(height: 6),
                               Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[100],
+                                  color: isDark ? const Color(0xFF374151) : Colors.grey[100],
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: IntlPhoneField(
@@ -341,10 +348,13 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                                   ),
                                   initialCountryCode: _currentCountryCode,
                                   languageCode: "id",
-                                  dropdownIcon: const Icon(Icons.arrow_drop_down),
+                                  // Input text color adapts to dark/light mode
+                                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                                  dropdownIcon: Icon(Icons.arrow_drop_down, color: isDark ? Colors.white : Colors.black87),
                                   dropdownIconPosition: IconPosition.trailing,
-                                  dropdownTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
-                                  cursorColor: AppColors.primaryColor,
+                                  dropdownTextStyle: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black),
+                                  // Use primaryAdaptive for dark/light mode compatibility
+                                  cursorColor: AppColors.primaryAdaptive(context),
                                   onChanged: (phone) {
                                     _fullPhoneNumber = phone.completeNumber;
                                     _updatePhoneNumberLength();
@@ -375,23 +385,19 @@ class _UpdateProfileState extends ConsumerState<UpdateProfile> {
                                   onPressed: updateProfileState is UpdateProfileLoading
                                       ? null
                                       : () async {
-                                    final bool didAuthenticate = await _biometricAuthService.authenticateOnLoad(context);
-                                    if (didAuthenticate) {
-                                      final notifier = ref.read(updateProfileNotifierProvider.notifier);
-                                      await notifier.updateProfile(
-                                        username:_firstNameController.text.trim(),
-                                        email: _emailController.text.trim(),
-                                        phoneNumber: (_fullPhoneNumber ?? '').trim(),
-                                        firstName: _firstNameController.text.trim(),
-                                        lastName: _lastNameController.text.trim(),
-                                        profilePhotoBase64: _pickedImageBase64,
-                                      );
-                                    } else {
-                                      context.go('/profile');
-                                    }
+                                    final notifier = ref.read(updateProfileNotifierProvider.notifier);
+                                    await notifier.updateProfile(
+                                      username:_firstNameController.text.trim(),
+                                      email: _emailController.text.trim(),
+                                      phoneNumber: (_fullPhoneNumber ?? '').trim(),
+                                      firstName: _firstNameController.text.trim(),
+                                      lastName: _lastNameController.text.trim(),
+                                      profilePhotoBase64: _pickedImageBase64,
+                                    );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryColor,
+                                    // Use primaryAdaptive for dark/light mode compatibility
+                                    backgroundColor: AppColors.primaryAdaptive(context),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),

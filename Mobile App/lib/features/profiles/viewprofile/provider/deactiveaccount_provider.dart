@@ -3,17 +3,24 @@ import '../data/repositories/deactivateaccount_repository.dart';
 import '../../../../../core/network/api_result.dart';
 import '../../../../../core/utils/app_logger.dart';
 
+/// Provider for DeactivateAccountRepository singleton.
 final deactivateAccountRepositoryProvider = Provider((ref) => DeactivateAccountRepository());
 
-class DeactivateAccountNotifier extends StateNotifier<AsyncValue<void>> {
-  final DeactivateAccountRepository _repository;
+/// Notifier for deactivate account state.
+/// Migrated from StateNotifier to Notifier for Riverpod 3.x.
+class DeactivateAccountNotifier extends Notifier<AsyncValue<void>> {
+  /// build() returns the initial state.
+  @override
+  AsyncValue<void> build() {
+    return const AsyncValue.data(null);
+  }
 
-  DeactivateAccountNotifier(this._repository) : super(const AsyncValue.data(null));
-
+  /// Deactivate the user account — returns a result map with success/failure info.
   Future<Map<String, dynamic>> deactivateAccount(int userId) async {
     state = const AsyncValue.loading();
     try {
-      final result = await _repository.deactivateAccount(userId);
+      final repository = ref.read(deactivateAccountRepositoryProvider);
+      final result = await repository.deactivateAccount(userId);
 
       // Use pattern matching for ApiResult
       switch (result) {
@@ -47,7 +54,7 @@ class DeactivateAccountNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final deactivateAccountProvider = StateNotifierProvider<DeactivateAccountNotifier, AsyncValue<void>>((ref) {
-  final repository = ref.watch(deactivateAccountRepositoryProvider);
-  return DeactivateAccountNotifier(repository);
-});
+/// Provider for DeactivateAccountNotifier — Riverpod 3.x NotifierProvider.
+final deactivateAccountProvider = NotifierProvider<DeactivateAccountNotifier, AsyncValue<void>>(
+  DeactivateAccountNotifier.new,
+);

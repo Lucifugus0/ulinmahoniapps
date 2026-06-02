@@ -39,7 +39,9 @@ class RoomController extends Controller {
                         'monthly' => false
                     ]),
                     'status' => $room->status,
-                    'rental_status' => $room->rental_status
+                    'rental_status' => $room->rental_status,
+                    /* Computed availability: daily rooms always available, monthly checks active bookings */
+                    'is_available' => \App\Models\Room::computeAvailability($room->idrec, $room->periode_daily),
                 ];
             });
 
@@ -271,7 +273,9 @@ class RoomController extends Controller {
                 'created_by' => $room->created_by,
                 'updated_by' => $room->updated_by,
                 'status' => $room->status,
-                'rental_status' => $room->rental_status
+                'rental_status' => $room->rental_status,
+                /* Computed availability: daily rooms always available, monthly checks active bookings */
+                'is_available' => Room::computeAvailability($room->idrec, $room->periode_daily),
             ];
 
             return view('pages.room.show', [
@@ -340,7 +344,10 @@ class RoomController extends Controller {
                 'updated_at' => $room->updated_at,
                 'created_by' => $room->created_by,
                 'updated_by' => $room->updated_by,
-                'status' => $room->status
+                'status' => $room->status,
+                'rental_status' => $room->rental_status,
+                /* Computed availability: daily rooms always available, monthly checks active bookings */
+                'is_available' => Room::computeAvailability($room->idrec, $room->periode_daily),
             ];
 
             return view('pages.room.id.show', [
@@ -410,7 +417,10 @@ class RoomController extends Controller {
                 'updated_at' => $room->updated_at,
                 'created_by' => $room->created_by,
                 'updated_by' => $room->updated_by,
-                'status' => $room->status
+                'status' => $room->status,
+                'rental_status' => $room->rental_status,
+                /* Computed availability: daily rooms always available, monthly checks active bookings */
+                'is_available' => Room::computeAvailability($room->idrec, $room->periode_daily),
             ];
 
             return view('pages.room.en.show', [

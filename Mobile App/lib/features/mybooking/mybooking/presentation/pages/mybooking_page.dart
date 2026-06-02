@@ -5,11 +5,10 @@ import '../../../../../core/layout/mainlayout.dart';
 import '../../../../../core/widgets/appbar.dart';
 import '../../provider/mybooking_provider.dart';
 import '../../controller/mybooking_controller.dart';
-import 'package:ulinmahoniapps/core/widgets/biometric_auth.dart';
 import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
-import '../../../../../core/utils/app_logger.dart';
+import 'package:ulinmahoniapps/core/utils/app_logger.dart';
 
 class MyBookingPage extends ConsumerStatefulWidget {
   const MyBookingPage({super.key});
@@ -21,12 +20,10 @@ class MyBookingPage extends ConsumerStatefulWidget {
 class _MyBookingPageState extends ConsumerState<MyBookingPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
 
   @override
   void initState() {
     super.initState();
-    _authenticateBiometricsOnLoad();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.invalidate(userBookingsProvider);
@@ -37,18 +34,6 @@ class _MyBookingPageState extends ConsumerState<MyBookingPage>
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  Future<void> _authenticateBiometricsOnLoad() async {
-    if (!mounted) return;
-
-    final didAuthenticate = await _biometricAuthService.authenticateOnLoad(context);
-    if (!didAuthenticate) {
-      AppLogger.w('Biometric authentication failed, returning to home', 'BIOMETRIC');
-      context.go('/home');
-    } else {
-      AppLogger.s('Biometric authentication successful', 'BIOMETRIC');
-    }
   }
 
   Future<void> _onRefresh() async {
@@ -74,22 +59,27 @@ class _MyBookingPageState extends ConsumerState<MyBookingPage>
       child: Column(
         children: [
           CustomAppBar(title: localizations.myBookingTitle, showBackButton: false), 
-          Material(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              indicator: const UnderlineTabIndicator(
-                borderSide: BorderSide(color: Colors.black, width: 2.0),
-                insets: EdgeInsets.symmetric(horizontal: 50.0),
-              ),
-              labelColor: Colors.black,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w500),
-              tabs: [
-                Tab(text: localizations.upcomingTab), 
-                Tab(text: localizations.completedTab), 
-              ],
-            ),
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              return Material(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: UnderlineTabIndicator(
+                    borderSide: BorderSide(color: isDark ? Colors.white : Colors.black, width: 2.0),
+                    insets: const EdgeInsets.symmetric(horizontal: 50.0),
+                  ),
+                  labelColor: isDark ? Colors.white : Colors.black,
+                  unselectedLabelColor: Colors.grey,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.w500),
+                  tabs: [
+                    Tab(text: localizations.upcomingTab),
+                    Tab(text: localizations.completedTab),
+                  ],
+                ),
+              );
+            },
           ),
           Expanded(
             child: RefreshIndicator(
@@ -118,158 +108,10 @@ class _MyBookingPageState extends ConsumerState<MyBookingPage>
                     ],
                   );
                 },
-                loading: () => Skeletonizer(
-                  enabled: true,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      ListView(
-                        padding: const EdgeInsets.all(10),
-                        children: List.generate(
-                          5,
-                          (index) => Card(
-                            color: Colors.white,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 100,
-                                    width: 100,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: Colors.grey[300],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Loading Property Name Here',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const Text(
-                                          'Loading Room Name',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: const Text(
-                                            'Loading Status',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        const Text(
-                                          'Check-in: 01 Jan 2024',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                        const Text(
-                                          'Check-out: 02 Jan 2024',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      ListView(
-                        padding: const EdgeInsets.all(10),
-                        children: List.generate(
-                          3,
-                          (index) => Card(
-                            color: Colors.white,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 100,
-                                    width: 100,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: Colors.grey[300],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Loading Property Name Here',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const Text(
-                                          'Loading Room Name',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: const Text(
-                                            'Loading Status',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        const Text(
-                                          'Check-in: 01 Jan 2024',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                        const Text(
-                                          'Check-out: 02 Jan 2024',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 48),
+                    child: CircularProgressIndicator(),
                   ),
                 ),
                 error: (e, stackTrace) {
@@ -284,51 +126,56 @@ class _MyBookingPageState extends ConsumerState<MyBookingPage>
                       children: [
                         SizedBox(height: MediaQuery.of(context).size.height * 0.2),
                         Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.inbox_outlined,
-                                size: 80,
-                                color: Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                localizations.myBookingEmptyTitle,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                                child: Text(
-                                  localizations.myBookingEmptyMessage,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade600,
+                          child: Builder(
+                            builder: (context) {
+                              final isDarkEmpty = Theme.of(context).brightness == Brightness.dark;
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inbox_outlined,
+                                    size: 80,
+                                    color: isDarkEmpty ? Colors.grey[600] : Colors.grey.shade400,
                                   ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              ElevatedButton.icon(
-                                onPressed: () => context.go('/home'),
-                                icon: const Icon(Icons.search, color: Colors.white),
-                                label: Text(localizations.myBookingBrowseProperties),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryColor,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    localizations.myBookingEmptyTitle,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDarkEmpty ? Colors.grey[300] : Colors.grey.shade700,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                ),
-                              ),
-                            ],
+                                  const SizedBox(height: 8),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                                    child: Text(
+                                      localizations.myBookingEmptyMessage,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isDarkEmpty ? Colors.grey[400] : Colors.grey.shade600,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  ElevatedButton.icon(
+                                    onPressed: () => context.go('/home'),
+                                    icon: const Icon(Icons.search, color: Colors.white),
+                                    label: Text(localizations.myBookingBrowseProperties),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primaryAdaptive(context),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ],

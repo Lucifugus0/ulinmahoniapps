@@ -4,12 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ulin Mahoni for Business - Solusi Properti untuk Bisnis</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
+    {{-- Match the header/homepage convention: dark mode only when localStorage explicitly says 'true'. --}}
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     <style>
+        /* Glass content card — opaque white in light mode for legibility; dark mode override below
+           drops it back to translucent dark glass. */
+        .content-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.50);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        /* Dark mode overrides for glass content cards — remove white outline */
+        html.dark .content-card {
+            background: rgba(255, 255, 255, 0.06) !important;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: none !important;
+            color: #e5e7eb;
+        }
+        html.dark .content-card h1,
+        html.dark .content-card h2,
+        html.dark .content-card h3,
+        html.dark .content-card h4 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .content-card p,
+        html.dark .content-card span,
+        html.dark .content-card li {
+            color: #d1d5db !important;
+        }
+        /* Video background fixed below header (header ~72px tall) */
         .video-wrapper {
             position: fixed;
             top: 0;
@@ -30,35 +63,41 @@
             transform: translate(-50%, -50%);
             z-index: 1;
         }
+        /* Overlay — soft white wash in light mode, dark in dark mode for contrast. */
         .video-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.10) 100%);
             z-index: 2;
+        }
+        html.dark .video-overlay {
+            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
+        }
+        /* Push page content below the fixed header */
+        main.relative {
+            padding-top: 72px;
         }
     </style>
 </head>
-<body class="font-inter antialiased bg-white text-gray-900 tracking-tight video-page">
+<body class="font-inter antialiased text-gray-900 tracking-tight video-page">
     <!-- Header -->
     @include('components.homepage.header')
 
     <main class="relative">
-        <!-- Video Background -->
+        <!-- Image Background — fixed behind content -->
         <div class="video-wrapper">
-            <video class="video-background" autoplay loop muted playsinline>
-                <source src="{{ asset('images/assets/My_Movie.mp4') }}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+            <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" alt="Background" class="video-background">
             <div class="video-overlay"></div>
         </div>
         
         <div class="min-h-screen flex flex-col">
             <!-- Hero Section -->
             <section class="py-16 md:py-24 px-4">
-                <div class="max-w-4xl mx-auto text-center bg-white p-8 rounded-2xl shadow-lg">
+                <!-- Hero glass card -->
+                <div class="max-w-4xl mx-auto text-center content-card">
                     <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                         Ulin Mahoni for Business
                     </h1>
@@ -73,8 +112,8 @@
             <div class="max-w-6xl mx-auto">
                 <!-- Business Solutions -->
                 <div class="grid md:grid-cols-2 gap-8 mb-16">
-                    <!-- Corporate Housing -->
-                    <div class="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+                    <!-- Corporate Housing — glass card styling -->
+                    <div class="content-card hover:shadow-lg transition-all duration-300">
                         <h3 class="text-2xl font-bold mb-4">Corporate Housing</h3>
                         <p class="text-gray-600 mb-6">Solusi akomodasi untuk karyawan dan tamu perusahaan Anda</p>
                         <ul class="space-y-4">
@@ -108,8 +147,8 @@
                         </ul>
                     </div>
 
-                    <!-- Office Space -->
-                    <div class="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+                    <!-- Office Space — glass card styling -->
+                    <div class="content-card hover:shadow-lg transition-all duration-300">
                         <h3 class="text-2xl font-bold mb-4">Ruang Kantor</h3>
                         <p class="text-gray-600 mb-6">Ruang kerja yang dapat disesuaikan dengan kebutuhan bisnis</p>
                         <ul class="space-y-4">
@@ -147,7 +186,7 @@
                 <!-- Benefits Section -->
                 <div class="text-center mb-16">
                     <div class="grid md:grid-cols-4 gap-6">
-                        <div class="bg-white p-6 rounded-2xl shadow-md">
+                        <div class="content-card">
                             <div class="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -156,7 +195,7 @@
                             <h3 class="font-bold mb-2">Efisiensi Biaya</h3>
                             <p class="text-gray-600 text-sm">Optimalisasi pengeluaran properti</p>
                         </div>
-                        <div class="bg-white p-6 rounded-2xl shadow-md">
+                        <div class="content-card">
                             <div class="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -165,7 +204,7 @@
                             <h3 class="font-bold mb-2">Proses Cepat</h3>
                             <p class="text-gray-600 text-sm">Administrasi yang efisien</p>
                         </div>
-                        <div class="bg-white p-6 rounded-2xl shadow-md">
+                        <div class="content-card">
                             <div class="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
@@ -174,7 +213,7 @@
                             <h3 class="font-bold mb-2">Keamanan</h3>
                             <p class="text-gray-600 text-sm">Jaminan keamanan properti</p>
                         </div>
-                        <div class="bg-white p-6 rounded-2xl shadow-md">
+                        <div class="content-card">
                             <div class="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -188,7 +227,8 @@
 
                 <!-- CTA Section -->
                 <div class="text-center mt-16">
-                    <div class="bg-white p-8 rounded-2xl shadow-md">
+                    <!-- CTA glass card -->
+                    <div class="content-card">
                         <h3 class="text-2xl font-bold text-gray-900 mb-6">Mulai Sekarang</h3>
                         <p class="text-gray-700 mb-8 max-w-2xl mx-auto">Hubungi tim bisnis kami untuk solusi yang sesuai dengan kebutuhan perusahaan Anda</p>
                         <a href="#" class="inline-flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-semibold text-lg px-8 py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">

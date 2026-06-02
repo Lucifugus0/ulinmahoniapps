@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/forgotpassword_repository.dart';
 import '../../../../core/network/api_result.dart';
-import '../../../../core/utils/app_logger.dart'; 
+import '../../../../core/utils/app_logger.dart';
 
 
 enum ForgotPasswordStatus {
@@ -14,21 +14,21 @@ enum ForgotPasswordStatus {
 
 class ForgotPasswordState {
   final ForgotPasswordStatus status;
-  final String? errorMessage; 
+  final String? errorMessage;
 
   ForgotPasswordState({
     this.status = ForgotPasswordStatus.initial,
     this.errorMessage,
   });
 
-  
+
   ForgotPasswordState copyWith({
     ForgotPasswordStatus? status,
     String? errorMessage,
   }) {
     return ForgotPasswordState(
       status: status ?? this.status,
-      errorMessage: errorMessage, 
+      errorMessage: errorMessage,
     );
   }
 }
@@ -37,20 +37,22 @@ final forgotPasswordRepositoryProvider = Provider<ForgotPasswordRepository>((ref
   return ForgotPasswordRepository();
 });
 
-final forgotPasswordControllerProvider = StateNotifierProvider<ForgotPasswordController, ForgotPasswordState>((ref) {
-  return ForgotPasswordController(ref);
-});
+/// Migrated from StateNotifierProvider to NotifierProvider for Riverpod 3.x
+final forgotPasswordControllerProvider = NotifierProvider<ForgotPasswordController, ForgotPasswordState>(ForgotPasswordController.new);
 
-class ForgotPasswordController extends StateNotifier<ForgotPasswordState> {
-  final Ref _ref;
-
-  ForgotPasswordController(this._ref) : super(ForgotPasswordState());
+/// Forgot password controller — migrated from StateNotifier to Notifier.
+/// Uses build() instead of constructor for initial state.
+/// ref is available as a property (no need to store it).
+class ForgotPasswordController extends Notifier<ForgotPasswordState> {
+  /// Returns initial state via build method (Riverpod 3.x pattern)
+  @override
+  ForgotPasswordState build() => ForgotPasswordState();
 
 
   Future<void> requestPasswordReset(String email) async {
     state = state.copyWith(status: ForgotPasswordStatus.loading, errorMessage: null);
 
-    final repository = _ref.read(forgotPasswordRepositoryProvider);
+    final repository = ref.read(forgotPasswordRepositoryProvider);
     final result = await repository.requestPasswordReset(email);
 
     switch (result) {
@@ -74,7 +76,7 @@ class ForgotPasswordController extends StateNotifier<ForgotPasswordState> {
     }
   }
 
-  
+
   void resetState() {
     state = ForgotPasswordState();
   }

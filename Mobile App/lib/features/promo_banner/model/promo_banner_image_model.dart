@@ -2,6 +2,8 @@ class PromoBannerImageModel {
   final int id;
   final int promoBannerId;
   final String imageUrl;
+  /// Mobile-optimized image URL (16:9, 1080x608px). Falls back to imageUrl if null.
+  final String? mobileImageUrl;
   final String? thumbnailUrl;
   final int displayOrder;
   final bool isPrimary;
@@ -10,6 +12,7 @@ class PromoBannerImageModel {
     required this.id,
     required this.promoBannerId,
     required this.imageUrl,
+    this.mobileImageUrl,
     this.thumbnailUrl,
     required this.displayOrder,
     required this.isPrimary,
@@ -18,11 +21,13 @@ class PromoBannerImageModel {
   factory PromoBannerImageModel.fromJson(Map<String, dynamic> json) {
     return PromoBannerImageModel(
       id: json['id'] as int,
-      promoBannerId: json['promo_banner_id'] as int? ?? 0,  // May not exist in API response
-      imageUrl: json['image'] as String? ?? json['image_url'] as String? ?? '',  // Backend uses 'image'
-      thumbnailUrl: json['thumbnail'] as String? ?? json['thumbnail_url'] as String?,  // Backend uses 'thumbnail'
-      displayOrder: json['sort_order'] as int? ?? json['display_order'] as int? ?? 0,  // Backend uses 'sort_order'
-      isPrimary: json['is_primary'] as bool? ?? (json['sort_order'] == 0),  // Fallback: first image (sort_order=0) is primary
+      promoBannerId: json['promo_banner_id'] as int? ?? 0,
+      imageUrl: json['image'] as String? ?? json['image_url'] as String? ?? '',
+      // Mobile image URL — falls back to main image via API accessor, or use imageUrl
+      mobileImageUrl: json['mobile_image_url'] as String? ?? json['mobile_image'] as String?,
+      thumbnailUrl: json['thumbnail'] as String? ?? json['thumbnail_url'] as String?,
+      displayOrder: json['sort_order'] as int? ?? json['display_order'] as int? ?? 0,
+      isPrimary: json['is_primary'] as bool? ?? (json['sort_order'] == 0),
     );
   }
 

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\MRoomImage;
 use App\Models\RoomFacility;
+use App\Models\RoomNameType;
 use App\Services\RoomPriceGeneratorService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -22,11 +23,13 @@ class ManajementRoomsController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $perPage = $request->input('per_page', 8);
+        /* Default 25 items per page */
+        $perPage = $request->input('per_page', 25);
         $statusFilter = $request->input('status', '1'); // Default menampilkan hanya yang aktif
 
+        /* Eager-load creator and updater for "Dibuat Oleh" / "Dirubah Oleh" columns */
         $query = Room::where('status', '!=', '2')
-            ->with(['property', 'creator'])
+            ->with(['property', 'creator', 'updater'])
             ->orderBy('created_at', 'desc');
 
         // Filter by property based on user_type
@@ -93,6 +96,10 @@ class ManajementRoomsController extends Controller
             ];
         });
 
+        /* Fetch active room name types for the edit modal dropdown —
+           needed by both AJAX partial and full page render */
+        $roomNameTypes = RoomNameType::active()->orderBy('name')->get();
+
         // Jika request AJAX, kembalikan partial view
         if ($request->ajax()) {
             return response()->json([
@@ -102,6 +109,7 @@ class ManajementRoomsController extends Controller
                     'per_page' => $perPage,
                     'facilities' => $facilities,
                     'facilityData' => $facilityData,
+                    'roomNameTypes' => $roomNameTypes,
                 ])->render(),
                 'pagination' => $rooms instanceof \Illuminate\Pagination\LengthAwarePaginator
                     ? $rooms->appends($request->input())->links()->toHtml()
@@ -114,6 +122,7 @@ class ManajementRoomsController extends Controller
             'facilityData' => $facilityData,
             'rooms' => $rooms,
             'properties' => $properties,
+            'roomNameTypes' => $roomNameTypes,
             'per_page' => $perPage,
             'statusFilter' => $statusFilter,
         ]);
@@ -148,11 +157,15 @@ class ManajementRoomsController extends Controller
                 'daily_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
                 'monthly_price' => 'required_if:price_type,monthly|nullable|numeric|min:0',
                 'annual_price' => 'required_if:price_type,annual|nullable|numeric|min:0',
-                'weekday_price' => 'nullable|numeric|min:0',
-                'weekend_price' => 'nullable|numeric|min:0',
+                /* Multi-Tier Pricing: all 5 pricing categories required for daily rooms */
+                'weekday_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
+                'weekend_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
+                'holiday_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
+                'high_season_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
+                'low_season_price' => 'required_if:price_type,daily|nullable|numeric|min:0',
                 'general_facilities' => 'nullable|array',
                 'general_facilities.*' => 'numeric', // Ubah dari string ke numeric karena value adalah idrec
-                'room_images' => 'required|array|min:3|max:5',
+                'room_images' => 'required|array|min:3|max:20',
                 'room_images.*' => [
                     'image',
                     'mimes:jpeg,png,jpg,gif,webp',
@@ -285,9 +298,12 @@ class ManajementRoomsController extends Controller
             $monthlyPrice = $priceType === 'monthly' ? ($validated['monthly_price'] ?? 0) : 0;
             $annualPrice = $priceType === 'annual' ? ($validated['annual_price'] ?? 0) : 0; /* Multi-Tier Pricing */
 
-            /* Multi-Tier Pricing: weekday/weekend prices for daily rooms */
+            /* Multi-Tier Pricing: all 5 pricing categories for daily rooms */
             $weekdayPrice = ($priceType === 'daily') ? ($validated['weekday_price'] ?? $dailyPrice) : null;
             $weekendPrice = ($priceType === 'daily') ? ($validated['weekend_price'] ?? $dailyPrice) : null;
+            $holidayPrice = ($priceType === 'daily') ? ($validated['holiday_price'] ?? null) : null;
+            $highSeasonPrice = ($priceType === 'daily') ? ($validated['high_season_price'] ?? null) : null;
+            $lowSeasonPrice = ($priceType === 'daily') ? ($validated['low_season_price'] ?? null) : null;
 
             // Harga utama untuk field price
             $mainPrice = $priceType === 'daily' ? $dailyPrice : $monthlyPrice;
@@ -355,11 +371,14 @@ class ManajementRoomsController extends Controller
             if ($priceType === 'daily' && $dailyPrice > 0) {
                 $priceGeneratorService = app(RoomPriceGeneratorService::class);
 
-                /* Create weekday + weekend pricing rules */
+                /* Create all 5 pricing rules (weekday, weekend, holiday, high_season, low_season) */
                 $priceGeneratorService->createDefaultRules(
                     $idrec,
                     $weekdayPrice ?? $dailyPrice,
                     $weekendPrice ?? $dailyPrice,
+                    $holidayPrice,
+                    $highSeasonPrice,
+                    $lowSeasonPrice,
                     Auth::id()
                 );
 
@@ -428,6 +447,45 @@ class ManajementRoomsController extends Controller
     }
 
 
+    /**
+     * Check if a room has active or future bookings
+     * that would prevent changing the booking type.
+     *
+     * Only blocks if there are:
+     * - Currently checked-in bookings (check_in_at set, check_out_at null)
+     * - Future paid bookings (check_out >= today, transaction paid/completed)
+     * Does NOT block for:
+     * - Already checked-out bookings (even if status=1)
+     * - Expired/cancelled/pending transactions
+     */
+    public function checkRoomBookings(Request $request)
+    {
+        $roomId = $request->input('room_id');
+        $today = Carbon::now();
+
+        // Check for currently checked-in bookings (not yet checked out)
+        $hasCurrentOccupant = \App\Models\Booking::where('room_id', $roomId)
+            ->whereNotNull('check_in_at')
+            ->whereNull('check_out_at')
+            ->whereHas('transaction', function ($q) {
+                $q->whereIn('transaction_status', ['paid', 'completed']);
+            })
+            ->exists();
+
+        // Check for future paid bookings whose booking hasn't been checked out yet
+        $hasFutureBookings = \App\Models\Booking::where('room_id', $roomId)
+            ->whereNull('check_out_at')  // not yet checked out
+            ->whereHas('transaction', function ($q) use ($today) {
+                $q->where('check_out', '>=', $today)
+                  ->whereIn('transaction_status', ['paid', 'completed']);
+            })
+            ->exists();
+
+        return response()->json([
+            'has_bookings' => $hasCurrentOccupant || $hasFutureBookings,
+        ]);
+    }
+
     public function update(Request $request, $idrec)
     {
         // Log request data untuk debugging
@@ -446,14 +504,17 @@ class ManajementRoomsController extends Controller
             'description' => 'required|string',
             'daily_price' => 'nullable|numeric|min:0',
             'monthly_price' => 'nullable|numeric|min:0',
-            /* Multi-Tier Pricing: annual + weekday/weekend price validation for update */
+            /* Multi-Tier Pricing: annual + all 5 pricing categories for update */
             'annual_price' => 'nullable|numeric|min:0',
             'weekday_price' => 'nullable|numeric|min:0',
             'weekend_price' => 'nullable|numeric|min:0',
+            'holiday_price' => 'nullable|numeric|min:0',
+            'high_season_price' => 'nullable|numeric|min:0',
+            'low_season_price' => 'nullable|numeric|min:0',
             'general_facilities' => 'nullable|array',
             'general_facilities.*' => 'numeric',
             'periode' => 'nullable|string',
-            'room_images' => 'nullable|array|max:5',
+            'room_images' => 'nullable|array|max:20',
             'room_images.*' => [
                 'image',
                 'mimes:jpeg,png,jpg,gif,webp',
@@ -524,13 +585,13 @@ class ManajementRoomsController extends Controller
                 ], 422);
             }
 
-            // Validate maximum 5 images
-            if ($totalImages > 5) {
+            // Validate maximum 20 images
+            if ($totalImages > 20) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Validasi gagal',
                     'errors' => [
-                        'room_images' => ['Maksimal 5 foto yang dapat diupload. Saat ini ada ' . $totalImages . ' foto.']
+                        'room_images' => ['Maksimal 20 foto yang dapat diupload. Saat ini ada ' . $totalImages . ' foto.']
                     ]
                 ], 422);
             }
@@ -572,6 +633,10 @@ class ManajementRoomsController extends Controller
             $annualPrice = $validated['annual_price'] ?? 0; /* Multi-Tier Pricing */
             $weekdayPrice = $validated['weekday_price'] ?? ($hasDailyPrice ? $dailyPrice : null);
             $weekendPrice = $validated['weekend_price'] ?? ($hasDailyPrice ? $dailyPrice : null);
+            /* Multi-Tier Pricing: extract holiday, high season, low season prices for update */
+            $holidayPrice = $validated['holiday_price'] ?? null;
+            $highSeasonPrice = $validated['high_season_price'] ?? null;
+            $lowSeasonPrice = $validated['low_season_price'] ?? null;
 
             // Determine main price
             $mainPrice = $dailyPrice > 0 ? $dailyPrice : ($monthlyPrice > 0 ? $monthlyPrice : $annualPrice);
@@ -701,11 +766,14 @@ class ManajementRoomsController extends Controller
             if ($periodeDaily && $dailyPrice > 0) {
                 $priceGeneratorService = app(RoomPriceGeneratorService::class);
 
-                /* Update weekday + weekend pricing rules */
+                /* Update all 5 pricing rules (weekday, weekend, holiday, high_season, low_season) */
                 $priceGeneratorService->createDefaultRules(
                     $idrec,
                     $weekdayPrice ?? $dailyPrice,
                     $weekendPrice ?? $dailyPrice,
+                    $holidayPrice,
+                    $highSeasonPrice,
+                    $lowSeasonPrice,
                     Auth::id()
                 );
 
@@ -833,8 +901,9 @@ class ManajementRoomsController extends Controller
         $year = $request->get('year');
         $month = $request->get('month');
 
-        $start = Carbon::createFromDate($year, $month, 1);
-        $end = $start->copy()->endOfMonth();
+        /* startOfDay() ensures the 1st of the month is included in whereBetween query */
+        $start = Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $end = $start->copy()->endOfMonth()->endOfDay();
         // dd($start, $end);
 
         /* Multi-Tier Pricing: return both price and price_type for calendar color coding */
@@ -856,6 +925,22 @@ class ManajementRoomsController extends Controller
         $request->validate([
             'status' => 'required|boolean'
         ]);
+
+        /* Block status change if room has current or future bookings (check_out >= today) */
+        $hasActiveBookings = $room->bookings()
+            ->where('status', 1)
+            ->whereHas('transaction', function ($q) {
+                $q->where('check_out', '>=', now())
+                  ->where('transaction_status', 'paid');
+            })
+            ->exists();
+
+        if ($hasActiveBookings) {
+            return response()->json([
+                'success' => false,
+                'message' => __('ui.room_status_has_bookings')
+            ], 422);
+        }
 
         $room->update([
             'status' => $request->status,
@@ -1086,6 +1171,163 @@ class ManajementRoomsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengubah status'
+            ], 500);
+        }
+    }
+
+    // `````````````Room Name Type Management```````````````````````````
+
+    /**
+     * <!-- List room name types with search, status filter, and pagination -->
+     */
+    public function indexRoomNameType(Request $request)
+    {
+        /* Order by admin-controlled sort_priority asc — drives the ordering
+           seen in the public Frontend "Kamar Tersedia" section and the Mobile
+           App room-name filter dropdown. Falls back to name when priorities
+           collide so listings stay deterministic. */
+        $query = RoomNameType::query()
+            ->when($request->search, fn($q) => $q->where('name', 'like', '%' . $request->search . '%'))
+            ->when($request->status, fn($q) => $q->where('status', $request->status === 'active' ? 1 : 0))
+            ->orderBy('sort_priority', 'asc')
+            ->orderBy('name', 'asc');
+
+        $roomNameTypes = $query->paginate(8)->withQueryString();
+
+        return view('pages.Properties.Room_name_types.index', compact('roomNameTypes'));
+    }
+
+    /**
+     * <!-- Store a new room name type -->
+     */
+    public function storeRoomNameType(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:m_room_name_types,name',
+            'status' => 'required|boolean',
+        ]);
+
+        try {
+            /* <!-- Auto-assign next sort_priority (max + 1) so new room types
+               land at the bottom of the list instead of colliding at 0. The
+               admin can still reorder afterwards using the up/down arrows. --> */
+            $nextPriority = (int) RoomNameType::max('sort_priority') + 1;
+
+            RoomNameType::create([
+                'name' => $validated['name'],
+                'sort_priority' => $nextPriority,
+                'status' => $validated['status'] ? 1 : 0,
+                'created_by' => Auth::id(),
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Room type created successfully'], 201);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * <!-- Update an existing room name type -->
+     */
+    public function updateRoomNameType(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:m_room_name_types,name,' . $id . ',idrec',
+            'status' => 'required|boolean',
+        ]);
+
+        try {
+            $type = RoomNameType::findOrFail($id);
+            $type->update([
+                'name' => $validated['name'],
+                'status' => $validated['status'] ? 1 : 0,
+                'updated_by' => Auth::id(),
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Room type updated successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * <!-- Toggle room name type status -->
+     */
+    public function toggleRoomNameTypeStatus(Request $request)
+    {
+        try {
+            $type = RoomNameType::findOrFail($request->id);
+            $type->update(['status' => $request->status, 'updated_by' => Auth::id()]);
+
+            return response()->json(['success' => true, 'message' => 'Status berhasil diubah']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal mengubah status'], 500);
+        }
+    }
+
+    /**
+     * <!-- Move a room name type up or down in the sort_priority order by
+     *      swapping its priority with the immediate neighbour. Operates on
+     *      the global ordering, not the current paginated page slice, so an
+     *      "up" click on the first row of page 2 swaps with the last row of
+     *      page 1. -->
+     */
+    public function reorderRoomNameType(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer|exists:m_room_name_types,idrec',
+            'direction' => 'required|in:up,down',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $current = RoomNameType::findOrFail($request->id);
+
+            /* Find the neighbour: for "up" → row with the next-lower priority;
+               for "down" → row with the next-higher priority. */
+            $neighbour = RoomNameType::query()
+                ->when($request->direction === 'up',
+                    fn($q) => $q->where('sort_priority', '<', $current->sort_priority)
+                                ->orderBy('sort_priority', 'desc'),
+                    fn($q) => $q->where('sort_priority', '>', $current->sort_priority)
+                                ->orderBy('sort_priority', 'asc'))
+                ->first();
+
+            if (!$neighbour) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => $request->direction === 'up'
+                        ? 'Already at the top'
+                        : 'Already at the bottom',
+                ], 409);
+            }
+
+            // Swap priorities
+            $currentPriority   = $current->sort_priority;
+            $neighbourPriority = $neighbour->sort_priority;
+
+            $current->update([
+                'sort_priority' => $neighbourPriority,
+                'updated_by'    => Auth::id(),
+            ]);
+            $neighbour->update([
+                'sort_priority' => $currentPriority,
+                'updated_by'    => Auth::id(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order updated',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reorder: ' . $e->getMessage(),
             ], 500);
         }
     }

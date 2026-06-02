@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\Room;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 
@@ -41,15 +42,20 @@ class ChangeRoomController extends Controller
             ->where('status', 1) // Only active bookings
             ->whereNull('check_out_at') // Not checked out yet
             ->when($search, function ($query, $search) {
+                // <!-- Search matches: Booking ID (order_id), Guest username, and Room number (m_rooms.no).
+                //      Room number search lets admins find a guest by typing e.g. "315" or "107". -->
                 return $query->where(function ($q) use ($search) {
                     $q->where('order_id', 'like', '%' . $search . '%')
                         ->orWhereHas('user', function ($uq) use ($search) {
                             $uq->where('username', 'like', '%' . $search . '%');
+                        })
+                        ->orWhereHas('room', function ($rq) use ($search) {
+                            $rq->where('no', 'like', '%' . $search . '%');
                         });
                 });
             })
             ->orderByRaw('check_in_at IS NULL DESC, check_in_at DESC')
-            ->paginate(3);
+            ->paginate(15);
 
         // Check if this is an AJAX request for live search
         if ($request->ajax() || $request->get('ajax')) {
@@ -67,8 +73,15 @@ class ChangeRoomController extends Controller
         }
 
         // Get transfer history - bookings that have been transferred (have previous_booking_id)
-        // Group by order_id to show chain history
         $transferHistory = $this->getTransferHistory($propertyId, $historySearch);
+
+        // AJAX handler for history tab search
+        if (($request->ajax() || $request->get('ajax')) && $request->get('tab') === 'history') {
+            return response()->json([
+                'table' => view('pages.rooms.changerooms.partials.transfer_history_table', compact('transferHistory'))->render(),
+                'pagination' => $transferHistory->appends($request->input())->links()->toHtml(),
+            ]);
+        }
 
         return view('pages.rooms.changerooms.index', compact(
             'bookings',
@@ -79,56 +92,71 @@ class ChangeRoomController extends Controller
     }
 
     /**
-     * Get transfer history grouped by order_id with chain visualization.
+     * Get transfer history grouped by order_id, paginated for list view.
      */
-    private function getTransferHistory($propertyId = null, $search = null)
+    private function getTransferHistory($propertyId = null, $search = null, $perPage = 25)
     {
-        // Get distinct order_ids that have room changes
-        $orderIds = Booking::when($propertyId, function ($query, $propertyId) {
-                return $query->where('property_id', $propertyId);
-            })
-            ->whereNotNull('previous_booking_id')
-            ->when($search, function ($query, $search) {
-                return $query->where(function ($q) use ($search) {
-                    $q->where('order_id', 'like', '%' . $search . '%')
-                        ->orWhereHas('user', function ($uq) use ($search) {
-                            $uq->where('username', 'like', '%' . $search . '%');
-                        });
+        // Filter on `room_changed_at` (set only on real room transfers).
+        // Using `previous_booking_id` would also catch renewals, which inflates
+        // the total and leaves the paginator with mostly-empty pages.
+        $orderIds = DB::table('t_booking as b')
+            ->leftJoin('t_transactions as t', 't.order_id', '=', 'b.order_id')
+            ->leftJoin('users as u', 'u.id', '=', 't.user_id')
+            ->when($propertyId, fn($q) => $q->where('b.property_id', $propertyId))
+            ->whereNotNull('b.room_changed_at')
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($sub) use ($search) {
+                    $like = '%' . $search . '%';
+                    $sub->where('b.order_id', 'like', $like)
+                        ->orWhere('b.user_name', 'like', $like)
+                        ->orWhere('u.username', 'like', $like)
+                        ->orWhere('u.first_name', 'like', $like)
+                        ->orWhere('u.last_name', 'like', $like);
                 });
             })
-            ->select('order_id')
-            ->distinct()
-            ->pluck('order_id');
+            ->selectRaw('b.order_id, MAX(b.room_changed_at) as last_created')
+            ->groupBy('b.order_id')
+            ->orderByDesc('last_created')
+            ->get();
 
-        // Build history data with full chain for each order
-        $history = collect();
+        $page = request()->input('history_page', 1);
+        $total = $orderIds->count();
+        $slice = $orderIds->forPage($page, $perPage);
 
-        foreach ($orderIds as $orderId) {
+        // Build history data for current page only
+        $items = collect();
+        foreach ($slice as $row) {
+            $orderId = $row->order_id;
             $bookings = Booking::with(['room', 'property', 'user', 'roomChangedByUser'])
                 ->where('order_id', $orderId)
                 ->orderBy('created_at', 'asc')
                 ->get();
 
-            if ($bookings->isEmpty()) continue;
+            if ($bookings->isEmpty() || $bookings->count() <= 1) continue;
 
             $activeBooking = $bookings->where('status', 1)->first();
             $firstBooking = $bookings->first();
+            $lastBooking = $bookings->last();
 
-            $history->push([
+            $items->push([
                 'order_id' => $orderId,
-                'guest_name' => $firstBooking->user->username ?? 'N/A',
+                'guest_name' => $firstBooking->user->username ?? $firstBooking->user_name ?? 'N/A',
+                // Email shown under guest name in the list. Prefer the linked user's email; fall back to t_booking.user_email captured at booking time.
+                'guest_email' => $firstBooking->user->email ?? $firstBooking->user_email ?? null,
                 'property' => $firstBooking->property,
-                'chain' => $bookings->values(), // All bookings including original as starting point
+                'first_room' => $firstBooking->room,
+                'last_room' => $lastBooking->room,
                 'active_booking' => $activeBooking,
-                'transfer_count' => $bookings->count() - 1, // Exclude original booking
-                'last_transfer_at' => $activeBooking?->room_changed_at ?? $activeBooking?->created_at,
+                'transfer_count' => $bookings->count() - 1,
+                'last_transfer_at' => $lastBooking->room_changed_at ?? $lastBooking->created_at,
+                'last_transfer_by' => $lastBooking->roomChangedByUser->username ?? $lastBooking->roomChangedByUser->first_name ?? null,
             ]);
         }
 
-        // Sort by last transfer date descending, exclude entries with no actual transfers
-        return $history->filter(fn($h) => $h['transfer_count'] > 0)
-            ->sortByDesc('last_transfer_at')
-            ->values();
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $items, $total, $perPage, $page,
+            ['path' => request()->url(), 'pageName' => 'history_page']
+        );
     }
 
     /**
@@ -256,9 +284,9 @@ class ChangeRoomController extends Controller
                     ->with('error', 'Kamar yang dipilih tidak tersedia.');
             }
 
-            // Use dates from booking record (not from request) to prevent tampering
-            $checkInDate = $currentBooking->check_in_at ?? Carbon::parse($currentBooking->transaction?->check_in);
-            $checkOutDate = $currentBooking->check_out_at ?? Carbon::parse($currentBooking->transaction?->check_out);
+            // Use scheduled dates from transaction (always set) for conflict checking
+            $checkInDate = Carbon::parse($currentBooking->transaction?->check_in);
+            $checkOutDate = Carbon::parse($currentBooking->transaction?->check_out);
 
             $hasConflict = $this->checkRoomConflict($request->new_room, $checkInDate, $checkOutDate, $currentBooking->order_id);
 
@@ -295,6 +323,16 @@ class ChangeRoomController extends Controller
             $currentBooking->update([
                 'status' => 0,
                 'updated_by' => Auth::id(),
+            ]);
+
+            // Sync the transaction's room reference to the new room.
+            // Frontend "My Booking" and the mobile app resolve the room via Transaction::room()
+            // (belongsTo Room on t_transactions.room_id), so leaving this stale makes the
+            // transferred booking still appear under the original room everywhere except
+            // the Backend admin views that read directly from t_booking.
+            $currentBooking->transaction?->update([
+                'room_id' => $newRoom->idrec,
+                'room_name' => $newRoom->name,
             ]);
 
             // Old room: free (guest has moved out)
@@ -367,9 +405,9 @@ class ChangeRoomController extends Controller
                     ->with('error', 'Kamar sebelumnya tidak lagi tersedia atau sudah terbooking.');
             }
 
-            // Check for conflicts on the previous room
-            $checkInDate = $currentBooking->check_in_at ?? Carbon::parse($currentBooking->transaction->check_in);
-            $checkOutDate = $currentBooking->check_out_at ?? Carbon::parse($currentBooking->transaction->check_out);
+            // Use scheduled dates from transaction for conflict checking
+            $checkInDate = Carbon::parse($currentBooking->transaction->check_in);
+            $checkOutDate = Carbon::parse($currentBooking->transaction->check_out);
 
             $hasConflict = $this->checkRoomConflict($previousRoom->idrec, $checkInDate, $checkOutDate, $currentBooking->order_id);
 
@@ -407,6 +445,13 @@ class ChangeRoomController extends Controller
             $currentBooking->update([
                 'status' => 0,
                 'updated_by' => Auth::id(),
+            ]);
+
+            // Sync the transaction's room reference back to the previous room — same reason
+            // as in store(): downstream consumers read room from t_transactions, not t_booking.
+            $currentBooking->transaction?->update([
+                'room_id' => $previousRoom->idrec,
+                'room_name' => $previousRoom->name,
             ]);
 
             // Current room: free (guest has moved out)
@@ -497,9 +542,9 @@ class ChangeRoomController extends Controller
             ]);
         }
 
-        // Check for conflicts
-        $checkInDate = $booking->check_in_at ?? Carbon::parse($booking->transaction->check_in);
-        $checkOutDate = $booking->check_out_at ?? Carbon::parse($booking->transaction->check_out);
+        // Use scheduled dates from transaction for conflict checking
+        $checkInDate = Carbon::parse($booking->transaction->check_in);
+        $checkOutDate = Carbon::parse($booking->transaction->check_out);
 
         $hasConflict = $this->checkRoomConflict($previousRoom->idrec, $checkInDate, $checkOutDate, $booking->order_id);
 
@@ -516,27 +561,25 @@ class ChangeRoomController extends Controller
 
     /**
      * Check if a room has booking conflicts for given dates.
+     * Uses scheduled dates from t_transactions (always set) instead of
+     * t_booking.check_in_at/check_out_at (NULL when not yet checked in/out).
      */
     private function checkRoomConflict($roomId, Carbon $checkInDate, Carbon $checkOutDate, $excludeOrderId = null)
     {
-        return Booking::where('room_id', $roomId)
-            ->where('status', 1)
+        return Booking::where('t_booking.room_id', $roomId)
+            ->where('t_booking.status', 1)
             ->when($excludeOrderId, function ($query, $excludeOrderId) {
-                return $query->where('order_id', '!=', $excludeOrderId);
+                return $query->where('t_booking.order_id', '!=', $excludeOrderId);
             })
-            ->where(function ($query) use ($checkInDate, $checkOutDate) {
-                $query->where(function ($q1) use ($checkInDate, $checkOutDate) {
-                    $q1->where('check_in_at', '>=', $checkInDate)
-                       ->where('check_in_at', '<', $checkOutDate);
-                })
-                ->orWhere(function ($q2) use ($checkInDate, $checkOutDate) {
-                    $q2->where('check_out_at', '>', $checkInDate)
-                       ->where('check_out_at', '<=', $checkOutDate);
-                })
-                ->orWhere(function ($q3) use ($checkInDate, $checkOutDate) {
-                    $q3->where('check_in_at', '<=', $checkInDate)
-                       ->where('check_out_at', '>=', $checkOutDate);
-                });
+            ->whereHas('transaction', function ($query) use ($checkInDate, $checkOutDate) {
+                // <!-- Exclude non-occupying lifecycle states: expired, cancelled (BE/AmE spellings),
+                //      and rejected. Rejected payment-rejection rows can keep `t_booking.status = 1`
+                //      and inherited `check_in_at` from a parent booking but no longer occupy the room,
+                //      so they must NOT block availability for room transfers. -->
+                $query->where('status', 1)
+                    ->whereNotIn('transaction_status', ['expired', 'cancelled', 'canceled', 'rejected'])
+                    ->where('check_in', '<', $checkOutDate)
+                    ->where('check_out', '>', $checkInDate);
             })
             ->exists();
     }

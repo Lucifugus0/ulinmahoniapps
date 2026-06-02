@@ -12,6 +12,7 @@ use App\Jobs\ExpireBooking;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -36,69 +37,59 @@ class BookingController extends Controller
      */
     private function checkAndExpireBookings()
     {
+        // Safety-net only — the per-minute system cron (expire_transactions.sql)
+        // remains the primary expiry driver. Throttle to at most one sweep per
+        // 60s across the whole app so re-enabling this on the booking-list
+        // request path doesn't run a full sweep on every request.
+        if (! Cache::add('booking_expiry_sweep_lock', 1, 60)) {
+            return;
+        }
+
         try {
             $now = now();
 
-            // Find all pending transactions that are past their expiration time
+            // Same selection as the deployed expire_transactions.sql:
+            //  - pending
+            //  - past deadline (expired_at < now) OR stale (transaction_date < now - 1h)
+            //  - skip if another pending txn on the same room is still within its window
             $expiredTransactions = Transaction::where('transaction_status', 'pending')
-                ->where('expired_at', '<=', $now)
-                ->whereNotNull('expired_at')
+                ->where(function ($q) use ($now) {
+                    $q->where(function ($q2) use ($now) {
+                            $q2->whereNotNull('expired_at')
+                               ->where('expired_at', '<', $now);
+                        })
+                      ->orWhere('transaction_date', '<', $now->copy()->subHour());
+                })
+                ->whereNotExists(function ($sub) use ($now) {
+                    $sub->selectRaw('1')
+                        ->from('t_transactions as t2')
+                        ->whereColumn('t2.room_id', 't_transactions.room_id')
+                        ->whereColumn('t2.idrec', '!=', 't_transactions.idrec')
+                        ->whereRaw("UPPER(t2.transaction_status) = 'PENDING'")
+                        ->where(function ($w) use ($now) {
+                            $w->whereNull('t2.expired_at')
+                              ->orWhere('t2.expired_at', '>=', $now);
+                        });
+                })
                 ->get();
 
             if ($expiredTransactions->isEmpty()) {
                 return;
             }
 
+            // Delegate each order to the canonical ExpireBooking routine.
+            // dispatchSync runs handle() in-process regardless of QUEUE_CONNECTION,
+            // giving the full consistent flow: bundled-parking soft-delete, voucher
+            // restore, GUARDED renewal parent-rollback, push notifications, and —
+            // exactly like the SQL — NO m_rooms.rental_status mutation. handle()
+            // re-checks pending + payment, so it is idempotent if the row changed
+            // between selection and dispatch.
             foreach ($expiredTransactions as $transaction) {
                 try {
-                    DB::beginTransaction();
-
-                    // Double check payment status
-                    $payment = Payment::where('order_id', $transaction->order_id)->first();
-                    if ($payment && $payment->payment_status === 'paid') {
-                        Log::info("Skipping expiration - Payment already completed for order_id: {$transaction->order_id}");
-                        DB::rollBack();
-                        continue;
-                    }
-
-                    // Update transaction status to expired
-                    $transaction->update([
-                        'transaction_status' => 'expired',
-                        'status' => '0', // Inactive
-                    ]);
-
-                    // Update payment status if exists
-                    if ($payment) {
-                        $payment->update([
-                            'payment_status' => 'expired'
-                        ]);
-                    }
-
-                    // Update booking status if exists
-                    $booking = Booking::where('order_id', $transaction->order_id)->first();
-                    if ($booking) {
-                        $booking->update([
-                            'status' => '0' // Inactive
-                        ]);
-                    }
-
-                    // Restore voucher usage count if voucher was used
-                    if ($transaction->voucher_id) {
-                        $voucher = \App\Models\Voucher::find($transaction->voucher_id);
-                        if ($voucher && $voucher->current_usage_count > 0) {
-                            $voucher->decrement('current_usage_count');
-                            Log::info("Restored voucher usage count for voucher_id: {$transaction->voucher_id}");
-                        }
-                    }
-
-                    DB::commit();
-                    Log::info("Auto-expired booking on user access for order_id: {$transaction->order_id}");
-
+                    ExpireBooking::dispatchSync($transaction->order_id);
                 } catch (\Exception $e) {
-                    DB::rollBack();
-                    Log::error("Failed to auto-expire booking for order_id: {$transaction->order_id}", [
+                    Log::error("Fallback expiry failed for order_id: {$transaction->order_id}", [
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
                     ]);
                 }
             }
@@ -576,87 +567,74 @@ class BookingController extends Controller
             if ($parkingFee > 0 && $request->parking_type && $request->parking_type !== 'none') {
                 $user = Auth::user();
 
-                if ($booking->is_renewal == 1) {
-                    // For renewal bookings, check existing parking record
-                    $existingParking = DB::table('t_parking')
-                        ->where('user_id', Auth::id())
-                        ->where('property_id', $booking->property_id)
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-
-                    if ($existingParking) {
-                        // User has existing parking record
-                        if ($existingParking->parking_type !== $request->parking_type) {
-                            // Different parking type - decrement old, increment new
-                            $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
-                            $this->incrementParkingQuota($booking->property_id, $request->parking_type);
-
-                            // Update existing parking record with new type
-                            try {
-                                DB::table('t_parking')
-                                    ->where('idrec', $existingParking->idrec)
-                                    ->update([
-                                        'parking_type' => $request->parking_type,
-                                        'vehicle_plate' => $request->vehicle_plate ?? $existingParking->vehicle_plate,
-                                        'owner_name' => $request->owner_name ?? $existingParking->owner_name,
-                                        'owner_phone' => $request->owner_phone ?? $existingParking->owner_phone,
-                                        'parking_duration' => intval($request->parking_duration ?? $existingParking->parking_duration),
-                                        'fee_amount' => $parkingFee,
-                                        'order_id' => $booking->order_id,
-                                        'updated_at' => now()
-                                    ]);
-                            } catch (\Exception $e) {
-                                \Log::error('Failed to update parking record: ' . $e->getMessage());
-                            }
-                        }
-                        // If same parking type, do nothing (no quota change needed)
-                    } else {
-                        // No existing parking record for renewal - increment and insert
-                        $this->incrementParkingQuota($booking->property_id, $request->parking_type);
-
-                        try {
-                            DB::table('t_parking')->insert([
-                                'property_id' => $booking->property_id,
-                                'parking_type' => $request->parking_type,
-                                'vehicle_plate' => $request->vehicle_plate ?? null,
-                                'owner_name' => $request->owner_name ?? $user->name ?? null,
-                                'owner_phone' => $request->owner_phone ?? $user->phone_number ?? null,
-                                'user_id' => Auth::id(),
-                                'parking_duration' => intval($request->parking_duration ?? 1),
-                                'fee_amount' => $parkingFee,
-                                'order_id' => $booking->order_id,
-                                'management_only' => 0,
-                                'created_by' => Auth::id(),
-                                'created_at' => now(),
-                                'updated_at' => now()
-                            ]);
-                        } catch (\Exception $e) {
-                            \Log::error('Failed to insert parking record for renewal: ' . $e->getMessage());
+                // Compute the parking rent period (start = check_in, end capped at check_out).
+                // Booked-with-room parking always starts at the booking's check-in date.
+                $parkingMonths = intval($request->parking_duration ?? 1);
+                $startRent = null;
+                $endRent = null;
+                if (!empty($booking->check_in)) {
+                    $startCarbon = \Carbon\Carbon::parse($booking->check_in)->startOfDay();
+                    $endCarbon = $startCarbon->copy()->addMonths($parkingMonths);
+                    if (!empty($booking->check_out)) {
+                        $checkOutCarbon = \Carbon\Carbon::parse($booking->check_out)->startOfDay();
+                        if ($endCarbon->gt($checkOutCarbon)) {
+                            $endCarbon = $checkOutCarbon;
                         }
                     }
-                } else {
-                    // For new bookings - increment quota and insert parking record
+                    $startRent = $startCarbon->toDateString();
+                    $endRent = $endCarbon->toDateString();
+                }
+
+                /**
+                 * Always INSERT a new t_parking row for this paid period (multi-row design,
+                 * see CLAUDE.md "Parking System / Storage: one row per paid period").
+                 *
+                 * The prior-parking lookup runs **regardless of `is_renewal`** — a customer
+                 * can keep using their slot across non-renewal bookings (consecutive month-
+                 * to-month bookings, fresh booking after a previous stay still in chain).
+                 * Quota decisions are made off this lookup, not off the booking flag:
+                 *   - existing same type   → no quota change (slot already counted)
+                 *   - existing other type  → swap (decrement old, increment new)
+                 *   - no existing row      → fresh increment
+                 * Plate / owner / phone fall back to the prior row when the request omits them.
+                 */
+                $existingParking = DB::table('t_parking')
+                    ->where('user_id', Auth::id())
+                    ->where('property_id', $booking->property_id)
+                    ->where('status', 1)
+                    ->whereNull('deleted_at')
+                    ->orderByDesc('idrec')
+                    ->first();
+
+                if ($existingParking && $existingParking->parking_type !== $request->parking_type) {
+                    $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
                     $this->incrementParkingQuota($booking->property_id, $request->parking_type);
+                } elseif (!$existingParking) {
+                    $this->incrementParkingQuota($booking->property_id, $request->parking_type);
+                }
+                // else: same-type renewal — quota unchanged, slot already counted
 
-                    try {
-                        DB::table('t_parking')->insert([
-                            'property_id' => $booking->property_id,
-                            'parking_type' => $request->parking_type,
-                            'vehicle_plate' => $request->vehicle_plate ?? null,
-                            'owner_name' => $request->owner_name ?? $user->name ?? null,
-                            'owner_phone' => $request->owner_phone ?? $user->phone_number ?? null,
-                            'user_id' => Auth::id(),
-                            'parking_duration' => intval($request->parking_duration ?? 1),
-                            'fee_amount' => $parkingFee,
-                            'order_id' => $booking->order_id,
-                            'management_only' => 0,
-                            'created_by' => Auth::id(),
-                            'created_at' => now(),
-                            'updated_at' => now()
-                        ]);
-                    } catch (\Exception $e) {
-                        \Log::error('Failed to insert parking record: ' . $e->getMessage());
-                    }
+                try {
+                    DB::table('t_parking')->insert([
+                        'property_id' => $booking->property_id,
+                        'parking_type' => $request->parking_type,
+                        'vehicle_plate' => $request->vehicle_plate ?? ($existingParking->vehicle_plate ?? null),
+                        'owner_name' => $request->owner_name ?? ($existingParking->owner_name ?? $user->name ?? null),
+                        'owner_phone' => $request->owner_phone ?? ($existingParking->owner_phone ?? $user->phone_number ?? null),
+                        'user_id' => Auth::id(),
+                        'parking_duration' => intval($request->parking_duration ?? 1),
+                        'start_rent' => $startRent,
+                        'end_rent' => $endRent,
+                        'fee_amount' => $parkingFee,
+                        'order_id' => $booking->order_id,
+                        'status' => 1,
+                        'management_only' => 0,
+                        'created_by' => Auth::id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to insert parking record: ' . $e->getMessage());
                 }
             }
 
@@ -721,7 +699,8 @@ class BookingController extends Controller
     public function index()
     {
         // Auto-expire pending bookings when user accesses their bookings
-        // $this->checkAndExpireBookings();
+        // (throttled safety-net; system cron remains the primary driver)
+        $this->checkAndExpireBookings();
 
         $tab = request()->get('tab', 'all');
         $userId = Auth::id();
@@ -733,7 +712,10 @@ class BookingController extends Controller
             'url' => request()->fullUrl()
         ]);
 
-        // Get all bookings for the user with relationships
+        // Get all bookings for the user with relationships.
+        // Sorted by t_transactions.created_at desc so the most recently created transaction
+        // (e.g. a fresh renewal or a new booking) surfaces at the top of every tab — matches
+        // the new "Tanggal Pemesanan" row admins/guests see in the ID Pemesanan cell.
         $bookings = Transaction::with(['user', 'room', 'property', 'booking'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
@@ -765,7 +747,11 @@ class BookingController extends Controller
 
         $validator = \Validator::make($request->all(), [
             'rent_type' => 'required|in:daily,monthly',
-            'check_in' => 'nullable|date|after_or_equal:today',
+            // Daily: check-in max 90 days from now. Monthly: max 14 days from now.
+            'check_in' => [
+                'nullable', 'date', 'after_or_equal:today',
+                'before_or_equal:' . ($request->rent_type === 'monthly' ? now()->addDays(14)->format('Y-m-d') : now()->addDays(90)->format('Y-m-d')),
+            ],
             'check_out' => 'nullable|date|after:check_in',
             'property_name' => 'required|string',
             'room_name' => 'nullable|string',
@@ -846,7 +832,14 @@ class BookingController extends Controller
 
             if ($request->rent_type === 'monthly') {
                 $bookingMonths = (int) $request->months;
-                $checkOutDate = $checkInDate->copy()->addMonths($bookingMonths);
+                // Clamped month addition: if target month has fewer days, clamp to last day
+                // e.g. Jan 31 + 1 month = Feb 28, Mar 31 + 1 month = Apr 30
+                $checkOutDate = $checkInDate->copy();
+                $targetMonth = $checkOutDate->month + $bookingMonths;
+                $targetYear = $checkOutDate->year + intdiv($targetMonth - 1, 12);
+                $targetMonth = (($targetMonth - 1) % 12) + 1;
+                $maxDay = Carbon::create($targetYear, $targetMonth, 1)->daysInMonth;
+                $checkOutDate = Carbon::create($targetYear, $targetMonth, min($checkInDate->day, $maxDay), $checkInDate->hour, $checkInDate->minute, $checkInDate->second);
                 $totalPrice = $price * $bookingMonths;
 
             } elseif ($request->rent_type === 'annual') {
@@ -953,8 +946,8 @@ class BookingController extends Controller
                 $order_id = 'UMH-' . now()->format('ymd') . $randomNumber . $propertyInitial;
             } while (Transaction::where('order_id', $order_id)->exists());
 
-            // Set expiration time to 15 minutes from now
-            $expiredAt = now()->addMinutes(15);
+            // Set expiration time to 30 minutes from now
+            $expiredAt = now()->addMinutes(30);
 
             // Prepare transaction data
             $transactionData = [
@@ -970,6 +963,7 @@ class BookingController extends Controller
                 'transaction_date' => now(),
                 'check_in' => $checkIn,
                 'check_out' => $checkOut,
+                'original_checkin_day' => Carbon::parse($checkIn)->day,
                 'room_name' => $room->name,
                 'booking_type' => $request->booking_type,
                 'booking_days' => $bookingDays,
@@ -1049,10 +1043,8 @@ class BookingController extends Controller
             // Booking will be automatically expired by scheduled task if not paid within 1 hour
             Log::info("Booking created with expiration time: {$expiredAt} for order_id: {$order_id}");
 
-            // Update room rental_status to 1 (room is booked/rented)
-            DB::table('m_rooms')
-                ->where('idrec', $room->idrec)
-                ->update(['rental_status' => 1]);
+            /* m_rooms.rental_status untouched — physical occupancy flag is
+               owned exclusively by check-in / check-out. */
 
             // Process payment with DOKU
             try {

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
 import 'app_localizations_id.dart';
+import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -96,6 +97,7 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('id'),
+    Locale('zh'),
   ];
 
   /// No description provided for @searchBannerTitle.
@@ -116,11 +118,17 @@ abstract class AppLocalizations {
   /// **'Kategori'**
   String get categories;
 
-  /// No description provided for @bestSeller.
+  /// No description provided for @availableNow.
   ///
   /// In id, this message translates to:
-  /// **'Terlaris'**
-  String get bestSeller;
+  /// **'Tersedia Sekarang'**
+  String get availableNow;
+
+  /// No description provided for @filterCategoryAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get filterCategoryAll;
 
   /// No description provided for @popularArea.
   ///
@@ -131,7 +139,7 @@ abstract class AppLocalizations {
   /// No description provided for @budget.
   ///
   /// In id, this message translates to:
-  /// **'Sesuaikan Budget Anda'**
+  /// **'Dekat Anda'**
   String get budget;
 
   /// No description provided for @promotion.
@@ -145,6 +153,102 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Promo Spesial'**
   String get promoBanner;
+
+  /// No description provided for @promoDetailTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Promo'**
+  String get promoDetailTitle;
+
+  /// No description provided for @promoDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Deskripsi Promo'**
+  String get promoDescription;
+
+  /// No description provided for @promoCodeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode Promo'**
+  String get promoCodeLabel;
+
+  /// No description provided for @noDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada deskripsi'**
+  String get noDescription;
+
+  /// No description provided for @promoHowToClaim.
+  ///
+  /// In id, this message translates to:
+  /// **'Cara Klaim'**
+  String get promoHowToClaim;
+
+  /// No description provided for @promoClaimStep1.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih properti yang diinginkan'**
+  String get promoClaimStep1;
+
+  /// No description provided for @promoClaimStep2.
+  ///
+  /// In id, this message translates to:
+  /// **'Lalu Pilih Kamar yang diinginkan'**
+  String get promoClaimStep2;
+
+  /// No description provided for @promoClaimStep3.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan Kode Voucher saat pemesanan'**
+  String get promoClaimStep3;
+
+  /// No description provided for @promoClaimStep4.
+  ///
+  /// In id, this message translates to:
+  /// **'Lakukan Pemesanan'**
+  String get promoClaimStep4;
+
+  /// No description provided for @promoClaimStep5.
+  ///
+  /// In id, this message translates to:
+  /// **'Nikmati promo/diskon yang didapatkan'**
+  String get promoClaimStep5;
+
+  /// No description provided for @promoTermsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Syarat & Ketentuan'**
+  String get promoTermsTitle;
+
+  /// No description provided for @promoTerm1.
+  ///
+  /// In id, this message translates to:
+  /// **'Syarat dan ketentuan berlaku'**
+  String get promoTerm1;
+
+  /// No description provided for @promoTerm2.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak dapat digabung dengan promo lain'**
+  String get promoTerm2;
+
+  /// No description provided for @promoTerm3.
+  ///
+  /// In id, this message translates to:
+  /// **'Periode promo terbatas'**
+  String get promoTerm3;
+
+  /// No description provided for @promoTerm4.
+  ///
+  /// In id, this message translates to:
+  /// **'Hanya berlaku untuk pengguna secara terbatas'**
+  String get promoTerm4;
+
+  /// No description provided for @promoLoadError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat detail promo'**
+  String get promoLoadError;
 
   /// No description provided for @homeLabel.
   ///
@@ -541,6 +645,66 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Silakan verifikasi email Anda terlebih dahulu untuk melanjutkan. Cek inbox email Anda dan klik link verifikasi yang telah kami kirimkan.'**
   String get emailNotVerifiedMessage;
+
+  /// No description provided for @emailVerifyResend.
+  ///
+  /// In id, this message translates to:
+  /// **'Kirim Ulang Email'**
+  String get emailVerifyResend;
+
+  /// No description provided for @emailVerifyChangeEmail.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah Email'**
+  String get emailVerifyChangeEmail;
+
+  /// No description provided for @emailVerifyLater.
+  ///
+  /// In id, this message translates to:
+  /// **'Nanti Saja'**
+  String get emailVerifyLater;
+
+  /// No description provided for @emailVerifySentTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Email Terkirim!'**
+  String get emailVerifySentTitle;
+
+  /// No description provided for @emailVerifySentMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Email verifikasi telah dikirim. Silakan periksa inbox atau folder spam Anda.'**
+  String get emailVerifySentMessage;
+
+  /// No description provided for @emailVerifyChangeTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah Alamat Email'**
+  String get emailVerifyChangeTitle;
+
+  /// No description provided for @emailVerifyNewEmailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan email baru'**
+  String get emailVerifyNewEmailHint;
+
+  /// No description provided for @emailVerifyChangeConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah & Kirim Verifikasi'**
+  String get emailVerifyChangeConfirm;
+
+  /// No description provided for @accountDeactivatedTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Akun Dinonaktifkan'**
+  String get accountDeactivatedTitle;
+
+  /// No description provided for @accountDeactivatedMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Akun Anda telah dinonaktifkan. Silakan hubungi support untuk informasi lebih lanjut.'**
+  String get accountDeactivatedMessage;
 
   /// No description provided for @registerWelcomeTitle.
   ///
@@ -1268,6 +1432,24 @@ abstract class AppLocalizations {
   /// **'Subtotal:'**
   String get myBookingDetailSubtotal;
 
+  /// No description provided for @myBookingDetailSubtotalBeforeDiscount.
+  ///
+  /// In id, this message translates to:
+  /// **'Subtotal Sebelum Diskon:'**
+  String get myBookingDetailSubtotalBeforeDiscount;
+
+  /// No description provided for @myBookingDetailVoucher.
+  ///
+  /// In id, this message translates to:
+  /// **'Voucher'**
+  String get myBookingDetailVoucher;
+
+  /// No description provided for @myBookingDetailDeposit.
+  ///
+  /// In id, this message translates to:
+  /// **'Deposit:'**
+  String get myBookingDetailDeposit;
+
   /// No description provided for @myBookingDetailNumberOfDays.
   ///
   /// In id, this message translates to:
@@ -1664,6 +1846,18 @@ abstract class AppLocalizations {
   /// **'Fasilitas Ruangan'**
   String get roomDetailsFacilitiesTitle;
 
+  /// No description provided for @roomDetailsDailyPricing.
+  ///
+  /// In id, this message translates to:
+  /// **'Rincian Harga Harian'**
+  String get roomDetailsDailyPricing;
+
+  /// No description provided for @roomDetailsDailyPricingLoading.
+  ///
+  /// In id, this message translates to:
+  /// **'Menghitung harga per tanggal...'**
+  String get roomDetailsDailyPricingLoading;
+
   /// No description provided for @roomDetailsNoFacilities.
   ///
   /// In id, this message translates to:
@@ -1867,6 +2061,12 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'No. Kamar'**
   String get renewBookingRoomNumber;
+
+  /// No description provided for @renewBookingCutoffPassed.
+  ///
+  /// In id, this message translates to:
+  /// **'Periode perpanjangan sewa telah berakhir. Perpanjangan harian harus diselesaikan paling lambat pukul 12:00 dan perpanjangan bulanan pukul 21:00 pada tanggal check-out.'**
+  String get renewBookingCutoffPassed;
 
   /// No description provided for @checkInDateLabel.
   ///
@@ -2291,19 +2491,19 @@ abstract class AppLocalizations {
   /// No description provided for @paymentTermsAgreePrefix.
   ///
   /// In id, this message translates to:
-  /// **'Saya menyetujui '**
+  /// **'Saya menyatakan telah membaca, mengerti, memahami dan menyetujui data, informasi dan rincian transaksi di atas, serta '**
   String get paymentTermsAgreePrefix;
 
   /// No description provided for @paymentTermsAnd.
   ///
   /// In id, this message translates to:
-  /// **' serta '**
+  /// **', '**
   String get paymentTermsAnd;
 
   /// No description provided for @paymentTermsConditions.
   ///
   /// In id, this message translates to:
-  /// **'Syarat dan Ketentuan'**
+  /// **'S&K'**
   String get paymentTermsConditions;
 
   /// No description provided for @paymentPrivacyPolicy.
@@ -2311,6 +2511,18 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Kebijakan Privasi'**
   String get paymentPrivacyPolicy;
+
+  /// No description provided for @paymentTermsAndRental.
+  ///
+  /// In id, this message translates to:
+  /// **', dan '**
+  String get paymentTermsAndRental;
+
+  /// No description provided for @paymentRentalAgreement.
+  ///
+  /// In id, this message translates to:
+  /// **'Perjanjian Sewa'**
+  String get paymentRentalAgreement;
 
   /// No description provided for @vaGenerationFailedTitle.
   ///
@@ -3979,6 +4191,30 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Berakhir dalam'**
   String get expiresIn;
+
+  /// No description provided for @darkModeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Mode Gelap'**
+  String get darkModeLabel;
+
+  /// No description provided for @lightModeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Mode Terang'**
+  String get lightModeLabel;
+
+  /// No description provided for @switchToLightMode.
+  ///
+  /// In id, this message translates to:
+  /// **'Beralih ke mode terang'**
+  String get switchToLightMode;
+
+  /// No description provided for @switchToDarkMode.
+  ///
+  /// In id, this message translates to:
+  /// **'Beralih ke mode gelap'**
+  String get switchToDarkMode;
 }
 
 class _AppLocalizationsDelegate
@@ -3992,7 +4228,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'id'].contains(locale.languageCode);
+      <String>['en', 'id', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -4005,6 +4241,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEn();
     case 'id':
       return AppLocalizationsId();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(

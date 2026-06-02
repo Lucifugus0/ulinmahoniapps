@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import '../data/repositories/property_repository.dart';
 import '../model/properties_model.dart';
 import '../../../core/network/api_result.dart';
@@ -55,29 +57,89 @@ final distinctCityPropertiesProvider = FutureProvider<List<PropertyModel>>((ref)
 });
 
 
-final bestSellerPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
-  AppLogger.i('Loading Best Seller properties', 'PROPERTY-PROVIDER');
+/// "Available Now" — properties with highest room availability, excluding full properties
+final availableNowPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
+  AppLogger.i('Loading Available Now properties', 'PROPERTY-PROVIDER');
 
   final allProperties = await ref.watch(propertiesProvider('').future);
 
-  // Take first 3 as best sellers
-  final limitedProperties = allProperties.take(3).toList();
+  // Filter out full properties (availableRooms == 0 or null) and sort by most available
+  final available = allProperties
+      .where((p) => (p.availableRooms ?? 0) > 0)
+      .toList()
+    ..sort((a, b) => (b.availableRooms ?? 0).compareTo(a.availableRooms ?? 0));
 
-  AppLogger.s('Loaded ${limitedProperties.length} Best Seller properties', 'PROPERTY-PROVIDER');
+  final limitedProperties = available.take(3).toList();
+
+  AppLogger.s('Loaded ${limitedProperties.length} Available Now properties', 'PROPERTY-PROVIDER');
   return limitedProperties;
 });
 
 
-final cheapestPropertiesProvider = FutureProvider<List<PropertyModel>>((ref) async {
-  final repository = ref.watch(propertyRepositoryProvider);
+/// Data class pairing a property with its computed distance from the user (in km).
+class PropertyWithDistance {
+  final PropertyModel property;
+  final double? distanceKm;
+  PropertyWithDistance(this.property, this.distanceKm);
+}
 
-  final result = await repository.fetchTop3CheapestProperties();
+/// "Near You" section — properties sorted by GPS distance, fallback to city name.
+/// GPS permission is checked but never requested here (avoid blocking UI).
+/// Only uses location if already granted.
+/// Returns PropertyWithDistance so the UI can display computed km values.
+final cheapestPropertiesProvider = FutureProvider<List<PropertyWithDistance>>((ref) async {
+  final allProperties = await ref.watch(propertiesProvider('').future);
+  final available = allProperties.where((p) => (p.availableRooms ?? 0) > 0).toList();
 
-  return switch (result) {
-    Success(:final data) => data,
-    Failure(:final message) => throw Exception(message),
-  };
+  // Only use GPS if permission was already granted — never request here
+  Position? userPosition;
+  try {
+    final permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
+      // Use last known position (instant, no GPS wait)
+      userPosition = await Geolocator.getLastKnownPosition();
+      // If no cached position, get current position with timeout
+      userPosition ??= await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
+    }
+  } catch (e) {
+    AppLogger.w('GPS check failed: $e', 'PROPERTY-PROVIDER');
+  }
+
+  if (userPosition != null) {
+    // Compute distance for each property and sort ascending
+    final withDistance = available.map((p) {
+      final dist = _calculateDistance(userPosition!, p.latitude, p.longitude);
+      return PropertyWithDistance(p, dist == double.infinity ? null : dist);
+    }).toList()
+      ..sort((a, b) => (a.distanceKm ?? double.infinity).compareTo(b.distanceKm ?? double.infinity));
+    return withDistance.take(3).toList();
+  } else {
+    // Fallback: sort by city name ascending, no distance info
+    available.sort((a, b) => a.city.toLowerCase().compareTo(b.city.toLowerCase()));
+    return available.take(3).map((p) => PropertyWithDistance(p, null)).toList();
+  }
 });
+
+/// Calculate distance in km between user position and property coordinates
+double _calculateDistance(Position user, double? lat, double? lng) {
+  if (lat == null || lng == null) return double.infinity;
+  const earthRadius = 6371.0; // km
+  final dLat = _toRadians(lat - user.latitude);
+  final dLng = _toRadians(lng - user.longitude);
+  final a = sin(dLat / 2) * sin(dLat / 2) +
+      cos(_toRadians(user.latitude)) * cos(_toRadians(lat)) *
+      sin(dLng / 2) * sin(dLng / 2);
+  final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  return earthRadius * c;
+}
+
+double _toRadians(double degrees) => degrees * pi / 180;
 
 final propertyByIdProvider = FutureProvider.family<PropertyModel?, int>((ref, propertyId) async {
   final repository = ref.watch(propertyRepositoryProvider);

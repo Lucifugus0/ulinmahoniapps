@@ -1,4 +1,30 @@
-<header class="sticky top-0 before:absolute before:inset-0 before:backdrop-blur-md max-lg:before:bg-white/90 dark:max-lg:before:bg-gray-800/90 before:-z-10 z-30 {{ $variant === 'v2' || $variant === 'v3' ? 'before:bg-white after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10' : 'max-lg:shadow-xs lg:before:bg-gray-100/90 dark:lg:before:bg-gray-900/90' }} {{ $variant === 'v2' ? 'dark:before:bg-gray-800' : '' }} {{ $variant === 'v3' ? 'dark:before:bg-gray-900' : '' }}">
+<!-- Header — liquid glass bar with backdrop blur, matching frontend glassmorphism style.
+     Blur styles are inline (not in app.css) because the Vite/Lightning CSS build strips
+     the unprefixed backdrop-filter property, which Firefox requires. -->
+<style>
+    /* Header ::before pseudo-element provides the glassmorphism blur layer.
+       Both prefixed and unprefixed backdrop-filter are needed for cross-browser support
+       (Firefox uses unprefixed, Safari/Chrome use -webkit- prefix). */
+    .admin-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: rgba(255, 255, 255, 0.35);
+        -webkit-backdrop-filter: blur(48px);
+        backdrop-filter: blur(48px);
+        border-bottom: 1px solid rgba(200, 200, 200, 0.30);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+    }
+    html.dark .admin-header::before {
+        background: rgba(10, 10, 25, 0.35);
+        -webkit-backdrop-filter: blur(48px);
+        backdrop-filter: blur(48px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    }
+</style>
+<header class="admin-header sticky top-0 z-30">
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 {{ $variant === 'v2' || $variant === 'v3' ? '' : 'lg:border-b border-gray-200 dark:border-gray-700/60' }}">
 
@@ -28,15 +54,11 @@
                 <!-- Search Button with Modal -->
                 {{-- <x-modal-search /> --}}
 
-                <!-- Chat button -->
+                {{-- Unified notifications dropdown — replaces the legacy chat-only dropdown.
+                     Aggregates chat unread + broadcast unread + future push types. --}}
                 @auth
-                    @can('manage_chat')
-                        <x-dropdown-chat align="right" />
-                    @endcan
+                    <x-dropdown-notifications align="right" />
                 @endauth
-
-                <!-- Notifications button -->
-                {{-- <x-dropdown-notifications align="right" /> --}}
 
                 <!-- Info button -->
                 {{-- <x-dropdown-help align="right" /> --}}

@@ -298,6 +298,28 @@ class AuthRepository {
     }
   }
 
+  /// Resend email verification — calls POST /resend-verification
+  Future<ApiResult<void>> resendVerification(String email) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '${ApiConfig.baseUrl}/resend-verification',
+        data: {'email': email},
+      );
+      if (response.statusCode == 200) {
+        return Success(null);
+      }
+      return Failure(
+        errorType: ApiErrorType.server,
+        message: response.data?['message'] ?? 'Failed to resend',
+      );
+    } on DioException catch (e) {
+      return Failure(
+        errorType: ApiErrorType.network,
+        message: e.response?.data?['message'] ?? e.message ?? 'Network error',
+      );
+    }
+  }
+
   /// Logout - clear all local data and cookies
   Future<void> logout() async {
     await _clearLocalToken();

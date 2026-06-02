@@ -15,6 +15,7 @@ class PromoBannerModel {
   final String? thumbnail;
   final List<PromoBannerImageModel> images;
   final List<String>? howToClaim;
+  final String? promoCode;
 
   PromoBannerModel({
     required this.id,
@@ -31,6 +32,7 @@ class PromoBannerModel {
     this.thumbnail,
     required this.images,
     this.howToClaim,
+    this.promoCode,
   });
 
   factory PromoBannerModel.fromJson(Map<String, dynamic> json) {
@@ -51,10 +53,39 @@ class PromoBannerModel {
               ?.map((e) => PromoBannerImageModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      howToClaim: (json['how_to_claim'] as List?)
-              ?.map((e) => e as String)
-              .toList(),
+      // `how_to_claim` may arrive in two shapes (see CLAUDE.md Promo Banner notes):
+      //   - Legacy: a flat list of strings  ["step text", ...]
+      //   - Current: a list of step objects [{"title": "...", "desc": "..."}, ...]
+      // Blindly casting each entry to String crashes on the object shape and
+      // makes the whole banner list fail to parse — which hid the homepage
+      // banner. Normalize both shapes down to a plain List<String> here.
+      howToClaim: _parseHowToClaim(json['how_to_claim']),
+      promoCode: json['promo_code'] as String?,
     );
+  }
+
+  /// Normalize the `how_to_claim` payload into a flat list of step strings.
+  /// Accepts either a list of strings (legacy) or a list of
+  /// `{title, desc}` objects (current backend shape); for objects it prefers
+  /// `desc`, then `title`, so the displayed step text stays meaningful.
+  static List<String>? _parseHowToClaim(dynamic raw) {
+    if (raw is! List) return null;
+
+    final steps = <String>[];
+    for (final entry in raw) {
+      if (entry is String) {
+        steps.add(entry);
+      } else if (entry is Map) {
+        final desc = entry['desc']?.toString().trim() ?? '';
+        final title = entry['title']?.toString().trim() ?? '';
+        if (desc.isNotEmpty) {
+          steps.add(desc);
+        } else if (title.isNotEmpty) {
+          steps.add(title);
+        }
+      }
+    }
+    return steps.isEmpty ? null : steps;
   }
 
   Map<String, dynamic> toJson() {
@@ -73,28 +104,39 @@ class PromoBannerModel {
       'thumbnail': thumbnail,
       'images': images.map((e) => e.toJson()).toList(),
       'how_to_claim': howToClaim,
+      'promo_code': promoCode,
     };
   }
 
-  /// Helper: Get primary image URL
-  /// Priority: 1. Root thumbnail, 2. Primary image thumbnail, 3. First image thumbnail, 4. First image URL
+  /// Helper: Get primary image URL for mobile display.
+  /// Priority: 1. Mobile image from primary, 2. Root thumbnail, 3. Primary image URL
+  /// Mobile image is optimized for 16:9 display; falls back to frontend image if unavailable.
   String? get primaryImageUrl {
-    // First, try root-level thumbnail
+    // Try mobile-optimized image from primary image in images array
+    if (images.isNotEmpty) {
+      try {
+        final primary = images.firstWhere(
+          (img) => img.isPrimary,
+          orElse: () => images.first,
+        );
+        // Prefer mobile image URL (already falls back to main image via API accessor)
+        if (primary.mobileImageUrl != null && primary.mobileImageUrl!.isNotEmpty) {
+          return primary.mobileImageUrl;
+        }
+        if (primary.thumbnailUrl != null && primary.thumbnailUrl!.isNotEmpty) {
+          return primary.thumbnailUrl;
+        }
+        if (primary.imageUrl.isNotEmpty) {
+          return primary.imageUrl;
+        }
+      } catch (_) {}
+    }
+
+    // Fallback to root-level thumbnail
     if (thumbnail != null && thumbnail!.isNotEmpty) {
       return thumbnail;
     }
 
-    // Fallback to images array
-    if (images.isEmpty) return null;
-
-    try {
-      final primary = images.firstWhere(
-        (img) => img.isPrimary,
-        orElse: () => images.first,
-      );
-      return primary.thumbnailUrl ?? primary.imageUrl;
-    } catch (e) {
-      return null;
-    }
+    return null;
   }
 }

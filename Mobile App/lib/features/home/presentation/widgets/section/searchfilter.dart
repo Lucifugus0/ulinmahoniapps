@@ -137,27 +137,18 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
 
   Future<void> _selectCheckInDate() async {
     final now = DateTime.now();
-    final oneYearFromNow = DateTime(now.year + 1, now.month, now.day);
+    // Daily: check-in max 90 days from now. Monthly: check-in max 14 days from now.
+    final maxCheckIn = selectedRentType == 'Monthly'
+        ? now.add(const Duration(days: 14))
+        : now.add(const Duration(days: 90));
 
     DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: checkInDate ?? now,
+      initialDate: checkInDate != null && checkInDate!.isBefore(maxCheckIn)
+          ? checkInDate!
+          : now,
       firstDate: now,
-      lastDate: oneYearFromNow,
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF005F21),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
-            ),
-            dialogBackgroundColor: Colors.white,
-          ),
-          child: child!,
-        );
-      },
+      lastDate: maxCheckIn,
     );
 
     if (picked != null) {
@@ -182,11 +173,14 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
         calculatedCheckOutDate = checkInDate!.add(Duration(days: durationRaw!));
       } else if (selectedRentType == 'Monthly') {
         durationInDays = durationRaw! * 30;
-        calculatedCheckOutDate = DateTime(
-          checkInDate!.year,
-          checkInDate!.month + durationRaw!,
-          checkInDate!.day,
-        );
+        // Clamped month addition: clamp to last day of target month
+        // e.g. Jan 31 + 1 month = Feb 28, Mar 31 + 1 month = Apr 30
+        final tMonth = checkInDate!.month + durationRaw!;
+        final tYear = checkInDate!.year + (tMonth - 1) ~/ 12;
+        final nMonth = ((tMonth - 1) % 12) + 1;
+        final maxDay = DateTime(tYear, nMonth + 1, 0).day;
+        final cDay = checkInDate!.day > maxDay ? maxDay : checkInDate!.day;
+        calculatedCheckOutDate = DateTime(tYear, nMonth, cDay);
       } else {
         durationInDays = null;
         calculatedCheckOutDate = null;
@@ -237,6 +231,11 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
       displaySelectedCategory = categoryValueToDisplay[selectedCategory!];
     }
 
+    // Dark mode detection for the filter popup
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF1F2937) : Colors.white;
+    final dropdownBg = isDark ? const Color(0xFF374151) : Colors.white;
+
     return PopScope(
       canPop: true,
       onPopInvoked: (bool didPop) {
@@ -252,7 +251,7 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16), // Radius sudut untuk semua sisi
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: dialogBg,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -262,14 +261,15 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                 // Container abu-abu (handle) dihapus karena ini popup tengah
                 Text(
                   localizations.filtertitle, // Judul Opsional
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
-                  dropdownColor: Colors.white,
+                  dropdownColor: dropdownBg,
                   value: displaySelectedCategory,
                   items: categoryOptions
                       .map((item) =>
@@ -293,7 +293,7 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  dropdownColor: Colors.white,
+                  dropdownColor: dropdownBg,
                   value: displaySelectedRentType,
                   items: rentOptions
                       .map((item) =>
@@ -337,9 +337,9 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                           child: Text(
                             (durationRaw ?? 1).toString(),
                             textAlign: TextAlign.left,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                         ),
@@ -358,7 +358,8 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                               }
                             },
                             icon: const Icon(Icons.remove),
-                            color: AppColors.primaryColor,
+                            // Use adaptive primary color for icon button
+                            color: AppColors.primaryAdaptive(context),
                             iconSize: 20,
                           ),
                           Container(
@@ -369,7 +370,8 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                           IconButton(
                             onPressed: () {
                               final currentValue = durationRaw ?? 1;
-                              final maxValue = selectedRentType == 'Monthly' ? 12 : 31;
+                              // Monthly: max 12 months. Daily: max 60 days.
+                              final maxValue = selectedRentType == 'Monthly' ? 12 : 60;
                               if (currentValue < maxValue) {
                                 setState(() {
                                   durationRaw = currentValue + 1;
@@ -379,7 +381,8 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                               }
                             },
                             icon: const Icon(Icons.add),
-                            color: AppColors.primaryColor,
+                            // Use adaptive primary color for icon button
+                            color: AppColors.primaryAdaptive(context),
                             iconSize: 20,
                           ),
                         ],
@@ -401,7 +404,8 @@ class _SearchFilterModalState extends ConsumerState<SearchFilterModal> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
-                    backgroundColor: AppColors.primaryColor,
+                    // Use adaptive primary color for elevated button background
+                    backgroundColor: AppColors.primaryAdaptive(context),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

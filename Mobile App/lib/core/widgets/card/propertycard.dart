@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../constants/appcolor_constants.dart';
 import '../../constants/app_asset_constants.dart';
+import '../../theme/glass_theme.dart';
 
+/// Property listing card with glass effect border and theme-aware styling.
+/// Rounded corners, subtle glass border, and shadow adapt to dark/light mode.
 class PropertyCard extends StatefulWidget {
   final String? image;
   final String? title;
@@ -52,10 +55,10 @@ class _PropertyCardState extends State<PropertyCard> {
     final Size screenSize = MediaQuery.of(context).size;
     final double cardWidth = widget.width ?? screenSize.width * 0.57;
     final double minCardHeight = screenSize.height * 0.22;
-    final double imageHeight = widget.imageHeight ?? 132.0;
-    final localizations = AppLocalizations.of(context)!; // Akses AppLocalizations
+    final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    Color statusBgColor = Colors.black.withOpacity(0.7);
+    Color statusBgColor = Colors.black.withValues(alpha: 0.7);
     Color statusTextColor = Colors.white;
 
     IconData statusIcon = Icons.location_on;
@@ -68,17 +71,18 @@ class _PropertyCardState extends State<PropertyCard> {
 
     if (widget.isRoomDetail && widget.roomStatus != null) {
       if (widget.roomStatus == 1) {
-        statusBgColor = AppColors.primaryColor;
+        // Available: use adaptive primary color for the status badge
+        statusBgColor = AppColors.primaryAdaptive(context);
         statusIcon = Icons.check_circle_outline;
-        displayTextForBadge = localizations.availableStatus; // ➡️ Dilokalisasi
+        displayTextForBadge = localizations.availableStatus;
         statusTextColor = Colors.white;
       } else if (widget.roomStatus == 0) {
         statusBgColor = AppColors.secondaryColor;
         statusIcon = Icons.cancel_outlined;
-        displayTextForBadge = localizations.unavailableStatus; // ➡️ Dilokalisasi
+        displayTextForBadge = localizations.unavailableStatus;
         statusTextColor = Colors.white;
       } else {
-        displayTextForBadge = localizations.unknownStatus; // ➡️ Dilokalisasi
+        displayTextForBadge = localizations.unknownStatus;
         statusBgColor = Colors.grey.shade700;
         statusIcon = Icons.help_outline;
         statusTextColor = Colors.white;
@@ -119,7 +123,7 @@ class _PropertyCardState extends State<PropertyCard> {
               ImageChunkEvent? loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
-              color: Colors.grey[300],
+              color: isDark ? Colors.grey[800] : Colors.grey[300],
             );
           },
           errorBuilder: (context, error, stackTrace) {
@@ -158,24 +162,16 @@ class _PropertyCardState extends State<PropertyCard> {
         width: cardWidth,
         height: minCardHeight,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              spreadRadius: 0,
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              spreadRadius: 0,
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          // Glass-style rounded corners with subtle border
+          borderRadius: BorderRadius.circular(GlassTheme.radiusMedium),
+          border: Border.all(
+            color: isDark ? GlassTheme.glassBorderDark : GlassTheme.glassBorderLight,
+            width: GlassTheme.borderWidth,
+          ),
+          boxShadow: isDark ? GlassTheme.glassShadowDark : GlassTheme.glassShadowLight,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(GlassTheme.radiusMedium),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -190,13 +186,46 @@ class _PropertyCardState extends State<PropertyCard> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.3),
-                      Colors.black.withOpacity(0.8),
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.8),
                     ],
                     stops: const [0.4, 0.7, 1.0],
                   ),
                 ),
               ),
+
+              // Distance Badge (Top Left) — shows computed km from user
+              if (widget.detail != null && widget.detail!.isNotEmpty)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.near_me,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.detail!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
               // Available Rooms Badge (Top Right)
               if (widget.availableRooms != null && !widget.isRoomDetail)
@@ -206,8 +235,9 @@ class _PropertyCardState extends State<PropertyCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
+                      // Use primaryAdaptive so the available-rooms badge adapts to dark/light
                       color: widget.availableRooms! > 0
-                          ? AppColors.primaryColor.withValues(alpha: 0.9)
+                          ? AppColors.primaryAdaptive(context).withValues(alpha: 0.9)
                           : Colors.red.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -339,7 +369,8 @@ class _PropertyCardState extends State<PropertyCard> {
                     // Price
                     if (widget.price != null && widget.price!.isNotEmpty && widget.price != 'Rp 0')
                       Text(
-                        '${Localizations.localeOf(context).languageCode == 'id' ? 'Mulai dari' : 'Starting from'} ${widget.price!}',
+                        // Use localized prefix — handles ID/EN/ZH correctly
+                        '${localizations.bottomBarStartingFrom} ${widget.price!}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.white,

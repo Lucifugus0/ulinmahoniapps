@@ -15,7 +15,7 @@
                                 d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
                                 clip-rule="evenodd" />
                         </svg>
-                        Tambah Fasilitas
+                        {{ __('ui.facility_add_btn') }}
                     </button>
 
                     <!-- Backdrop -->
@@ -52,13 +52,17 @@
                             <!-- Form -->
                             <form class="px-5 py-4 space-y-4" @submit.prevent="submitForm">
                                 @csrf
-                                <!-- Facility Name -->
+                                <!-- Facility Name (multi-language) -->
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.facility_name_label') }} <span
-                                            class="text-red-500">*</span></label>
-                                    <input type="text" name="facility" x-model="currentFacility.facility"
-                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="{{ __('ui.facility_name_placeholder') }}" required />
+                                    <x-multilang-textarea
+                                        name="facility"
+                                        :value="''"
+                                        :required="true"
+                                        :rows="1"
+                                        :placeholder="__('ui.facility_name_placeholder')"
+                                        :label="__('ui.facility_name_label')"
+                                        xModel="currentFacility.facility"
+                                    />
                                 </div>
 
                                 <!-- Icon -->
@@ -76,11 +80,11 @@
                                 <div class="flex justify-end gap-2 pt-2 border-t">
                                     <button type="button" @click="modalOpenDetail = false"
                                         class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md bg-white hover:bg-gray-50">
-                                        Batal
+                                        {{ __('ui.cancel') }}
                                     </button>
                                     <button type="submit"
                                         class="px-4 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow">
-                                        Simpan
+                                        {{ __('ui.save') }}
                                     </button>
                                 </div>
                             </form>
@@ -187,12 +191,17 @@
 
                 <!-- Form -->
                 <form class="px-5 py-4 space-y-4" @submit.prevent="submitEditForm">
-                    <!-- Facility Name -->
+                    <!-- Facility Name (multi-language) -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.facility_name_label') }} <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="facility.facility"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="{{ __('ui.facility_name_placeholder') }}" required />
+                        <x-multilang-textarea
+                            name="facility"
+                            :value="''"
+                            :required="true"
+                            :rows="1"
+                            :placeholder="__('ui.facility_name_placeholder')"
+                            :label="__('ui.facility_name_label')"
+                            xModel="facility.facility"
+                        />
                     </div>
 
                     <!-- Icon -->
@@ -227,7 +236,7 @@
                     <div class="flex justify-end gap-2 pt-2 border-t">
                         <button type="button" @click="closeModal()"
                             class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md bg-white hover:bg-gray-50">
-                            Batal
+                            {{ __('ui.cancel') }}
                         </button>
                         <button type="submit" :disabled="isSubmitting"
                             class="px-4 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow disabled:opacity-50">

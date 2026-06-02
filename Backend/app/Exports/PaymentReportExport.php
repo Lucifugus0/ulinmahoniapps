@@ -5,7 +5,6 @@ namespace App\Exports;
 use App\Models\Transaction;
 use App\Models\Property;
 use App\Services\ExcelService;
-use App\Services\InvoiceNumberService;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -26,12 +25,26 @@ class PaymentReportExport
         // Get data
         $payments = $this->getPayments();
 
-        // Generate invoice numbers batch
-        $invoiceNumbers = InvoiceNumberService::generateBatch($payments);
-
-        $totalRevenue = $payments->sum(function ($transaction) {
+        /* Summary — split into Paid / Refunded / Rejected so the totals reconcile correctly.
+           Paid Revenue:   sum of grandtotal_price for transaction_status = 'paid' (only true revenue collected)
+           Total Refunded: sum of t_refund.amount for cancelled rows that have a refund record
+           Rejected count: count of transaction_status = 'rejected' (these never collected money) */
+        $paidRevenue = $payments->filter(function ($transaction) {
+            return strtolower($transaction->transaction_status ?? '') === 'paid';
+        })->sum(function ($transaction) {
             return $transaction->grandtotal_price ?? 0;
         });
+
+        $totalRefunded = $payments->filter(function ($transaction) {
+            return $transaction->booking && $transaction->booking->refund;
+        })->sum(function ($transaction) {
+            return (float) ($transaction->booking->refund->amount ?? 0);
+        });
+
+        $rejectedCount = $payments->filter(function ($transaction) {
+            return strtolower($transaction->transaction_status ?? '') === 'rejected';
+        })->count();
+
         $totalRefunds = $payments->filter(function ($transaction) {
             return $transaction->booking && $transaction->booking->refund;
         })->count();
@@ -60,9 +73,11 @@ class PaymentReportExport
 
         $excel->addEmptyRow();
 
-        // Add filter section
+        // <!-- Pass endColumn so filter rows merge across the same 30-column span as the rest of the sheet.
+        //      Without this, addFilterSection defaults to 'L' and PhpSpreadsheet throws a mergeCells
+        //      conflict when data rows later style the full A:AD range. -->
         $filterTexts = $this->getFilterTexts();
-        $excel->addFilterSection($filterTexts);
+        $excel->addFilterSection($filterTexts, ['endColumn' => 'AD']);
 
         // Add separator
         $excel->addInfoRow('', []);
@@ -72,7 +87,7 @@ class PaymentReportExport
             'No',
             'Invoice Number',
             'Invoice Date',
-            'Transaction Code',
+            'Booking ID',
             'Property Name',
             'Room Type',
             'Room Number',
@@ -90,7 +105,7 @@ class PaymentReportExport
             'DPP Diskon',
             'Parkir',
             'DPP Parkir',
-            'VATT 11%',
+            'VATT',
             'Grand Total',
             'Deposit',
             'Service Fee',
@@ -152,7 +167,7 @@ class PaymentReportExport
             'S' => 15,  // DPP Diskon
             'T' => 15,  // Parkir
             'U' => 15,  // DPP Parkir
-            'V' => 15,  // VATT 11%
+            'V' => 15,  // VATT
             'W' => 18,  // Grand Total
             'X' => 15,  // Deposit
             'Y' => 15,  // Service Fee
@@ -171,7 +186,7 @@ class PaymentReportExport
         $dataStartRow = $excel->getCurrentRow();
 
         foreach ($payments as $index => $transaction) {
-            $invoiceNumber = $invoiceNumbers[$transaction->idrec] ?? '-';
+            $invoiceNumber = $transaction->invoice_number ?: '-';
             $row = $this->mapPayment($transaction, $index + 1, $invoiceNumber);
             $currentDataRow = $excel->getCurrentRow();
 
@@ -181,17 +196,25 @@ class PaymentReportExport
             $sheet->setCellValueExplicit('I' . $currentDataRow, (string)$row[8], DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('J' . $currentDataRow, (string)$row[9], DataType::TYPE_STRING);
 
-            // Highlight refunds with red background
+            // Highlight refunds (light red) and rejected (slightly stronger red) — both stand out from paid rows
             $isRefund = $transaction->booking && $transaction->booking->refund;
-            if ($isRefund) {
+            $isRejected = strtolower($transaction->transaction_status ?? '') === 'rejected';
+            if ($isRejected) {
                 $sheet->getStyle('A' . $currentDataRow . ':AD' . $currentDataRow)->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => 'FEE2E2'] // Light red
+                        'startColor' => ['rgb' => 'FECACA'] // Stronger red — rejected
+                    ]
+                ]);
+            } elseif ($isRefund) {
+                $sheet->getStyle('A' . $currentDataRow . ':AD' . $currentDataRow)->applyFromArray([
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'FEE2E2'] // Light red — refunded
                     ]
                 ]);
             } else {
-                // Add zebra striping for non-refund rows
+                // Add zebra striping for non-refund/non-rejected rows
                 if ($index % 2 == 0) {
                     $sheet->getStyle('A' . $currentDataRow . ':AD' . $currentDataRow)->applyFromArray([
                         'fill' => [
@@ -238,21 +261,37 @@ class PaymentReportExport
 
         $excel->addEmptyRow();
 
-        // Total Revenue using new method
-        $excel->addSummaryRow('TOTAL REVENUE:', $totalRevenue, [
+        /* 3-line split summary: Paid Revenue (only paid rows), Total Refunded (sum of refund amounts),
+           Rejected count (rows with no revenue collected). Reconciles across all 3 statuses. */
+        $excel->addSummaryRow('TOTAL PAID REVENUE:', $paidRevenue, [
             'labelColumn' => 'A',
             'valueColumn' => 'W',
             'labelEndColumn' => 'V',
-            'bgColor' => 'D1FAE5',
+            'bgColor' => 'D1FAE5',  // green tint — money in
             'textColor' => '059669',
         ]);
+        $sheet->getStyle('W' . ($excel->getCurrentRow() - 1))->getNumberFormat()->setFormatCode('Rp #,##0');
 
-        // Format revenue as currency
-        $summaryRowNum = $excel->getCurrentRow() - 1;
-        $sheet->getStyle('W' . $summaryRowNum)->getNumberFormat()->setFormatCode('Rp #,##0');
+        $excel->addSummaryRow('TOTAL REFUNDED:', $totalRefunded, [
+            'labelColumn' => 'A',
+            'valueColumn' => 'W',
+            'labelEndColumn' => 'V',
+            'bgColor' => 'FED7AA',  // orange tint — money returned
+            'textColor' => '9A3412',
+        ]);
+        $sheet->getStyle('W' . ($excel->getCurrentRow() - 1))->getNumberFormat()->setFormatCode('Rp #,##0');
+
+        $excel->addSummaryRow('REJECTED (no revenue):', $rejectedCount, [
+            'labelColumn' => 'A',
+            'valueColumn' => 'W',
+            'labelEndColumn' => 'V',
+            'bgColor' => 'FECACA',  // red tint — rejected
+            'textColor' => '991B1B',
+        ]);
+        // Rejected is a count, not currency — keep default integer format
 
         // Total Records
-        $excel->addInfoRow('Total Payments: ' . $payments->count() . ' | Refunds: ' . $totalRefunds, [
+        $excel->addInfoRow('Total Records: ' . $payments->count() . ' | Refunds: ' . $totalRefunds . ' | Rejected: ' . $rejectedCount, [
             'bold' => true,
             'fontSize' => 10,
             'textColor' => '6B7280',
@@ -279,6 +318,11 @@ class PaymentReportExport
 
     private function getPayments()
     {
+        /* Status filter — mirrors PaymentReportController::getData() */
+        $statusFilter = $this->filters['status'] ?? null;
+        $validStatuses = ['paid', 'cancelled', 'rejected'];
+        $statusList = in_array($statusFilter, $validStatuses, true) ? [$statusFilter] : $validStatuses;
+
         $query = Transaction::with([
                 'payment.verifiedBy',
                 'property',
@@ -287,18 +331,25 @@ class PaymentReportExport
                 'user'
             ])
             ->whereHas('payment')
-            ->where('transaction_status', 'paid')
-            ->orderByDesc('paid_at');
+            ->whereIn('transaction_status', $statusList)
+            ->orderByRaw('COALESCE(paid_at, cancel_at, created_at) DESC');
 
-        // Apply filters
+        /* Transaction date range — NULL-safe across paid/cancelled/rejected */
         if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
-            $startDate = $this->filters['start_date'];
-            $endDate = $this->filters['end_date'];
-
-            $query->whereBetween('paid_at', [
-                $startDate . ' 00:00:00',
-                $endDate . ' 23:59:59'
-            ]);
+            $query->whereRaw(
+                'DATE(COALESCE(paid_at, cancel_at, created_at)) BETWEEN ? AND ?',
+                [$this->filters['start_date'], $this->filters['end_date']]
+            );
+        } elseif (!empty($this->filters['start_date'])) {
+            $query->whereRaw(
+                'DATE(COALESCE(paid_at, cancel_at, created_at)) >= ?',
+                [$this->filters['start_date']]
+            );
+        } elseif (!empty($this->filters['end_date'])) {
+            $query->whereRaw(
+                'DATE(COALESCE(paid_at, cancel_at, created_at)) <= ?',
+                [$this->filters['end_date']]
+            );
         }
 
         if (!empty($this->filters['property_id'])) {
@@ -357,12 +408,11 @@ class PaymentReportExport
         $parkir = $transaction->parking_fee ?? 0;
         $dppParkir = $parkir / 1.11;
 
-        // Deposit Fee
+        // <!-- Deposit Fee — not subject to VAT (refundable security deposit) -->
         $depositFee = $transaction->deposit_fee ?? 0;
-        $dppDepositFee = $depositFee / 1.11;
 
-        // VATT 11% = (Subtotal - DPP Diskon + DPP Parkir + DPP Deposit Fee) * 11%
-        $vatt = ($subtotal - $dppDiskon + $dppParkir + $dppDepositFee) * 0.11;
+        // <!-- VATT = (Subtotal - DPP Diskon + DPP Parkir) × 11% — deposit excluded from VAT base -->
+        $vatt = ($subtotal - $dppDiskon + $dppParkir) * 0.11;
 
         // Grand Total calculation for display
         // Note: Using actual grandtotal_price from transaction for accuracy
@@ -414,11 +464,16 @@ class PaymentReportExport
             $no,                                                                                    // No
             $invoiceNumber,                                                                         // Invoice Number
             $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-', // Invoice Date
-            $transaction->transaction_code ?? '-',                                                  // Transaction Code
+            $transaction->order_id ?? '-',                                                          // Booking ID
             $transaction->property_name ?? '-',                                                     // Property Name
             $roomType,                                                                              // Room Type
             $roomNumber,                                                                            // Room Number
-            $transaction->user_name ?? '-',                                                         // Tenant Name
+            /* Tenant name from user.first_name + last_name (per finance team request);
+               falls back to legacy transaction.user_name when user is not linked */
+            $transaction->user
+                ? (trim(($transaction->user->first_name ?? '') . ' ' . ($transaction->user->last_name ?? ''))
+                    ?: ($transaction->user_name ?? '-'))
+                : ($transaction->user_name ?? '-'),                                                  // Tenant Name
             $nik,                                                                                   // NIK
             $transaction->user_phone_number ?? '-',                                                 // Mobile Number
             $transaction->user_email ?? '-',                                                        // Email
@@ -432,16 +487,58 @@ class PaymentReportExport
             round($dppDiskon, 0),                                                                  // DPP Diskon
             round($parkir, 0),                                                                     // Parkir
             round($dppParkir, 0),                                                                  // DPP Parkir
-            round($vatt, 0),                                                                       // VATT 11%
+            round($vatt, 0),                                                                       // VATT
             round($grandTotal, 0),                                                                 // Grand Total
-            round($deposit + $depositFee, 0),                                                      // Deposit (includes deposit fee)
+            round($depositFee, 0),                                                                  // Deposit (deposit fee only — standalone deposit column removed)
             round($serviceFee, 0),                                                                 // Service Fee
-            'Paid',                                                                                // Payment Status
+            $this->resolvePaymentStatus($transaction, $isRefund && $transaction->booking->refund ? $transaction->booking->refund : null),  // Payment Status (Paid / NO REFUND / FULL REFUND / REFUND)
             ($transaction->is_renewal == 1) ? 'Perpanjangan' : '',                                // Status Sewa
-            $verifiedBy,                                                                           // Verified By
-            $payment && $payment->verified_at ? Carbon::parse($payment->verified_at)->format('d M Y H:i') : '-', // Verified Date
+            $transaction->payment_bank ?? '-',                                                     // Verified By (payment bank)
+            $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y H:i') : '-', // Verified Date (paid_at)
             $notes,                                                                                // Notes
         ];
+    }
+
+    /**
+     * Resolve the payment status label.
+     * Mirrors PaymentReportController::resolvePaymentStatus so the report and export agree.
+     * Both rejected and cancelled rows attach a refund-variant suffix:
+     *   - Cancelled  → "Cancelled - NO REFUND" / "Cancelled - FULL REFUND" / "Cancelled - REFUND"
+     *   - Rejected   → "Rejected - NO REFUND" / "Rejected - FULL REFUND" / "Rejected - REFUND"
+     * (Excel cells get a label string only; row-level fill color is applied separately
+     * in export() via the isRejected / isRefund branches.)
+     */
+    private function resolvePaymentStatus($transaction, $refundInfo): string
+    {
+        $status = strtolower($transaction->transaction_status ?? '');
+
+        if ($status === 'rejected') {
+            return 'Rejected - ' . $this->resolveRefundVariant($transaction, $refundInfo);
+        }
+
+        if ($status === 'cancelled') {
+            return 'Cancelled - ' . $this->resolveRefundVariant($transaction, $refundInfo);
+        }
+
+        return 'Paid';
+    }
+
+    private function resolveRefundVariant($transaction, $refundInfo): string
+    {
+        $refundAmount = (float) ($refundInfo->amount ?? 0);
+        if ($refundAmount <= 0) {
+            return 'NO REFUND';
+        }
+
+        $fullRefundAmount = (float) ($transaction->room_price ?? 0)
+            + (float) ($transaction->deposit_fee ?? 0)
+            + (float) ($transaction->parking_fee ?? 0);
+
+        if ($fullRefundAmount > 0 && abs($refundAmount - $fullRefundAmount) < 1) {
+            return 'FULL REFUND';
+        }
+
+        return 'REFUND';
     }
 
     private function getFilterTexts(): array

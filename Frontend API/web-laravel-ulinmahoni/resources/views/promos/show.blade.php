@@ -3,50 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $promo['title'] }} - Promo Details</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Styles -->
+    <title>{{ $promo['title'] }} - {{ __('promo.description') }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.property.styles')
     <style>
-        .promo-hero {
-            --transition: all 0.3s ease;
-        }
+        .promo-hero { --transition: all 0.3s ease; }
+        .promo-hero img { transition: var(--transition); }
+        .promo-hero:hover img { transform: scale(1.02); }
+        .badge { transform: translateY(-5px); opacity: 0; transition: var(--transition); }
+        .promo-hero:hover .badge { transform: translateY(0); opacity: 1; }
+        .cta-button { transition: var(--transition); }
+        .cta-button:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
 
-        .promo-hero img {
-            transition: var(--transition);
-        }
+        /* Liquid glass — main promo content card */
+        .bg-white.rounded-xl.shadow-lg { background: var(--glass-bg) !important; backdrop-filter: var(--glass-blur-strong); -webkit-backdrop-filter: var(--glass-blur-strong); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); }
+        .bg-gray-50.p-8.text-center { background: var(--glass-bg) !important; }
 
-        .promo-hero:hover img {
-            transform: scale(1.02);
-        }
-
-        .badge {
-            transform: translateY(-5px);
-            opacity: 0;
-            transition: var(--transition);
-        }
-
-        .promo-hero:hover .badge {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .cta-button {
-            transition: var(--transition);
-        }
-
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
+        /* Dark mode overrides */
+        html.dark body { background-color: #111827 !important; color: #f3f4f6; }
+        html.dark .bg-white.rounded-xl.shadow-lg { background: rgba(31, 41, 55, 0.8) !important; border-color: rgba(75, 85, 99, 0.5) !important; }
+        html.dark .bg-gray-50.p-8.text-center { background: rgba(31, 41, 55, 0.6) !important; }
+        html.dark .text-gray-900 { color: #f3f4f6 !important; }
+        html.dark .text-gray-600 { color: #d1d5db !important; }
+        html.dark .text-gray-500 { color: #9ca3af !important; }
+        html.dark h2 { color: #f3f4f6 !important; }
+        html.dark .text-gray-700 { color: #d1d5db !important; }
+        html.dark nav .text-gray-500 { color: #9ca3af !important; }
+        html.dark nav .text-gray-900 { color: #e5e7eb !important; }
     </style>
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
 </head>
 
 <body class="font-inter antialiased text-gray-900 tracking-tight" style="background-color: #f8f7f4;">
-    <!-- Header -->
     @include('components.homepage.header')
     <div class="header-spacer"></div>
 
@@ -63,15 +54,15 @@
 
             <!-- Promo Content -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                <!-- Hero Section with 1911x372 aspect ratio -->
-                <div class="relative promo-hero overflow-hidden" style="aspect-ratio: 1911/372;">
+                <!-- Hero Section -->
+                <div class="relative promo-hero overflow-hidden" style="aspect-ratio: 1920/620;">
                     @if($promo['image'])
                         <img src="{{ env('ADMIN_URL') }}/storage/{{ $promo['image'] }}"
                              alt="{{ $promo['title'] }}"
                              class="w-full h-full object-cover"
-                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gray-200 flex items-center justify-center\'><i class=\'fas fa-image text-6xl text-gray-400\'></i></div>';">
+                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center\'><i class=\'fas fa-image text-6xl text-gray-400\'></i></div>';">
                     @else
-                        <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <div class="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                             <i class="fas fa-image text-6xl text-gray-400"></i>
                         </div>
                     @endif
@@ -88,26 +79,45 @@
                 <div class="grid md:grid-cols-2 gap-8 p-8">
                     <!-- Left Column -->
                     <div>
-                        <!-- Promo Code -->
+                        <!-- Promo Code with copy button -->
                         @if(!empty($promo['promo_code']))
                         <div class="mb-6">
-                            <h2 class="text-2xl font-semibold mb-2">Kode Promo</h2>
-                            <span class="text-lg font-bold text-gray-900">{{ $promo['promo_code'] }}</span>
+                            <h2 class="text-2xl font-semibold mb-3">{{ __('promo.promo_code') }}</h2>
+                            <div class="inline-flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-dashed border-teal-400 bg-teal-50">
+                                <span class="text-2xl font-extrabold tracking-wider text-teal-700">{{ $promo['promo_code'] }}</span>
+                                <button type="button" id="copyPromoBtn"
+                                    onclick="navigator.clipboard.writeText('{{ $promo['promo_code'] }}').then(function() {
+                                        var btn = document.getElementById('copyPromoBtn');
+                                        btn.innerHTML = '<svg class=\'w-4 h-4\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'/></svg><span>Copied!</span>';
+                                        btn.classList.remove('bg-teal-600', 'hover:bg-teal-700');
+                                        btn.classList.add('bg-green-600');
+                                        setTimeout(function() {
+                                            btn.innerHTML = '<svg class=\'w-4 h-4\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'/></svg><span>Copy</span>';
+                                            btn.classList.remove('bg-green-600');
+                                            btn.classList.add('bg-teal-600', 'hover:bg-teal-700');
+                                        }, 2000);
+                                    })"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-teal-600 hover:bg-teal-700 text-white transition-all duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
                         </div>
                         @endif
 
                         <!-- Description -->
                         @if(!empty($promo['description']))
                         <div class="mb-8">
-                            <h2 class="text-2xl font-semibold mb-4">Deskripsi Promo</h2>
+                            <h2 class="text-2xl font-semibold mb-4">{{ __('promo.description') }}</h2>
                             <div class="text-gray-600 leading-relaxed">
                                 {!! nl2br(e($promo['description'])) !!}
                             </div>
                         </div>
                         @endif
 
+                        <!-- How to Claim -->
                         <div class="mb-8">
-                            <h2 class="text-2xl font-semibold mb-4">Cara Klaim</h2>
+                            <h2 class="text-2xl font-semibold mb-4">{{ __('promo.how_to_claim') }}</h2>
                             <ol class="list-decimal list-inside space-y-2 text-gray-600">
                                 @foreach($promo['how_to_claim'] as $step)
                                     <li class="flex items-center">
@@ -121,8 +131,9 @@
 
                     <!-- Right Column -->
                     <div>
+                        <!-- Terms & Conditions -->
                         <div class="mb-8">
-                            <h2 class="text-2xl font-semibold mb-4">Syarat & Ketentuan</h2>
+                            <h2 class="text-2xl font-semibold mb-4">{{ __('promo.terms_conditions') }}</h2>
                             <ul class="list-disc list-inside space-y-2 text-gray-600">
                                 @foreach($promo['terms_conditions'] as $term)
                                     <li class="flex">
@@ -133,10 +144,10 @@
                             </ul>
                         </div>
 
-                        <!-- Gallery if multiple images -->
+                        <!-- Gallery -->
                         @if(!empty($promo['images']) && count($promo['images']) > 1)
                         <div class="mb-8">
-                            <h2 class="text-2xl font-semibold mb-4">Galeri</h2>
+                            <h2 class="text-2xl font-semibold mb-4">{{ __('promo.gallery') }}</h2>
                             <div class="grid grid-cols-3 gap-2">
                                 @foreach($promo['images'] as $image)
                                     <div class="aspect-video rounded-lg overflow-hidden">
@@ -155,18 +166,16 @@
                 <!-- CTA Section -->
                 <div class="bg-gray-50 p-8 text-center">
                     <a href="{{ route('homepage') }}" class="cta-button inline-block bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-8 rounded-lg">
-                        Lihat Properti
+                        {{ __('promo.view_properties') }}
                     </a>
-                    <p class="text-gray-500 mt-2">*Syarat dan ketentuan berlaku</p>
+                    <p class="text-gray-500 mt-2">{{ __('promo.terms_apply') }}</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Footer -->
     @include('components.homepage.footer')
 
-    <!-- Include Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             @include('components.homepage.scripts')

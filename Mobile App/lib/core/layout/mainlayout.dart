@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:ulinmahoniapps/core/widgets/navbar.dart';
 import 'package:ulinmahoniapps/core/widgets/bottomnavbar.dart';
 import '../widgets/bottomcontactbar.dart';
-import '../constants/appcolor_constants.dart';
+import '../widgets/leafy_background.dart';
 
+/// Main scaffold wrapper for all pages.
+/// Uses Theme.of(context) for background color so it responds to dark/light mode.
 class MainLayout extends StatelessWidget {
   final int currentIndex;
   final Widget child;
@@ -11,7 +13,7 @@ class MainLayout extends StatelessWidget {
   final bool showNavBar;
   final bool showContactBar;
   final bool bottomcontactbar_pesansekarang;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final Map<String, dynamic>? bottomcontactbar_data;
   final bool bottomcontactbar_buttonenabled;
   final VoidCallback? bottomcontactbar_buttonpressed;
@@ -28,7 +30,7 @@ class MainLayout extends StatelessWidget {
     this.showNavBar = true,
     this.showContactBar = false,
     this.bottomcontactbar_pesansekarang = false,
-    this.backgroundColor = AppColors.backgroundColor,
+    this.backgroundColor,
     this.bottomcontactbar_data,
     this.bottomcontactbar_buttonenabled = true,
     this.bottomcontactbar_buttonpressed,
@@ -40,25 +42,35 @@ class MainLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use provided backgroundColor, or fall back to scaffold background from theme
+    final bgColor = backgroundColor ?? Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: bgColor,
 
-      // 1. WAJIB: Agar konten body bisa tembus ke belakang Navbar
+      // Allow body to extend behind navbar and appbar for glass blur effect
       extendBody: true,
+      extendBodyBehindAppBar: showNavBar,
 
       appBar: showNavBar ? const Navbar(initialLanguage: 'ID') : null,
 
-      body: child,
+      body: Stack(
+        children: [
+          // Leafy background overlay — decorative, non-interactive
+          const LeafyBackground(),
+          // Actual page content
+          child,
+        ],
+      ),
 
-      // 2. WAJIB: Theme Wrapper untuk menghilangkan background putih bawaan Scaffold
+      // Theme wrapper to remove default white canvas behind bottom nav
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
-          canvasColor: Colors.transparent, // Memastikan area sisa benar-benar bening
+          canvasColor: Colors.transparent,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Tinggi menyesuaikan konten
-          mainAxisAlignment: MainAxisAlignment.end, // Selalu menempel di bawah
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             if (showContactBar)
               BottomContactBar(
@@ -72,7 +84,7 @@ class MainLayout extends StatelessWidget {
                 priceLabel: bottomcontactbar_pricelabel,
               ),
 
-            // Jarak pemisah kecil jika ContactBar dan Navbar muncul bersamaan
+            // Small gap if both ContactBar and BottomNav are visible
             if (showContactBar && showBottomNav)
               const SizedBox(height: 10),
 

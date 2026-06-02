@@ -13,10 +13,19 @@ class VoucherController extends Controller
 {
     public function index(Request $request)
     {
+        // Auto-disable expired or fully-used vouchers
+        $this->autoDisableVouchers();
+
         $perPage = $request->input('per_page', 10);
 
+        // Sortable columns: code, name, valid_to (period). Default: valid_to desc
+        $sortBy = $request->input('sort_by', 'valid_to');
+        $sortDir = $request->input('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        $allowedSorts = ['code', 'name', 'valid_to'];
+        if (!in_array($sortBy, $allowedSorts)) { $sortBy = 'valid_to'; }
+
         $query = Voucher::with(['creator'])
-            ->orderBy('created_at', 'desc');
+            ->orderBy($sortBy, $sortDir);
 
         // Apply filters if present
         if ($request->has('search') && !empty($request->search)) {
@@ -192,14 +201,31 @@ class VoucherController extends Controller
         }
     }
 
+    /**
+     * Filter vouchers via AJAX — returns JSON with rendered HTML partial.
+     * If accessed via regular browser navigation (e.g., pagination link click),
+     * redirects to the index page with the same query parameters.
+     */
     public function filter(Request $request)
     {
+        /* Redirect non-AJAX requests to index to prevent raw JSON display
+           when users click pagination links directly */
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return redirect()->route('vouchers.index', $request->query());
+        }
+
         $perPage = $request->input('per_page', 10);
         $search = $request->input('search');
         $status = $request->input('status');
 
+        // Sortable columns: code, name, valid_to (period). Default: valid_to desc
+        $sortBy = $request->input('sort_by', 'valid_to');
+        $sortDir = $request->input('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        $allowedSorts = ['code', 'name', 'valid_to'];
+        if (!in_array($sortBy, $allowedSorts)) { $sortBy = 'valid_to'; }
+
         $query = Voucher::with(['creator'])
-            ->orderBy('created_at', 'desc');
+            ->orderBy($sortBy, $sortDir);
 
         // Search
         if (!empty($search)) {
@@ -248,5 +274,26 @@ class VoucherController extends Controller
                 'message' => 'Gagal mengupdate status voucher'
             ], 500);
         }
+    }
+
+    /**
+     * Auto-disable vouchers that are expired or fully used.
+     * Runs on every index/filter load to keep statuses in sync.
+     */
+    private function autoDisableVouchers()
+    {
+        $now = now();
+
+        // Disable vouchers where end period has passed
+        Voucher::where('status', 'active')
+            ->whereNotNull('valid_to')
+            ->where('valid_to', '<', $now)
+            ->update(['status' => 'inactive']);
+
+        // Disable vouchers where quota is full (max_total_usage > 0 and current >= max)
+        Voucher::where('status', 'active')
+            ->where('max_total_usage', '>', 0)
+            ->whereColumn('current_usage_count', '>=', 'max_total_usage')
+            ->update(['status' => 'inactive']);
     }
 }

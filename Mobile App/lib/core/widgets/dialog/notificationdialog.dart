@@ -1,26 +1,31 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_asset_constants.dart';
 
-
+/// Shows a themed notification dialog with icon and message.
+/// Adapts background and text colors to dark/light mode.
 Future<bool?> showNotificationDialog(
     BuildContext context,
     String message, {
-      String? title, 
-      IconData defaultIcon = Icons.info_outline, 
-      Color iconColor = Colors.blue, 
-      String okButtonText = 'OK', 
+      String? title,
+      IconData defaultIcon = Icons.info_outline,
+      Color iconColor = Colors.blue,
+      String okButtonText = 'OK',
       VoidCallback? onOkPressed,
       bool barrierDismissible = false,
     }) {
 
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: Colors.white,
+      // Glass-style dialog background from theme
+      backgroundColor: isDark ? const Color(0xFF374151) : Colors.white,
 
       title: title != null ? Text(
         title,
         textAlign: TextAlign.center,
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
       ) : null,
       contentPadding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       content: Column(
@@ -31,7 +36,7 @@ Future<bool?> showNotificationDialog(
               width: 80,
               height: 80,
               errorBuilder: (context, error, stackTrace) {
-                
+
                 return Icon(
                   defaultIcon,
                   color: iconColor,
@@ -43,9 +48,9 @@ Future<bool?> showNotificationDialog(
           const SizedBox(height: 16),
           Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Colors.black87,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
             textAlign: TextAlign.center,
           ),
@@ -57,12 +62,15 @@ Future<bool?> showNotificationDialog(
           onPressed: () {
             final bool popValue = onOkPressed != null ? false : true;
             onOkPressed?.call();
-            Navigator.of(ctx).pop(popValue);
+            // Guard against popping when GoRouter already replaced the stack
+            if (Navigator.of(ctx).canPop()) {
+              Navigator.of(ctx).pop(popValue);
+            }
           },
           child: Text(
             okButtonText,
-            style: const TextStyle(
-              color: Colors.black,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
               fontWeight: FontWeight.w500,
             ),
           ),

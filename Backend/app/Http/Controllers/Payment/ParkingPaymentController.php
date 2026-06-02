@@ -11,6 +11,7 @@ use App\Models\Parking;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\InvoiceNumberService;
 
 class ParkingPaymentController extends Controller
 {
@@ -54,15 +55,34 @@ class ParkingPaymentController extends Controller
             ? $query->get()
             : $query->paginate((int) $perPage)->withQueryString();
 
+        /* AJAX response shape mirrors filter() — JSON with `html` + `pagination`.
+           The pagination click handler (index.blade.php:739) requests this route as XMLHttpRequest
+           and calls `r.json()`, so returning a plain HTML view here breaks pagination silently.
+           Both responses use the same partial so the rendered table stays consistent. */
         if ($request->ajax() || $request->header('X-Requested-With') == 'XMLHttpRequest') {
-            return view('pages.payment.parking.partials.parking-payment_table', compact('parkingTransactions'));
+            return response()->json([
+                'html' => view('pages.payment.parking.partials.parking-payment_table', compact('parkingTransactions'))->render(),
+                'pagination' => $perPage !== 'all' && $parkingTransactions instanceof \Illuminate\Pagination\LengthAwarePaginator
+                    ? $parkingTransactions->links()->toHtml()
+                    : '',
+            ]);
         }
 
         return view('pages.payment.parking.index', compact('parkingTransactions'));
     }
 
+    /**
+     * Filter parking entries via AJAX — returns JSON with rendered HTML partial.
+     * Redirects non-AJAX GET requests to the index page to prevent raw JSON display
+     * when pagination links are clicked directly.
+     */
     public function filter(Request $request)
     {
+        /* Redirect non-AJAX requests to index to prevent raw JSON on pagination click */
+        if (!$request->ajax() && !$request->wantsJson() && $request->isMethod('get')) {
+            return redirect()->route('admin.parking-payments.index', $request->query());
+        }
+
         $perPage = $request->input('per_page', 8);
 
         $query = ParkingFeeTransaction::with(['property', 'parking', 'images', 'verifiedBy', 'createdBy', 'transaction'])
@@ -121,6 +141,9 @@ class ParkingPaymentController extends Controller
                 'verified_at' => now(),
                 'updated_by' => Auth::id(),
             ]);
+
+            // Assign persisted invoice number now that this parking transaction is paid
+            InvoiceNumberService::assign($transaction->fresh());
 
             return response()->json([
                 'success' => true,
@@ -221,6 +244,7 @@ class ParkingPaymentController extends Controller
             'parking_type' => 'required|in:car,motorcycle',
             'vehicle_plate' => 'required|string|max:50',
             'parking_duration' => 'required|integer|min:1',
+            'start_rent' => 'required|date', // NEW: parking start date (mid-stay allowed)
             'fee_amount' => 'required|numeric|min:0',
             'transaction_date' => 'required|date',
             'payment_proof' => 'required|image|mimes:jpeg,jpg|max:5120', // 5MB in kilobytes
@@ -228,6 +252,7 @@ class ParkingPaymentController extends Controller
         ], [
             'order_id.required' => 'Please select a booking order',
             'order_id.exists' => 'Selected booking order not found',
+            'start_rent.required' => 'Please pick a parking start date',
             'payment_proof.image' => 'Payment proof must be an image file',
             'payment_proof.mimes' => 'Payment proof must be a JPG/JPEG file',
             'payment_proof.max' => 'Payment proof size must not exceed 5MB',
@@ -239,22 +264,61 @@ class ParkingPaymentController extends Controller
             // Get transaction details from order_id
             $bookingTransaction = \App\Models\Transaction::where('order_id', $request->order_id)->firstOrFail();
 
-            // Validate parking_duration does not exceed stay duration
-            if ($bookingTransaction->check_in && $bookingTransaction->check_out) {
-                $checkIn = \Carbon\Carbon::parse($bookingTransaction->check_in);
-                $checkOut = \Carbon\Carbon::parse($bookingTransaction->check_out);
-                $maxMonths = $checkIn->diffInMonths($checkOut);
-                if ($checkIn->copy()->addMonths($maxMonths)->lt($checkOut)) {
-                    $maxMonths++;
-                }
-                $maxMonths = max(1, $maxMonths);
+            // Compute the parking period (start_rent + duration months) date-to-date.
+            // End is exclusive — last covered day is end_rent - 1.
+            $startRent = \Carbon\Carbon::parse($request->start_rent)->startOfDay();
+            $endRent = $startRent->copy()->addMonths((int) $request->parking_duration);
 
-                if ($request->parking_duration > $maxMonths) {
+            // Non-blocking notice surfaced to the admin when the parking period runs past
+            // the booking check-out. Per product decision (2026-06-02) overshoot is ALLOWED:
+            // the parking is recorded date-to-date (start_rent + duration) and we only warn,
+            // instead of rejecting. This unblocks sub-month stays where the minimum 1-month
+            // parking duration would otherwise always exceed a short stay.
+            $checkoutOvershootWarning = null;
+
+            if ($bookingTransaction->check_in && $bookingTransaction->check_out) {
+                $checkIn = \Carbon\Carbon::parse($bookingTransaction->check_in)->startOfDay();
+                $checkOut = \Carbon\Carbon::parse($bookingTransaction->check_out)->startOfDay();
+
+                // Start before check-in is still rejected — parking cannot begin before the guest arrives.
+                if ($startRent->lt($checkIn)) {
                     throw new \Exception(
-                        "Parking duration ({$request->parking_duration} months) cannot exceed stay duration ({$maxMonths} months). " .
-                        "Stay period: {$checkIn->format('d M Y')} - {$checkOut->format('d M Y')}."
+                        "Parking start date ({$startRent->format('d M Y')}) cannot be earlier than booking check-in ({$checkIn->format('d M Y')})."
                     );
                 }
+
+                // End beyond check-out is permitted (admin override) — flag it for a non-blocking notice.
+                if ($endRent->gt($checkOut)) {
+                    $checkoutOvershootWarning =
+                        "Catatan: Tanggal akhir parkir ({$endRent->format('d M Y')}) melebihi check-out booking ({$checkOut->format('d M Y')}).";
+                }
+            }
+
+            /**
+             * Idempotency guard against admin double-submit.
+             *
+             * Locks any existing active row that matches (order_id, vehicle_plate, start_rent)
+             * with `SELECT ... FOR UPDATE` so a parallel request waits here instead of
+             * inserting a second row. Combined with the unique index added in migration
+             * `2026_05_13_100001_add_dedup_unique_to_t_parking_fee_transaction.php`, this
+             * makes the create endpoint safe against accidental retries / duplicate clicks.
+             */
+            $duplicateActive = DB::table('t_parking_fee_transaction')
+                ->where('order_id', $request->order_id)
+                ->where('vehicle_plate', strtoupper($request->vehicle_plate))
+                ->whereDate('start_rent', $startRent->toDateString())
+                ->where('status', 1)
+                ->lockForUpdate()
+                ->first();
+
+            if ($duplicateActive) {
+                throw new \Exception(
+                    "Pembayaran parkir untuk order {$request->order_id} kendaraan " .
+                    strtoupper($request->vehicle_plate) .
+                    " mulai {$startRent->format('d M Y')} sudah pernah dicatat (invoice " .
+                    ($duplicateActive->invoice_id ?: '#' . $duplicateActive->idrec) .
+                    "). Tidak perlu submit ulang."
+                );
             }
 
             // Check if this order already has a parking transaction for the same vehicle plate
@@ -270,9 +334,11 @@ class ParkingPaymentController extends Controller
             $extensionOldParkingType = null;
 
             if ($existingActiveParking) {
-                // Calculate expiry: transaction_date + parking_duration months
-                $expiryDate = \Carbon\Carbon::parse($existingActiveParking->transaction_date)
-                    ->addMonths($existingActiveParking->parking_duration);
+                // Prefer the persisted end_rent; fall back to computed for legacy txns.
+                $expiryDate = $existingActiveParking->end_rent
+                    ? \Carbon\Carbon::parse($existingActiveParking->end_rent)
+                    : \Carbon\Carbon::parse($existingActiveParking->transaction_date)
+                        ->addMonths($existingActiveParking->parking_duration);
 
                 if ($expiryDate->isFuture()) {
                     $typeLabel = ucfirst($existingActiveParking->parking_type);
@@ -287,57 +353,8 @@ class ParkingPaymentController extends Controller
                 $extensionOldParkingType = $existingActiveParking->parking_type;
             }
 
-            // Get property details
+            // Get property details (still needed for downstream parking-fee lookup)
             $property = \App\Models\Property::findOrFail($bookingTransaction->property_id);
-
-            // Generate property initials (first letter of each word)
-            $propertyWords = explode(' ', $property->name);
-            $propertyInitials = '';
-            foreach ($propertyWords as $word) {
-                if (!empty($word)) {
-                    $propertyInitials .= strtoupper(substr($word, 0, 1));
-                }
-            }
-            if (strlen($propertyInitials) > 3) {
-                $propertyInitials = substr($propertyInitials, 0, 3);
-            }
-
-            // Get current month and year
-            $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
-            $month = $transactionDate->month;
-            $year = $transactionDate->year;
-
-            // Convert month to Roman numeral
-            $romanMonths = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-            $romanMonth = $romanMonths[$month - 1];
-
-            // Get sequential number for this month/year/property
-            $lastTransaction = ParkingFeeTransaction::where('property_id', $bookingTransaction->property_id)
-                ->whereYear('transaction_date', $year)
-                ->whereMonth('transaction_date', $month)
-                ->orderBy('idrec', 'desc')
-                ->first();
-
-            $sequentialNumber = 1;
-            if ($lastTransaction && $lastTransaction->invoice_id) {
-                // Extract number from last invoice_id (format: 0001/PRK-XX/KGA-INV/I/2026)
-                preg_match('/^(\d+)\//', $lastTransaction->invoice_id, $matches);
-                if (!empty($matches[1])) {
-                    $sequentialNumber = intval($matches[1]) + 1;
-                }
-            }
-
-            // Format sequential number with leading zeros
-            $formattedNumber = str_pad($sequentialNumber, 4, '0', STR_PAD_LEFT);
-
-            // Generate invoice ID: 0001/PRK-XX/KGA-INV/I/2026
-            $invoiceId = sprintf(
-                '%s/PRK-%s/KGA-INV/%s/%s',
-                $formattedNumber,
-                $propertyInitials,
-                $romanMonth,
-                $year
-            );
 
             // Get parking_fee - MUST exist in Parking Fee Management
             $parkingFee = ParkingFee::where('property_id', $bookingTransaction->property_id)
@@ -345,112 +362,156 @@ class ParkingPaymentController extends Controller
                 ->where('status', 1)
                 ->first();
 
-            // Parking fee MUST be configured in Parking Fee Management first
-            if (!$parkingFee) {
+            // Parking fee row + non-zero capacity are both required to allow new parking entries.
+            // Capacity == 0 used to mean "unlimited" but we now treat it as "not configured" so
+            // admins must explicitly set a slot count before any parking can be sold.
+            if (!$parkingFee || (int) $parkingFee->capacity <= 0) {
                 throw new \Exception(
-                    'Parking fee for ' . ucfirst($request->parking_type) . ' is not configured for this property. ' .
-                    'Please create parking fee in Parking Fee Management first before creating parking payment.'
+                    'Parking capacity for ' . ucfirst($request->parking_type) . ' is not configured for this property. ' .
+                    'Please set capacity in Parking Fee Management first before creating parking payment.'
                 );
             }
 
-            // Find or create parking registration in t_parking
-            $parking = Parking::withTrashed()
+            /**
+             * Look up the most-recent prior `t_parking` row for this vehicle at this
+             * property — **read-only**. Used for:
+             *   1. carrying forward owner_name / owner_phone if the booking transaction
+             *      doesn't supply them,
+             *   2. detecting whether the previously-held slot was claimed via Parking
+             *      Management (`management_only=1`) so we don't double-count quota.
+             *
+             * Per the post-2026-05-08 multi-row design (see CLAUDE.md "Parking System"),
+             * we **never** mutate the prior row. Each paid period is preserved as its
+             * own audit record. The cron `parking:deactivate-expired` flips old rows to
+             * `status=0` once `end_rent` passes — we don't touch them here.
+             */
+            $priorParking = Parking::withTrashed()
                 ->where('property_id', $bookingTransaction->property_id)
                 ->where('vehicle_plate', strtoupper($request->vehicle_plate))
+                ->orderByDesc('idrec')
                 ->first();
 
-            // Cek apakah quota sudah dikonsumsi oleh Parking Management (management_only=1)
-            // Jika ya, PP tidak perlu increment quota lagi (slot sudah terpakai)
-            $quotaAlreadyConsumedByManagement = false;
+            // If the prior live row was registered via Parking Management (no invoice,
+            // `management_only=1`), its slot was already counted against capacity. The
+            // new paid period takes over that slot — skip a second quota increment.
+            $quotaAlreadyConsumedByManagement = (
+                $priorParking
+                && !$priorParking->trashed()
+                && (int) $priorParking->management_only === 1
+            );
 
-            if ($parking && $parking->trashed()) {
-                $parking->restore();
-                // Restored = treat as new, quota perlu di-increment
-                $quotaAlreadyConsumedByManagement = false;
-            } elseif ($parking && $parking->management_only) {
-                // Kendaraan sebelumnya didaftarkan via Parking Management (tanpa invoice)
-                // Quota sudah dikonsumsi oleh PM → PP tidak increment lagi
-                // PP mengambil alih pengelolaan quota → reset flag management_only
-                $quotaAlreadyConsumedByManagement = true;
-                $parking->update(['management_only' => 0, 'updated_by' => Auth::id()]);
-            }
-
-            if (!$parking) {
-                $parking = Parking::create([
-                    'property_id' => $bookingTransaction->property_id,
-                    'parking_type' => $request->parking_type,
-                    'vehicle_plate' => strtoupper($request->vehicle_plate),
-                    'owner_name' => $bookingTransaction->user_name,
-                    'owner_phone' => $bookingTransaction->user_phone_number,
-                    'user_id' => $bookingTransaction->user_id,
-                    'order_id' => $request->order_id,
-                    'status' => 1,
-                    'management_only' => 0,
-                    'created_by' => Auth::id(),
-                ]);
-            }
+            // NOTE: `$parking` is created **after** the renewal-detection block below
+            // so that the lookup queries don't accidentally pick up the freshly-inserted
+            // row as a "prior" record. See the `Parking::create([...])` call further down.
+            $parking = null;
 
             // Determine if this is a renewal booking (user extending their stay, same vehicle/slot)
             $isRenewalBooking = $bookingTransaction->is_renewal == 1;
             $existingParkingType = null; // Tipe parkir lama yang dimiliki user (jika ada)
 
-            if ($isRenewalBooking) {
-                // Cek 1: dari t_parking_fee_transaction (Alur PP - beli via Parking Payment)
-                $prevParkingTxn = ParkingFeeTransaction::where('user_id', $bookingTransaction->user_id)
+            /**
+             * Prior-parking detection runs **unconditionally** — not gated on
+             * `$isRenewalBooking`. A customer may continue holding their parking slot
+             * across non-renewal bookings (e.g. consecutive month-to-month bookings
+             * booked separately, or a fresh booking after a previous stay where they
+             * never released the slot). The quota counter must not double-count
+             * a slot the customer already holds, regardless of how the new booking
+             * is flagged. See CLAUDE.md "m_parking_fee.quota_used is legacy/drifted"
+             * — historical upward drift came from increments firing on renewals.
+             */
+
+            // Cek 1: dari t_parking_fee_transaction (Alur PP - beli via Parking Payment)
+            // First check for same type (exact renewal)
+            $prevParkingTxn = ParkingFeeTransaction::where('user_id', $bookingTransaction->user_id)
+                ->where('property_id', $bookingTransaction->property_id)
+                ->where('parking_type', $request->parking_type)
+                ->where('transaction_status', 'paid')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($prevParkingTxn) {
+                $existingParkingType = $prevParkingTxn->parking_type;
+            }
+
+            // Cek 2: dari t_transactions order sebelumnya (Alur booking kamar + parkir)
+            if (!$existingParkingType) {
+                $prevTxn = \App\Models\Transaction::where('user_id', $bookingTransaction->user_id)
+                    ->where('property_id', $bookingTransaction->property_id)
+                    ->where('transaction_status', 'paid')
+                    ->where('parking_type', $request->parking_type)
+                    ->where('parking_fee', '>', 0)
+                    ->whereNotNull('parking_duration')
+                    ->where('order_id', '!=', $request->order_id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($prevTxn) {
+                    $existingParkingType = $prevTxn->parking_type;
+                }
+            }
+
+            // Cek 3: dari t_parking langsung (Parking Management atau record aktif)
+            if (!$existingParkingType) {
+                $existingParkingRecord = Parking::where('user_id', $bookingTransaction->user_id)
+                    ->where('property_id', $bookingTransaction->property_id)
+                    ->where('parking_type', $request->parking_type)
+                    ->where('status', 1)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($existingParkingRecord) {
+                    $existingParkingType = $existingParkingRecord->parking_type;
+                }
+            }
+
+            // Fallback: check for ANY existing parking type (for type-change detection)
+            if (!$existingParkingType) {
+                $anyPrevParking = ParkingFeeTransaction::where('user_id', $bookingTransaction->user_id)
                     ->where('property_id', $bookingTransaction->property_id)
                     ->where('transaction_status', 'paid')
                     ->orderBy('created_at', 'desc')
                     ->first();
-
-                if ($prevParkingTxn) {
-                    $existingParkingType = $prevParkingTxn->parking_type;
+                if ($anyPrevParking) {
+                    $existingParkingType = $anyPrevParking->parking_type;
                 }
-
-                // Cek 2: dari t_transactions order sebelumnya (Alur booking kamar + parkir)
-                if (!$existingParkingType) {
-                    $prevTxn = \App\Models\Transaction::where('user_id', $bookingTransaction->user_id)
-                        ->where('property_id', $bookingTransaction->property_id)
-                        ->where('transaction_status', 'paid')
-                        ->whereNotNull('parking_type')
-                        ->where('parking_fee', '>', 0)
-                        ->whereNotNull('parking_duration')
-                        ->where('order_id', '!=', $request->order_id)
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-
-                    if ($prevTxn) {
-                        $existingParkingType = $prevTxn->parking_type;
-                    }
+            }
+            if (!$existingParkingType) {
+                $anyPrevTxn = \App\Models\Transaction::where('user_id', $bookingTransaction->user_id)
+                    ->where('property_id', $bookingTransaction->property_id)
+                    ->where('transaction_status', 'paid')
+                    ->whereNotNull('parking_type')
+                    ->where('parking_fee', '>', 0)
+                    ->where('order_id', '!=', $request->order_id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                if ($anyPrevTxn) {
+                    $existingParkingType = $anyPrevTxn->parking_type;
                 }
-
-                // Cek 3: dari t_parking langsung (Parking Management atau record aktif)
-                if (!$existingParkingType) {
-                    $existingParkingRecord = Parking::where('user_id', $bookingTransaction->user_id)
-                        ->where('property_id', $bookingTransaction->property_id)
-                        ->where('status', 1)
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-
-                    if ($existingParkingRecord) {
-                        $existingParkingType = $existingParkingRecord->parking_type;
-                    }
+            }
+            if (!$existingParkingType) {
+                $anyPrevRecord = Parking::where('user_id', $bookingTransaction->user_id)
+                    ->where('property_id', $bookingTransaction->property_id)
+                    ->where('status', 1)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                if ($anyPrevRecord) {
+                    $existingParkingType = $anyPrevRecord->parking_type;
                 }
             }
 
-            // User sudah punya parkir sebelumnya → ini renewal sesungguhnya
-            $isRenewal = $isRenewalBooking && !is_null($existingParkingType);
+            // Treat as renewal whenever prior parking exists, regardless of the
+            // booking's `is_renewal` flag. The slot was already counted against
+            // `m_parking_fee.quota_used` — do not increment again.
+            $isRenewal = !is_null($existingParkingType);
 
             // Tipe parkir berubah saat renewal (misal motor → mobil)?
-            // Jika ya: bebaskan kuota tipe lama, ambil kuota tipe baru
+            // Jika ya: bebaskan kuota tipe lama, ambil kuota tipe baru.
+            // If existingParkingType matches the requested type, this is a same-type renewal → no quota change.
             $isParkingTypeChanged = $isRenewal && ($existingParkingType !== $request->parking_type);
 
-            // Update order_id pada record t_parking agar selalu menunjuk ke order terbaru
-            if ($isRenewal && $parking && $parking->order_id !== $request->order_id) {
-                $parking->update([
-                    'order_id' => $request->order_id,
-                    'updated_by' => Auth::id(),
-                ]);
-            }
+            // (Removed pre-2026-05-08 `order_id` rewrite on the existing t_parking row.
+            // Under the multi-row design, the new row created below already carries
+            // the correct `order_id`, so an in-place update is no longer needed.)
 
             // Cek ketersediaan kuota:
             // - Parkir baru atau renewal ganti tipe → cek kuota tipe baru
@@ -474,11 +535,36 @@ class ParkingPaymentController extends Controller
                 }
             }
 
-            // Create parking fee transaction with status 'paid' and already verified
+            /**
+             * INSERT a fresh `t_parking` row for this paid period (post-2026-05-08
+             * multi-row design — see CLAUDE.md "Parking System / Storage: one row per
+             * paid period"). Owner data falls back to the prior row when the booking
+             * transaction is missing it. `status=1` so the row is immediately active;
+             * the daily cron will flip it to 0 when `end_rent` passes.
+             */
+            $parking = Parking::create([
+                'property_id'      => $bookingTransaction->property_id,
+                'parking_type'     => $request->parking_type,
+                'vehicle_plate'    => strtoupper($request->vehicle_plate),
+                'owner_name'       => $bookingTransaction->user_name        ?? ($priorParking->owner_name  ?? null),
+                'owner_phone'      => $bookingTransaction->user_phone_number ?? ($priorParking->owner_phone ?? null),
+                'user_id'          => $bookingTransaction->user_id,
+                'order_id'         => $request->order_id,
+                'parking_duration' => (int) $request->parking_duration,
+                'start_rent'       => $startRent->toDateString(),
+                'end_rent'         => $endRent->toDateString(),
+                'fee_amount'       => $request->fee_amount,
+                'status'           => 1,
+                'management_only'  => 0,
+                'created_by'       => Auth::id(),
+            ]);
+
+            // Create parking fee transaction with status 'paid' and already verified.
+            // invoice_id is left null here — InvoiceNumberService::assign() below
+            // pulls the next sequence atomically and writes it back.
             $transaction = ParkingFeeTransaction::create([
                 'property_id' => $bookingTransaction->property_id,
                 'parking_id' => $parking->idrec,
-                'invoice_id' => $invoiceId,
                 'order_id' => $request->order_id,
                 'user_id' => $bookingTransaction->user_id,
                 'user_name' => $bookingTransaction->user_name,
@@ -486,6 +572,8 @@ class ParkingPaymentController extends Controller
                 'parking_type' => $request->parking_type,
                 'vehicle_plate' => strtoupper($request->vehicle_plate),
                 'parking_duration' => $request->parking_duration,
+                'start_rent' => $startRent->toDateString(),
+                'end_rent' => $endRent->toDateString(),
                 'fee_amount' => $request->fee_amount,
                 'transaction_date' => $request->transaction_date,
                 'transaction_status' => 'paid', // Already paid
@@ -496,6 +584,16 @@ class ParkingPaymentController extends Controller
                 'status' => 1,
                 'created_by' => Auth::id(),
             ]);
+
+            // (Removed pre-2026-05-08 `forceFill` of the existing t_parking row.
+            // Under the multi-row design, start_rent / end_rent / parking_duration /
+            // fee_amount were already written into the freshly-INSERTed row above —
+            // we never overwrite the prior period's record.)
+
+            // Assign persisted invoice number (per-invoice-code shared counter)
+            InvoiceNumberService::assign($transaction);
+            $transaction->refresh();
+            $invoiceId = $transaction->invoice_id ?: ('PRK-' . $transaction->idrec);
 
             // Handle image upload - Save as file
             if ($request->hasFile('payment_proof')) {
@@ -579,9 +677,15 @@ class ParkingPaymentController extends Controller
                 $message .= ". Parking quota: {$remaining}/{$parkingFee->capacity} available.";
             }
 
+            // Append the checkout-overshoot notice (if any) so the admin sees it in the success toast.
+            if ($checkoutOvershootWarning) {
+                $message .= ' ⚠️ ' . $checkoutOvershootWarning;
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => $message,
+                'warning' => $checkoutOvershootWarning, // null when period fits within the stay
                 'data' => $transaction,
                 'parking_info' => [
                     'capacity' => $parkingFee->capacity,
@@ -682,13 +786,21 @@ class ParkingPaymentController extends Controller
                         ->first();
 
                     if ($existingParking) {
-                        $expiryDate = \Carbon\Carbon::parse($existingParking->transaction_date)
-                            ->addMonths($existingParking->parking_duration ?? 1);
+                        // Prefer persisted period; fall back to computed for legacy rows.
+                        $startDate = $existingParking->start_rent
+                            ? \Carbon\Carbon::parse($existingParking->start_rent)
+                            : \Carbon\Carbon::parse($existingParking->transaction_date);
+                        $expiryDate = $existingParking->end_rent
+                            ? \Carbon\Carbon::parse($existingParking->end_rent)
+                            : \Carbon\Carbon::parse($existingParking->transaction_date)
+                                ->addMonths($existingParking->parking_duration ?? 1);
                         $parkingStatus = $expiryDate->isFuture() ? 'active' : 'renewal';
                         $parkingInfo = [
                             'parking_type'  => $existingParking->parking_type,
                             'vehicle_plate' => $existingParking->vehicle_plate,
                             'duration'      => $existingParking->parking_duration,
+                            'start_rent'    => $startDate->format('d M Y'),
+                            'end_rent'      => $expiryDate->format('d M Y'),
                             'expiry_date'   => $expiryDate->format('d M Y'),
                             'expired_ago'   => $expiryDate->diffForHumans(),
                         ];
@@ -698,21 +810,27 @@ class ParkingPaymentController extends Controller
                     if (!$parkingInfo) {
                         $txn = $booking->transaction;
                         if ($txn && $txn->parking_type && $txn->parking_fee > 0 && $txn->parking_duration) {
-                            $checkIn = \Carbon\Carbon::parse($txn->check_in);
-                            $expiryDate = $checkIn->copy()->addMonths((int) $txn->parking_duration);
-                            $parkingStatus = $expiryDate->isFuture() ? 'active' : 'renewal';
-
-                            // Ambil plat kendaraan dari t_parking berdasarkan user + properti + tipe
+                            // Ambil plat kendaraan + persisted period dari t_parking
                             $parkingRecord = \App\Models\Parking::where('user_id', $userId)
                                 ->where('property_id', $booking->property_id)
                                 ->where('parking_type', $txn->parking_type)
                                 ->where('status', 1)
                                 ->first();
 
+                            $startDate = $parkingRecord && $parkingRecord->start_rent
+                                ? \Carbon\Carbon::parse($parkingRecord->start_rent)
+                                : \Carbon\Carbon::parse($txn->check_in);
+                            $expiryDate = $parkingRecord && $parkingRecord->end_rent
+                                ? \Carbon\Carbon::parse($parkingRecord->end_rent)
+                                : $startDate->copy()->addMonths((int) $txn->parking_duration);
+                            $parkingStatus = $expiryDate->isFuture() ? 'active' : 'renewal';
+
                             $parkingInfo = [
                                 'parking_type'  => $txn->parking_type,
                                 'vehicle_plate' => $parkingRecord->vehicle_plate ?? null,
                                 'duration'      => $txn->parking_duration,
+                                'start_rent'    => $startDate->format('d M Y'),
+                                'end_rent'      => $expiryDate->format('d M Y'),
                                 'expiry_date'   => $expiryDate->format('d M Y'),
                                 'expired_ago'   => $expiryDate->diffForHumans(),
                             ];
@@ -728,13 +846,20 @@ class ParkingPaymentController extends Controller
                             ->first();
 
                         if ($prevParkingTxn) {
-                            $expiryDate = \Carbon\Carbon::parse($prevParkingTxn->transaction_date)
-                                ->addMonths($prevParkingTxn->parking_duration ?? 1);
+                            $startDate = $prevParkingTxn->start_rent
+                                ? \Carbon\Carbon::parse($prevParkingTxn->start_rent)
+                                : \Carbon\Carbon::parse($prevParkingTxn->transaction_date);
+                            $expiryDate = $prevParkingTxn->end_rent
+                                ? \Carbon\Carbon::parse($prevParkingTxn->end_rent)
+                                : \Carbon\Carbon::parse($prevParkingTxn->transaction_date)
+                                    ->addMonths($prevParkingTxn->parking_duration ?? 1);
                             $parkingStatus = 'renewal';
                             $parkingInfo = [
                                 'parking_type'  => $prevParkingTxn->parking_type,
                                 'vehicle_plate' => $prevParkingTxn->vehicle_plate,
                                 'duration'      => $prevParkingTxn->parking_duration,
+                                'start_rent'    => $startDate->format('d M Y'),
+                                'end_rent'      => $expiryDate->format('d M Y'),
                                 'expiry_date'   => $expiryDate->format('d M Y'),
                                 'expired_ago'   => $expiryDate->diffForHumans(),
                             ];
@@ -754,21 +879,27 @@ class ParkingPaymentController extends Controller
                             ->first();
 
                         if ($prevTxn && $prevTxn->check_in && $prevTxn->parking_duration) {
-                            $checkIn = \Carbon\Carbon::parse($prevTxn->check_in);
-                            $expiryDate = $checkIn->copy()->addMonths((int) $prevTxn->parking_duration);
-                            $parkingStatus = 'renewal';
-
-                            // Ambil plat kendaraan dari t_parking berdasarkan user + properti + tipe
+                            // Ambil plat kendaraan + persisted period dari t_parking
                             $parkingRecord = \App\Models\Parking::where('user_id', $userId)
                                 ->where('property_id', $booking->property_id)
                                 ->where('parking_type', $prevTxn->parking_type)
                                 ->where('status', 1)
                                 ->first();
 
+                            $startDate = $parkingRecord && $parkingRecord->start_rent
+                                ? \Carbon\Carbon::parse($parkingRecord->start_rent)
+                                : \Carbon\Carbon::parse($prevTxn->check_in);
+                            $expiryDate = $parkingRecord && $parkingRecord->end_rent
+                                ? \Carbon\Carbon::parse($parkingRecord->end_rent)
+                                : $startDate->copy()->addMonths((int) $prevTxn->parking_duration);
+                            $parkingStatus = 'renewal';
+
                             $parkingInfo = [
                                 'parking_type'  => $prevTxn->parking_type,
                                 'vehicle_plate' => $parkingRecord->vehicle_plate ?? null,
                                 'duration'      => $prevTxn->parking_duration,
+                                'start_rent'    => $startDate->format('d M Y'),
+                                'end_rent'      => $expiryDate->format('d M Y'),
                                 'expiry_date'   => $expiryDate->format('d M Y'),
                                 'expired_ago'   => $expiryDate->diffForHumans(),
                             ];
@@ -782,32 +913,47 @@ class ParkingPaymentController extends Controller
                             ->where('property_id', $booking->property_id)
                             ->where('status', 1)
                             ->whereNull('deleted_at')
-                            ->get(['idrec', 'vehicle_plate', 'parking_type']);
+                            ->get(['idrec', 'vehicle_plate', 'parking_type', 'start_rent', 'end_rent', 'parking_duration']);
 
                         foreach ($activeParkingRecords as $ap) {
-                            // Get latest paid transaction for this parking record to determine duration/expiry
-                            $latestTxn = ParkingFeeTransaction::where('parking_id', $ap->idrec)
-                                ->where('transaction_status', 'paid')
-                                ->orderBy('created_at', 'desc')
-                                ->first();
-
-                            $apExpiryDate = null;
+                            $apStartDate  = null;
+                            $apEndDate    = null;
                             $apIsExpired  = null;
-                            $apDuration   = null;
+                            $apDuration   = $ap->parking_duration;
 
-                            if ($latestTxn) {
-                                $apExpiry    = \Carbon\Carbon::parse($latestTxn->transaction_date)
-                                    ->addMonths($latestTxn->parking_duration ?? 1);
-                                $apExpiryDate = $apExpiry->format('d M Y');
-                                $apIsExpired  = !$apExpiry->isFuture();
-                                $apDuration   = $latestTxn->parking_duration;
+                            // Prefer persisted t_parking period; fall back to latest txn for legacy rows.
+                            if ($ap->start_rent && $ap->end_rent) {
+                                $apStart      = \Carbon\Carbon::parse($ap->start_rent);
+                                $apEnd        = \Carbon\Carbon::parse($ap->end_rent);
+                                $apStartDate  = $apStart->format('d M Y');
+                                $apEndDate    = $apEnd->format('d M Y');
+                                $apIsExpired  = !$apEnd->isFuture();
+                            } else {
+                                $latestTxn = ParkingFeeTransaction::where('parking_id', $ap->idrec)
+                                    ->where('transaction_status', 'paid')
+                                    ->orderBy('created_at', 'desc')
+                                    ->first();
+                                if ($latestTxn) {
+                                    $apStart      = $latestTxn->start_rent
+                                        ? \Carbon\Carbon::parse($latestTxn->start_rent)
+                                        : \Carbon\Carbon::parse($latestTxn->transaction_date);
+                                    $apEnd        = $latestTxn->end_rent
+                                        ? \Carbon\Carbon::parse($latestTxn->end_rent)
+                                        : $apStart->copy()->addMonths($latestTxn->parking_duration ?? 1);
+                                    $apStartDate  = $apStart->format('d M Y');
+                                    $apEndDate    = $apEnd->format('d M Y');
+                                    $apIsExpired  = !$apEnd->isFuture();
+                                    $apDuration   = $latestTxn->parking_duration;
+                                }
                             }
 
                             $activeParkings[] = [
                                 'vehicle_plate'    => $ap->vehicle_plate,
                                 'parking_type'     => $ap->parking_type,
                                 'parking_duration' => $apDuration,
-                                'expiry_date'      => $apExpiryDate,
+                                'start_rent'       => $apStartDate,
+                                'end_rent'         => $apEndDate,
+                                'expiry_date'      => $apEndDate, // legacy alias
                                 'is_expired'       => $apIsExpired,
                             ];
                         }

@@ -39,9 +39,17 @@ return [
     'footer' => [
         'tagline' => 'Tempat tinggal yang nyaman dan modern untuk para pencinta keindahan kota.',
         'quick_links' => 'Tautan Cepat',
+        'business' => 'Ulin Mahoni Bisnis',
+        'business_partnership' => 'Kemitraan',
+        'business_corporate' => 'Korporasi',
         'contact_us' => 'Kontak Kami',
         'follow_us' => 'Ikuti Kami',
-        'copyright' => '&copy; 2025 Ulin Mahoni. Hak cipta dilindungi.',
+        'support' => 'Support',
+        'payment_methods' => 'Metode Pembayaran',
+        'login_register' => 'Masuk / Daftar',
+        'terms' => 'Syarat & Ketentuan',
+        'privacy' => 'Kebijakan Privasi',
+        'copyright' => '&copy; 2026 Ulin Mahoni. Hak cipta dilindungi.',
     ],
 
     'language' => [

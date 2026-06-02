@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Room;
 use App\Models\Booking;
+use App\Models\Property;
 
 class RoomAvailabilityController extends Controller
 {
@@ -15,23 +16,24 @@ class RoomAvailabilityController extends Controller
         $perPage = $request->get('per_page', 8);
         $search = $request->get('search');
         $status = $request->get('status', 'all');
+        $propertyId = $request->get('property_id'); /* Property dropdown filter */
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
 
-        // Query untuk room availability
+        /* Eager-load all paid bookings on the room that are still semantically active —
+           status=1 + transaction_status='paid' + renewal_status=0 (excludes superseded
+           parent transactions). The blade splits this into two buckets:
+           - "current" (check_in_at NOT NULL, check_out_at IS NULL) → blue badge
+           - "future"  (check_in_at IS NULL, scheduled check_in >= today) → green badge */
         $rooms = Room::where('status', 1)->with(['property', 'thumbnail', 'bookings' => function ($query) use ($startDate, $endDate) {
-            // Hanya ambil booking aktif (status=1) dengan status paid
-            // status=0 berarti booking lama dari pindah kamar, tidak perlu ditampilkan
             $query->where('status', 1)
-            ->whereNotNull('check_in_at')
-            ->whereNull('check_out_at')
-            ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid');
-            })
-            ->with(['user', 'transaction', 'payment']);
+                ->whereHas('transaction', function ($q) {
+                    $q->where('transaction_status', 'paid')
+                      ->where('renewal_status', 0);
+                })
+                ->with(['user', 'transaction.user', 'payment']);
 
-            // Filter berdasarkan tanggal menggunakan transaction dates untuk konsistensi
-            // Logika overlap: booking overlap jika check_in < endDate DAN check_out > startDate
+            // Optional date-range filter from the page's date picker
             if ($startDate && $endDate) {
                 $query->whereHas('transaction', function ($q) use ($startDate, $endDate) {
                     $q->where('check_in', '<', $endDate)
@@ -55,6 +57,10 @@ class RoomAvailabilityController extends Controller
                         });
                 });
             })
+            /* Filter by selected property from dropdown */
+            ->when($propertyId, function ($query, $propertyId) {
+                $query->where('property_id', $propertyId);
+            })
             ->when($status !== 'all', function ($query) use ($status) {
                 if ($status === 'available') {
                     $query->where('rental_status', 0);
@@ -62,7 +68,9 @@ class RoomAvailabilityController extends Controller
                     $query->where('rental_status', 1);
                 }
             })
-            ->orderBy('created_at', 'desc')
+            /* Default sort: property name ascending, then room number ascending */
+            ->orderBy('property_id', 'asc')
+            ->orderBy('no', 'asc')
             ->paginate($perPage)
             ->withQueryString();
 
@@ -74,7 +82,10 @@ class RoomAvailabilityController extends Controller
             ]);
         }
 
-        return view('pages.room_availability.index', compact('rooms'));
+        /* Get all active properties for the filter dropdown */
+        $properties = Property::where('status', 1)->orderBy('name', 'asc')->get(['idrec', 'name']);
+
+        return view('pages.room_availability.index', compact('rooms', 'properties'));
     }
 
     public function getRoomBookings($roomId, Request $request)
@@ -179,7 +190,8 @@ class RoomAvailabilityController extends Controller
 
         return response()->json([
             'success' => true,
-            'room_name' => $room->name . ' - ' . ($room->property->property_name ?? ''),
+            /* Modal header: Property - Room Type - Room Number */
+            'room_name' => ($room->property->name ?? '') . ' - ' . $room->name . ' - ' . ($room->no ?? ''),
             'bookings' => $formattedBookings,
             'total_bookings' => $uniqueTenantCount,
         ]);
@@ -188,18 +200,19 @@ class RoomAvailabilityController extends Controller
     // Badge warna berdasarkan status text (computed accessor)
     private function getStatusBadgeFromText($statusText)
     {
+        /** Badge classes with dark mode variants */
         $badges = [
-            'Waiting For Payment' => 'bg-yellow-100 text-yellow-800',
-            'Waiting For Confirmation' => 'bg-orange-100 text-orange-800',
-            'Waiting For Check-In' => 'bg-blue-100 text-blue-800',
-            'Checked-In' => 'bg-green-100 text-green-800',
-            'Checked-Out' => 'bg-gray-100 text-gray-800',
-            'Canceled' => 'bg-red-100 text-red-800',
-            'Expired' => 'bg-red-100 text-red-800',
-            'Payment Failed' => 'bg-red-100 text-red-800',
+            'Waiting For Payment' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+            'Waiting For Confirmation' => 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+            'Waiting For Check-In' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+            'Checked-In' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+            'Checked-Out' => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+            'Canceled' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+            'Expired' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+            'Payment Failed' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
         ];
 
-        return $badges[$statusText] ?? 'bg-gray-100 text-gray-800';
+        return $badges[$statusText] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
 
     // Status text (deprecated - kept for backward compatibility)

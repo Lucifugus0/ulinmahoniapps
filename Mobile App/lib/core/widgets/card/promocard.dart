@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../theme/glass_theme.dart';
 
-/// Promo Banner Card Widget
-/// Displays promotional banner image in 16:9 aspect ratio
-/// Full-width with 16px padding, image-only (no text overlay)
+/// Promo Banner Card Widget with glass-style border.
+/// Displays a promotional banner image; aspect ratio is set by the parent.
+/// Border and shadow adapt to dark/light mode.
 class PromoCard extends StatelessWidget {
   final String imageUrl;
   final VoidCallback? onTap;
@@ -21,69 +22,71 @@ class PromoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveBorderRadius = borderRadius ?? BorderRadius.circular(GlassTheme.radiusMedium);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: borderRadius ?? BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: effectiveBorderRadius,
+          // Glass-style subtle border
+          border: Border.all(
+            color: isDark ? GlassTheme.glassBorderDark : GlassTheme.glassBorderLight,
+            width: GlassTheme.borderWidth,
+          ),
+          boxShadow: isDark ? GlassTheme.glassShadowDark : GlassTheme.glassShadowLight,
         ),
         child: ClipRRect(
-          borderRadius: borderRadius ?? BorderRadius.circular(12),
+          borderRadius: effectiveBorderRadius,
           child: imageUrl.isEmpty
-              ? _buildPlaceholder()
+              ? _buildPlaceholder(isDark)
               : CachedNetworkImage(
                   imageUrl: imageUrl,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => _buildPlaceholder(),
-                  errorWidget: (context, url, error) => _buildErrorWidget(),
+                  placeholder: (context, url) => _buildPlaceholder(isDark),
+                  errorWidget: (context, url, error) => _buildErrorWidget(isDark),
                 ),
         ),
       ),
     );
   }
 
-  /// Placeholder widget while loading
-  Widget _buildPlaceholder() {
+  /// Placeholder widget while loading (adapts to dark/light)
+  Widget _buildPlaceholder(bool isDark) {
     return Skeletonizer(
       enabled: true,
       child: Container(
-        color: Colors.grey[300],
-        child: const Center(
+        color: isDark ? Colors.grey[800] : Colors.grey[300],
+        child: Center(
           child: Icon(
             Icons.image,
             size: 48,
-            color: Colors.grey,
+            color: isDark ? Colors.grey[600] : Colors.grey,
           ),
         ),
       ),
     );
   }
 
-  /// Error widget if image fails to load
-  Widget _buildErrorWidget() {
+  /// Error widget if image fails to load (adapts to dark/light)
+  Widget _buildErrorWidget(bool isDark) {
     return Container(
-      color: Colors.grey[200],
-      child: const Center(
+      color: isDark ? Colors.grey[850] : Colors.grey[200],
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.broken_image,
               size: 48,
-              color: Colors.grey,
+              color: isDark ? Colors.grey[600] : Colors.grey,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Failed to load image',
               style: TextStyle(
-                color: Colors.grey,
+                color: isDark ? Colors.grey[500] : Colors.grey,
                 fontSize: 12,
               ),
             ),

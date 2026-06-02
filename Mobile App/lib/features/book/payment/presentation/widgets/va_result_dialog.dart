@@ -48,13 +48,13 @@ class _VAResultDialogState extends State<VAResultDialog> {
         _remainingTime = Duration.zero;
       }
 
-      // Force maximum 15 minutes countdown
-      if (_remainingTime.inMinutes > 15) {
-        _remainingTime = const Duration(minutes: 15);
+      // Force maximum 30 minutes countdown
+      if (_remainingTime.inMinutes > 30) {
+        _remainingTime = const Duration(minutes: 30);
       }
     } catch (e) {
-      // Default to 15 minutes if parsing fails
-      _remainingTime = const Duration(minutes: 15);
+      // Default to 30 minutes if parsing fails
+      _remainingTime = const Duration(minutes: 30);
     }
   }
 
@@ -91,7 +91,8 @@ class _VAResultDialogState extends State<VAResultDialog> {
         context,
         localizations.vaResultDialogCopySuccess,
         defaultIcon: Icons.check_circle_outline,
-        iconColor: AppColors.primaryColor,
+        // Use primaryAdaptive for the copy success notification icon color
+        iconColor: AppColors.primaryAdaptive(context),
       );
     }
   }
@@ -131,8 +132,11 @@ class _VAResultDialogState extends State<VAResultDialog> {
     final localizations = AppLocalizations.of(context)!;
     final amount = double.tryParse(widget.vaData.totalAmount) ?? 0.0;
 
+    // Dark mode detection for dialog colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -148,10 +152,11 @@ class _VAResultDialogState extends State<VAResultDialog> {
               height: 75,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                return const Icon(
+                // Use primaryAdaptive for the fallback icon color
+                return Icon(
                   Icons.check_circle,
                   size: 75,
-                  color: AppColors.primaryColor,
+                  color: AppColors.primaryAdaptive(context),
                 );
               },
             ),
@@ -160,10 +165,10 @@ class _VAResultDialogState extends State<VAResultDialog> {
             // Title
             Text(
               localizations.vaResultDialogTitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -173,9 +178,9 @@ class _VAResultDialogState extends State<VAResultDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: isDark ? const Color(0xFF374151) : Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: isDark ? Colors.grey.shade600 : Colors.grey.shade200),
               ),
               child: Column(
                 children: [
@@ -194,7 +199,8 @@ class _VAResultDialogState extends State<VAResultDialog> {
                               localizations.vaResultDialogVANumber,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade600,
+                                // Use dark-aware label text color
+                                color: isDark ? Colors.grey[400] : Colors.grey.shade600,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -203,17 +209,18 @@ class _VAResultDialogState extends State<VAResultDialog> {
                                 Expanded(
                                   child: Text(
                                     widget.vaData.virtualAccountNo,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: isDark ? Colors.white : Colors.black87,
                                     ),
                                   ),
                                 ),
                                 IconButton(
                                   onPressed: () => _copyToClipboard(widget.vaData.virtualAccountNo),
                                   icon: const Icon(Icons.copy, size: 20),
-                                  color: AppColors.primaryColor,
+                                  // Use primaryAdaptive for the copy icon button color
+                                  color: AppColors.primaryAdaptive(context),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                 ),
@@ -237,9 +244,10 @@ class _VAResultDialogState extends State<VAResultDialog> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
+                // Use dark-aware amber/warning box background and border
+                color: isDark ? AppColors.surfaceDarkElevated : Colors.orange.shade50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
+                border: Border.all(color: isDark ? Colors.white24 : Colors.orange.shade200),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -268,7 +276,8 @@ class _VAResultDialogState extends State<VAResultDialog> {
                   child: ElevatedButton(
                     onPressed: _openHowToPay,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
+                      // Use primaryAdaptive for the how-to-pay button background
+                      backgroundColor: AppColors.primaryAdaptive(context),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -321,8 +330,9 @@ class _VAResultDialogState extends State<VAResultDialog> {
                   child: OutlinedButton(
                     onPressed: widget.onClose,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryColor,
-                      side: const BorderSide(color: AppColors.primaryColor),
+                      // Use primaryAdaptive for the close button foreground and border
+                      foregroundColor: AppColors.primaryAdaptive(context),
+                      side: BorderSide(color: AppColors.primaryAdaptive(context)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -346,6 +356,7 @@ class _VAResultDialogState extends State<VAResultDialog> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -353,15 +364,15 @@ class _VAResultDialogState extends State<VAResultDialog> {
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey.shade600,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
       ],

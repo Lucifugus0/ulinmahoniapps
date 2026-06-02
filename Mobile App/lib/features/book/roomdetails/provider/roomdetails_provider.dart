@@ -4,19 +4,23 @@ import '../../detailproperty/model/detailproperty_model.dart';
 import '../../../searchresult/model/searchfilter_model.dart';
 import '../../../searchresult/provider/searchresult_provider.dart';
 import '../../../../core/utils/app_logger.dart';
-import 'package:intl/intl.dart'; 
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/constants/api_constants.dart';
+import 'package:intl/intl.dart';
 
-class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
-  RoomDetailsNotifier(this.ref) : super(const AsyncValue.loading());
+/// Riverpod 3.x Notifier for room details state — migrated from StateNotifier
+/// Manages room data, rent type, duration, check-in/out dates, and multi-tier daily pricing
+class RoomDetailsNotifier extends Notifier<AsyncValue<Map<String, dynamic>>> {
+  /// Build method returns the initial loading state (replaces constructor super call)
+  @override
+  AsyncValue<Map<String, dynamic>> build() => const AsyncValue.loading();
 
-  final Ref ref;
-
+  /// Parse custom date format "dd-MM-yyyy HH:mm" to DateTime
   DateTime? _parseCustomDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) {
       return null;
     }
     try {
-      
       final DateFormat formatter = DateFormat("dd-MM-yyyy HH:mm");
       return formatter.parseStrict(dateString);
     } catch (e) {
@@ -25,6 +29,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
+  /// Load room details from room model and property data, applying search filter defaults
   void loadRoomDetails(RoomModel room, DetailPropertyModel propertyData) {
     state = const AsyncValue.loading();
 
@@ -49,15 +54,15 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
           AppLogger.d('Calculated checkOutDate (Daily): ${initialCheckOutDate.toIso8601String()}', 'ROOM-DETAILS');
         } else if (initialRentType == 'Monthly') {
 
-          initialCheckOutDate = DateTime(
-            initialCheckInDate.year,
-            initialCheckInDate.month + initialDuration,
-            initialCheckInDate.day,
-            initialCheckInDate.hour,
-            initialCheckInDate.minute,
-            initialCheckInDate.second,
-            initialCheckInDate.millisecond,
-            initialCheckInDate.microsecond,
+          // Clamped month addition: if target month has fewer days, clamp to last day
+          // e.g. Jan 31 + 1 month = Feb 28, Mar 31 + 1 month = Apr 30
+          final targetMonth = initialCheckInDate.month + initialDuration;
+          final targetYear = initialCheckInDate.year + (targetMonth - 1) ~/ 12;
+          final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+          final maxDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+          final clampedDay = initialCheckInDate.day > maxDay ? maxDay : initialCheckInDate.day;
+          initialCheckOutDate = DateTime(targetYear, normalizedMonth, clampedDay,
+            initialCheckInDate.hour, initialCheckInDate.minute, initialCheckInDate.second,
           );
           AppLogger.d('Calculated checkOutDate (Monthly): ${initialCheckOutDate.toIso8601String()}', 'ROOM-DETAILS');
         }
@@ -73,12 +78,16 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
       });
 
       AppLogger.i('Room details loaded with initial filter - RentType=$initialRentType, Duration=$initialDuration, CheckIn: ${initialCheckInDate?.toIso8601String()}, CheckOut: ${initialCheckOutDate?.toIso8601String()}', 'ROOM-DETAILS');
+
+      /* Daily Multi Tier Pricing: fetch per-date pricing if daily with dates */
+      _fetchAndApplyDailyPricing();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       AppLogger.e('Error loading room details', e, st, 'ROOM-DETAILS');
     }
   }
 
+  /// Update rent type and reset duration/checkout — triggers checkout recalculation
   void updateRentType(String? newRentType) {
     if (state.value != null) {
       state = AsyncValue.data({
@@ -92,6 +101,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
+  /// Update booking duration — triggers checkout recalculation
   void updateDuration(int? newDuration) {
     if (state.value != null) {
       state = AsyncValue.data({
@@ -103,6 +113,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
+  /// Update check-in date — triggers checkout recalculation
   void updateCheckInDate(DateTime newCheckInDate) {
     if (state.value != null) {
       state = AsyncValue.data({
@@ -114,7 +125,7 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
     }
   }
 
-  
+  /// Recalculate check-out date based on current rent type, duration, and check-in date
   void _calculateAndSetCheckOutDate() {
     if (state.value != null) {
       final rentType = state.value!['rentType'] as String?;
@@ -127,16 +138,15 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
         if (rentType == 'daily' || rentType == 'Daily') {
           calculatedCheckOutDate = checkInDate.add(Duration(days: duration));
         } else if (rentType == 'monthly' || rentType == 'Monthly') {
-          
-          calculatedCheckOutDate = DateTime(
-            checkInDate.year,
-            checkInDate.month + duration,
-            checkInDate.day,
-            checkInDate.hour,
-            checkInDate.minute,
-            checkInDate.second,
-            checkInDate.millisecond,
-            checkInDate.microsecond,
+
+          // Clamped month addition: clamp to last day of target month
+          final tMonth = checkInDate.month + duration;
+          final tYear = checkInDate.year + (tMonth - 1) ~/ 12;
+          final nMonth = ((tMonth - 1) % 12) + 1;
+          final mDay = DateTime(tYear, nMonth + 1, 0).day;
+          final cDay = checkInDate.day > mDay ? mDay : checkInDate.day;
+          calculatedCheckOutDate = DateTime(tYear, nMonth, cDay,
+            checkInDate.hour, checkInDate.minute, checkInDate.second,
           );
         }
       }
@@ -148,19 +158,90 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
         });
         AppLogger.d('CheckOutDate recalculated to: ${calculatedCheckOutDate?.toIso8601String()}', 'ROOM-DETAILS');
       }
+
+      /* Daily Multi Tier Pricing: re-fetch per-date pricing when dates change */
+      _fetchAndApplyDailyPricing();
     }
   }
 
-  
+  /* Daily Multi Tier Pricing: call price-preview API for daily bookings */
+  /* Override room.priceOriginalDaily with effective average so payment calculates correct total */
+  Future<void> _fetchAndApplyDailyPricing() async {
+    if (state.value == null) return;
+
+    final rentType = state.value!['rentType'] as String?;
+    final checkInDate = state.value!['checkInDate'] as DateTime?;
+    final checkOutDate = state.value!['checkOutDate'] as DateTime?;
+    final room = state.value!['room'] as RoomModel?;
+
+    /* Only apply for daily bookings with valid dates */
+    if (rentType == null || !(rentType == 'daily' || rentType == 'Daily')) return;
+    if (checkInDate == null || checkOutDate == null || room == null) return;
+    if (room.id == null) return;
+
+    try {
+      final dioClient = DioClient();
+      final checkIn = DateFormat('yyyy-MM-dd').format(checkInDate);
+      final checkOut = DateFormat('yyyy-MM-dd').format(checkOutDate);
+      final url = ApiConfig.roomPricePreview(room.id.toString())
+          .replaceFirst(ApiConfig.baseUrl, '');
+
+      AppLogger.i('Fetching price-preview: roomId=${room.id}, $checkIn to $checkOut', 'ROOM-DETAILS');
+
+      final response = await dioClient.get(url, queryParameters: {
+        'check_in': checkIn,
+        'check_out': checkOut,
+      });
+
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final data = response.data['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          final totalPrice = (data['total_price'] as num?)?.toDouble() ?? 0;
+          final totalDays = (data['total_days'] as num?)?.toInt() ?? 0;
+          final isFlatRate = data['is_flat_rate'] as bool? ?? true;
+
+          if (totalPrice > 0 && totalDays > 0) {
+            /* Calculate effective average daily price */
+            final effectiveDailyPrice = totalPrice / totalDays;
+
+            /* Create room copy with overridden daily price */
+            final updatedRoom = room.copyWithDailyPrice(effectiveDailyPrice.toStringAsFixed(0));
+
+            /* Update state with modified room — payment will use this effective rate */
+            if (state.value != null) {
+              // Store per-date breakdown from API for display in room detail and payment pages
+              final breakdown = data['breakdown'] as List? ?? [];
+              state = AsyncValue.data({
+                ...state.value!,
+                'room': updatedRoom,
+                'multiTierTotalPrice': totalPrice,
+                'multiTierIsFlatRate': isFlatRate,
+                'multiTierBreakdown': breakdown,
+              });
+              AppLogger.i(
+                'Daily price override: total=$totalPrice, days=$totalDays, '
+                'effective=${effectiveDailyPrice.toStringAsFixed(0)}, flat=$isFlatRate',
+                'ROOM-DETAILS',
+              );
+            }
+          }
+        }
+      }
+    } catch (e) {
+      /* Non-fatal: payment will fall back to flat rate */
+      AppLogger.w('Price-preview fetch failed (using flat rate): $e', 'ROOM-DETAILS');
+    }
+  }
+
+  /// Get current booking data map from state — returns empty map if no data loaded
   Map<String, dynamic> getBookingData() {
-    
     if (state.hasValue) {
       return state.value!;
     }
-    return {}; 
+    return {};
   }
 
-  
+  /// Reset state to empty initial values
   void resetState() {
     state = const AsyncValue.data({
       'room': null,
@@ -173,8 +254,5 @@ class RoomDetailsNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>>
   }
 }
 
-
-final roomDetailsProvider = StateNotifierProvider.autoDispose<RoomDetailsNotifier, AsyncValue<Map<String, dynamic>>>((ref) {
-  AppLogger.d('roomDetailsProvider created', 'ROOM-DETAILS');
-  return RoomDetailsNotifier(ref);
-});
+/// Provider for RoomDetailsNotifier — migrated from StateNotifierProvider to NotifierProvider
+final roomDetailsProvider = NotifierProvider<RoomDetailsNotifier, AsyncValue<Map<String, dynamic>>>(RoomDetailsNotifier.new);

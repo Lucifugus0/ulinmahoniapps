@@ -42,6 +42,7 @@ class MyBookingModel {
   final String? parkingType;
   final int? parkingDuration;
   final int? renewalStatus;
+  final int? originalCheckinDay;
 
   MyBookingModel({
     required this.idrec,
@@ -85,6 +86,7 @@ class MyBookingModel {
     this.parkingType,
     this.parkingDuration,
     this.renewalStatus,
+    this.originalCheckinDay,
   });
 
   factory MyBookingModel.fromJson(Map<String, dynamic> json) {
@@ -150,6 +152,7 @@ class MyBookingModel {
       parkingType: json['parking_type'] as String?,
       parkingDuration: _parseInt(json['parking_duration']),
       renewalStatus: _parseInt(json['renewal_status']),
+      originalCheckinDay: _parseInt(json['original_checkin_day']),
     );
   }
 

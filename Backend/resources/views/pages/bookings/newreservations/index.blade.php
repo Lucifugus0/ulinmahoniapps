@@ -5,16 +5,19 @@
             <div>
                 <h1
                     class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                    {{ __('ui.confirm_reservations') }}
+                    {{ __('ui.confirmed_bookings') }}
                 </h1>
+                <!-- Description text explaining what confirmed bookings are -->
+                <p class="text-sm text-gray-500 mt-1">{{ __('ui.new_reservations_desc') }}</p>
             </div>
         </div>
 
         <!-- Search and Filter Section -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
+        <!-- Search and filter container - lighter bg in dark mode to differentiate from page background -->
+        <div class="search-filter-container bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
             <form method="GET" action="{{ route('newReserv.filter') }}"
                 onsubmit="event.preventDefault(); fetchFilteredBookings();"
-                class="flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                class="search-filter-form flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
 
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                     <!-- Search Booking -->
@@ -48,8 +51,8 @@
                             <label for="per_page" class="text-sm text-gray-600">{{ __('ui.show') }}:</label>
                             <select name="per_page" id="per_page"
                                 class="border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="8" {{ request('per_page') == 8 ? 'selected' : '' }}>8</option>
-                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                <option value="8" {{ request('per_page', 25) == 8 ? 'selected' : '' }}>8</option>
+                                <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25</option>
                                 <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
                             </select>
                         </div>
@@ -360,25 +363,21 @@
                             data.transaction?.booking_months
                         );
 
+                        /* Build booking details object — date-only format (no time) for check-in/check-out,
+                           added total_booking, deposit, and service_fee fields */
                         this.bookingDetails = {
                             order_id: data.order_id,
                             check_in: data.transaction?.check_in ?
                                 new Date(data.transaction.check_in).toLocaleString('en-US', {
                                     year: 'numeric',
                                     month: 'long',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false
+                                    day: 'numeric'
                                 }) : 'N/A',
                             check_out: data.transaction?.check_out ?
                                 new Date(data.transaction.check_out).toLocaleString('en-US', {
                                     year: 'numeric',
                                     month: 'long',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false
+                                    day: 'numeric'
                                 }) : 'N/A',
                             check_in_date: checkIn.date,
                             check_in_time: checkIn.time,
@@ -393,7 +392,13 @@
                             room_name: data.room?.name || 'N/A',
                             room_number: data.room?.no || 'N/A',
                             update_by: data.transaction?.update_by || 'N/A',
-                            duration: duration, // Gunakan durasi yang sudah dihitung
+                            duration: duration,
+                            total_booking: data.transaction?.room_price ?
+                                this.formatRupiah(data.transaction.room_price) : 'N/A',
+                            deposit: data.transaction?.deposit_fee ?
+                                this.formatRupiah(data.transaction.deposit_fee) : 'Rp 0',
+                            service_fee: data.transaction?.service_fees ?
+                                this.formatRupiah(data.transaction.service_fees) : 'Rp 0',
                             total_payment: data.transaction?.grandtotal_price ?
                                 this.formatRupiah(data.transaction.grandtotal_price) : 'N/A',
                             transaction_type: data.transaction?.transaction_type || 'N/A',
@@ -839,4 +844,5 @@
             attachPaginationListeners();
         });
     </script>
+    @include('pages.bookings.partials.dark-badge-styles')
 </x-app-layout>

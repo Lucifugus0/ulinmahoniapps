@@ -7,6 +7,9 @@ import '../../../mybooking/model/mybooking_model.dart';
 import '../../../../book/roomdetails/provider/rooms_provider.dart';
 import '../../../../book/roomdetails/provider/checkavaibilty_provider.dart';
 import '../../../../../l10n/app_localizations.dart';
+import '../../../../../core/network/dio_client.dart';
+import '../../../../../core/constants/api_constants.dart';
+import '../../../../book/roomdetails/presentation/widgets/daily_price_breakdown.dart';
 
 class RenewBookingDialog extends ConsumerStatefulWidget {
   final MyBookingModel bookingData;
@@ -27,14 +30,19 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
   bool _periodeLoaded = false;
   bool _showPeriodeSelector = false;
 
+  // Per-date price breakdown for daily bookings
+  List<dynamic>? _priceBreakdown;
+  double? _priceTotal;
+  bool _isPriceFetching = false;
+
   @override
   void initState() {
     super.initState();
     if (widget.bookingData.checkOut != null) {
       try {
         final parsed = DateTime.parse(widget.bookingData.checkOut!);
-        // Set check-in to H+1 from old checkout (continuous booking)
-        _checkInDate = DateTime(parsed.year, parsed.month, parsed.day).add(const Duration(days: 1));
+        // Set check-in to same day as old checkout (renewal starts on checkout day)
+        _checkInDate = DateTime(parsed.year, parsed.month, parsed.day);
       } catch (e) {
         final now = DateTime.now();
         _checkInDate = DateTime(now.year, now.month, now.day);
@@ -64,7 +72,16 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
   DateTime _calcCheckOut() {
     if (_checkInDate == null) return DateTime.now();
     if (_rentType == 'monthly') {
-      return _checkInDate!.copyWith(month: _checkInDate!.month + _duration);
+      // Use original check-in day for renewal checkout calculation.
+      // This preserves the day across renewals (e.g., Jan 31→Feb 28→Mar 31, not Mar 28).
+      // Falls back to check-in day if original_checkin_day is not available.
+      final originalDay = widget.bookingData.originalCheckinDay ?? _checkInDate!.day;
+      final tMonth = _checkInDate!.month + _duration;
+      final tYear = _checkInDate!.year + (tMonth - 1) ~/ 12;
+      final nMonth = ((tMonth - 1) % 12) + 1;
+      final maxDay = DateTime(tYear, nMonth + 1, 0).day;
+      final day = originalDay > maxDay ? maxDay : originalDay;
+      return DateTime(tYear, nMonth, day, _checkInDate!.hour, _checkInDate!.minute);
     }
     return _checkInDate!.add(Duration(days: _duration));
   }
@@ -78,7 +95,56 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
       checkInDate: DateFormat('yyyy-MM-dd').format(_checkInDate!),
       checkOutDate: DateFormat('yyyy-MM-dd').format(checkOut),
       isRenewal: true,
+      // Pass booking_type so server applies daily-renewal 60d check_out cap
+      // (monthly renewals: no date cap on the server side either).
+      bookingType: _rentType,
     );
+    // Also fetch price breakdown for daily bookings
+    if (_rentType == 'daily') _fetchPriceBreakdown();
+  }
+
+  /// Daily renewal cap: check_out must be ≤ today + 60 days. Returns the highest
+  /// _duration the user can pick before exceeding the cap. Monthly is uncapped here
+  /// (months stepper has its own 12-month cap and server 15-month chain cap).
+  int _maxDailyDuration() {
+    if (_checkInDate == null) return 60;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final maxCheckOut = today.add(const Duration(days: 60));
+    // Duration days = maxCheckOut - _checkInDate. Floor at 1 so the button can stay enabled
+    // when check-in is at or beyond the 60-day window (server will then reject anyway).
+    final diff = maxCheckOut.difference(_checkInDate!).inDays;
+    return diff < 1 ? 1 : diff;
+  }
+
+  /// Fetch per-date price breakdown from price-preview API (daily bookings only)
+  Future<void> _fetchPriceBreakdown() async {
+    if (_checkInDate == null || _rentType != 'daily') return;
+    final checkIn = DateFormat('yyyy-MM-dd').format(_checkInDate!);
+    final checkOut = DateFormat('yyyy-MM-dd').format(_calcCheckOut());
+    setState(() => _isPriceFetching = true);
+    try {
+      final dioClient = DioClient();
+      final url = ApiConfig.roomPricePreview(widget.bookingData.roomId.toString())
+          .replaceFirst(ApiConfig.baseUrl, '');
+      final response = await dioClient.get(url, queryParameters: {
+        'check_in': checkIn,
+        'check_out': checkOut,
+      });
+      if (!mounted) return;
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final data = response.data['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          setState(() {
+            _priceBreakdown = data['breakdown'] as List? ?? [];
+            _priceTotal = (data['total_price'] as num?)?.toDouble();
+            _isPriceFetching = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isPriceFetching = false);
   }
 
   String _formatDate(DateTime? date) {
@@ -121,8 +187,12 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
     );
     final bool canContinue = _checkInDate != null && _periodeLoaded && available && !isLoading;
 
+    // Dark mode detection for dialog background and inner container colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Dialog(
-      backgroundColor: Colors.white,
+      // Use dark-aware dialog background color
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 8,
       child: Container(
@@ -141,7 +211,8 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                     IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close),
-                      color: Colors.grey[600],
+                      // Use dark-aware close button icon color
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -166,7 +237,8 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: AppFontWeight.bold,
-                      color: AppColors.fontcolor,
+                      // Dark-aware title color
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -179,10 +251,12 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    // Use dark-aware container background
+                    color: isDark ? AppColors.surfaceDarkElevated : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.grey[300]!,
+                      // Use dark-aware border color
+                      color: isDark ? Colors.white24 : Colors.grey[300]!,
                       width: 1.5,
                     ),
                   ),
@@ -191,7 +265,8 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryColor,
+                          // Use primaryAdaptive for dark/light mode compatibility
+                          color: AppColors.primaryAdaptive(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.home_outlined, color: Colors.white, size: 24),
@@ -203,7 +278,8 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                           children: [
                             Text(
                               widget.bookingData.propertyName,
-                              style: TextStyle(fontSize: 16, color: AppColors.fontcolor),
+                              // Dark-aware property name color
+                              style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black87),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -232,21 +308,26 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                         children: [
                           Text(
                             localizations.renewBookingPeriodLabel,
-                            style: TextStyle(fontSize: 14, color: AppColors.fontcolor),
+                            // Dark-aware period label color
+                            style: TextStyle(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
                           ),
                           const SizedBox(height: 8),
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              // Use dark-aware dropdown container background
+                              color: isDark ? AppColors.surfaceDarkElevated : Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[300]!, width: 1.5),
+                              border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!, width: 1.5),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: _rentType,
                                 isExpanded: true,
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                                icon: Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+                                // Use dark-aware dropdown arrow icon color
+                                icon: Icon(Icons.arrow_drop_down, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                                // Use dark-aware dropdown background
+                                dropdownColor: isDark ? AppColors.surfaceDarkElevated : Colors.white,
                                 onChanged: (value) {
                                   if (value != null) {
                                     setState(() {
@@ -257,8 +338,9 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                                   }
                                 },
                                 items: [
-                                  DropdownMenuItem(value: 'daily', child: Text(localizations.renewBookingPeriodDaily, style: TextStyle(fontSize: 16, color: AppColors.fontcolor))),
-                                  DropdownMenuItem(value: 'monthly', child: Text(localizations.renewBookingPeriodMonthly, style: TextStyle(fontSize: 16, color: AppColors.fontcolor))),
+                                  // Dark-aware dropdown item text color
+                                  DropdownMenuItem(value: 'daily', child: Text(localizations.renewBookingPeriodDaily, style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black87))),
+                                  DropdownMenuItem(value: 'monthly', child: Text(localizations.renewBookingPeriodMonthly, style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black87))),
                                 ],
                               ),
                             ),
@@ -271,24 +353,28 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                         children: [
                           Text(
                             localizations.renewBookingPeriodLabel,
-                            style: TextStyle(fontSize: 14, color: AppColors.fontcolor),
+                            // Dark-aware period label color (locked)
+                            style: TextStyle(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
                           ),
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
+                              // Use dark-aware locked field background
+                              color: isDark ? AppColors.surfaceDarkElevated : Colors.grey[100],
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[300]!, width: 1.5),
+                              border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!, width: 1.5),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.lock_outline, color: Colors.grey[600], size: 20),
+                                // Use dark-aware lock icon color
+                                Icon(Icons.lock_outline, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     _rentType == 'daily' ? localizations.renewBookingPeriodDaily : localizations.renewBookingPeriodMonthly,
-                                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                                    // Use dark-aware locked text color
+                                    style: TextStyle(fontSize: 16, color: isDark ? Colors.grey[400] : Colors.grey[700]),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -309,14 +395,16 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                 // --- Durasi Input (+/-) ---
                 Text(
                   localizations.renewBookingDurationLabel,
-                  style: TextStyle(fontSize: 14, color: AppColors.fontcolor),
+                  // Dark-aware duration label color
+                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    // Use dark-aware duration stepper container background
+                    color: isDark ? AppColors.surfaceDarkElevated : Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!, width: 1.5),
+                    border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!, width: 1.5),
                   ),
                   child: Row(
                     children: [
@@ -326,26 +414,39 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                           _triggerAvailabilityCheck();
                         } : null,
                         icon: const Icon(Icons.remove),
-                        color: _duration > 1 ? AppColors.primaryColor : Colors.grey[400],
+                        // Use primaryAdaptive for dark/light mode compatibility
+                        color: _duration > 1 ? AppColors.primaryAdaptive(context) : Colors.grey[400],
                         padding: const EdgeInsets.all(12),
                       ),
                       Expanded(
                         child: Center(
                           child: Text(
                             '$_duration ${_rentType == "daily" ? localizations.renewBookingDurationDay : localizations.renewBookingDurationMonth}',
-                            style: TextStyle(fontSize: 16, color: AppColors.fontcolor),
+                            // Dark-aware duration counter text color
+                            style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black87),
                           ),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() => _duration++);
-                          _triggerAvailabilityCheck();
-                        },
-                        icon: const Icon(Icons.add),
-                        color: AppColors.primaryColor,
-                        padding: const EdgeInsets.all(12),
-                      ),
+                      Builder(builder: (context) {
+                        // Daily: cap at today + 60d (max stay window). Monthly: no client cap
+                        // here — 12-month per-booking + 15-month chain caps live elsewhere.
+                        final canIncrement = _rentType == 'daily'
+                            ? _duration < _maxDailyDuration()
+                            : true;
+                        return IconButton(
+                          onPressed: canIncrement
+                              ? () {
+                                  setState(() => _duration++);
+                                  _triggerAvailabilityCheck();
+                                }
+                              : null,
+                          icon: const Icon(Icons.add),
+                          color: canIncrement
+                              ? AppColors.primaryAdaptive(context)
+                              : Colors.grey[400],
+                          padding: const EdgeInsets.all(12),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -355,24 +456,28 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                 // --- Check-in (locked) ---
                 Text(
                   localizations.renewBookingCheckInLabel,
-                  style: TextStyle(fontSize: 14, color: AppColors.fontcolor),
+                  // Dark-aware check-in label color
+                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    // Use dark-aware locked field background
+                    color: isDark ? AppColors.surfaceDarkElevated : Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!, width: 1.5),
+                    border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!, width: 1.5),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.lock_outline, color: Colors.grey[600], size: 20),
+                      // Use dark-aware lock icon color
+                      Icon(Icons.lock_outline, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _formatDate(_checkInDate),
-                          style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          // Use dark-aware locked text color
+                          style: TextStyle(fontSize: 16, color: isDark ? Colors.grey[400] : Colors.grey[700]),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -386,24 +491,28 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                 // --- Check-out (auto-calculated) ---
                 Text(
                   localizations.renewBookingCheckOutLabel,
-                  style: TextStyle(fontSize: 14, color: AppColors.fontcolor),
+                  // Dark-aware check-out label color
+                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    // Use dark-aware container background for check-out display
+                    color: isDark ? AppColors.surfaceDarkElevated : Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!, width: 1.5),
+                    border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!, width: 1.5),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.calendar_today_outlined, color: AppColors.primaryColor, size: 20),
+                      // Use primaryAdaptive for dark/light mode compatibility
+                      Icon(Icons.calendar_today_outlined, color: AppColors.primaryAdaptive(context), size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _formatDate(checkOutDate),
-                          style: TextStyle(fontSize: 16, color: AppColors.fontcolor),
+                          // Dark-aware check-out date text color
+                          style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black87),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -413,6 +522,20 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                 ),
 
                 const SizedBox(height: 20),
+
+                // --- Per-date Price Breakdown (daily only) ---
+                if (_rentType == 'daily') ...[
+                  const Divider(height: 1, thickness: 0.5),
+                  const SizedBox(height: 10),
+                  if (_isPriceFetching)
+                    const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)))
+                  else if (_priceBreakdown != null && _priceBreakdown!.isNotEmpty && _priceTotal != null)
+                    DailyPriceBreakdown(
+                      breakdown: _priceBreakdown!,
+                      totalPrice: _priceTotal!,
+                    ),
+                  const SizedBox(height: 10),
+                ],
 
                 // --- Availability Status ---
                 isAvailable.when(
@@ -498,7 +621,8 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                       Expanded(
                         child: Text(
                           localizations.renewBookingInfoMessage,
-                          style: TextStyle(fontSize: 12, color: Colors.blue[900]),
+                          // Dark-aware info text color
+                          style: TextStyle(fontSize: 12, color: isDark ? Colors.blue[200] : Colors.blue[900]),
                         ),
                       ),
                     ],
@@ -511,8 +635,10 @@ class _RenewBookingDialogState extends ConsumerState<RenewBookingDialog> {
                 ElevatedButton(
                   onPressed: canContinue ? _handleContinue : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    disabledBackgroundColor: Colors.grey[300],
+                    // Use primaryAdaptive for dark/light mode compatibility
+                    backgroundColor: AppColors.primaryAdaptive(context),
+                    // Use dark-aware disabled button background color
+                    disabledBackgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

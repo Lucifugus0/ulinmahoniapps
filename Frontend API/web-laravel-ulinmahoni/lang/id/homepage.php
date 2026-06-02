@@ -4,6 +4,7 @@ return [
     'hero' => [
         'title' => 'Selamat Datang di Ulin Mahoni',
         'subtitle' => 'Lingkungan yang aman dan harmonis',
+        'description' => 'Temukan kos, apartemen, dan villa impianmu dengan mudah, cepat, dan terpercaya.',
         'hashtag' => '#UlinMahoni',
     ],
 
@@ -11,12 +12,18 @@ return [
         'placeholder_location' => 'Cari lokasi...',
         'check_in' => 'Tanggal Check In',
         'check_out' => 'Tanggal Check Out',
-        'submit' => 'Cari Hunian',
+        'submit' => 'Cari Property',
         'all_properties' => 'Semua Properti',
         'all_periods' => 'Semua Periode',
+        // Field labels rendered above each input in the hero search bar
+        'label_property_type' => 'Tipe Properti',
+        'label_period' => 'Periode',
+        'label_check_in' => 'Check-In',
+        'label_check_out' => 'Check-Out',
     ],
 
     'property_types' => [
+        'All' => 'Semua',
         'Kos' => 'Kos',
         'House' => 'Rumah',
         'Apartment' => 'Apartemen',
@@ -34,6 +41,8 @@ return [
         'promos' => 'Penawaran Khusus',
         'areas' => 'Area Populer',
         'featured' => 'Properti Unggulan',
+        'category_property' => 'Kategori Properti',
+        'location' => 'Lokasi',
     ],
 
     'actions' => [
@@ -44,12 +53,14 @@ return [
 
     'titles' => [
         'ongoing_promos' => 'Promo Berlangsung',
-        'available_areas' => 'Area Tersedia',
+        'available_areas' => 'Terdekat dengan kamu',
     ],
 
     'subtitles' => [
         'limited_offers' => 'Penawaran Terbatas',
-        'areas_around_you' => 'Area tersedia di sekitar anda',
+        'areas_around_you' => 'Properti terdekat dari lokasi anda',
+        'enable_location' => 'Aktifkan lokasi untuk melihat jarak',
+        'calculating_distance' => 'Menghitung jarak...',
     ],
 
     'messages' => [
@@ -62,7 +73,7 @@ return [
     ],
 
     'cities' => [
-        'all' => 'Semua',
+        'all' => 'Semua Kota',
         'bogor' => 'Bogor',
         'jakarta' => 'Jakarta',
     ],

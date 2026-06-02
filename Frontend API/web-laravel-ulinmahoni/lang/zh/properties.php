@@ -46,6 +46,7 @@ return [
         'education' => '教育',
         'worship' => '宗教场所',
         'shopping' => '购物',
+        'custom' => '其他',
     ],
 
     'navigation' => [
@@ -61,7 +62,7 @@ return [
         'facilities' => '设施',
         'rental_price' => '租金',
         'about_property' => '关于房源',
-        'available_rooms' => '可用房间',
+        'available_rooms' => '所有房间',
     ],
 
     'buttons' => [
@@ -79,6 +80,7 @@ return [
         'contact_us' => '请联系我们了解更多信息',
         'includes_tax' => '价格含增值税',
         'payment_method' => '银行转账支付',
+        'accepted_payments' => '接受的付款方式',
     ],
 
     'address' => [
@@ -93,6 +95,8 @@ return [
 
     'room' => [
         'rooms_count' => '间房',
+        'available_count' => '可用',
+        'show_all_rooms' => '显示所有房间',
         'room_facilities' => '房间设施：',
         'period_price' => '租期与价格：',
         'no_facilities' => '暂无设施信息',
@@ -139,6 +143,8 @@ return [
         'monthly_rate' => '月租金',
         'room_total' => '房间总价：',
         'service_fees' => '服务费：',
+        /* Daily Multi Tier Pricing: per-date breakdown title */
+        'price_breakdown_title' => '每日价格明细',
         'total' => '合计：',
         'duration_label' => '时长：',
         'complete_profile' => '完善您的资料',
@@ -148,9 +154,13 @@ return [
         'last_name' => '姓',
         'full_name' => '全名',
         'phone_number' => '电话号码',
-        'rental_agreement' => '我同意',
+        // :terms_link, :privacy_link, :rental_link 在 blade 中替换为锚点标签。
+        'rental_agreement' => '本人声明已阅读、理解并完全同意 :terms_link、:privacy_link 和 :rental_link',
+        'terms_link_text' => '租赁条款',
+        'privacy_link_text' => '隐私政策',
+        'rental_link_text' => '租赁协议',
         'rental_agreement_link' => '租赁协议',
-        'must_agree' => '您必须同意租赁协议才能继续。',
+        'must_agree' => '您必须同意条款和条件才能继续。',
         'login_to_book' => '登录后预订',
         'please_login' => '请登录或注册以进行预订',
         'check_availability' => '查看房间可用性',
@@ -224,10 +234,16 @@ return [
         'pay_with_bank' => '使用 {bank} 支付',
         'please_select_bank' => '请选择银行',
         'voucher_applied' => '优惠券已成功使用！',
+        'confirm_title' => '付款确认',
+        'confirm_data_correct' => '本人声明以上所有信息均真实准确。本人对数据的准确性承担全部责任。',
+        'confirm_read_agreed' => '本人已阅读、完全理解并同意上述所有交易详情。',
+        'confirm_rental_agreement' => '本人确认同意并遵守 Ulin Mahoni 租赁协议。',
+        'confirm_proceed' => '同意并继续付款',
+        'confirm_cancel' => '取消',
     ],
 
     'index' => [
-        'page_title' => '可用房间',
+        'page_title' => '所有房间',
         'page_subtitle' => '找到适合您的理想房间',
         'filters' => '筛选',
         'active_filters' => '当前筛选：',

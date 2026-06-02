@@ -53,10 +53,12 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'first_name',
         'last_name',
+        'gender',
         'username',
         'name',
         'email',
         'phone_number',
+        'country_code',
         'nik',
         'password',
         'status',
@@ -218,5 +220,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sentMessages()
     {
         return $this->hasMany(ChatMessage::class, 'sender_id', 'id');
+    }
+
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    public function activeDeviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class)->where('is_active', true);
+    }
+
+    /** User's assigned role (via role_id FK to m_roles table) */
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
     }
 }

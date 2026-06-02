@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $house['name'] }} - {{ __('properties.page.property_details') }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <!-- Styles -->
     @include('components.property.styles')
+    @include('components.property.dark-mode')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
     .image-gallery {
             --gap: 1rem;
@@ -27,11 +29,12 @@
             }
         }
 
+        /* Liquid glass gallery item — rounded corners and glass shadow tokens */
         .gallery-item {
             position: relative;
             overflow: hidden;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: var(--radius-lg, 1.75rem);
+            box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));
             transition: var(--transition);
             display: flex;
             justify-content: center;
@@ -40,7 +43,7 @@
 
         .gallery-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--glass-shadow-hover, 0 16px 48px rgba(0, 0, 0, 0.15));
         }
 
         .gallery-item img {
@@ -124,10 +127,10 @@
             transform: translateY(0);
         }
     </style>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js loaded via header component — no duplicate needed here -->
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
 </head>
-<body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
+<body class="font-inter antialiased bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 tracking-tight">
     <!-- Header -->
     @include('components.homepage.header')
     <div class="header-spacer"></div>
@@ -278,28 +281,28 @@
             </div>
 
             <!-- Property Info Section -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-8">
+            <div class="p-6 mb-8" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                 <div class="flex flex-col lg:flex-row gap-8">
                     <!-- Left Column - Property Info -->
                     <div class="lg:w-1/2">
                         <div class="mb-6">
-                            <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $house['name'] }}</h1>
+                            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">{{ $house['name'] }}</h1>
                             @if(!empty($house['gender']))
-                            <p class="text-gray-500 text-sm mb-1"><i class="fas fa-venus-mars mr-1"></i>{{ __('properties.gender.' . strtolower($house['gender']), ['default' => $house['gender']]) }}</p>
+                            <p class="text-gray-700 dark:text-gray-200 text-sm font-semibold mb-1"><i class="fas fa-venus-mars mr-1"></i>{{ __('properties.gender.' . strtolower($house['gender']), ['default' => $house['gender']]) }}</p>
                             @endif
-                            <p class="text-gray-600 mb-1">{{ $house['location'] }}</p>
-                            <p class="text-gray-500 text-sm">{{ $house['distance'] }}</p>
+                            <p class="text-gray-800 dark:text-gray-100 font-semibold mb-1">{{ $house['location'] }}</p>
+                            <p class="text-gray-700 dark:text-gray-200 text-sm font-medium">{{ $house['distance'] }}</p>
                         </div>
 
                         <!-- Features/Promotions -->
                         <div class="mb-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-3">{{ __('properties.sections.facilities') }}</h3>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">{{ __('properties.sections.facilities') }}</h3>
                             <div class="flex flex-wrap gap-2">
                                 @if(!empty($house['facility']))
                                     @foreach($house['facility'] as $facility)
-                                        <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm text-gray-700">
+                                        <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
                                             @if(!empty($facility['icon']))
-                                                <span class="iconify mr-1.5 text-teal-600" data-icon="{{ $facility['icon'] }}"></span>
+                                                <span class="iconify mr-1.5 text-teal-600 dark:text-teal-400" data-icon="{{ $facility['icon'] }}"></span>
                                             @endif
                                             {{ $facility['name'] }}
                                         </span>
@@ -308,95 +311,153 @@
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
-                        <div class="flex flex-col sm:flex-row gap-3 mt-8">
-                            <button onclick="scrollToRooms()" class="flex-1 bg-teal-600 text-white py-3 px-6 rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center">
-                                <i class="fas fa-calendar-check mr-2"></i> {{ __('properties.buttons.book_now') }}
-                            </button>
-                            <a href="https://wa.me/6281188099700/" target="_blank" class="flex-1 border border-teal-600 text-teal-600 py-3 px-6 rounded-lg hover:bg-teal-50 transition-colors flex items-center justify-center">
-                                <i class="fab fa-whatsapp mr-2"></i> {{ __('properties.buttons.contact_info') }}
-                            </a>
+                        <!-- Parking Availability -->
+                        @if(!empty($house['parking_fees']))
+                        <div class="mb-6 mt-6">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">
+                                <i class="fas fa-parking mr-2 text-teal-600"></i>Parking Availability
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                @foreach($house['parking_fees'] as $parking)
+                                @php
+                                    $available = max(0, ($parking['capacity'] ?? 0) - ($parking['quota_used'] ?? 0));
+                                    $total = $parking['capacity'] ?? 0;
+                                    $isFull = $available <= 0;
+                                    $type = $parking['parking_type'] ?? 'unknown';
+                                    $icon = $type === 'car' ? 'fa-car' : 'fa-motorcycle';
+                                    $label = $type === 'car' ? 'Car' : 'Motorcycle';
+                                    $fee = $parking['fee'] ?? 0;
+                                @endphp
+                                <div class="flex items-center justify-between p-3 rounded-lg border {{ $isFull ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-900/20' }}">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $isFull ? 'bg-red-100 dark:bg-red-900/40' : 'bg-teal-100 dark:bg-teal-900/40' }}">
+                                            <i class="fas {{ $icon }} {{ $isFull ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400' }}"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $label }}</div>
+                                            <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">Rp {{ number_format($fee, 0, ',', '.') }}/month</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        @if($isFull)
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200">Full</span>
+                                        @else
+                                            <span class="text-lg font-extrabold {{ $available <= 3 ? 'text-orange-600 dark:text-orange-400' : 'text-teal-700 dark:text-teal-300' }}">{{ $available }}</span>
+                                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">/{{ $total }} available</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- About Property (below parking) -->
+                        <div class="mt-8">
+                            <h3 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">{{ __('properties.sections.about_property') }}</h3>
+                            <div class="prose max-w-none">
+                                <div class="text-gray-800 dark:text-gray-100 font-medium leading-relaxed">
+                                    {!! \App\Helpers\DescriptionHelper::getHtml($house['description'] ?? '', app()->getLocale()) !!}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Right Column - Price Section -->
-                    <div class="lg:w-1/2 lg:border-l lg:pl-8 lg:border-gray-200">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-6">{{ __('properties.sections.rental_price') }}</h3>
-                        
+                    <div class="lg:w-1/2 lg:border-l lg:pl-8 lg:border-gray-200 dark:lg:border-gray-700">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">{{ __('properties.sections.rental_price') }}</h3>
+
                         @php
                             $hasDailyPrice = !empty($house['price_original_daily']) && $house['price_original_daily'] > 0;
                             $hasMonthlyPrice = !empty($house['price_original_monthly']) && $house['price_original_monthly'] > 0;
                         @endphp
-                        
+
                         @if(!$hasDailyPrice && !$hasMonthlyPrice)
-                            <div class="bg-gray-50 p-6 rounded-lg text-center">
-                                <div class="text-gray-400 mb-2">
+                            <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center">
+                                <div class="text-gray-400 dark:text-gray-500 mb-2">
                                     <i class="fas fa-info-circle text-2xl"></i>
                                 </div>
-                                <p class="text-gray-600 font-medium">{{ __('properties.price_info.not_available') }}</p>
-                                <p class="text-sm text-gray-500 mt-1">{{ __('properties.price_info.contact_us') }}</p>
+                                <p class="text-gray-600 dark:text-gray-300 font-medium">{{ __('properties.price_info.not_available') }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ __('properties.price_info.contact_us') }}</p>
                             </div>
                         @else
                             @if($hasDailyPrice)
                             <!-- Daily Price -->
-                            <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                                <p class="text-base text-gray-500 mb-1">
+                            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4">
+                                <p class="text-base font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     <i class="far fa-calendar mr-2"></i>{{ __('properties.price_info.daily') }}
                                 </p>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-baseline">
-                                        <span class="text-2xl font-bold text-gray-900">
+                                        <span class="text-2xl font-extrabold text-green-700 dark:text-green-400">
                                             Rp{{ number_format($house['price_original_daily'], 0, ',', '.') }}
                                         </span>
-                                        <span class="text-gray-500 ml-2">{{ __('properties.price_info.per_night') }}</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-semibold ml-2">{{ __('properties.price_info.per_night') }}</span>
                                     </div>
                                 </div>
                             </div>
                             @endif
-                            
+
                             @if($hasMonthlyPrice)
                             <!-- Monthly Price -->
-                            <div class="{{ $hasDailyPrice ? 'mt-4' : '' }} bg-teal-50 border border-teal-100 p-4 rounded-lg">
-                                <p class="text-base text-gray-600 mb-1">
+                            <div class="{{ $hasDailyPrice ? 'mt-4' : '' }} bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 p-4 rounded-lg">
+                                <p class="text-base font-semibold text-gray-700 dark:text-gray-100 mb-1">
                                     <i class="far fa-calendar-alt mr-2"></i>{{ __('properties.price_info.monthly') }}
                                 </p>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-baseline">
-                                        <span class="text-2xl font-bold text-teal-700">
+                                        <span class="text-2xl font-extrabold text-green-700 dark:text-green-400">
                                             Rp{{ number_format($house['price_original_monthly'], 0, ',', '.') }}
                                         </span>
-                                        <span class="text-gray-500 ml-2">{{ __('properties.price_info.per_month_full') }}</span>
+                                        <span class="text-gray-700 dark:text-gray-200 font-semibold ml-2">{{ __('properties.price_info.per_month_full') }}</span>
                                     </div>
                                 </div>
                             </div>
                             @endif
 
                             <!-- Additional Info -->
-                            <div class="mt-4 text-sm text-gray-500">
+                            <div class="mt-4 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 <p class="flex items-center">
-                                    <i class="fas fa-info-circle mr-2 text-teal-600"></i>
+                                    <i class="fas fa-info-circle mr-2 text-teal-600 dark:text-teal-400"></i>
                                     {{ __('properties.price_info.includes_tax') }}
                                 </p>
-                                <p class="flex items-center mt-1">
-                                    <i class="fas fa-credit-card mr-2 text-teal-600"></i>
-                                    {{ __('properties.price_info.payment_method') }}
-                                </p>
                             </div>
+                            <!-- Payment Methods from CMS -->
+                            @if(isset($footerPayments) && $footerPayments->count() > 0)
+                                <p class="mt-3 text-xs text-gray-700 dark:text-gray-200 font-semibold">{{ __('properties.price_info.accepted_payments') }}</p>
+                                <div class="mt-1.5 flex flex-wrap gap-2">
+                                    @foreach($footerPayments as $payment)
+                                        @php
+                                            $iconUrl = $payment->icon_image;
+                                            if ($iconUrl && !str_starts_with($iconUrl, 'http')) {
+                                                $iconUrl = rtrim(config('app.admin_url', env('ADMIN_URL', '')), '/') . '/storage/' . $iconUrl;
+                                            }
+                                        @endphp
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-700 dark:text-gray-100 border border-gray-200 dark:border-gray-600">
+                                            @if($iconUrl)
+                                                <img src="{{ $iconUrl }}" alt="{{ $payment->name }}" class="h-4 object-contain">
+                                            @endif
+                                            {{ $payment->name }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         @endif
+
+                        <!-- Action Buttons (below price info) -->
+                        <div class="flex flex-col sm:flex-row gap-3 mt-8">
+                            <button onclick="scrollToRooms()" class="flex-1 bg-teal-600 text-white py-3 px-6 rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center">
+                                <i class="fas fa-calendar-check mr-2"></i> {{ __('properties.buttons.book_now') }}
+                            </button>
+                            <a href="https://wa.me/6281188099700/" target="_blank" class="flex-1 border border-green-700 text-green-700 dark:border-green-400 dark:text-green-400 py-3 px-6 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors flex items-center justify-center font-semibold">
+                                <i class="fab fa-whatsapp mr-2"></i> {{ __('properties.buttons.contact_info') }}
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Additional Details -->
-            <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Property Description -->
-                <div class="lg:col-span-2">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ __('properties.sections.about_property') }}</h2>
-                    <div class="prose max-w-none">
-                        <p class="text-gray-600">
-                            {{ $house['description'] }}
-                        </p>
-                    </div>
 
                     <!-- Room Facilities -->
                     <!-- <div class="mt-8">
@@ -418,7 +479,8 @@
                     <!-- Location Map -->
                     <div class="mt-8">
                         <h3 class="text-xl font-bold text-gray-900 mb-4">{{ __('properties.details.location') }}</h3>
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                        <!-- Liquid glass location card -->
+                        <div class="p-6" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                             <div class="flex flex-col lg:flex-row gap-8">
                                 <!-- Left Column - Map -->
                                 <div class="lg:w-1/2 flex flex-col">
@@ -550,7 +612,8 @@
                     @if(!empty($house['nearby_locations']))
                     <div class="mt-8">
                         <h3 class="text-xl font-bold text-gray-900 mb-4">{{ __('properties.details.nearby_locations') }}</h3>
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                        <!-- Liquid glass nearby locations card -->
+                        <div class="p-6" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                             @php
                                 $groupedLocations = collect($house['nearby_locations'])->groupBy('category');
                                 $categoryIcons = [
@@ -590,24 +653,46 @@
                         <h2 class="text-2xl font-bold text-gray-900 mb-6">{{ __('properties.sections.available_rooms') }}</h2>
 
                         @php
-                            // Group rooms by name
-                            $groupedRooms = collect($house['rooms'])->groupBy('name');
+                            /* Group rooms by type name; sort the inner list by room number,
+                               and sort the outer group order by m_room_name_types.sort_priority
+                               (admin-controlled). Unknown names (not registered in
+                               m_room_name_types) fall to the end of the list. */
+                            $roomTypePriorities = \DB::table('m_room_name_types')
+                                ->orderBy('sort_priority', 'asc')
+                                ->orderBy('name', 'asc')
+                                ->pluck('sort_priority', 'name');
+
+                            $groupedRooms = collect($house['rooms'])
+                                ->groupBy('name')
+                                ->map(function ($rooms) {
+                                    return $rooms->sortBy('no', SORT_NATURAL);
+                                })
+                                ->sortBy(function ($_, $name) use ($roomTypePriorities) {
+                                    return $roomTypePriorities[$name] ?? PHP_INT_MAX;
+                                });
                         @endphp
 
                         @forelse($groupedRooms as $roomName => $rooms)
-                            <!-- Room Category Section -->
-                            <div class="mb-4 border border-gray-200 rounded-lg overflow-hidden" x-data="{ isOpen: true }">
+                            @php
+                                // Count available rooms in this category (status=1 and rental_status!=1)
+                                $availableInCategory = $rooms->filter(function($r) {
+                                    return $r['status'] === 1 && ($r['is_available'] ?? ($r['rental_status'] !== 1));
+                                })->count();
+                            @endphp
+                            <!-- Room Category Section — collapsed by default, filters to available rooms -->
+                            <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" x-data="{ isOpen: false, showAll: false }">
                                 <!-- Accordion Header -->
                                 <button
                                     @click="isOpen = !isOpen"
-                                    class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                                    class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                 >
-                                    <h3 class="text-xl font-semibold text-gray-800">
+                                    <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
                                         {{ $roomName }}
-                                        <span class="ml-2 text-sm font-normal text-gray-600">({{ $rooms->count() }} {{ __('properties.room.rooms_count') }})</span>
+                                        <span class="ml-2 text-sm font-normal text-gray-600 dark:text-gray-400">({{ $rooms->count() }} {{ __('properties.room.rooms_count') }})</span>
+                                        <span class="ml-1 text-sm font-normal text-green-600 dark:text-green-400">· {{ $availableInCategory }} {{ __('properties.room.available_count') }}</span>
                                     </h3>
                                     <svg
-                                        class="w-6 h-6 text-gray-600 transition-transform duration-200"
+                                        class="w-6 h-6 text-gray-600 dark:text-gray-400 transition-transform duration-200"
                                         :class="{ 'rotate-180': isOpen }"
                                         fill="none"
                                         stroke="currentColor"
@@ -617,7 +702,7 @@
                                     </svg>
                                 </button>
 
-                                <!-- Accordion Content -->
+                                <!-- Accordion Content — proper background for light and dark modes -->
                                 <div
                                     x-show="isOpen"
                                     x-transition:enter="transition ease-out duration-300"
@@ -626,12 +711,24 @@
                                     x-transition:leave="transition ease-in duration-200"
                                     x-transition:leave-start="opacity-100 transform translate-y-0"
                                     x-transition:leave-end="opacity-0 transform -translate-y-2"
-                                    class="p-6 bg-white"
+                                    class="p-6 bg-gray-100 dark:bg-gray-900"
                                 >
+                                    <!-- Show all rooms checkbox filter -->
+                                    <div class="flex items-center mb-4">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" x-model="showAll" class="w-4 h-4 text-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-teal-500 dark:bg-gray-700 dark:border-gray-600">
+                                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ __('properties.room.show_all_rooms') }}</span>
+                                        </label>
+                                    </div>
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     @foreach($rooms as $room)
-                                        <a href="{{ route('rooms.show', $room['slug']) }}" class="group">
-                                            <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group-hover:ring-2 group-hover:ring-teal-500">
+                                        @php
+                                            $roomIsAvailable = $room['status'] === 1 && ($room['is_available'] ?? ($room['rental_status'] !== 1));
+                                        @endphp
+                                        <!-- Room card: hidden when unavailable unless showAll is checked -->
+                                        <a href="{{ route('rooms.show', $room['slug']) }}" class="group" x-show="showAll || {{ $roomIsAvailable ? 'true' : 'false' }}">
+                                            <!-- Room card — white card with rounded corners and shadow -->
+                            <div class="overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md transition-shadow group-hover:ring-2 group-hover:ring-teal-500">
                                             <div class="relative pb-[56.25%] h-48">
                                                 <div class="absolute inset-0">
                                                     @php
@@ -664,7 +761,7 @@
                                                     <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent h-16">
                                                     
                                                         <!-- Availability Status Overlay -->
-                                                        @if($room['status'] === 1 && $room['rental_status'] !== 1)
+                                                        @if($room['status'] === 1 && ($room['is_available'] ?? ($room['rental_status'] !== 1)))
                                                             <span class="absolute bottom-2 left-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white shadow-sm">
                                                                 
                                                                 {{ __('properties.status.available') }}
@@ -680,7 +777,7 @@
                                             </div>
 
                                             <div class="p-6">
-                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $room['no'] }} - {{ $room['name'] }}</h3>
+                                                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{{ $room['no'] }} - {{ $room['name'] }}</h3>
                                                 <!-- <p class="text-gray-600 text-sm mb-4">{{ $room['descriptions'] }}</p> -->
 
                                                 <!-- Rental Periods & View Details -->
@@ -713,7 +810,7 @@
 
                                                             @if(!$hasValidPeriod)
                                                                 <li>
-                                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200">
                                                                         {{ __('properties.room.period_not_available') }}
                                                                         <i class="fas fa-exclamation-circle ml-1"></i>
                                                                     </span>

@@ -23,9 +23,11 @@ class Booking extends Model
         'user_phone_number',
         'property_id',
         'check_in_at',
+        'checked_in_by',
         'doc_type',
         'doc_path',
         'check_out_at',
+        'checked_out_by',
         'created_by',
         'updated_by',
         'status',
@@ -35,12 +37,19 @@ class Booking extends Model
         'room_changed_at',
         'room_changed_by',
         'is_printed',
+        /* Modify Booking audit columns — populated only on rows cloned by ModifyBookingController.
+           See migration 2026_05_04_120000_add_modification_audit_to_t_booking for full semantics. */
+        'modified_at',
+        'modified_by',
+        'modification_type',
+        'modification_notes',
     ];
 
     protected $casts = [
         'check_in_at' => 'datetime',
         'check_out_at' => 'datetime',
         'room_changed_at' => 'datetime',
+        'modified_at' => 'datetime',
         'status' => 'integer',
     ];
 
@@ -48,6 +57,7 @@ class Booking extends Model
         'check_in_at',
         'check_out_at',
         'room_changed_at',
+        'modified_at',
         'created_at',
         'updated_at',
     ];
@@ -115,11 +125,37 @@ class Booking extends Model
     }
 
     /**
+     * Get the admin who performed the check-in.
+     */
+    public function checkedInByUser()
+    {
+        return $this->belongsTo(User::class, 'checked_in_by', 'id');
+    }
+
+    /**
+     * Get the admin who performed the check-out.
+     */
+    public function checkedOutByUser()
+    {
+        return $this->belongsTo(User::class, 'checked_out_by', 'id');
+    }
+
+    /**
      * Get the user who processed the room change.
      */
     public function roomChangedByUser()
     {
         return $this->belongsTo(User::class, 'room_changed_by', 'id');
+    }
+
+    /**
+     * Get the admin who modified this booking via the Modify Booking flow.
+     * Populated only on cloned rows produced by ModifyBookingController; NULL on
+     * original bookings, renewals, and room-transfer clones.
+     */
+    public function modifiedByUser()
+    {
+        return $this->belongsTo(User::class, 'modified_by', 'id');
     }
 
     // ==================== ACCESSORS ====================
@@ -161,6 +197,8 @@ class Booking extends Model
                 return 'Expired';
             case 'failed':
                 return 'Payment Failed';
+            case 'rejected':
+                return 'Rejected';
         }
 
         return 'Unknown';
@@ -281,6 +319,20 @@ class Booking extends Model
     {
         return $query->where('status', 1)
             ->whereNull('check_out_at');
+    }
+
+    /**
+     * Scope: keep only the latest t_booking row per order_id.
+     * Prevents duplicates when one transaction has multiple booking rows
+     * (room transfers, date changes).
+     */
+    public function scopeLatestPerOrder($query)
+    {
+        return $query->whereIn('t_booking.idrec', function ($sub) {
+            $sub->selectRaw('MAX(idrec)')
+                ->from('t_booking')
+                ->groupBy('order_id');
+        });
     }
 
     // ==================== INVOICE DATA ====================

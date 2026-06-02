@@ -88,8 +88,11 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
+    // Dark mode detection for dialog colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -123,17 +126,18 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
             // Tab Bar
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: isDark ? const Color(0xFF374151) : Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: TabBar(
                 controller: _tabController,
                 indicator: BoxDecoration(
-                  color: AppColors.primaryColor,
+                  // Use primaryAdaptive for the active tab indicator background
+                  color: AppColors.primaryAdaptive(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.black54,
+                unselectedLabelColor: isDark ? Colors.grey[400] : Colors.black54,
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                 tabs: [
                   Tab(text: localizations.paymentVoucherMyVouchers),
@@ -193,12 +197,14 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
     AppLocalizations localizations,
     TextTheme textTheme,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+        // Use primaryAdaptive for the voucher card border
+        border: Border.all(color: AppColors.primaryAdaptive(context).withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
+        color: isDark ? const Color(0xFF374151) : Colors.white,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -237,13 +243,14 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryColor.withOpacity(0.1),
+                    // Use primaryAdaptive for the discount badge background and text
+                    color: AppColors.primaryAdaptive(context).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     voucher['discount'],
                     style: textTheme.titleSmall?.copyWith(
-                      color: AppColors.primaryColor,
+                      color: AppColors.primaryAdaptive(context),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -297,7 +304,8 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
                 ElevatedButton(
                   onPressed: () => _applyVoucher(voucher['code']),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
+                    // Use primaryAdaptive for the use-voucher button background
+                    backgroundColor: AppColors.primaryAdaptive(context),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
@@ -331,7 +339,8 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
           Icon(
             Icons.redeem,
             size: 80,
-            color: AppColors.primaryColor,
+            // Use primaryAdaptive for the redeem icon color
+            color: AppColors.primaryAdaptive(context),
           ),
           const SizedBox(height: 24),
           Text(
@@ -364,9 +373,10 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+                // Use primaryAdaptive for the focused text field border and prefix icon
+                borderSide: BorderSide(color: AppColors.primaryAdaptive(context), width: 2),
               ),
-              prefixIcon: Icon(Icons.local_offer, color: AppColors.primaryColor),
+              prefixIcon: Icon(Icons.local_offer, color: AppColors.primaryAdaptive(context)),
             ),
             textCapitalization: TextCapitalization.characters,
           ),
@@ -374,7 +384,8 @@ class _VoucherDialogState extends State<VoucherDialog> with SingleTickerProvider
           ElevatedButton(
             onPressed: _redeemCode,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryColor,
+              // Use primaryAdaptive for the apply voucher button background
+              backgroundColor: AppColors.primaryAdaptive(context),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(

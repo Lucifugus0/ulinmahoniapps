@@ -23,9 +23,11 @@ class BestSellerSection extends ConsumerStatefulWidget {
 class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
   @override
   Widget build(BuildContext context) {
-    final bestSellerPropertiesAsyncValue = ref.watch(bestSellerPropertiesProvider);
+    // Watch "Available Now" provider instead of old bestSeller
+    final bestSellerPropertiesAsyncValue = ref.watch(availableNowPropertiesProvider);
     final textTheme = Theme.of(context).textTheme;
     final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       color: widget.backgroundColor,
@@ -40,7 +42,7 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
               children: [
                 Expanded(
                   child: Text(
-                    localizations.bestSeller,
+                    localizations.availableNow,
                     style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -49,15 +51,16 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () {
-                    // Navigate to search page with all properties sorted by cheapest price
-                    context.push('/search');
-                    AppLogger.d('Navigating to /search to show all properties sorted by price', 'BESTSELLER');
+                    // Navigate to Available Now page — all properties sorted by most available rooms
+                    context.push('/available-now');
+                    AppLogger.d('Navigating to /available-now', 'BESTSELLER');
                   },
                   child: Text(
                     localizations.showAll,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.primaryColor,
+                      // Use adaptive primary color for light mode; white for dark mode
+                      color: isDark ? Colors.white : AppColors.primaryAdaptive(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -125,7 +128,8 @@ class _BestSellerSectionState extends ConsumerState<BestSellerSection> {
                         final monthlyPrice = double.tryParse(item.priceOriginalMonthly) ?? 0;
                         final dailyPrice = double.tryParse(item.priceOriginalDaily) ?? 0;
                         final displayPrice = monthlyPrice > 0 ? monthlyPrice : dailyPrice;
-                        final priceLabel = monthlyPrice > 0 ? '/bulan' : '/hari';
+                        // Use localized price suffix (bulan/hari in ID, month/day in EN, 月/天 in ZH)
+                        final priceLabel = monthlyPrice > 0 ? localizations.roomDetailsPerMonth : localizations.roomDetailsPerDay;
 
                         return AnimatedListItem(
                           index: index,

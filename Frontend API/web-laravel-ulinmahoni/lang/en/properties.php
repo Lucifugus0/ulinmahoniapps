@@ -46,6 +46,7 @@ return [
         'education' => 'Education',
         'worship' => 'Worship',
         'shopping' => 'Shopping',
+        'custom' => 'Other',
     ],
 
     'navigation' => [
@@ -61,7 +62,7 @@ return [
         'facilities' => 'Facilities',
         'rental_price' => 'Rental Price',
         'about_property' => 'About Property',
-        'available_rooms' => 'Available Rooms',
+        'available_rooms' => 'All Rooms',
     ],
 
     'buttons' => [
@@ -79,6 +80,7 @@ return [
         'contact_us' => 'Please contact us for more information',
         'includes_tax' => 'Price includes VAT',
         'payment_method' => 'Payment by bank transfer',
+        'accepted_payments' => 'Accepted payments',
     ],
 
     'address' => [
@@ -93,6 +95,8 @@ return [
 
     'room' => [
         'rooms_count' => 'rooms',
+        'available_count' => 'available',
+        'show_all_rooms' => 'Show all rooms',
         'room_facilities' => 'Room Facilities:',
         'period_price' => 'Rental Period & Price:',
         'no_facilities' => 'No Facilities Available',
@@ -139,6 +143,8 @@ return [
         'monthly_rate' => 'Monthly Rate',
         'room_total' => 'Total Room Price:',
         'service_fees' => 'Service Fees:',
+        /* Daily Multi Tier Pricing: per-date breakdown title */
+        'price_breakdown_title' => 'Price Breakdown by Date',
         'total' => 'Total:',
         'duration_label' => 'Duration:',
         'complete_profile' => 'Complete Your Profile',
@@ -148,9 +154,13 @@ return [
         'last_name' => 'Last Name',
         'full_name' => 'Full Name',
         'phone_number' => 'Phone Number',
-        'rental_agreement' => 'I agree to the',
+        // :terms_link, :privacy_link, :rental_link are substituted with anchor tags by the blade.
+        'rental_agreement' => 'I declare that I have read, understood, fully comprehended, and agreed to the :terms_link, :privacy_link, and :rental_link',
+        'terms_link_text' => 'Rental Terms & Conditions',
+        'privacy_link_text' => 'Privacy Policy',
+        'rental_link_text' => 'Rental Agreement',
         'rental_agreement_link' => 'Rental Agreement',
-        'must_agree' => 'You must agree to the Rental Agreement to proceed.',
+        'must_agree' => 'You must agree to the Terms & Conditions to proceed.',
         'login_to_book' => 'Login to book',
         'please_login' => 'Please login or register to make a booking',
         'check_availability' => 'Check Room Availability',
@@ -224,10 +234,16 @@ return [
         'pay_with_bank' => 'Pay with {bank}',
         'please_select_bank' => 'Please select a bank',
         'voucher_applied' => 'Voucher successfully applied!',
+        'confirm_title' => 'Payment Confirmation',
+        'confirm_data_correct' => 'I hereby declare that all information provided above is true and accurate. I accept full responsibility for the accuracy of the data.',
+        'confirm_read_agreed' => 'I have read, fully understood, and agreed to all transaction details as stated above.',
+        'confirm_rental_agreement' => 'I confirm that I agree to and shall be bound by the Ulin Mahoni Rental Agreement.',
+        'confirm_proceed' => 'Agree & Proceed to Payment',
+        'confirm_cancel' => 'Cancel',
     ],
 
     'index' => [
-        'page_title' => 'Available Rooms',
+        'page_title' => 'All Rooms',
         'page_subtitle' => 'Find the ideal room for you',
         'filters' => 'Filters',
         'active_filters' => 'Active Filters:',

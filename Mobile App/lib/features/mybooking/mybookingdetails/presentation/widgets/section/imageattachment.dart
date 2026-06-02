@@ -124,7 +124,8 @@ class _ImageViewerWidgetState extends State<ImageViewerWidget> {
                           },
                           icon: _showImage ? Icons.visibility_off : Icons.visibility,
                           text: _showImage ? localizations.viewerHideAttachment : localizations.viewerShowPaymentProof,
-                          buttonColor: AppColors.primaryColor,
+                          // Use primaryAdaptive for dark/light mode compatibility
+                          buttonColor: AppColors.primaryAdaptive(context),
                           textColor: Colors.white,
                           iconColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
@@ -159,7 +160,8 @@ class _ImageViewerWidgetState extends State<ImageViewerWidget> {
                     },
                     icon: _showImage ? Icons.visibility_off : Icons.visibility,
                     text: _showImage ? localizations.viewerHideAttachment : localizations.viewerShowPaymentProof,
-                    buttonColor: AppColors.primaryColor,
+                    // Use primaryAdaptive for dark/light mode compatibility
+                    buttonColor: AppColors.primaryAdaptive(context),
                     textColor: Colors.white,
                     iconColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),

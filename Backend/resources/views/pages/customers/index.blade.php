@@ -9,17 +9,8 @@
                 </h1>
                 <p class="text-gray-600 mt-2">{{ __('ui.manage_customers_desc') }}</p>
             </div>
-            <div class="mt-4 md:mt-0">
-                <button type="button" onclick="openPreRegisterModal()"
-                    class="inline-flex items-center px-4 py-2.5 bg-indigo-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                    {{ __('ui.pre_register_account') }}
-                </button>
-            </div>
+            {{-- Pre-Register button hidden — feature temporarily disabled --}}
+
         </div>
 
         <!-- Search and Filter Section -->
@@ -135,7 +126,7 @@
         <!-- Modal dialog -->
         <div class="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6" x-show="modalOpen" x-transition
             x-cloak @keydown.escape.window="modalOpen = false">
-            <div class="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden relative z-50"
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden relative z-50"
                 @click.outside="modalOpen = false">
 
                 <!-- Header -->

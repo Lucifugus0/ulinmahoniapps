@@ -4,10 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ulin Mahoni</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+  <!-- Tailwind CSS — Play CDN generates utility CSS on-the-fly (avoids loading the full 2.9MB CSS bundle) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    /* Configure Tailwind Play CDN — class-based dark mode to match project settings */
+    tailwind.config = { darkMode: 'class' }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <!-- Swiper 11 — carousel/slider for promo banners and property cards -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.css" />
+  <!-- Swiper JS loaded before body scripts to ensure availability at DOMContentLoaded -->
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.js"></script>
   @include('components.homepage.styles')
   <script>
     if (localStorage.getItem('dark-mode') === 'true') {
@@ -15,7 +22,7 @@
     }
   </script>
 </head>
-<body>
+<body class="liquid-glass-page">
   @include('components.homepage.header')
 
   <main>
@@ -142,7 +149,12 @@
                     </script>
                     
                     <div class="md:w-48">
-                        <button type="submit" class="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-all duration-200 flex items-center justify-center">
+                        {{-- Search Property — UM Maroon brand --}}
+                        <button type="submit"
+                            class="w-full h-12 text-white rounded-lg transition-all duration-200 flex items-center justify-center"
+                            style="background-color: #800000;"
+                            onmouseover="this.style.backgroundColor='#a83333'"
+                            onmouseout="this.style.backgroundColor='#800000'">
                             <i class="fas fa-search mr-2"></i>
                             <span>Search Property</span>
                         </button>
@@ -153,6 +165,32 @@
     </section>
     </div>
 
+    <!-- Sticky search bar: move to body when scrolled past hero to avoid overflow:hidden clipping -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchSection = document.querySelector('.search-section');
+        const heroSection = document.querySelector('.hero-section');
+        if (!searchSection || !heroSection) return;
+
+        const originalParent = searchSection.parentElement;
+        let isSticky = false;
+
+        const observer = new IntersectionObserver(([entry]) => {
+            if (!entry.isIntersecting && !isSticky) {
+                document.body.appendChild(searchSection);
+                searchSection.classList.add('is-sticky');
+                isSticky = true;
+            } else if (entry.isIntersecting && isSticky) {
+                searchSection.classList.remove('is-sticky');
+                originalParent.appendChild(searchSection);
+                isSticky = false;
+            }
+        }, { threshold: 0, rootMargin: '-72px 0px 0px 0px' });
+
+        observer.observe(heroSection);
+    });
+    </script>
+
     @include('components.homepage.en.property-types')
     @include('components.homepage.en.promos')
     @include('components.homepage.en.areas')
@@ -162,6 +200,7 @@
   </main>
 
   @include('components.homepage.footer')
+  @include('components.homepage.email-verification-popup')
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $house['name'] }} - Property Details</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <!-- Styles -->
     @include('components.property.styles')
+    @include('components.property.dark-mode')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
     .image-gallery {
             --gap: 1rem;
@@ -27,11 +29,12 @@
             }
         }
 
+        /* Liquid glass gallery item — rounded corners and glass shadow tokens */
         .gallery-item {
             position: relative;
             overflow: hidden;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: var(--radius-lg, 1.75rem);
+            box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));
             transition: var(--transition);
             display: flex;
             justify-content: center;
@@ -40,7 +43,7 @@
 
         .gallery-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--glass-shadow-hover, 0 16px 48px rgba(0, 0, 0, 0.15));
         }
 
         .gallery-item img {
@@ -124,9 +127,9 @@
             transform: translateY(0);
         }
     </style>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js loaded via header component — no duplicate needed here -->
 </head>
-<body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
+<body class="font-inter antialiased bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 tracking-tight">
     <!-- Header -->
     @include('components.homepage.header')
     <div class="header-spacer"></div>
@@ -212,8 +215,8 @@
                 </div>
             </div>
 
-            <!-- Property Info Section -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-8">
+            <!-- Property Info Section — liquid glass content panel -->
+            <div class="p-6 mb-8" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                 <div class="flex flex-col lg:flex-row gap-8">
                     <!-- Left Column - Property Info -->
                     <div class="lg:w-1/2">
@@ -244,6 +247,47 @@
                                 @endforeach
                             </div>
                         </div>
+
+                        <!-- Parking Availability -->
+                        @if(!empty($house['parking_fees']))
+                        <div class="mb-6 mt-6">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">
+                                <i class="fas fa-parking mr-2 text-teal-600"></i>Parking Availability
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                @foreach($house['parking_fees'] as $parking)
+                                @php
+                                    $available = max(0, ($parking['capacity'] ?? 0) - ($parking['quota_used'] ?? 0));
+                                    $total = $parking['capacity'] ?? 0;
+                                    $isFull = $available <= 0;
+                                    $type = $parking['parking_type'] ?? 'unknown';
+                                    $icon = $type === 'car' ? 'fa-car' : 'fa-motorcycle';
+                                    $label = $type === 'car' ? 'Car' : 'Motorcycle';
+                                    $fee = $parking['fee'] ?? 0;
+                                @endphp
+                                <div class="flex items-center justify-between p-3 rounded-lg border {{ $isFull ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-900/20' }}">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $isFull ? 'bg-red-100 dark:bg-red-900/40' : 'bg-teal-100 dark:bg-teal-900/40' }}">
+                                            <i class="fas {{ $icon }} {{ $isFull ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400' }}"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $label }}</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">Rp {{ number_format($fee, 0, ',', '.') }}/month</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        @if($isFull)
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Full</span>
+                                        @else
+                                            <span class="text-lg font-bold {{ $available <= 3 ? 'text-orange-600' : 'text-teal-600 dark:text-teal-400' }}">{{ $available }}</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">/{{ $total }} available</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
 
                         <!-- Action Buttons -->
                         <div class="flex flex-col sm:flex-row gap-3 mt-8">
@@ -314,11 +358,27 @@
                                     <i class="fas fa-info-circle mr-2 text-teal-600"></i>
                                     Price includes VAT
                                 </p>
-                                <p class="flex items-center mt-1">
-                                    <i class="fas fa-credit-card mr-2 text-teal-600"></i>
-                                    Payment via bank transfer
-                                </p>
                             </div>
+                            <!-- Payment Methods from CMS -->
+                            @if(isset($footerPayments) && $footerPayments->count() > 0)
+                                <p class="mt-3 text-xs text-gray-500 font-medium">{{ __('properties.price_info.accepted_payments') }}</p>
+                                <div class="mt-1.5 flex flex-wrap gap-2">
+                                    @foreach($footerPayments as $payment)
+                                        @php
+                                            $iconUrl = $payment->icon_image;
+                                            if ($iconUrl && !str_starts_with($iconUrl, 'http')) {
+                                                $iconUrl = rtrim(config('app.admin_url', env('ADMIN_URL', '')), '/') . '/storage/' . $iconUrl;
+                                            }
+                                        @endphp
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-gray-500 border border-gray-200">
+                                            @if($iconUrl)
+                                                <img src="{{ $iconUrl }}" alt="{{ $payment->name }}" class="h-4 object-contain">
+                                            @endif
+                                            {{ $payment->name }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -330,9 +390,9 @@
                 <div class="lg:col-span-2">
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">About the Property</h2>
                     <div class="prose max-w-none">
-                        <p class="text-gray-600">
-                            {{ $house['description'] }}
-                        </p>
+                        <div class="text-gray-600">
+                            {!! \App\Helpers\DescriptionHelper::getHtml($house['description'] ?? '', app()->getLocale()) !!}
+                        </div>
                     </div>
 
                     <!-- Room Facilities -->
@@ -354,7 +414,8 @@
                     <!-- Location Map -->
                     <div class="mt-8">
                         <h3 class="text-xl font-bold text-gray-900 mb-4">Location</h3>
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                        <!-- Liquid glass location card -->
+                        <div class="p-6" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                             <div class="flex flex-col lg:flex-row gap-8">
                                 <!-- Left Column - Map -->
                                 <div class="lg:w-1/2 flex flex-col">
@@ -484,12 +545,14 @@
 
                     <!-- Rooms Section -->
                     <div id="rooms-section" class="mt-12">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Available Rooms</h2>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">All Rooms</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             @forelse($house['rooms'] as $room)
                                 <a href="{{ route('en.rooms.show', $room['slug']) }}" class="group">
-                                    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group-hover:ring-2 group-hover:ring-teal-500">
+                                    <!-- Liquid glass room card -->
+                                    <!-- Room card: replaced inline liquid glass styles with Tailwind dark-mode-compatible classes -->
+                                    <div class="overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md transition-shadow group-hover:ring-2 group-hover:ring-teal-500">
                                     <div class="relative pb-[56.25%] h-48">
                                         <div class="absolute inset-0">
                                             @php
@@ -533,8 +596,9 @@
                                     </div>
 
                                     <div class="p-6">
-                                        <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $room['no'] }} - {{ $room['name'] }}</h3>
-                                        <p class="text-gray-600 text-sm mb-4">{{ $room['descriptions'] }}</p>
+                                        <!-- Room name: added dark mode text color -->
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{{ $room['no'] }} - {{ $room['name'] }}</h3>
+                                        <div class="text-gray-600 text-sm mb-4">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
 
                                         <div class="mb-4">
                                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Room Facilities:</h4>

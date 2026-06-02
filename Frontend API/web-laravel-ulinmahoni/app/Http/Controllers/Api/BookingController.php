@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -15,6 +16,8 @@ use App\Models\VoucherUsage;
 use App\Services\VoucherService;
 use App\Jobs\ExpireBooking;
 use App\Notifications\BookingConfirmationNotification;
+use App\Models\User;
+use App\Services\FirebaseNotificationService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -24,6 +27,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Property;
+use App\Models\Refund;
+use App\Services\RefundCalculationService;
 
 class BookingController extends ApiController
 {
@@ -35,69 +40,59 @@ class BookingController extends ApiController
      */
     private function checkAndExpireBookings()
     {
+        // Safety-net only — the per-minute system cron (expire_transactions.sql)
+        // remains the primary expiry driver. Throttle to at most one sweep per
+        // 60s across the whole app so re-enabling this on the bookings API
+        // request path doesn't run a full sweep on every request.
+        if (! Cache::add('booking_expiry_sweep_lock', 1, 60)) {
+            return;
+        }
+
         try {
             $now = now();
 
-            // Find all pending transactions that are past their expiration time
+            // Same selection as the deployed expire_transactions.sql:
+            //  - pending
+            //  - past deadline (expired_at < now) OR stale (transaction_date < now - 1h)
+            //  - skip if another pending txn on the same room is still within its window
             $expiredTransactions = Transaction::where('transaction_status', 'pending')
-                ->where('expired_at', '<=', $now)
-                ->whereNotNull('expired_at')
+                ->where(function ($q) use ($now) {
+                    $q->where(function ($q2) use ($now) {
+                            $q2->whereNotNull('expired_at')
+                               ->where('expired_at', '<', $now);
+                        })
+                      ->orWhere('transaction_date', '<', $now->copy()->subHour());
+                })
+                ->whereNotExists(function ($sub) use ($now) {
+                    $sub->selectRaw('1')
+                        ->from('t_transactions as t2')
+                        ->whereColumn('t2.room_id', 't_transactions.room_id')
+                        ->whereColumn('t2.idrec', '!=', 't_transactions.idrec')
+                        ->whereRaw("UPPER(t2.transaction_status) = 'PENDING'")
+                        ->where(function ($w) use ($now) {
+                            $w->whereNull('t2.expired_at')
+                              ->orWhere('t2.expired_at', '>=', $now);
+                        });
+                })
                 ->get();
 
             if ($expiredTransactions->isEmpty()) {
                 return;
             }
 
+            // Delegate each order to the canonical ExpireBooking routine.
+            // dispatchSync runs handle() in-process regardless of QUEUE_CONNECTION,
+            // giving the full consistent flow: bundled-parking soft-delete, voucher
+            // restore, GUARDED renewal parent-rollback, push notifications, and —
+            // exactly like the SQL — NO m_rooms.rental_status mutation. handle()
+            // re-checks pending + payment, so it is idempotent if the row changed
+            // between selection and dispatch.
             foreach ($expiredTransactions as $transaction) {
                 try {
-                    DB::beginTransaction();
-
-                    // Double check payment status
-                    $payment = Payment::where('order_id', $transaction->order_id)->first();
-                    if ($payment && $payment->payment_status === 'paid') {
-                        Log::info("Skipping expiration - Payment already completed for order_id: {$transaction->order_id}");
-                        DB::rollBack();
-                        continue;
-                    }
-
-                    // Update transaction status to expired
-                    $transaction->update([
-                        'transaction_status' => 'expired',
-                        'status' => '0', // Inactive
-                    ]);
-
-                    // Update payment status if exists
-                    if ($payment) {
-                        $payment->update([
-                            'payment_status' => 'expired'
-                        ]);
-                    }
-
-                    // Update booking status if exists
-                    $booking = Booking::where('order_id', $transaction->order_id)->first();
-                    if ($booking) {
-                        $booking->update([
-                            'status' => '0' // Inactive
-                        ]);
-                    }
-
-                    // Restore voucher usage count if voucher was used
-                    if ($transaction->voucher_id) {
-                        $voucher = \App\Models\Voucher::find($transaction->voucher_id);
-                        if ($voucher && $voucher->current_usage_count > 0) {
-                            $voucher->decrement('current_usage_count');
-                            Log::info("Restored voucher usage count for voucher_id: {$transaction->voucher_id}");
-                        }
-                    }
-
-                    DB::commit();
-                    Log::info("Auto-expired booking on API access for order_id: {$transaction->order_id}");
-
+                    ExpireBooking::dispatchSync($transaction->order_id);
                 } catch (\Exception $e) {
-                    DB::rollBack();
-                    Log::error("Failed to auto-expire booking for order_id: {$transaction->order_id}", [
+                    Log::error("Fallback expiry failed for order_id: {$transaction->order_id}", [
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
                     ]);
                 }
             }
@@ -157,7 +152,8 @@ class BookingController extends ApiController
     public function index(Request $request)
     {
         // Auto-expire pending bookings when user accesses their bookings
-        // $this->checkAndExpireBookings();
+        // (throttled safety-net; system cron remains the primary driver)
+        $this->checkAndExpireBookings();
 
         try {
             $query = Transaction::query();
@@ -331,6 +327,32 @@ class BookingController extends ApiController
             //         'updated_at' => Carbon::now()
             //     ]);
 
+            // Send push notification for check-in
+            try {
+                $fcm = new FirebaseNotificationService();
+                $transaction = Transaction::where('order_id', $orderId)->first();
+                $propertyName = $transaction->property_name ?? 'property';
+
+                // Notify guest
+                if ($transaction && $transaction->user_id) {
+                    $guest = \App\Models\User::find($transaction->user_id);
+                    if ($guest) {
+                        $fcm->sendToUser($guest, 'Check-In Successful', "Welcome to {$propertyName}!", [
+                            'type' => 'check_in',
+                            'order_id' => $orderId,
+                        ]);
+                    }
+                }
+
+                // Notify admins
+                $fcm->sendToAdmins('Guest Check-In', "{$transaction->user_name} checked in at {$propertyName}.", [
+                    'type' => 'check_in',
+                    'order_id' => $orderId,
+                ]);
+            } catch (\Exception $pushError) {
+                Log::warning('Push notification failed (check-in): ' . $pushError->getMessage());
+            }
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Check-in successful',
@@ -353,12 +375,35 @@ class BookingController extends ApiController
     }
     public function checkAvailability(Request $request)
     {
+        // Booking-type-aware date constraints:
+        //   New booking (is_renewal=0): check-in cap by type — 90d daily / 14d monthly.
+        //   Renewal (is_renewal=1):     no check-in cap. Daily renewal: check_out ≤ today+60d.
+        //                               Monthly renewal: no date cap at all.
+        $isRenewal   = $request->is_renewal == 1;
+        $bookingType = $request->booking_type ?? 'daily';
+
+        $checkInRules  = ['required', 'date', 'after_or_equal:today'];
+        $checkOutRules = ['required', 'date', 'after:check_in'];
+
+        if ($isRenewal) {
+            // Renewal: cap check_out at today+60d only for daily.
+            if ($bookingType === 'daily') {
+                $checkOutRules[] = 'before_or_equal:' . now()->addDays(60)->format('Y-m-d');
+            }
+        } else {
+            // New booking: cap check_in by type.
+            $checkInRules[] = $bookingType === 'monthly'
+                ? 'before_or_equal:' . now()->addDays(14)->format('Y-m-d')
+                : 'before_or_equal:' . now()->addDays(90)->format('Y-m-d');
+        }
+
         $validator = \Validator::make($request->all(), [
-            'property_id' => 'required|integer|exists:m_properties,idrec',
-            'room_id' => 'required|integer|exists:m_rooms,idrec',
-            'check_in' => 'required|date|after_or_equal:today',
-            'check_out' => 'required|date|after:check_in',
-            'is_renewal' => 'nullable|integer|in:0,1',
+            'property_id'  => 'required|integer|exists:m_properties,idrec',
+            'room_id'      => 'required|integer|exists:m_rooms,idrec',
+            'check_in'     => $checkInRules,
+            'check_out'    => $checkOutRules,
+            'is_renewal'   => 'nullable|integer|in:0,1',
+            'booking_type' => 'nullable|string|in:daily,monthly',
         ]);
 
         if ($validator->fails()) {
@@ -371,27 +416,43 @@ class BookingController extends ApiController
 
         $propertyId = $request->property_id;
         $roomId = $request->room_id;
-        $checkIn = Carbon::parse($request->check_in)->startOfDay();
-        $checkOut = Carbon::parse($request->check_out)->endOfDay();
+        // Use actual booking times (14:00 check-in, 12:00 check-out) instead of startOfDay/endOfDay
+        // Allows back-to-back daily bookings on same day (checkout noon, checkin 2PM)
+        $checkIn = Carbon::parse($request->check_in . ' 14:00:00');
+        $checkOut = Carbon::parse($request->check_out . ' 12:00:00');
         $isRenewal = $request->is_renewal == 1;
 
-        // Check if room rental_status is 1 (already rented)
-        // Skip this check if is_renewal = 1 (renewals are allowed for currently rented rooms)
+        // Check room availability based on rental type:
+        // Daily rooms (periode_daily=1) are always available.
+        // Monthly-only rooms check active bookings for date overlap.
         $room = DB::table('m_rooms')->where('idrec', $roomId)->first();
-        if (!$isRenewal && $room && $room->rental_status == 1) {
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'is_available' => false,
-                    'reason' => 'Room is currently rented',
-                    'conflicting_bookings' => [],
-                    'check_in' => $checkIn->format('Y-m-d H:i:s'),
-                    'check_out' => $checkOut->format('Y-m-d H:i:s'),
-                    'property_id' => $propertyId,
-                    'room_id' => $roomId,
-                    'user_info' => null,
-                ]
-            ]);
+        if (!$isRenewal && $room && !$room->periode_daily) {
+            // Monthly-only room: check if there's a conflicting active booking
+            $hasConflict = DB::table('t_booking')
+                ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+                ->where('t_booking.room_id', $roomId)
+                ->where('t_booking.status', 1)
+                ->whereNull('t_booking.check_out_at')
+                ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired', 'checked_out', 'rejected'])
+                ->where('t_transactions.check_in', '<', $checkOut)
+                ->where('t_transactions.check_out', '>', $checkIn)
+                ->exists();
+
+            if ($hasConflict) {
+                return response()->json([
+                    'status' => 'success',
+                    'data' => [
+                        'is_available' => false,
+                        'reason' => 'Room is currently rented',
+                        'conflicting_bookings' => [],
+                        'check_in' => $checkIn->format('Y-m-d H:i:s'),
+                        'check_out' => $checkOut->format('Y-m-d H:i:s'),
+                        'property_id' => $propertyId,
+                        'room_id' => $roomId,
+                        'user_info' => null,
+                    ]
+                ]);
+            }
         }
 
         // Check for conflicting bookings using simplified query
@@ -407,24 +468,28 @@ class BookingController extends ApiController
         //     ->get();
 
         
-        // NEW CODE - with t_booking join to get checked_in_at and checked_out_at
-        $conflictingBookings = DB::table('t_transactions')
-            ->join('t_booking', 't_booking.order_id', '=', 't_transactions.order_id')
-            ->where('t_transactions.property_id', $propertyId)
-            ->where('t_transactions.room_id', $roomId)
-            ->where('t_transactions.status', '1')
+        // Query from t_booking as source of truth for room assignments.
+        // When a booking is reassigned to a new room, original booking status → 0, new row status → 1.
+        // Join t_transactions only for scheduled dates and payment status.
+        $conflictingBookings = DB::table('t_booking')
+            ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+            ->where('t_booking.property_id', $propertyId)
+            ->where('t_booking.room_id', $roomId)
+            ->where('t_booking.status', 1)
+            ->whereNull('t_booking.check_out_at')
             ->whereNotIn('t_transactions.transaction_status', [
                 'cancelled',
                 'expired',
-                'checked_out'
+                'checked_out',
+                'rejected',
             ])
-            ->whereNull('t_booking.check_out_at') // Exclude if guest has already checked out
             ->where('t_transactions.check_in', '<', $checkOut)
             ->where('t_transactions.check_out', '>', $checkIn)
             ->select(
                 't_transactions.*',
                 't_booking.check_in_at',
-                't_booking.check_out_at'
+                't_booking.check_out_at',
+                't_booking.room_id as booking_room_id'
             )
             ->limit(5)
             ->get();
@@ -502,12 +567,16 @@ class BookingController extends ApiController
             'room_name' => 'required|string|max:255',
             'room_id' => 'nullable|integer',
             'booking_type' => 'nullable',
-            'check_in' => 'required|date|after_or_equal:today',
+            // Daily: check-in max 90 days from now. Monthly: max 14 days from now.
+            'check_in' => [
+                'required', 'date', 'after_or_equal:today',
+                'before_or_equal:' . ($request->booking_months ? now()->addDays(14)->format('Y-m-d') : now()->addDays(90)->format('Y-m-d')),
+            ],
             'check_out' => 'required|date|after:check_in',
             'daily_price' => 'nullable|numeric|min:0',
             'monthly_price' => 'nullable|numeric|min:0',
-            'booking_days' => 'nullable|integer|required_without:booking_months',
-            'booking_months' => 'nullable|integer|required_without:booking_days',
+            'booking_days' => 'nullable|integer|required_without:booking_months|max:60',
+            'booking_months' => 'nullable|integer|required_without:booking_days|max:12',
             'voucher_code' => 'nullable|string|min:8|max:20',
             // DEPOSIT & PARKING
             'deposit_fee' => 'nullable|numeric|min:0',
@@ -525,6 +594,15 @@ class BookingController extends ApiController
                 'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
+        }
+
+        // Block deprecated BRI Manual payment method (old mobile app versions)
+        if ($request->transaction_type && stripos($request->transaction_type, 'bri') !== false && stripos($request->transaction_type, 'manual') !== false) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Metode pembayaran Transfer BRI Manual sudah tidak tersedia. Silakan update aplikasi Anda ke versi terbaru untuk menggunakan metode pembayaran lainnya.',
+                'error_code' => 'PAYMENT_METHOD_DEPRECATED'
+            ], 400);
         }
 
         try {
@@ -571,6 +649,19 @@ class BookingController extends ApiController
                 // MONTHLY BOOKING
                 $monthlyPrice = $request->monthly_price;
                 $bookingMonths = $request->booking_months;
+
+                // Defensive server-side checkout clamp for monthly bookings.
+                // Ignore the client-submitted check_out and recompute it from
+                // check_in + booking_months, clamping the day-of-month to the
+                // target month's last day. This prevents overflow bugs from
+                // legacy/old clients (e.g. Mar 31 + 1 month producing May 1
+                // instead of Apr 30) which then cascade into renewal chains.
+                $targetMonth = $checkIn->month + $bookingMonths;
+                $targetYear = $checkIn->year + intdiv($targetMonth - 1, 12);
+                $targetMonth = (($targetMonth - 1) % 12) + 1;
+                $maxDay = Carbon::create($targetYear, $targetMonth, 1)->daysInMonth;
+                $clampedDay = min($checkIn->day, $maxDay);
+                $checkOut = Carbon::create($targetYear, $targetMonth, $clampedDay, 12, 0, 0, config('app.timezone'));
 
                 $roomPrice = $monthlyPrice * $bookingMonths;
                 // $adminFees = $roomPrice * 0.10;
@@ -638,8 +729,8 @@ class BookingController extends ApiController
                 $order_id = 'UMH-' . now()->format('ymd') . $randomNumber . $propertyInitial;
             } while (Transaction::where('order_id', $order_id)->exists());
 
-            // Set expiration time to 15 minutes from now
-            $expiredAt = now()->addMinutes(15);
+            // Set expiration time to 30 minutes from now
+            $expiredAt = now()->addMinutes(30);
 
             // Prepare transaction data
             $transactionData = [
@@ -686,6 +777,9 @@ class BookingController extends ApiController
                 // DATES
                 'check_in' => $checkIn,
                 'check_out' => $checkOut,
+                // Preserve the day-of-month from check-in for renewal checkout calculation
+                // e.g. Jan 31 check-in → original_checkin_day = 31
+                'original_checkin_day' => Carbon::parse($checkIn)->day,
                 'expired_at' => $expiredAt,
             ];
 
@@ -742,10 +836,9 @@ class BookingController extends ApiController
             // Booking will be automatically expired by scheduled task if not paid within 1 hour
             Log::info("Booking created with expiration time: {$expiredAt} for order_id: {$order_id}");
 
-            // Update room rental_status to 1 (room is booked/rented)
-            DB::table('m_rooms')
-                ->where('idrec', $request->room_id)
-                ->update(['rental_status' => 1]);
+            /* m_rooms.rental_status is NOT touched on booking creation. That
+               flag tracks physical occupancy (guest is in the room) — only
+               check-in sets it to 1, only check-out sets it to 0. */
 
             // Increment parking quota if parking is used (only for new bookings, not renewals)
             if ($request->is_renewal != 1 && $parkingFee > 0 && $parkingType) {
@@ -813,6 +906,29 @@ class BookingController extends ApiController
 
             DB::commit();
 
+            // Send push notifications for new booking
+            try {
+                $fcm = new FirebaseNotificationService();
+                $propertyName = $request->property_name;
+
+                // Notify guest
+                $guest = \App\Models\User::find($request->user_id);
+                if ($guest) {
+                    $fcm->sendToUser($guest, 'Booking Created', "Your booking for {$propertyName} has been created. Complete payment before it expires.", [
+                        'type' => 'booking_created',
+                        'order_id' => $order_id,
+                    ]);
+                }
+
+                // Notify admins
+                $fcm->sendToAdmins('New Booking', "{$request->user_name} booked {$propertyName} ({$request->room_name}). Order: {$order_id}.", [
+                    'type' => 'booking_created',
+                    'order_id' => $order_id,
+                ]);
+            } catch (\Exception $pushError) {
+                \Log::warning('Push notification failed (booking created): ' . $pushError->getMessage());
+            }
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Booking created successfully',
@@ -837,6 +953,13 @@ class BookingController extends ApiController
 
     public function renewBooking(Request $request, $orderId)
     {
+        // Daily renewal: check_out capped at today+60d. Monthly renewal: no date cap.
+        // (Monthly's separate 15-month cumulative cap is enforced below after chain-walking.)
+        $checkOutRules = ['required', 'date', 'after:check_in'];
+        if ($request->booking_type === 'daily') {
+            $checkOutRules[] = 'before_or_equal:' . now()->addDays(60)->format('Y-m-d');
+        }
+
         // Validate request - similar to store booking but with is_renewal
         $validator = Validator::make($request->all(), [
             // USER INFO
@@ -854,12 +977,15 @@ class BookingController extends ApiController
             // BOOKING TYPE
             'booking_type' => 'required|in:daily,monthly',
             'check_in' => 'required|date',
-            'check_out' => 'required|date|after:check_in',
+            'check_out' => $checkOutRules,
             // PRICING
             'daily_price' => 'nullable|numeric|min:0',
             'monthly_price' => 'nullable|numeric|min:0',
             'booking_days' => 'nullable|integer|min:0',
-            'booking_months' => 'nullable|integer|min:0',
+            // Renewal monthly duration is capped at 12 months per booking (matches new-booking rule).
+            // The cumulative cap (today + 15 months) is enforced separately below after we
+            // compute the resulting check_out, since this depends on the chain anchor.
+            'booking_months' => 'nullable|integer|min:0|max:12',
             'admin_fees' => 'nullable|numeric|min:0',
             'service_fees' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
@@ -884,6 +1010,15 @@ class BookingController extends ApiController
             ], 422);
         }
 
+        // Block deprecated BRI Manual payment method (old mobile app versions)
+        if ($request->transaction_type && stripos($request->transaction_type, 'bri') !== false && stripos($request->transaction_type, 'manual') !== false) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Metode pembayaran Transfer BRI Manual sudah tidak tersedia. Silakan update aplikasi Anda ke versi terbaru untuk menggunakan metode pembayaran lainnya.',
+                'error_code' => 'PAYMENT_METHOD_DEPRECATED'
+            ], 400);
+        }
+
         try {
             // Retrieve original booking by order_id
             $originalTransaction = Transaction::where('order_id', $orderId)
@@ -904,6 +1039,57 @@ class BookingController extends ApiController
                     'message' => 'Only paid or completed bookings can be renewed',
                     'current_status' => $originalTransaction->transaction_status
                 ], 400);
+            }
+
+            /* Re-anchor the renewal start date to the latest PAID/COMPLETED non-renewed
+               booking in this room+user chain. This guarantees that a previously
+               cancelled renewal cannot push the new check-in forward — even if the
+               client mistakenly sent a date taken from a cancelled row. */
+            $latestPaidCheckOut = DB::table('t_transactions')
+                ->where('room_id', $originalTransaction->room_id)
+                ->where('user_id', $originalTransaction->user_id)
+                ->whereRaw('LOWER(transaction_status) IN (?, ?)', ['paid', 'completed'])
+                ->where('renewal_status', 0)
+                ->whereNull('cancel_at')
+                ->orderBy('check_out', 'desc')
+                ->value('check_out');
+
+            if ($latestPaidCheckOut) {
+                $expectedCheckIn = Carbon::parse($latestPaidCheckOut)->format('Y-m-d');
+                if ($request->check_in !== $expectedCheckIn) {
+                    Log::warning('Renewal check-in mismatch — overriding with latest paid checkout', [
+                        'order_id'        => $orderId,
+                        'received'        => $request->check_in,
+                        'expected'        => $expectedCheckIn,
+                        'reason'          => 'Latest non-cancelled paid booking check_out used as authoritative source',
+                    ]);
+                    $request->merge(['check_in' => $expectedCheckIn]);
+                }
+            }
+
+            // Renewal availability window — must be 0-90 days before check-out, with a
+            // type-specific hard cutoff on the check-out day itself: 12:00 WIB for daily
+            // (new guest can arrive after noon checkout), 21:00 WIB for monthly. Server-side
+            // mirror of the modal's pre-open guard so a tampered client request is still rejected.
+            if ($latestPaidCheckOut) {
+                $now = Carbon::now(config('app.timezone'));
+                $today0 = $now->copy()->startOfDay();
+                $coDate0 = Carbon::parse($latestPaidCheckOut)->startOfDay();
+                $daysUntilCheckOut = $today0->diffInDays($coDate0, false);
+                $sameDayCutoffHour = $request->booking_type === 'monthly' ? 21 : 12;
+
+                if ($daysUntilCheckOut > 90) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => __('booking.js.renewal_window_too_early'),
+                    ], 422);
+                }
+                if ($daysUntilCheckOut < 0 || ($daysUntilCheckOut === 0 && $now->hour >= $sameDayCutoffHour)) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => __('booking.js.renewal_window_closed'),
+                    ], 422);
+                }
             }
 
             // Get room details to verify it still exists
@@ -951,18 +1137,45 @@ class BookingController extends ApiController
 
             DB::beginTransaction();
 
-            // Set check-in time to 14:00:00 and check-out time to 12:00:00
-            // Use createFromFormat to avoid timezone issues with date-only strings
-            $checkInWithTime = Carbon::createFromFormat('Y-m-d', $request->check_in, config('app.timezone'))->setTime(14, 0, 0);
-            $checkOutWithTime = Carbon::createFromFormat('Y-m-d', $request->check_out, config('app.timezone'))->setTime(12, 0, 0);
+            // Preserve original check-in day across renewal chain.
+            // For renewals: copy from previous booking. For room changes: reset.
+            $originalCheckinDay = $originalTransaction->original_checkin_day
+                ?? Carbon::parse($originalTransaction->check_in)->day;
 
-            // Calculate pricing based on booking type
-            $bookingDays = null;
-            $bookingMonths = null;
-            $roomPrice = 0;
+            // Set check-in time to 14:00:00 and check-out time to 12:00:00
+            $checkInWithTime = Carbon::createFromFormat('Y-m-d', $request->check_in, config('app.timezone'))->setTime(14, 0, 0);
 
             // Determine booking type - prioritize explicit booking_type parameter
             $isDaily = $request->booking_type === 'daily';
+
+            // For monthly renewals: recalculate checkout using original check-in day
+            // to avoid losing days across renewals (e.g., Jan 31→Feb 28→Mar 31 not Mar 28)
+            $bookingMonths = null;
+            if (!$isDaily) {
+                $bookingMonths = $request->booking_months ?? 1;
+                $targetMonth = $checkInWithTime->month + $bookingMonths;
+                $targetYear = $checkInWithTime->year + intdiv($targetMonth - 1, 12);
+                $targetMonth = (($targetMonth - 1) % 12) + 1;
+                $maxDay = Carbon::create($targetYear, $targetMonth, 1)->daysInMonth;
+                $clampedDay = min($originalCheckinDay, $maxDay);
+                $checkOutWithTime = Carbon::create($targetYear, $targetMonth, $clampedDay, 12, 0, 0);
+
+                // Cumulative cap: the new check_out cannot extend more than 15 months from today.
+                $maxAllowedCheckOut = Carbon::today(config('app.timezone'))->addMonths(15);
+                if ($checkOutWithTime->gt($maxAllowedCheckOut)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => __('booking.js.renewal_max_15_months'),
+                    ], 422);
+                }
+            } else {
+                $checkOutWithTime = Carbon::createFromFormat('Y-m-d', $request->check_out, config('app.timezone'))->setTime(12, 0, 0);
+            }
+
+            // Calculate pricing based on booking type
+            $bookingDays = null;
+            $roomPrice = 0;
 
             if ($isDaily) {
                 // DAILY BOOKING
@@ -1042,8 +1255,24 @@ class BookingController extends ApiController
                 $newOrderId = 'UMH-' . now()->format('ymd') . $randomNumber . $propertyInitial;
             } while (Transaction::where('order_id', $newOrderId)->exists());
 
-            // Set expiration time to 15 minutes from now
-            $expiredAt = now()->addMinutes(15);
+            // Set expiration time to 30 minutes from now
+            $expiredAt = now()->addMinutes(30);
+
+            // Server-authoritative source for the renewal's room.
+            // The client may send a stale room_id cached from a pre-transfer snapshot
+            // of t_transactions (which historically lagged behind room transfers), so
+            // we resolve the room from the parent order's currently-active t_booking
+            // row instead and ignore the client-supplied values when available.
+            // Falls back to the request payload only if there is no active booking.
+            $activeParentBooking = Booking::where('order_id', $orderId)->where('status', '1')->first();
+            $authRoomId = $activeParentBooking?->room_id ?? $request->room_id;
+            $authRoomName = $request->room_name;
+            if ($activeParentBooking && $activeParentBooking->room_id) {
+                $authRoom = Room::find($activeParentBooking->room_id);
+                if ($authRoom && $authRoom->name) {
+                    $authRoomName = $authRoom->name;
+                }
+            }
 
             // Prepare transaction data from request
             $transactionData = [
@@ -1056,9 +1285,9 @@ class BookingController extends ApiController
                 'property_id' => $request->property_id,
                 'property_name' => $request->property_name,
                 'property_type' => $request->property_type,
-                // ROOM DATA
-                'room_id' => $request->room_id,
-                'room_name' => $request->room_name,
+                // ROOM DATA — server-authoritative (see $authRoomId resolution above)
+                'room_id' => $authRoomId,
+                'room_name' => $authRoomName,
                 // ORDER DETAILS
                 'order_id' => $newOrderId,
                 'transaction_date' => now(),
@@ -1091,6 +1320,8 @@ class BookingController extends ApiController
                 // DATES
                 'check_in' => $checkInWithTime,
                 'check_out' => $checkOutWithTime,
+                // Carry forward original check-in day for future renewals
+                'original_checkin_day' => $originalCheckinDay,
                 'expired_at' => $expiredAt,
                 // RENEWAL FLAG
                 'is_renewal' => $request->is_renewal ?? 1,
@@ -1109,15 +1340,15 @@ class BookingController extends ApiController
                     'order_id' => $newOrderId,
                     'transaction_id' => $newTransaction->idrec,
                     'property_id' => $request->property_id,
-                    'room_id' => $request->room_id,
+                    'room_id' => $authRoomId,
                     'original_amount' => $subtotalBeforeDiscount,
                     'discount_amount' => $discountAmount,
                     'final_amount' => $grandtotalPrice
                 ]);
             }
 
-            // 1. Find old active booking (status=1) by order_id and update check_out_at
-            $oldBooking = Booking::where('order_id', $orderId)->where('status', '1')->first();
+            // 1. Reuse the active parent booking already resolved above and close it.
+            $oldBooking = $activeParentBooking;
             if ($oldBooking) {
                 $oldBooking->update(['check_out_at' => now()]);
             }
@@ -1150,7 +1381,7 @@ class BookingController extends ApiController
             // Create new payment record
             $paymentData = [
                 'property_id' => $request->property_id,
-                'room_id' => $request->room_id,
+                'room_id' => $authRoomId,
                 'order_id' => $newOrderId,
                 'user_id' => $request->user_id,
                 'grandtotal_price' => $grandtotalPrice,
@@ -1165,10 +1396,8 @@ class BookingController extends ApiController
             // Update original transaction's renewal_status to 1 (already renewed)
             $originalTransaction->update(['renewal_status' => 1]);
 
-            // Ensure room rental_status stays 1 (room remains occupied by renewed booking)
-            DB::table('m_rooms')
-                ->where('idrec', $request->room_id)
-                ->update(['rental_status' => 1]);
+            /* rental_status untouched — physical occupancy doesn't change on
+               renewal; the guest is still in the room (or not) regardless. */
 
             // Note: Do NOT increment parking quota for renewals - user is extending existing parking slot
 
@@ -1197,6 +1426,33 @@ class BookingController extends ApiController
             }
 
             DB::commit();
+
+            // Send push notifications for booking renewal
+            try {
+                $firebaseService = new FirebaseNotificationService();
+                $propertyName = $property ? $property->property_name : 'property';
+                $userName = $newBookingData['user_name'] ?? 'Guest';
+
+                // Notify guest
+                $guestUser = User::find($request->user_id);
+                if ($guestUser) {
+                    $firebaseService->sendToUser(
+                        $guestUser,
+                        'Booking Renewed',
+                        "Your stay at {$propertyName} has been extended. New order: {$newOrderId}.",
+                        ['type' => 'booking_renewed', 'order_id' => $newOrderId]
+                    );
+                }
+
+                // Notify admins
+                $firebaseService->sendToAdmins(
+                    'Booking Renewed',
+                    "{$userName} renewed booking at {$propertyName}. Order: {$newOrderId}.",
+                    ['type' => 'booking_renewed', 'order_id' => $newOrderId]
+                );
+            } catch (\Exception $e) {
+                Log::warning('Push notification failed for booking renewal', ['error' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -1675,51 +1931,78 @@ class BookingController extends ApiController
                 ->where('order_id', $booking->order_id)
                 ->update(['grandtotal_price' => $newGrandtotal]);
 
-            // Insert parking record into t_parking table (only for new bookings with parking, not renewals)
+            // Insert a new t_parking row for this booking/renewal — multi-row design
+            // (see 2026-05-08 rebuild): every paid period gets its own record, never an
+            // in-place update of a previous renewal's row.
             if ($parkingFee > 0 && $request->parking_type && $request->parking_type !== 'none') {
                 try {
                     $user = Auth::user();
+
+                    // Compute parking period from the booking dates:
+                    //   start_rent = check_in
+                    //   end_rent   = MIN(check_in + duration months, check_out)
+                    $startRent = null;
+                    $endRent = null;
+                    if (!empty($booking->check_in)) {
+                        $startCarbon = \Carbon\Carbon::parse($booking->check_in)->startOfDay();
+                        $endCarbon = $startCarbon->copy()->addMonths(max(1, (int) $parkingDuration));
+                        if (!empty($booking->check_out)) {
+                            $checkOutCarbon = \Carbon\Carbon::parse($booking->check_out)->startOfDay();
+                            if ($endCarbon->gt($checkOutCarbon)) {
+                                $endCarbon = $checkOutCarbon;
+                            }
+                        }
+                        $startRent = $startCarbon->toDateString();
+                        $endRent = $endCarbon->toDateString();
+                    }
+
+                    /**
+                     * Prior-parking lookup runs **regardless of `is_renewal`** — a customer
+                     * can keep using their slot across non-renewal bookings (e.g. consecutive
+                     * month-to-month bookings, or a fresh booking after a previous stay where
+                     * the slot was never released). Quota must not double-count a held slot.
+                     * See CLAUDE.md "m_parking_fee.quota_used is legacy/drifted" — historical
+                     * upward drift came from increments firing on renewals.
+                     *   - existing same type   → no quota change
+                     *   - existing other type  → swap (decrement old, increment new)
+                     *   - no existing row      → fresh increment
+                     */
                     $existingParking = DB::table('t_parking')
-                        ->where('order_id', $booking->order_id)
+                        ->where('user_id', Auth::id())
+                        ->where('property_id', $booking->property_id)
+                        ->where('status', 1)
+                        ->whereNull('deleted_at')
+                        ->orderByDesc('idrec')
                         ->first();
 
-                    if ($existingParking) {
-                        // Update existing record if parking type changed
-                        if ($existingParking->parking_type !== $request->parking_type) {
-                            $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
-                            $this->incrementParkingQuota($booking->property_id, $request->parking_type);
-                        }
-                        DB::table('t_parking')
-                            ->where('idrec', $existingParking->idrec)
-                            ->update([
-                                'parking_type' => $request->parking_type,
-                                'vehicle_plate' => $request->vehicle_plate ?? $existingParking->vehicle_plate,
-                                'owner_name' => $request->owner_name ?? $existingParking->owner_name,
-                                'owner_phone' => $request->owner_phone ?? $existingParking->owner_phone,
-                                'parking_duration' => $parkingDuration ?: $existingParking->parking_duration,
-                                'fee_amount' => $parkingFee,
-                                'updated_at' => now(),
-                            ]);
-                    } else {
+                    if ($existingParking && $existingParking->parking_type !== $request->parking_type) {
+                        $this->decrementParkingQuota($booking->property_id, $existingParking->parking_type);
                         $this->incrementParkingQuota($booking->property_id, $request->parking_type);
-                        DB::table('t_parking')->insert([
-                            'property_id' => $booking->property_id,
-                            'order_id' => $booking->order_id,
-                            'parking_type' => $request->parking_type,
-                            'vehicle_plate' => $request->vehicle_plate ?? null,
-                            'owner_name' => $request->owner_name ?? ($user->name ?? null),
-                            'owner_phone' => $request->owner_phone ?? ($user->phone_number ?? null),
-                            'user_id' => Auth::id(),
-                            'parking_duration' => $parkingDuration,
-                            'fee_amount' => $parkingFee,
-                            'management_only' => 0,
-                            'created_by' => Auth::id(),
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                    } elseif (!$existingParking) {
+                        $this->incrementParkingQuota($booking->property_id, $request->parking_type);
                     }
+                    // else: same-type renewal — quota unchanged, slot already counted
+
+                    DB::table('t_parking')->insert([
+                        'property_id' => $booking->property_id,
+                        'order_id' => $booking->order_id,
+                        'parking_type' => $request->parking_type,
+                        'vehicle_plate' => $request->vehicle_plate ?? ($existingParking->vehicle_plate ?? null),
+                        'owner_name' => $request->owner_name ?? ($existingParking->owner_name ?? ($user->name ?? null)),
+                        'owner_phone' => $request->owner_phone ?? ($existingParking->owner_phone ?? ($user->phone_number ?? null)),
+                        'user_id' => Auth::id(),
+                        'parking_duration' => (int) $parkingDuration ?: 1,
+                        'start_rent' => $startRent,
+                        'end_rent' => $endRent,
+                        'fee_amount' => $parkingFee,
+                        'status' => 1,
+                        'management_only' => 0,
+                        'created_by' => Auth::id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to insert/update parking record: ' . $e->getMessage());
+                    \Log::error('Failed to insert parking record: ' . $e->getMessage());
                 }
             }
 
@@ -2224,6 +2507,40 @@ class BookingController extends ApiController
     }
 
     /**
+     * Normalize a phone number to DOKU's preferred format: 62XXXXXXXXXX.
+     * Strips every non-digit character (spaces, dashes, +, parens, dots, etc.),
+     * then rewrites the country prefix:
+     *   0XXX   -> 62XXX   (Indonesian local format)
+     *   62XXX  -> 62XXX   (already correct)
+     *   620XXX -> 62XXX   (malformed double prefix)
+     *   8XXX   -> 628XXX  (bare digits, assume Indonesia)
+     * Returns empty string for empty/null input so DOKU can treat phone as optional.
+     */
+    private function normalizeDokuPhone(?string $phone): string
+    {
+        if ($phone === null) {
+            return '';
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone);
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '620')) {
+            $digits = '62' . ltrim(substr($digits, 2), '0');
+        } elseif (str_starts_with($digits, '62')) {
+            // already prefixed
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = '62' . ltrim($digits, '0');
+        } else {
+            $digits = '62' . $digits;
+        }
+
+        return $digits;
+    }
+
+    /**
      * Generate Virtual Account via DOKU
      *
      * @param array $data Payment and customer data
@@ -2297,8 +2614,8 @@ class BookingController extends ApiController
                 ]);
             }
 
-            // Calculate expiration date (60 minutes from now)
-            $expiredDate = Carbon::now('Asia/Jakarta')->addMinutes(60)->format('Y-m-d\TH:i:sP');
+            // Calculate expiration date (30 minutes from now — matches t_transactions.expired_at)
+            $expiredDate = Carbon::now('Asia/Jakarta')->addMinutes(30)->format('Y-m-d\TH:i:sP');
 
             $requestBody = [
                 'partnerServiceId' => $partnerServiceId,
@@ -2306,7 +2623,7 @@ class BookingController extends ApiController
                 'virtualAccountNo' => $virtualAccountNo,
                 'virtualAccountName' => $data['user_name'],
                 'virtualAccountEmail' => $data['user_email'],
-                'virtualAccountPhone' => $data['user_phone'],
+                'virtualAccountPhone' => $this->normalizeDokuPhone($data['user_phone'] ?? null),
                 'trxId' => $externalId,
                 'totalAmount' => [
                     'value' => number_format($data['amount'], 2, '.', ''),
@@ -2642,8 +2959,8 @@ class BookingController extends ApiController
             // Generate timestamp in ISO 8601 format with timezone (Asia/Jakarta)
             $timestamp = Carbon::now('Asia/Jakarta')->format('Y-m-d\TH:i:sP');
 
-            // Generate validity period (1 hour from now)
-            $validityPeriod = Carbon::now('Asia/Jakarta')->addHour()->format('Y-m-d\TH:i:sP');
+            // Generate validity period (30 minutes from now — matches t_transactions.expired_at)
+            $validityPeriod = Carbon::now('Asia/Jakarta')->addMinutes(30)->format('Y-m-d\TH:i:sP');
 
             // Generate order_id / partner reference number
             $partnerReferenceNo = $data['order_id'];
@@ -2855,7 +3172,7 @@ class BookingController extends ApiController
                 'customer' => [
                     'name' => $customerName,
                     'email' => $customerEmail,
-                    'phone' => $customerPhone
+                    'phone' => $this->normalizeDokuPhone($customerPhone)
                 ],
                 'override_configuration' => [
                     'themes' => [
@@ -2973,6 +3290,355 @@ class BookingController extends ApiController
                 'success' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Preview refund calculation for a booking cancellation (without cancelling).
+     * Returns the refund breakdown so the user can decide before confirming.
+     *
+     * GET /api/v1/booking/{order_id}/cancel-preview
+     */
+    public function previewCancelRefund(Request $request, $order_id)
+    {
+        try {
+            // Find the transaction by order_id
+            $transaction = Transaction::where('order_id', $order_id)->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking not found',
+                ], 404);
+            }
+
+            $status = strtolower($transaction->transaction_status);
+
+            // For pending/waiting bookings, no refund needed — just show cancellation is free
+            if (in_array($status, ['pending', 'waiting'])) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Booking can be cancelled without refund',
+                    'data' => [
+                        'order_id' => $order_id,
+                        'transaction_status' => $status,
+                        'refund' => null,
+                    ],
+                ]);
+            }
+
+            // Only paid bookings (not yet checked-in) can be cancelled with refund
+            if ($status !== 'paid') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking cannot be cancelled. Status: ' . $status,
+                ], 400);
+            }
+
+            // Check if already checked in
+            $booking = Booking::where('order_id', $order_id)->where('status', '1')->first();
+            if ($booking && !is_null($booking->check_in_at)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot cancel a booking that has already been checked in',
+                ], 400);
+            }
+
+            // Calculate refund breakdown
+            $refundService = new RefundCalculationService();
+            $refundData = $refundService->calculate($transaction);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Refund preview calculated',
+                'data' => [
+                    'order_id' => $order_id,
+                    'transaction_status' => $status,
+                    'refund' => $refundData,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Cancel preview error: ' . $e->getMessage(), [
+                'order_id' => $order_id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to calculate refund preview',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Cancel a booking and create a refund record (for paid bookings).
+     * For pending/waiting bookings, simply cancels without refund.
+     *
+     * POST /api/v1/booking/{order_id}/cancel
+     */
+    public function cancelBooking(Request $request, $order_id)
+    {
+        try {
+            // Find the transaction by order_id
+            $transaction = Transaction::where('order_id', $order_id)->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking not found',
+                ], 404);
+            }
+
+            $status = strtolower($transaction->transaction_status);
+
+            // Validate the booking is cancellable
+            if (!in_array($status, ['pending', 'waiting', 'paid'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking cannot be cancelled. Status: ' . $status,
+                ], 400);
+            }
+
+            // For paid bookings, check not already checked in
+            if ($status === 'paid') {
+                $booking = Booking::where('order_id', $order_id)->where('status', '1')->first();
+                if ($booking && !is_null($booking->check_in_at)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Cannot cancel a booking that has already been checked in',
+                    ], 400);
+                }
+            }
+
+            $refundData = null;
+
+            DB::beginTransaction();
+
+            // For paid bookings: calculate refund and create refund record
+            if ($status === 'paid') {
+                $refundService = new RefundCalculationService();
+                $refundData = $refundService->calculate($transaction);
+
+                // If QRIS/VA, validate bank account details are provided
+                if ($refundData['requires_bank_account']) {
+                    $validator = Validator::make($request->all(), [
+                        'bank_name' => 'required|string|max:100',
+                        'account_no' => 'required|string|max:50',
+                        'account_holder' => 'required|string|max:100',
+                    ]);
+
+                    if ($validator->fails()) {
+                        DB::rollBack();
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Bank account details are required for QRIS/VA refunds',
+                            'errors' => $validator->errors(),
+                        ], 422);
+                    }
+                }
+
+                // Create refund record with breakdown
+                Refund::create([
+                    'id_booking' => $order_id,
+                    'status' => 'pending',
+                    'reason' => $request->input('reason', 'User-initiated cancellation'),
+                    'amount' => $refundData['total_refund'],
+                    'refund_type' => 'user',
+                    'requested_by' => $transaction->user_id,
+                    'room_refund' => $refundData['room_refund'],
+                    'deposit_refund' => $refundData['deposit_refund'],
+                    'other_refund' => $refundData['other_refund'],
+                    // Bank account for QRIS/VA refunds
+                    'refund_bank_name' => $request->input('bank_name'),
+                    'refund_account_no' => $request->input('account_no'),
+                    'refund_account_holder' => $request->input('account_holder'),
+                ]);
+            }
+
+            // Restore voucher usage count if a voucher was applied
+            if ($transaction->voucher_id) {
+                $voucher = \App\Models\Voucher::find($transaction->voucher_id);
+                if ($voucher && $voucher->current_usage_count > 0) {
+                    $voucher->decrement('current_usage_count');
+                }
+            }
+
+            // Update transaction status to cancelled
+            DB::table('t_transactions')
+                ->where('order_id', $order_id)
+                ->update([
+                    'transaction_status' => 'cancelled',
+                    'cancel_at' => now(),
+                ]);
+
+            // Renewal rollback — find the most recent previous PAID/CONFIRMED transaction
+            // for the same room + user using idrec and created_at ordering (more reliable
+            // than matching check_out = check_in which can fail on edge-case renewals).
+            $txRoomId    = (int)    $transaction->getAttribute('room_id');
+            $txUserId    = (int)    $transaction->getAttribute('user_id');
+            $txIdrec     = (int)    $transaction->getAttribute('idrec');
+            $txCreatedAt = (string) $transaction->getAttribute('created_at');
+
+            if ($transaction->is_renewal == 1) {
+                $previousTransaction = DB::table('t_transactions')
+                    ->where('room_id', $txRoomId)
+                    ->where('user_id', $txUserId)
+                    ->where('idrec', '!=', $txIdrec)
+                    ->whereRaw('UPPER(transaction_status) IN (?, ?)', ['PAID', 'CONFIRMED'])
+                    ->where('created_at', '<', $txCreatedAt)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($previousTransaction) {
+                    $prevIdrec   = (int) $previousTransaction->idrec;
+                    $prevOrderId = (string) $previousTransaction->order_id;
+
+                    /* Skip rollback if the parent has another successful
+                       renewal (paid/confirmed/completed, is_renewal=1) that
+                       is newer than this cancelled one. Cancelling one
+                       attempt of a multi-attempt renewal must not undo the
+                       state set by a later, paid renewal of the same parent. */
+                    $hasNewerSuccessfulRenewal = DB::table('t_transactions')
+                        ->where('room_id', $txRoomId)
+                        ->where('user_id', $txUserId)
+                        ->where('idrec', '!=', $txIdrec)
+                        ->where('idrec', '!=', $prevIdrec)
+                        ->where('is_renewal', 1)
+                        ->whereRaw('LOWER(transaction_status) IN (?, ?, ?)', ['paid', 'confirmed', 'completed'])
+                        ->where('created_at', '>', $previousTransaction->created_at)
+                        ->exists();
+
+                    if ($hasNewerSuccessfulRenewal) {
+                        Log::info('Renewal rollback SKIPPED on cancellation — newer successful renewal exists', [
+                            'cancelled_transaction_id' => $txIdrec,
+                            'previous_transaction_id'  => $prevIdrec,
+                            'previous_order_id'        => $prevOrderId,
+                        ]);
+                    } else {
+                        // Rollback renewal_status so the previous booking can be renewed again
+                        DB::table('t_transactions')
+                            ->where('idrec', $prevIdrec)
+                            ->update(['renewal_status' => 0]);
+
+                        // Restore previous booking as active (clear the check_out_at set during renewal)
+                        DB::table('t_booking')
+                            ->where('order_id', $prevOrderId)
+                            ->update(['check_out_at' => null]);
+
+                        /* rental_status untouched — physical occupancy is owned
+                           by check-in / check-out only. */
+
+                        Log::info('Renewal rollback on cancellation', [
+                            'cancelled_transaction_id' => $txIdrec,
+                            'previous_transaction_id'  => $prevIdrec,
+                            'previous_order_id'        => $prevOrderId,
+                        ]);
+                    }
+                }
+            }
+
+            // Deactivate the booking record
+            DB::table('t_booking')
+                ->where('order_id', $order_id)
+                ->where('status', '1')
+                ->update([
+                    'status' => 0,
+                    'reason' => 'User-initiated cancellation',
+                ]);
+
+            /* rental_status untouched — cancellation is disallowed after
+               check-in, so the room was either already empty (flag stays 0)
+               or someone else is occupying it (flag stays 1). Only check-out
+               flips it to 0. */
+
+            // Release parking quota
+            if (!empty($transaction->parking_type)) {
+                $this->decrementParkingQuota($transaction->property_id, $transaction->parking_type);
+            }
+
+            /**
+             * Soft-delete the bundled-flow `t_parking` row tied to this order.
+             *
+             * Mirrors `ExpireBooking::handle`. Previously only the quota counter was
+             * decremented; the actual `t_parking` row stayed active and only the daily
+             * `parking:deactivate-expired` cron would eventually flip it. Soft-deleting
+             * here releases the slot in lockstep with the cancellation.
+             */
+            $parkingRolledBack = DB::table('t_parking')
+                ->where('order_id', $order_id)
+                ->whereNull('deleted_at')
+                ->update([
+                    'status'     => 0,
+                    'deleted_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            if ($parkingRolledBack > 0) {
+                Log::info('Parking soft-deleted on booking cancellation', [
+                    'order_id'          => $order_id,
+                    'rows_soft_deleted' => $parkingRolledBack,
+                ]);
+            }
+
+            // Update payment status
+            DB::table('t_payment')
+                ->where('order_id', $order_id)
+                ->update(['payment_status' => 'cancelled']);
+
+            DB::commit();
+
+            // Send push notifications (non-blocking — failures don't affect the response)
+            try {
+                $firebaseService = new FirebaseNotificationService();
+
+                $notifTitle = 'Booking Dibatalkan';
+                $notifBody = "Booking {$order_id} telah dibatalkan.";
+                if ($refundData) {
+                    $notifBody .= " Refund: Rp " . number_format($refundData['total_refund'], 0, ',', '.');
+                }
+                $notifData = [
+                    'type' => 'booking_cancelled',
+                    'order_id' => $order_id,
+                ];
+
+                // Notify the guest — sendToUser expects a User model, not an int
+                $guest = \App\Models\User::find($transaction->user_id);
+                if ($guest) {
+                    $firebaseService->sendToUser($guest, $notifTitle, $notifBody, $notifData);
+                }
+
+                // Notify admins of the property
+                $adminTitle = 'Pembatalan Booking';
+                $adminBody = "Booking {$order_id} ({$transaction->property_name}) dibatalkan oleh tamu.";
+                $firebaseService->sendToAdmins($adminTitle, $adminBody, $notifData);
+
+            } catch (\Exception $e) {
+                Log::warning('Failed to send cancellation notification: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Booking cancelled successfully',
+                'data' => [
+                    'order_id' => $order_id,
+                    'refund' => $refundData,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Cancel booking error: ' . $e->getMessage(), [
+                'order_id' => $order_id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to cancel booking',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         .login-container {
             position: relative;
@@ -35,10 +36,21 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
             z-index: 2;
         }
+        /* Override browser autofill yellow background */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px white inset !important;
+            -webkit-text-fill-color: #111827 !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+        /* Liquid glass — translucent login panel with strong blur */
         .login-box {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(48px);
+            -webkit-backdrop-filter: blur(48px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 2rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             padding: 2.5rem;
             max-width: 28rem;
@@ -53,6 +65,7 @@
                 padding: 1.5rem;
             }
         }
+        /* Text colors handled by central .login-container .login-box rules in homepage/styles.blade.php */
     </style>
 </head>
 <body class="bg-gray-50">
@@ -72,7 +85,7 @@
 
             <div class="text-center mb-6">
                 <div class="flex justify-center mb-4">
-                    <img src="{{ asset('images/assets/ulinmahoni-logo.svg') }}" alt="Ulin Mahoni Logo" class="h-16 w-auto">
+                    <img src="{{ asset('images/assets/new-ullinmahoni.PNG') }}" alt="Ulin Mahoni Logo" class="h-16 w-auto">
                 </div>
                 <h2 class="text-4xl font-light text-gray-900 mb-2">Welcome</h2>
                 <p class="text-gray-600 text-lg">UlinMahoni</p>
@@ -90,19 +103,23 @@
                     <div>
                         <label for="email" class="sr-only">{{ __('Your Email') }}</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-envelope text-gray-400"></i>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style="z-index:1;">
+                                <i class="fas fa-envelope" style="color: #111827;"></i>
                             </div>
-                            <input id="email" name="email" type="email" required class="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Email" :value="old('email')" />
+                            <input id="email" name="email" type="email" required class="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Email" :value="old('email')" />
                         </div>
                     </div>
                     <div>
                         <label for="password" class="sr-only">{{ __('Your Password') }}</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-lock text-gray-400"></i>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style="z-index:1;">
+                                <i class="fas fa-lock" style="color: #111827;"></i>
                             </div>
-                            <input id="password" name="password" type="password" required class="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-200 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Password" />
+                            <input id="password" name="password" type="password" required class="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 pr-10 border border-gray-200 placeholder-gray-500 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Password" />
+                            <button type="button" onclick="const p=document.getElementById('password');const h=p.type==='password';p.type=h?'text':'password';this.querySelector('.eye-open').style.display=h?'none':'block';this.querySelector('.eye-closed').style.display=h?'block':'none';" class="absolute inset-y-0 right-0 pr-3 flex items-center" style="z-index:1; color: #111827;">
+                                <i class="fas fa-eye eye-open"></i>
+                                <i class="fas fa-eye-slash eye-closed" style="display:none"></i>
+                            </button>
                         </div>
                     </div>
                 </div>

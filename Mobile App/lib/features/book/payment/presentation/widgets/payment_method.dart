@@ -1,92 +1,75 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
 
-class PaymentMethodItem extends StatefulWidget {
-  final String iconUrl;
-  final String title; 
-  final String? subtitle; 
+/// Payment method list item with icon (local asset or network), title, subtitle.
+class PaymentMethodItem extends StatelessWidget {
+  final String? iconAsset;  // Local asset path (preferred)
+  final String? iconUrl;    // Network URL (fallback)
+  final String title;
+  final String? subtitle;
   final bool isSelected;
   final VoidCallback? onTap;
 
   const PaymentMethodItem({
     Key? key,
-    required this.iconUrl,
-    required this.title, 
-    this.subtitle = '', 
+    this.iconAsset,
+    this.iconUrl,
+    required this.title,
+    this.subtitle = '',
     this.isSelected = false,
     this.onTap,
   }) : super(key: key);
 
-  @override
-  _PaymentMethodItemState createState() => _PaymentMethodItemState();
-}
-
-class _PaymentMethodItemState extends State<PaymentMethodItem> {
   Widget _buildIcon() {
-    final isSvg = widget.iconUrl.toLowerCase().endsWith('.svg');
-
-    if (isSvg) {
-      // Load SVG
-      return SvgPicture.network(
-        widget.iconUrl,
+    // Prefer local asset over network URL
+    if (iconAsset != null && iconAsset!.isNotEmpty) {
+      return Image.asset(
+        iconAsset!,
         width: 60,
         height: 60,
         fit: BoxFit.contain,
-        placeholderBuilder: (BuildContext context) => const Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-        errorBuilder: (context, error, stackTrace) =>
-            const Center(child: Icon(Icons.payment, size: 32)),
-      );
-    } else {
-      // Load PNG/JPG
-      return Image.network(
-        widget.iconUrl,
-        width: 60,
-        height: 60,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        },
         errorBuilder: (context, error, stackTrace) =>
             const Center(child: Icon(Icons.payment, size: 32)),
       );
     }
+    if (iconUrl != null && iconUrl!.isNotEmpty) {
+      return Image.network(
+        iconUrl!,
+        width: 60,
+        height: 60,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) =>
+            const Center(child: Icon(Icons.payment, size: 32)),
+      );
+    }
+    return const Center(child: Icon(Icons.payment, size: 32));
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
         margin: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Radio button icon (MOVED TO LEFT)
             Icon(
-              widget.isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: widget.isSelected ? AppColors.primaryColor : Colors.grey,
+              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: isSelected ? AppColors.primaryAdaptive(context) : Colors.grey,
             ),
             const SizedBox(width: 8),
-
-            // Icon with fixed size container to prevent overflow
+            // Icon with white background for visibility in dark mode
             Container(
               width: 60,
               height: 60,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: isDark ? const EdgeInsets.all(4) : EdgeInsets.zero,
               child: _buildIcon(),
             ),
             const SizedBox(width: 12),
@@ -96,29 +79,27 @@ class _PaymentMethodItemState extends State<PaymentMethodItem> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    widget.title,
+                    title,
                     style: TextStyle(
-                      fontWeight:
-                      widget.isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: widget.isSelected
-                          ? AppColors.primaryColor
-                          : Colors.black87,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? AppColors.primaryAdaptive(context)
+                          : (isDark ? Colors.white : Colors.black87),
                       fontSize: 14,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (widget.subtitle != null && widget.subtitle!.isNotEmpty)
+                  if (subtitle != null && subtitle!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 2.0),
                       child: Text(
-                        widget.subtitle!,
+                        subtitle!,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Colors.black54,
+                          color: isDark ? Colors.grey[300] : Colors.black54,
                           fontSize: 15,
                         ),
-
                       ),
                     ),
                 ],

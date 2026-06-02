@@ -3,8 +3,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../../controller/launchurl_controller.dart';
 
+// font_awesome_flutter 11.x: FaIconData no longer extends IconData, accept dynamic
 Widget _helpCard({
-  required IconData icons,
+  required dynamic icons,
   required String name,
   VoidCallback? onTap,
 }) {

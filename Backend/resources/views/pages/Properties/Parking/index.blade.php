@@ -1,19 +1,14 @@
 <x-app-layout>
     <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
-        <!-- Header Section -->
+        {{-- Header — Add New button removed; new parking entries are created via Finance > Parking Entry --}}
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                 {{ __('ui.parking_management') }}
             </h1>
-            <button type="button" onclick="openAddParkingModal()"
-                class="mt-4 md:mt-0 inline-flex items-center px-4 py-2.5 bg-indigo-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add New
-            </button>
         </div>
+
+        {{-- Capacity charts: per-property progress bars for car + motorcycle utilization --}}
+        @include('pages.Properties.Parking.partials.parking_capacity_charts')
 
         <!-- Table -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -33,6 +28,20 @@
                             </div>
                         </div>
 
+                        {{-- Property filter — only visible to HQ/HO users; site users are auto-scoped server-side. --}}
+                        @if($canFilterByProperty)
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('ui.property') }}:</span>
+                            <select name="property_id" id="propertyFilter"
+                                class="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                                <option value="all">{{ __('ui.all') }}</option>
+                                @foreach($properties as $prop)
+                                    <option value="{{ $prop->idrec }}" {{ request('property_id') == $prop->idrec ? 'selected' : '' }}>{{ $prop->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+
                         <div class="flex items-center space-x-4">
                             <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('ui.parking_type') }}:</span>
                             <select name="parking_type" id="parkingTypeFilter"
@@ -43,33 +52,25 @@
                             </select>
                         </div>
 
-                        <div class="flex items-center space-x-4">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('ui.status_filter') }}</span>
-                            <select name="status" id="statusFilter"
-                                class="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
-                                <option value="all">{{ __('ui.all') }}</option>
-                                <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>{{ __('ui.active') }}</option>
-                                <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>{{ __('ui.inactive') }}</option>
-                            </select>
-                        </div>
+                        {{-- Status dropdown removed — table defaults to active rows; the "Show Expired" toggle below surfaces auto-deactivated rows. --}}
 
                         <div class="flex items-center gap-2">
                             <label for="perPageSelect" class="text-sm text-gray-600 dark:text-gray-400">{{ __('ui.items_per_page') }}</label>
                             <select name="per_page" id="perPageSelect"
                                 class="border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="8" {{ request('per_page', 8) == 8 ? 'selected' : '' }}>8</option>
-                                <option value="25" {{ request('per_page', 8) == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('per_page', 8) == 50 ? 'selected' : '' }}>50</option>
+                                <option value="25" {{ request('per_page', 50) == 25 ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ request('per_page', 50) == 50 ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ request('per_page', 50) == 100 ? 'selected' : '' }}>100</option>
                             </select>
                         </div>
 
                         <div class="flex items-center gap-2">
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="showDeletedFilter" class="sr-only peer" {{ request('show_deleted') == '1' ? 'checked' : '' }}>
-                                <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer-checked:bg-red-500 transition-all duration-300"></div>
+                                <input type="checkbox" id="showExpiredFilter" class="sr-only peer" {{ request('show_expired') == '1' ? 'checked' : '' }}>
+                                <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer-checked:bg-amber-500 transition-all duration-300"></div>
                                 <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-300 peer-checked:translate-x-4"></div>
                             </label>
-                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('ui.show_deleted') }}</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('ui.show_expired') }}</span>
                         </div>
                     </div>
                 </form>
@@ -1010,10 +1011,11 @@
 
         function applyFilters(page = 1) {
             const search = document.getElementById('searchInput')?.value || '';
-            const status = document.getElementById('statusFilter')?.value || '';
             const parkingType = document.getElementById('parkingTypeFilter')?.value || '';
-            const perPage = document.getElementById('perPageSelect')?.value || '8';
-            const showDeleted = document.getElementById('showDeletedFilter')?.checked ? '1' : '0';
+            const perPage = document.getElementById('perPageSelect')?.value || '50';
+            const showExpired = document.getElementById('showExpiredFilter')?.checked ? '1' : '0';
+            // propertyFilter only renders for HQ/HO users; site users are auto-scoped server-side
+            const propertyId = document.getElementById('propertyFilter')?.value || '';
 
             fetch('/properties/parking/filter', {
                 method: 'POST',
@@ -1022,7 +1024,7 @@
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ search, status, parking_type: parkingType, per_page: perPage, show_deleted: showDeleted, page })
+                body: JSON.stringify({ search, parking_type: parkingType, per_page: perPage, show_expired: showExpired, property_id: propertyId, page })
             })
             .then(r => r.json())
             .then(data => {
@@ -1043,9 +1045,10 @@
 
                 const urlParams = new URLSearchParams();
                 if (search) urlParams.append('search', search);
-                if (status) urlParams.append('status', status);
                 if (parkingType) urlParams.append('parking_type', parkingType);
                 if (perPage) urlParams.append('per_page', perPage);
+                if (showExpired === '1') urlParams.append('show_expired', '1');
+                if (propertyId && propertyId !== 'all') urlParams.append('property_id', propertyId);
                 if (page > 1) urlParams.append('page', page);
 
                 window.history.pushState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
@@ -1055,10 +1058,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             let t;
             document.getElementById('searchInput')?.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => applyFilters(1), 500); });
-            document.getElementById('statusFilter')?.addEventListener('change', () => applyFilters(1));
             document.getElementById('parkingTypeFilter')?.addEventListener('change', () => applyFilters(1));
+            document.getElementById('propertyFilter')?.addEventListener('change', () => applyFilters(1));
             document.getElementById('perPageSelect')?.addEventListener('change', () => applyFilters(1));
-            document.getElementById('showDeletedFilter')?.addEventListener('change', () => applyFilters(1));
+            document.getElementById('showExpiredFilter')?.addEventListener('change', () => applyFilters(1));
 
             // Intercept pagination links on initial page load
             const pag = document.getElementById('paginationContainer');

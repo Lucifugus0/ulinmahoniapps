@@ -3,8 +3,51 @@
      - Dark mode toggle (sun/moon icon) persisted in localStorage('dark-mode')
      - Language switcher dropdown with flag icons for each locale
 -->
-<!-- Header is 50% transparent, fixed position so it overlays on top of video/hero content -->
-<header class="site-header py-4 px-6 flex items-center justify-between bg-white/50 dark:bg-gray-900/50 backdrop-blur-md shadow-md fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+{{-- Header text override — consistent across ALL pages and scroll positions.
+     The header is now always frosted (see inline --glass-bg / --glass-blur-strong below),
+     so text is ALWAYS dark in light mode and white in dark mode. No scroll-driven swap.
+     Beats the `.site-header a/span/button { color: #1f2937/#f3f4f6 !important; }` rules in
+     styles.blade.php by matching selector + !important and appearing later in cascade.
+     Dropdown menu items are excluded so their own light/dark text colors keep working. --}}
+<style>
+/* Light mode — dark text for legibility over the frosted-glass header (every page). */
+.site-header a,
+.site-header span,
+.site-header button {
+    color: #1f2937 !important;
+    font-weight: 700 !important;
+}
+.site-header a:hover,
+.site-header button:hover {
+    color: #000000 !important;
+    opacity: 1;
+}
+/* Dark mode — white text on every page, regardless of scroll position. */
+html.dark .site-header a,
+html.dark .site-header span,
+html.dark .site-header button {
+    color: #ffffff !important;
+}
+html.dark .site-header a:hover,
+html.dark .site-header button:hover {
+    color: #ffffff !important;
+    opacity: 0.85;
+}
+/* Dropdown panel items keep their own weight + text colors so menus don't look chunky. */
+.site-header .header-dropdown a,
+.site-header .header-dropdown span,
+.site-header .header-dropdown button,
+.site-header .header-dropdown p {
+    font-weight: 400 !important;
+    color: inherit !important;
+}
+</style>
+<!-- Header — floating liquid glass bar, fixed over content with a constant frosted backdrop.
+     The frosted look is now FIXED (no scroll ramp): a light translucent white tint + 20px blur
+     in light mode, applied via the inline --glass-bg / --glass-blur-strong CSS variables which
+     the .site-header rule in styles.blade.php reads from. Dark mode background is supplied by
+     the `html.dark .site-header` rule (it sets `background` directly, ignoring --glass-bg). -->
+<header class="site-header py-4 px-6 flex items-center justify-between fixed top-0 left-0 right-0 z-50 transition-all duration-500" style="--glass-bg: rgba(255, 255, 255, 0.6); --glass-blur-strong: blur(20px);">
     <div class="flex items-center space-x-8">
         <!-- Mobile Menu Button (Hidden on desktop) -->
         <div x-data="{ mobileMenuOpen: false }" class="md:hidden">
@@ -30,7 +73,7 @@
                         $mobileLocale = app()->getLocale();
                     @endphp
                     <a href="/{{ $mobileLocale }}/homepage" class="flex items-center">
-                        <img src="{{ asset('images/assets/ulinmahoni-logo.svg') }}" alt="Ulin Mahoni Logo" class="h-8 w-auto">
+                        <img src="{{ asset('images/assets/new-ullinmahoni.PNG') }}" alt="Ulin Mahoni Logo" class="h-8 w-auto">
                     </a>
                     <button @click="mobileMenuOpen = false" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,10 +81,20 @@
                         </svg>
                     </button>
                 </div>
+                {{-- Mobile nav — same active detection as desktop --}}
+                @php
+                    $mPath = request()->path();
+                    $mIsHome = str_contains($mPath, 'homepage');
+                    $mIsPartnership = str_contains($mPath, 'kerjasama') || str_contains($mPath, 'partnership');
+                    $mIsBusiness = str_contains($mPath, 'business');
+                    $mIsAbout = str_contains($mPath, 'tentang') || str_contains($mPath, 'about');
+                    $mIsBookings = str_starts_with($mPath, 'bookings');
+                    $mobileNavClass = 'block px-4 py-2 text-base text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors';
+                @endphp
                 <nav class="p-4">
                     <ul class="space-y-3">
                         <li>
-                            <a href="/{{ $mobileLocale }}/homepage" class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+                            <a href="/{{ $mobileLocale }}/homepage" class="{{ $mobileNavClass }} {{ $mIsHome ? 'font-bold' : '' }}">
                                 {{ __('common.navigation.home') }}
                             </a>
                         </li>
@@ -58,7 +111,7 @@
                                     default => 'Kerjasama',
                                 };
                             @endphp
-                            <a href="/{{ $mobileLocale }}/{{ $partnershipUrl }}" class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+                            <a href="/{{ $mobileLocale }}/{{ $partnershipUrl }}" class="{{ $mobileNavClass }} {{ $mIsPartnership ? 'font-bold' : '' }}">
                                 {{ $partnershipLabel }}
                             </a>
                         </li>
@@ -70,7 +123,7 @@
                                     default => 'Korporasi',
                                 };
                             @endphp
-                            <a href="/{{ $mobileLocale }}/business" class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+                            <a href="/{{ $mobileLocale }}/business" class="{{ $mobileNavClass }} {{ $mIsBusiness ? 'font-bold' : '' }}">
                                 {{ $businessLabel }}
                             </a>
                         </li>
@@ -87,10 +140,25 @@
                                     default => 'Tentang Kami',
                                 };
                             @endphp
-                            <a href="/{{ $mobileLocale }}/{{ $aboutUrl }}" class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+                            <a href="/{{ $mobileLocale }}/{{ $aboutUrl }}" class="{{ $mobileNavClass }} {{ $mIsAbout ? 'font-bold' : '' }}">
                                 {{ $aboutLabel }}
                             </a>
                         </li>
+                        {{-- "My Bookings" link in mobile nav — only visible when logged in --}}
+                        @auth
+                        <li>
+                            @php
+                                $mobileBookingsLabel = match($mobileLocale) {
+                                    'en' => 'My Bookings',
+                                    'zh' => '我的预订',
+                                    default => 'Pemesanan Saya',
+                                };
+                            @endphp
+                            <a href="/bookings" class="{{ $mobileNavClass }} {{ $mIsBookings ? 'font-bold' : '' }}">
+                                {{ $mobileBookingsLabel }}
+                            </a>
+                        </li>
+                        @endauth
                     </ul>
                 </nav>
             </div>
@@ -108,17 +176,28 @@
             $logoLocale = app()->getLocale();
         @endphp
         <a href="/{{ $logoLocale }}/homepage" class="hidden md:flex items-center">
-            <img src="{{ asset('images/assets/ulinmahoni-logo.svg') }}" alt="Ulin Mahoni Logo" class="h-10 w-auto">
+            <img src="{{ asset('images/assets/new-ullinmahoni.PNG') }}" alt="Ulin Mahoni Logo" class="h-10 w-auto">
         </a>
 
-        <!-- Navigation -->
+        <!-- Navigation — consistent text-sm, black in light / white in dark, bold when active -->
         <nav class="hidden md:flex">
             <ul class="flex space-x-6">
                 @php
                     $locale = app()->getLocale();
+                    $currentPath = request()->path();
+
+                    // Detect active page from URL path
+                    $isHome = str_contains($currentPath, 'homepage');
+                    $isPartnership = str_contains($currentPath, 'kerjasama') || str_contains($currentPath, 'partnership');
+                    $isBusiness = str_contains($currentPath, 'business');
+                    $isAbout = str_contains($currentPath, 'tentang') || str_contains($currentPath, 'about');
+                    $isBookings = str_starts_with($currentPath, 'bookings');
+
+                    // Shared nav link classes: black in light, white in dark
+                    $navClass = 'text-base text-gray-900 dark:text-white hover:opacity-75 transition-colors duration-200';
                 @endphp
                 <li>
-                    <a href="/{{ $locale }}/homepage" class="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200">
+                    <a href="/{{ $locale }}/homepage" class="{{ $navClass }} {{ $isHome ? 'font-bold' : '' }}">
                         {{ __('common.navigation.home') }}
                     </a>
                 </li>
@@ -135,7 +214,7 @@
                             default => 'Kerjasama',
                         };
                     @endphp
-                    <a href="/{{ $locale }}/{{ $navPartnershipUrl }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200">
+                    <a href="/{{ $locale }}/{{ $navPartnershipUrl }}" class="{{ $navClass }} {{ $isPartnership ? 'font-bold' : '' }}">
                         {{ $navPartnershipLabel }}
                     </a>
                 </li>
@@ -147,7 +226,7 @@
                             default => 'Korporasi',
                         };
                     @endphp
-                    <a href="/{{ $locale }}/business" class="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200">
+                    <a href="/{{ $locale }}/business" class="{{ $navClass }} {{ $isBusiness ? 'font-bold' : '' }}">
                         {{ $navBusinessLabel }}
                     </a>
                 </li>
@@ -164,10 +243,25 @@
                             default => 'Tentang Kami',
                         };
                     @endphp
-                    <a href="/{{ $locale }}/{{ $navAboutUrl }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200">
+                    <a href="/{{ $locale }}/{{ $navAboutUrl }}" class="{{ $navClass }} {{ $isAbout ? 'font-bold' : '' }}">
                         {{ $navAboutLabel }}
                     </a>
                 </li>
+                {{-- "My Bookings" link in header — only visible when logged in --}}
+                @auth
+                <li>
+                    @php
+                        $navBookingsLabel = match($locale) {
+                            'en' => 'My Bookings',
+                            'zh' => '我的预订',
+                            default => 'Pemesanan Saya',
+                        };
+                    @endphp
+                    <a href="/bookings" class="{{ $navClass }} {{ $isBookings ? 'font-bold' : '' }}">
+                        {{ $navBookingsLabel }}
+                    </a>
+                </li>
+                @endauth
             </ul>
         </nav>
     </div>
@@ -180,16 +274,16 @@
             x-init="$watch('dark', val => { localStorage.setItem('dark-mode', val); document.documentElement.classList.toggle('dark', val) }); document.documentElement.classList.toggle('dark', dark)"
             @click="dark = !dark"
             type="button"
-            class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+            class="p-2 rounded-lg text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
             :title="dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
         >
-            <!-- Sun icon (shown in dark mode) -->
+            <!-- Moon icon (shown in dark mode — click to switch to light) -->
             <svg x-show="dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-            </svg>
-            <!-- Moon icon (shown in light mode) -->
-            <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
+            <!-- Sun icon (shown in light mode — click to switch to dark) -->
+            <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
         </button>
 
@@ -218,9 +312,9 @@
             <button @click="open = !open" type="button" class="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
                 <span class="flex items-center">
                     {!! $currentFlag !!}
-                    <span class="ml-1 text-sm text-gray-600 dark:text-gray-300">{{ $currentLabel }}</span>
+                    <span class="ml-1 text-base text-gray-900 dark:text-white">{{ $currentLabel }}</span>
                 </span>
-                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" :class="{ 'transform rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-gray-900 dark:text-white" :class="{ 'transform rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
             </button>
@@ -234,7 +328,7 @@
                  x-transition:leave="transition ease-in duration-75"
                  x-transition:leave-start="transform opacity-100 scale-100"
                  x-transition:leave-end="transform opacity-0 scale-95"
-                 class="absolute right-0 mt-2 w-36 rounded-lg bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 dark:ring-gray-700 focus:outline-none z-50"
+                 class="header-dropdown absolute right-0 mt-2 w-36 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 dark:ring-gray-700 focus:outline-none z-50"
                  style="display: none;">
                 <div class="py-1">
                     <!-- Indonesian Language Form -->
@@ -292,24 +386,29 @@
                     default => 'Daftar',
                 };
             @endphp
-            <a href="{{ route('login') }}" class="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white px-4 py-2 rounded-lg transition-colors duration-200">
+            <a href="{{ route('login') }}" class="text-base font-medium text-gray-900 dark:text-white hover:opacity-75 px-4 py-2 rounded-lg transition-colors duration-200">
                 {{ $signInLabel }}
             </a>
-            <a href="{{ route('register') }}" class="text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 px-4 py-2 rounded-lg transition-colors duration-200">
+            {{-- Daftar (Sign Up) — uses var(--accent) so it follows the theme:
+                 light = UM Green, dark = UM Maroon. !important on color overrides
+                 the .site-header a !important rule in styles.blade.php:376. --}}
+            <a href="{{ route('register') }}"
+               class="text-base font-medium px-4 py-2 rounded-lg transition-colors duration-200 btn-um-themed"
+               style="color: #ffffff !important;">
                 {{ $signUpLabel }}
             </a>
         @else
             <!-- Profile dropdown -->
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" type="button" class="flex items-center space-x-2 rounded-lg p-1 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ Auth::user()->username }}</span>
-                    <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" :class="{ 'transform rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span class="text-base font-medium text-gray-900 dark:text-white">{{ Auth::user()->username }}</span>
+                    <svg class="w-4 h-4 text-gray-900 dark:text-white" :class="{ 'transform rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
 
                 </button>
 
-                <!-- Dropdown menu -->
+                <!-- Dropdown menu — uses fixed positioning to escape header's backdrop-filter context -->
                 <div x-show="open"
                      @click.away="open = false"
                      x-transition:enter="transition ease-out duration-100"
@@ -318,8 +417,8 @@
                      x-transition:leave="transition ease-in duration-75"
                      x-transition:leave-start="transform opacity-100 scale-100"
                      x-transition:leave-end="transform opacity-0 scale-95"
-                     class="absolute right-0 mt-2 w-56 rounded-lg bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 dark:ring-gray-700 focus:outline-none"
-                     style="display: none;">
+                     class="header-dropdown fixed w-56 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 dark:ring-gray-700 focus:outline-none"
+                     style="display: none; top: 64px; right: 16px; z-index: 60;">
                     <div class="py-1">
                         <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
                             <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ Auth::user()->username }}</p>
@@ -331,14 +430,9 @@
                             </svg>
                             Profil
                         </a>
-                        <a href="/bookings" class="group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <svg class="mr-3 h-5 w-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                            Pemesanan Saya
-                        </a>
                         @if(Auth::user()->is_admin)
-                        <a href="/admin/dashboard" class="group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <!-- Link to Backend admin dashboard using ADMIN_URL env variable -->
+                        <a href="{{ config('app.admin_url', env('ADMIN_URL', '/dashboard')) }}/dashboard" class="group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
                             <svg class="mr-3 h-5 w-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                             </svg>
@@ -363,5 +457,14 @@
     </div>
 </header>
 
+{{-- Floating ticket widget — appears for authenticated users on all public pages --}}
+@include('components.ticket.floating-widget')
 
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+{{-- Scroll-driven header transparency was removed on 2026-05-18.
+     The header is now permanently frosted with fixed --glass-bg / --glass-blur-strong
+     values set inline on the .site-header element, and text colors no longer depend on
+     a .is-scrolled class — they are constant (dark in light mode, white in dark mode).
+     This makes the header look identical on every page (homepage, property/house
+     detail, listings) and at every scroll position. --}}

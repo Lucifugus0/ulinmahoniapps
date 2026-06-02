@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Property;
 use App\Http\Controllers\promo\PromoController;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller {
     protected $promoController;
@@ -46,12 +47,37 @@ class HomeController extends Controller {
      */
     public function index()
     {
+        // <!-- Fetch random active tagline from database, fallback to translation key -->
+        // Wrapped in try-catch: m_taglines/m_hero_videos may not exist on local DB (imported from prod without migrations)
+        try {
+            $taglineRow = DB::table('m_taglines')->where('status', 1)->inRandomOrder()->first();
+        } catch (\Exception $e) {
+            $taglineRow = null;
+        }
+        $heroTagline = $taglineRow ? $taglineRow->tagline : __('homepage.hero.subtitle');
+
+        // <!-- Fetch random active tagline description from m_tagline_desc, fallback to translation key -->
+        // Mirrors the m_taglines fetch above; paired with the tagline on the hero section.
+        // Wrapped in try-catch: m_tagline_desc may not exist on local DB (imported from prod without migrations).
+        try {
+            $taglineDescRow = DB::table('m_tagline_desc')->where('status', 1)->inRandomOrder()->first();
+        } catch (\Exception $e) {
+            $taglineDescRow = null;
+        }
+        $heroDescription = $taglineDescRow ? $taglineDescRow->description : __('homepage.hero.description');
+
+        // <!-- Fetch active hero video from database, fallback to default bundled video -->
+        try {
+            $activeVideo = DB::table('m_hero_videos')->where('status', 1)->first();
+        } catch (\Exception $e) {
+            $activeVideo = null;
+        }
+        $adminUrl = rtrim(env('ADMIN_URL', ''), '/');
         $heroMedia = [
             'type' => 'video',
             'sources' => [
                 'image' => 'images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg',
-                'video' => 'images/assets/My_Movie.mp4'
-                // 'video' => ''
+                'video' => $activeVideo && $adminUrl ? $adminUrl . '/storage/' . $activeVideo->file_path : 'images/assets/My_Movie.mp4'
             ]
         ];
 
@@ -69,14 +95,61 @@ class HomeController extends Controller {
                     $image = $promo->images->first()->image;
                 }
 
+                /* Normalize how_to_claim to canonical [{title, desc}, ...] shape so the modal JS
+                   can treat all banners uniformly. Legacy banners stored as ["string", ...] get
+                   auto-titled "Langkah N" until the admin re-saves with explicit titles. */
+                $rawSteps = $promo->how_to_claim ?? [];
+                $steps = [];
+                if (is_array($rawSteps)) {
+                    foreach (array_values($rawSteps) as $i => $step) {
+                        if (is_array($step) && (isset($step['title']) || isset($step['desc']))) {
+                            $steps[] = [
+                                'title' => isset($step['title']) ? (string) $step['title'] : '',
+                                'desc' => isset($step['desc']) ? (string) $step['desc'] : '',
+                            ];
+                        } elseif (is_string($step) && trim($step) !== '') {
+                            $steps[] = [
+                                'title' => 'Langkah ' . ($i + 1),
+                                'desc' => $step,
+                            ];
+                        }
+                    }
+                }
+
                 return [
                     'id' => $promo->idrec,
                     'title' => $promo->title,
                     'image' => $image,
                     'badge' => 'Promo',
                     'description' => $promo->descriptions,
+                    // <!-- promo_code is required by the homepage carousel modal so the
+                    //      "Promo Code" copy-to-clipboard section + Claim button render. -->
+                    'promo_code' => $promo->promo_code,
+                    // <!-- how_to_claim is now [{title, desc}, ...] shape (admin-defined per step).
+                    //      Legacy ["string", ...] auto-promoted with "Langkah N" titles above. -->
+                    'how_to_claim' => $steps,
+                    // <!-- terms_conditions added 2026-05-06 — falls back to hardcoded i18n
+                    //      when null/empty so existing banners without terms still render. -->
+                    'terms_conditions' => $promo->terms_conditions ?? [],
                 ];
             });
+
+        // <!-- Fetch active cities from the m_cities master table (admin-managed location list).
+        //      Drives the homepage location filter tabs instead of a hardcoded Jakarta/Bogor list.
+        //      Wrapped in try-catch: m_cities is owned by the Backend admin app and may be missing
+        //      on a local DB imported without that migration — falls back to an empty list. -->
+        try {
+            // <!-- Pin Jakarta first, Bogor second, then every other active city in
+            //      ascending idrec order. The CASE expression gives the two flagship
+            //      cities a fixed priority without renumbering the m_cities primary key. -->
+            $cities = DB::table('m_cities')
+                ->where('status', '1')
+                ->orderByRaw("CASE `slug` WHEN 'jakarta' THEN 0 WHEN 'bogor' THEN 1 ELSE 2 END ASC")
+                ->orderBy('idrec', 'asc')
+                ->get(['city_name', 'slug']);
+        } catch (\Exception $e) {
+            $cities = collect();
+        }
 
         try {
             // Get active properties (status = 1)
@@ -104,30 +177,44 @@ class HomeController extends Controller {
             // Prepare property data by city/area
             $propertyAreas = $this->getPropertiesByArea($properties);
 
-            // Prepare property data by type and location for property-types component
-            $propertyTypesByLocation = $this->getPropertiesByTypeAndLocation($propertyTypes);
+            // Prepare flat list of all properties with lat/lng for nearby sorting
+            $nearbyProperties = $properties->map(function ($property) {
+                return $this->formatPropertyForArea($property);
+            })->values()->toArray();
+
+            // Merge all property types into a single array for the "All" type tab
+            $allProperties = array_merge(
+                $propertyTypes['Kos'],
+                $propertyTypes['House'],
+                $propertyTypes['Apartment'],
+                $propertyTypes['Villa'],
+                $propertyTypes['Hotel']
+            );
+
+            // <!-- Build the property-by-location matrix keyed by city slug, driven by m_cities.
+            //      Each property card is queried against its city name so the homepage location
+            //      tabs filter live data instead of the previous hardcoded Jakarta/Bogor split. -->
+            $propertiesByLocation = $this->getPropertiesByLocation($propertyTypes, $allProperties, $cities);
 
             // Use the same view for all locales - the view will detect locale via app()->getLocale()
             return view("pages.homepage.index", [
+                'allProperties' => $allProperties,
                 'kos' => $propertyTypes['Kos'],
                 'houses' => $propertyTypes['House'],
                 'apartments' => $propertyTypes['Apartment'],
                 'villas' => $propertyTypes['Villa'],
                 'hotels' => $propertyTypes['Hotel'],
                 'heroMedia' => $heroMedia,
+                'heroTagline' => $heroTagline,
+                // <!-- heroDescription pairs with heroTagline; sourced from m_tagline_desc -->
+                'heroDescription' => $heroDescription,
                 'promos' => $promos,
                 'propertyAreas' => $propertyAreas,
-                // Property types by location
-                'kosJakarta' => $propertyTypesByLocation['kos']['jakarta'],
-                'kosBogor' => $propertyTypesByLocation['kos']['bogor'],
-                'housesJakarta' => $propertyTypesByLocation['house']['jakarta'],
-                'housesBogor' => $propertyTypesByLocation['house']['bogor'],
-                'apartmentsJakarta' => $propertyTypesByLocation['apartment']['jakarta'],
-                'apartmentsBogor' => $propertyTypesByLocation['apartment']['bogor'],
-                'villasJakarta' => $propertyTypesByLocation['villa']['jakarta'],
-                'villasBogor' => $propertyTypesByLocation['villa']['bogor'],
-                'hotelsJakarta' => $propertyTypesByLocation['hotel']['jakarta'],
-                'hotelsBogor' => $propertyTypesByLocation['hotel']['bogor'],
+                'nearbyProperties' => $nearbyProperties,
+                // <!-- Active cities from m_cities — render the location filter tabs -->
+                'cities' => $cities,
+                // <!-- Properties grouped by city slug then property type — render tab contents -->
+                'propertiesByLocation' => $propertiesByLocation,
             ]);
 
         } catch (Exception $e) {
@@ -135,14 +222,19 @@ class HomeController extends Controller {
                 'exception' => $e
             ]);
 
-            // Use the same view for all locales - the view will detect locale via app()->getLocale()
+            // <!-- Empty-state fallback: still expose the "all" location bucket so the
+            //      location filter renders with just the "Semua Kota" tab. -->
             return view("pages.homepage.index", [
+                'allProperties' => [],
                 'kos' => [],
                 'houses' => [],
                 'apartments' => [],
                 'villas' => [],
                 'hotels' => [],
                 'heroMedia' => $heroMedia,
+                'heroTagline' => $heroTagline,
+                // <!-- heroDescription pairs with heroTagline; sourced from m_tagline_desc -->
+                'heroDescription' => $heroDescription,
                 'promos' => $promos,
                 'propertyAreas' => [
                     'jakarta' => [],
@@ -151,17 +243,14 @@ class HomeController extends Controller {
                     'depok' => [],
                     'bekasi' => []
                 ],
-                // Property types by location
-                'kosJakarta' => [],
-                'kosBogor' => [],
-                'housesJakarta' => [],
-                'housesBogor' => [],
-                'apartmentsJakarta' => [],
-                'apartmentsBogor' => [],
-                'villasJakarta' => [],
-                'villasBogor' => [],
-                'hotelsJakarta' => [],
-                'hotelsBogor' => [],
+                'nearbyProperties' => [],
+                'cities' => collect(),
+                'propertiesByLocation' => [
+                    'all' => [
+                        'all' => [], 'kos' => [], 'house' => [],
+                        'apartment' => [], 'villa' => [], 'hotel' => [],
+                    ],
+                ],
             ]);
         }
     }
@@ -195,13 +284,10 @@ class HomeController extends Controller {
         // Get total rooms count
         $totalRooms = $property->rooms()->where('status', 1)->count();
 
-        // Get available rooms count (status = 1 and rental_status != 1)
+        /* Availability: daily rooms always available, monthly-only rooms check active bookings */
         $availableRooms = $property->rooms()
             ->where('status', 1)
-            ->where(function($query) {
-                $query->where('rental_status', '!=', 1)
-                      ->orWhereNull('rental_status');
-            })
+            ->availableRooms()
             ->count();
 
         // Get price data (already cast to array by the model)
@@ -258,25 +344,60 @@ class HomeController extends Controller {
     }
 
     /**
-     * Get properties grouped by type and location.
+     * Get properties grouped by city slug and property type for the homepage location filter.
      *
-     * @param array $propertyTypes Array of properties grouped by type
-     * @return array Properties grouped by type and location
+     * Builds a matrix the property-types component iterates over:
+     *   [ 'all' => ['all' => [...], 'kos' => [...], ...],
+     *     '<city-slug>' => ['all' => [...], 'kos' => [...], ...] ]
+     *
+     * The 'all' bucket holds every property; each city bucket holds only the properties
+     * whose city name (matched against the formatted subLocation string) contains the
+     * m_cities `city_name`. Matching is case-insensitive so "Jakarta" still captures
+     * properties stored as "Jakarta Selatan", "Jakarta Pusat", etc.
+     *
+     * @param array $propertyTypes  Properties grouped by type (Kos/House/Apartment/Villa/Hotel)
+     * @param array $allProperties  Flat list of every formatted property
+     * @param \Illuminate\Support\Collection $cities  Active rows from m_cities
+     * @return array Properties grouped by city slug then property type
      */
-    private function getPropertiesByTypeAndLocation($propertyTypes)
+    private function getPropertiesByLocation($propertyTypes, $allProperties, $cities)
     {
-        $result = [];
-        $cities = ['jakarta', 'bogor'];
+        // 'all' location bucket — every property, untouched by city filtering
+        $result = [
+            'all' => [
+                'all' => $allProperties,
+                'kos' => $propertyTypes['Kos'],
+                'house' => $propertyTypes['House'],
+                'apartment' => $propertyTypes['Apartment'],
+                'villa' => $propertyTypes['Villa'],
+                'hotel' => $propertyTypes['Hotel'],
+            ],
+        ];
 
-        foreach ($propertyTypes as $type => $properties) {
-            $typeLower = strtolower($type);
-            $result[$typeLower] = [];
-
-            foreach ($cities as $city) {
-                $result[$typeLower][$city] = array_values(array_filter($properties, function($property) use ($city) {
-                    return stripos($property['subLocation'] ?? '', $city) !== false;
-                }));
+        // One bucket per active city from m_cities — cards queried by city name
+        foreach ($cities as $city) {
+            $cityName = $city->city_name ?? '';
+            $slug = $city->slug ?? '';
+            if ($slug === '') {
+                continue;
             }
+
+            // Filter a list of formatted properties down to those in this city
+            $filterByCity = function ($properties) use ($cityName) {
+                return array_values(array_filter($properties, function ($property) use ($cityName) {
+                    return $cityName !== ''
+                        && stripos($property['subLocation'] ?? '', $cityName) !== false;
+                }));
+            };
+
+            $result[$slug] = [
+                'all' => $filterByCity($allProperties),
+                'kos' => $filterByCity($propertyTypes['Kos']),
+                'house' => $filterByCity($propertyTypes['House']),
+                'apartment' => $filterByCity($propertyTypes['Apartment']),
+                'villa' => $filterByCity($propertyTypes['Villa']),
+                'hotel' => $filterByCity($propertyTypes['Hotel']),
+            ];
         }
 
         return $result;
@@ -345,7 +466,10 @@ class HomeController extends Controller {
             'subdistrict' => $property->subdistrict,
             'city' => $property->city,
             'thumbnail' => $thumbnail,
-            'room_count' => $roomCount
+            'room_count' => $roomCount,
+            // GPS coordinates for nearby sorting on the client side
+            'latitude' => $property->latitude,
+            'longitude' => $property->longitude,
         ];
     }
 

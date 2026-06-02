@@ -1,17 +1,276 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" class="">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('properties.payment.page_title') }} - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
+    <!-- Dark mode + light mode overrides for payment page -->
+    <style>
+        /* ========== DARK MODE OVERRIDES ========== */
+
+        /* --- Page background --- */
+        html.dark body,
+        html.dark main,
+        html.dark section,
+        html.dark .bg-gray-50 {
+            background-color: #111827 !important; /* gray-900 */
+        }
+
+        /* --- Card / panel backgrounds --- */
+        html.dark .bg-white {
+            background-color: #1f2937 !important; /* gray-800 */
+        }
+
+        /* --- Text colors --- */
+        html.dark .text-gray-900 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .text-gray-800 {
+            color: #e5e7eb !important;
+        }
+        html.dark .text-gray-700 {
+            color: #d1d5db !important;
+        }
+        html.dark .text-gray-600 {
+            color: #9ca3af !important;
+        }
+        html.dark .text-gray-500 {
+            color: #9ca3af !important;
+        }
+        html.dark .text-gray-400 {
+            color: #6b7280 !important;
+        }
+
+        /* --- Borders --- */
+        html.dark .border-gray-200 {
+            border-color: #374151 !important;
+        }
+        html.dark .border-gray-300 {
+            border-color: #4b5563 !important;
+        }
+        html.dark .border-t,
+        html.dark .border-t.border-gray-200 {
+            border-color: #374151 !important;
+        }
+        html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #374151 !important;
+        }
+
+        /* --- Shadows --- */
+        html.dark .shadow,
+        html.dark .shadow-sm,
+        html.dark .shadow-lg,
+        html.dark .shadow-md {
+            box-shadow: none !important;
+        }
+
+        /* --- Form inputs --- */
+        html.dark input[type="text"],
+        html.dark input[type="number"],
+        html.dark input[type="email"],
+        html.dark input[type="tel"],
+        html.dark .border-gray-300.shadow-sm {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #f3f4f6 !important;
+        }
+        html.dark input::placeholder {
+            color: #9ca3af !important;
+        }
+        html.dark input:disabled,
+        html.dark input[readonly] {
+            background-color: #1f2937 !important;
+            color: #6b7280 !important;
+        }
+
+        /* --- Bank / payment cards --- */
+        html.dark .bank-card,
+        html.dark .payment-card {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        html.dark .bank-card:hover,
+        html.dark .payment-card:hover {
+            border-color: #14b8a6 !important;
+        }
+        /* Bank logo container background */
+        html.dark .bank-card .bg-gray-50,
+        html.dark .payment-card .bg-gray-50 {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+        }
+
+        /* --- Parking option cards --- */
+        html.dark .parking-option {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        html.dark .parking-option:hover {
+            border-color: #14b8a6 !important;
+        }
+        html.dark label.parking-option.bg-gray-100 {
+            background-color: #111827 !important;
+        }
+
+        /* --- Voucher details box (green) --- */
+        html.dark .bg-green-50 {
+            background-color: rgba(34, 197, 94, 0.15) !important;
+        }
+        html.dark .border-green-200 {
+            border-color: rgba(34, 197, 94, 0.3) !important;
+        }
+        html.dark .text-green-800 {
+            color: #86efac !important;
+        }
+        html.dark .text-green-700 {
+            color: #86efac !important;
+        }
+        html.dark .text-green-600 {
+            color: #4ade80 !important;
+        }
+
+        /* --- Blue info box (renewal parking info) --- */
+        html.dark .bg-blue-50 {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+        }
+        html.dark .border-blue-200 {
+            border-color: rgba(59, 130, 246, 0.3) !important;
+        }
+        html.dark .text-blue-800 {
+            color: #93c5fd !important;
+        }
+
+        /* --- Red elements (error, full parking) --- */
+        html.dark .bg-red-100 {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+        html.dark .text-red-600 {
+            color: #fca5a5 !important;
+        }
+
+        /* --- Teal active parking badge --- */
+        html.dark .bg-teal-100 {
+            background-color: rgba(20, 184, 166, 0.2) !important;
+        }
+
+        /* --- Green success icon circle --- */
+        html.dark .bg-green-100 {
+            background-color: rgba(34, 197, 94, 0.2) !important;
+        }
+
+        /* --- Modal backgrounds --- */
+        html.dark .bg-gray-600.bg-opacity-50 {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+        }
+        html.dark .rounded-md.bg-white,
+        html.dark .shadow-lg.rounded-md.bg-white {
+            background-color: #1f2937 !important;
+        }
+
+        /* --- Modal close buttons --- */
+        html.dark button.bg-white.border-gray-300,
+        html.dark .border-gray-300.bg-white {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #d1d5db !important;
+        }
+        html.dark button.bg-white.border-gray-300:hover,
+        html.dark .border-gray-300.bg-white:hover {
+            background-color: #4b5563 !important;
+        }
+
+        /* --- Vehicle details container --- */
+        html.dark #vehicleDetailsContainer.bg-white {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+
+        /* --- Deposit / parking info box --- */
+        html.dark .bg-gray-50.rounded-lg.border.border-gray-200 {
+            background-color: #111827 !important;
+            border-color: #374151 !important;
+        }
+
+        /* --- Deposit fee row inside the box --- */
+        html.dark .bg-gray-50.rounded-lg .bg-white.rounded-lg.border {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+
+        /* --- Summary sidebar sticky card --- */
+        html.dark .sticky.top-6.bg-white {
+            background-color: #1f2937 !important;
+        }
+
+        /* --- Radio buttons --- */
+        html.dark input[type="radio"] {
+            border-color: #4b5563 !important;
+            background-color: #374151 !important;
+        }
+
+        /* --- QR code image needs white bg to stay scannable in dark mode --- */
+        html.dark #qrisCodeImage {
+            background-color: #ffffff !important;
+            padding: 8px;
+            border-color: #4b5563 !important;
+        }
+
+        /* --- Gray-100 (parking full bg, etc.) --- */
+        html.dark .bg-gray-100 {
+            background-color: rgba(107, 114, 128, 0.15) !important;
+        }
+
+        /* --- Gray-200 (expired badge bg) --- */
+        html.dark .bg-gray-200 {
+            background-color: #374151 !important;
+        }
+
+        /* ========== LIGHT MODE GLASS OVERRIDES ========== */
+
+        /* Payment section background — transparent for glass effect */
+        section.py-12.bg-gray-50 {
+            background: transparent !important;
+        }
+
+        /* Main payment card — frosted glass */
+        .bg-white.rounded-lg.shadow-sm.p-6 {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Bank/payment cards — subtle glass */
+        .bank-card.bg-white,
+        .payment-card.bg-white {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+        }
+
+        /* Modal dialogs — glass panels */
+        .shadow-lg.rounded-md.bg-white {
+            background: var(--glass-bg-strong) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Light mode text brightening for glass readability */
+        .text-gray-400 { color: #555570 !important; }
+        .text-gray-500 { color: #4a4a68 !important; }
+    </style>
 </head>
 
-<body>
+{{-- Body background: white in light mode, gray-900 in dark mode --}}
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     @include('components.homepage.header')
     <div class="header-spacer"></div>
 
@@ -27,11 +286,12 @@
         </div>
 
         <!-- Payment Section -->
-        <section class="py-12 bg-gray-50">
+        {{-- Payment section: dark mode aware background and text --}}
+        <section class="py-12 bg-gray-50 dark:bg-gray-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900">{{ __('properties.payment.complete_payment') }}</h2>
-                    <p class="text-gray-600 mt-1">{{ __('properties.payment.choose_payment_method') }}</p>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ __('properties.payment.complete_payment') }}</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">{{ __('properties.payment.choose_payment_method') }}</p>
                 </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -371,7 +631,7 @@
 
                         <div class="space-y-4">
                             <div>
-                                <h4 class="font-medium">{{ __('properties.payment.transaction_details') }}</h4>
+                                <h4 class="font-medium text-gray-900">{{ __('properties.payment.transaction_details') }}</h4>
                                 <p class="text-sm text-gray-600 font-bold mb-6">{{ __('properties.payment.order_id') }} {{ $booking->order_id }}</p>
                                 <p class="text-sm text-gray-600">{{ __('properties.payment.code') }} {{ $booking->transaction_code }}</p>
                                 <p class="text-sm text-gray-600">{{ __('properties.payment.date') }} {{ $booking->created_at->format('d M Y H:i') }}</p>
@@ -379,7 +639,7 @@
                             </div>
 
                             <div>
-                                <h4 class="font-medium">{{ __('properties.payment.guest_details') }}</h4>
+                                <h4 class="font-medium text-gray-900">{{ __('properties.payment.guest_details') }}</h4>
                                 <h4 class="font-medium text-gray-600">{{ __('properties.payment.name') }}</h4>
                                 <p class="text-sm text-gray-600 mb-2">{{ $booking->user_name }}</p>
                                 <h4 class="font-medium text-gray-600">{{ __('properties.payment.email') }}</h4>
@@ -389,7 +649,7 @@
                             </div>
 
                             <div>
-                                <h4 class="font-medium">{{ __('properties.payment.property_details') }}</h4>
+                                <h4 class="font-medium text-gray-900">{{ __('properties.payment.property_details') }}</h4>
                                 <p class="text-sm text-gray-600">{{ $booking->property_name }}</p>
                                 <p class="text-sm text-gray-600">{{ __('properties.payment.type') }} {{ $booking->room_name }}</p>
                                 @if($booking->room?->no)
@@ -398,7 +658,7 @@
                             </div>
 
                             <div>
-                                <h4 class="font-medium">{{ __('properties.payment.duration') }}</h4>
+                                <h4 class="font-medium text-gray-900">{{ __('properties.payment.duration') }}</h4>
                                 <p class="text-sm text-gray-600">{{ __('properties.payment.check_in') }} {{ $booking->check_in->format('d F Y') }}</p>
                                 <p class="text-sm text-gray-600">{{ __('properties.payment.check_out') }} {{ $booking->check_out->format('d F Y') }}</p>
 
@@ -410,8 +670,8 @@
 
                             </div>
 
-                            <div class="pt-4 border-t">
-                                <h4 class="font-medium mb-2">{{ __('properties.payment.pricing') }}</h4>
+                            <div class="pt-4 border-t border-gray-200">
+                                <h4 class="font-medium text-gray-900 mb-2">{{ __('properties.payment.pricing') }}</h4>
                                 <p class="text-sm text-gray-600">{{ __('properties.payment.room_price') }} <span id="summaryRoomPrice">{{ number_format($booking->room_price, 0) }}</span></p>
                                 <p class="text-sm text-gray-600 mt-2 pt-2 border-t">{{ __('properties.payment.subtotal') }} <span id="summarySubtotal">{{ number_format($booking->room_price + ($booking->admin_fees ?? 0), 0) }}</span></p>
                                 <p id="summaryDiscountRow" class="text-sm text-green-600 hidden">{{ __('properties.payment.voucher_discount') }} <span id="summaryDiscountAmount">0</span></p>
@@ -426,9 +686,110 @@
             </div>
         </section>
 
-        <!-- Success Modal -->
+        <!-- Payment Confirmation Modal — matches mockup: left=details+checkbox, right=pricing card+buttons -->
+        <div id="confirmPaymentModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 p-4" style="display:none; align-items:center; justify-content:center;">
+            <div class="relative w-11/12 md:w-[780px] max-h-[90vh] overflow-y-auto p-6 shadow-2xl rounded-xl bg-gray-900 text-white">
+                <h3 class="text-xl font-bold mb-5">{{ __('properties.payment.confirm_title') }}</h3>
+
+                {{-- 2-column grid: left = details + checkbox, right = pricing card + buttons --}}
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;" class="confirm-grid">
+                    {{-- Left column: property, guest, transaction, duration, checkbox --}}
+                    <div class="text-sm space-y-4">
+                        {{-- Property details --}}
+                        <div>
+                            <p class="text-gray-400 text-xs mb-0.5">{{ __('properties.payment.property_details') }}</p>
+                            <p class="font-semibold">{{ $booking->property_name }} - {{ $booking->room_name }}@if($booking->room?->no) - No. {{ $booking->room->no }}@endif</p>
+                        </div>
+
+                        {{-- Guest details --}}
+                        <div>
+                            <p class="text-gray-400 text-xs mb-0.5">{{ __('properties.payment.guest_details') }}</p>
+                            <p>{{ $booking->user_email }}</p>
+                            <p>{{ $booking->user_phone_number }}</p>
+                        </div>
+
+                        {{-- Transaction details --}}
+                        <div>
+                            <p class="text-gray-400 text-xs mb-0.5">{{ __('properties.payment.transaction_details') }}</p>
+                            <p>Order ID: {{ $booking->order_id }}</p>
+                            <p>{{ __('properties.payment.date') }} {{ $booking->created_at->format('d M Y H:i') }}</p>
+                        </div>
+
+                        {{-- Duration --}}
+                        <div>
+                            <p class="text-gray-400 text-xs mb-0.5">{{ __('properties.payment.duration') }}</p>
+                            <p>Check-in : {{ $booking->check_in->format('d M Y') }}</p>
+                            <p>Check-out : {{ $booking->check_out->format('d M Y') }}</p>
+                            <p class="mt-1 inline-block bg-teal-600 text-white text-xs font-semibold px-2 py-0.5 rounded">
+                                Durasi Sewa: @if($booking->booking_months > 0){{ $booking->booking_months }} bulan @elseif($booking->booking_days > 0){{ $booking->booking_days }} hari @endif
+                            </p>
+                        </div>
+
+                        {{-- Single agreement checkbox --}}
+                        <label class="flex items-start gap-2 cursor-pointer text-sm pt-2">
+                            <input type="checkbox" class="confirm-checkbox mt-0.5 rounded border-gray-500 text-teal-600 focus:ring-teal-500 bg-gray-700" />
+                            <span class="text-gray-300">Saya menyatakan telah membaca, mengerti, memahami dan menyetujui data, informasi dan rincian transaksi di atas, serta S&K, Kebijakan Privasi, dan Perjanjian Sewa.</span>
+                        </label>
+                    </div>
+
+                    {{-- Right column: pricing card + buttons --}}
+                    <div class="flex flex-col">
+                        {{-- Pricing card --}}
+                        <div class="bg-gray-800 rounded-lg p-4 text-sm space-y-2.5 border border-gray-700">
+                            <p class="text-teal-400 font-semibold text-xs mb-2">Rincian Pembayaran</p>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Harga sewa</span>
+                                <span class="font-medium">Rp <span id="confirmRoomPrice">{{ number_format($booking->room_price, 0, ',', '.') }}</span></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Biaya Layanan</span>
+                                <span class="font-medium">Rp <span id="confirmServiceFee">{{ number_format($booking->service_fees, 0, ',', '.') }}</span></span>
+                            </div>
+                            <div id="confirmParkingRow" class="hidden flex justify-between">
+                                <span class="text-gray-300">Biaya Parkir</span>
+                                <span class="font-medium">Rp <span id="confirmParkingAmount">0</span></span>
+                            </div>
+                            {{-- Hidden parking type holder --}}
+                            <span id="confirmParkingType" class="hidden">-</span>
+                            <div id="confirmDepositRow" class="hidden flex justify-between">
+                                <span class="text-gray-300">Deposit</span>
+                                <span class="font-medium">Rp <span id="confirmDepositAmount">0</span></span>
+                            </div>
+                            <div id="confirmDiscountRow" class="hidden flex justify-between text-green-400">
+                                <span>Diskon Voucher</span>
+                                <span class="font-medium">-Rp <span id="confirmDiscountAmount">0</span></span>
+                            </div>
+                            {{-- Total --}}
+                            <div class="flex justify-between pt-2 border-t border-gray-600 font-bold">
+                                <span>Total</span>
+                                <span class="text-teal-400">Rp <span id="confirmTotal">{{ number_format($booking->grandtotal_price, 0, ',', '.') }}</span></span>
+                            </div>
+                        </div>
+                        <p class="font-semibold text-sm mt-2" id="confirmPaymentMethod"></p>
+
+                        {{-- Action buttons at bottom of right column --}}
+                        <div class="mt-auto pt-4 flex gap-3">
+                            <button id="confirmCancelBtn" class="px-5 py-2.5 border border-gray-500 rounded-lg text-gray-300 font-medium hover:bg-gray-800 transition-colors">
+                                {{ __('properties.payment.confirm_cancel') }}
+                            </button>
+                            <button id="confirmProceedBtn" disabled class="flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                                Konfirmasi & Bayar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{-- Responsive: single column on mobile --}}
+        <style>
+            @media (max-width: 767px) {
+                .confirm-grid { grid-template-columns: 1fr !important; }
+            }
+        </style>
+
+        <!-- Success Modal (Virtual Account) -->
         <div id="successModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-96 shadow-lg rounded-md bg-white">
+            <div class="relative top-20 mx-auto p-5 border border-gray-200 w-11/12 md:w-96 shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
                     <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
                         <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -440,15 +801,15 @@
                         <div class="text-left space-y-2">
                             <div class="flex justify-between">
                                 <span class="text-sm text-gray-600">{{ __('properties.payment.bank') }}</span>
-                                <span class="text-sm font-medium" id="modalBank"></span>
+                                <span class="text-sm font-medium text-gray-900" id="modalBank"></span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-sm text-gray-600">{{ __('properties.payment.va_number') }}</span>
-                                <span class="text-sm font-bold" id="modalVANumber"></span>
+                                <span class="text-sm font-bold text-gray-900" id="modalVANumber"></span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-sm text-gray-600">{{ __('properties.payment.amount') }}</span>
-                                <span class="text-sm font-medium" id="modalAmount"></span>
+                                <span class="text-sm font-medium text-gray-900" id="modalAmount"></span>
                             </div>
                         </div>
                     </div>
@@ -466,7 +827,7 @@
 
         <!-- Error Modal -->
         <div id="errorModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-96 shadow-lg rounded-md bg-white">
+            <div class="relative top-20 mx-auto p-5 border border-gray-200 w-11/12 md:w-96 shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
                     <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                         <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -488,7 +849,7 @@
 
         <!-- QRIS Modal -->
         <div id="qrisModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-96 shadow-lg rounded-md bg-white">
+            <div class="relative top-20 mx-auto p-5 border border-gray-200 w-11/12 md:w-96 shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
                     <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
                         <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -513,11 +874,11 @@
                             <div class="text-left space-y-2">
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-600">{{ __('properties.payment.amount') }}</span>
-                                    <span class="text-sm font-medium" id="modalQrisAmount"></span>
+                                    <span class="text-sm font-medium text-gray-900" id="modalQrisAmount"></span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-600">{{ __('properties.payment.valid_until') }}</span>
-                                    <span class="text-sm font-medium" id="modalQrisExpiry"></span>
+                                    <span class="text-sm font-medium text-gray-900" id="modalQrisExpiry"></span>
                                 </div>
                             </div>
                         </div>
@@ -533,7 +894,7 @@
 
         <!-- Credit Card Modal -->
         <div id="ccModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-96 shadow-lg rounded-md bg-white">
+            <div class="relative top-20 mx-auto p-5 border border-gray-200 w-11/12 md:w-96 shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
                     <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
                         <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,11 +906,11 @@
                         <div class="text-left space-y-2">
                             <div class="flex justify-between">
                                 <span class="text-sm text-gray-600">{{ __('properties.payment.invoice') }}</span>
-                                <span class="text-sm font-medium" id="modalCCInvoice"></span>
+                                <span class="text-sm font-medium text-gray-900" id="modalCCInvoice"></span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-sm text-gray-600">{{ __('properties.payment.amount') }}</span>
-                                <span class="text-sm font-medium" id="modalCCAmount"></span>
+                                <span class="text-sm font-medium text-gray-900" id="modalCCAmount"></span>
                             </div>
                         </div>
                         <p class="text-xs text-gray-500 mt-3">{{ __('properties.payment.redirect_info') }}</p>
@@ -934,7 +1295,70 @@
             });
         });
         
-        // Handle form submission
+        // --- Confirmation Modal Logic ---
+        const confirmModal = document.getElementById('confirmPaymentModal');
+        const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+        const confirmProceedBtn = document.getElementById('confirmProceedBtn');
+        const confirmCheckboxes = document.querySelectorAll('.confirm-checkbox');
+        let pendingSubmitEvent = null;
+
+        // Enable proceed button only when all checkboxes are checked
+        confirmCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const allChecked = [...confirmCheckboxes].every(c => c.checked);
+                confirmProceedBtn.disabled = !allChecked;
+            });
+        });
+
+        confirmCancelBtn.addEventListener('click', () => {
+            confirmModal.style.display = 'none';
+            confirmCheckboxes.forEach(cb => cb.checked = false);
+            confirmProceedBtn.disabled = true;
+        });
+
+        confirmProceedBtn.addEventListener('click', () => {
+            confirmModal.style.display = 'none';
+            // Proceed with actual payment submission
+            processPayment();
+        });
+
+        function showConfirmModal() {
+            // Sync dynamic pricing values from summary sidebar to confirmation modal
+            document.getElementById('confirmRoomPrice').textContent = document.getElementById('summaryRoomPrice').textContent;
+            document.getElementById('confirmServiceFee').textContent = document.getElementById('summaryServiceFee').textContent;
+            document.getElementById('confirmTotal').textContent = document.getElementById('summaryTotal').textContent;
+
+            // Deposit row
+            const depRow = document.getElementById('summaryDepositRow');
+            if (depRow && !depRow.classList.contains('hidden')) {
+                document.getElementById('confirmDepositRow').classList.remove('hidden');
+                document.getElementById('confirmDepositAmount').textContent = document.getElementById('summaryDepositAmount').textContent;
+            }
+            // Parking row
+            const parkRow = document.getElementById('summaryParkingRow');
+            if (parkRow && !parkRow.classList.contains('hidden')) {
+                document.getElementById('confirmParkingRow').classList.remove('hidden');
+                document.getElementById('confirmParkingType').textContent = document.getElementById('summaryParkingType').textContent;
+                document.getElementById('confirmParkingAmount').textContent = document.getElementById('summaryParkingAmount').textContent;
+            }
+            // Discount row
+            const discRow = document.getElementById('summaryDiscountRow');
+            if (discRow && !discRow.classList.contains('hidden')) {
+                document.getElementById('confirmDiscountRow').classList.remove('hidden');
+                document.getElementById('confirmDiscountAmount').textContent = document.getElementById('summaryDiscountAmount').textContent;
+            }
+
+            // Show selected payment method
+            document.getElementById('confirmPaymentMethod').textContent = submitText.textContent;
+
+            // Reset checkboxes
+            confirmCheckboxes.forEach(cb => cb.checked = false);
+            confirmProceedBtn.disabled = true;
+            // Show modal with flex display for centering
+            confirmModal.style.display = 'flex';
+        }
+
+        // Handle form submission — show confirmation modal first
         paymentForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -944,6 +1368,14 @@
                 alert(translations.please_select_payment);
                 return;
             }
+
+            // Show confirmation modal instead of proceeding directly
+            showConfirmModal();
+        });
+
+        // Actual payment processing (called after user confirms)
+        async function processPayment() {
+            if (isSubmitting) return;
 
             // Show loading state
             isSubmitting = true;
@@ -1185,7 +1617,7 @@
                 submitText.textContent = 'Lanjutkan Pembayaran';
                 loadingSpinner.classList.add('hidden');
             }
-        });
+        }
 
         // Helper function to update booking payment
         async function updateBookingPayment(params) {
@@ -1211,7 +1643,7 @@
         // Modal functions
         function showQrisModal(qrisData) {
             // Calculate expiry time
-            const expiryMinutes = qrisData.validity_period || '60M';
+            const expiryMinutes = qrisData.validity_period || '30M';
             const minutes = parseInt(expiryMinutes.replace('M', ''));
             const expiresAt = new Date(Date.now() + minutes * 60000);
 

@@ -8,13 +8,14 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class NewReservController extends Controller
 {
     public function index()
     {
-        $perPage = request('per_page', 8);
+        $perPage = request('per_page', 25);
 
         // Use the filterBookings method to get the base query
         $query = $this->filterBookings();
@@ -28,12 +29,17 @@ class NewReservController extends Controller
 
     protected function filterBookings()
     {
-        $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('t_booking.status', 1) // Only show active bookings (filter out room-changed old records)
+        /* checkedInByUser / checkedOutByUser eager-loaded so the merged Booking Period column
+           can render "Check-in at ... by <admin>" without N+1. The list shown here is paid
+           bookings awaiting check-in, so check_in_at / check_out_at are usually NULL — but the
+           relations are loaded for consistency with the shared row template across booking pages. */
+        $query = Booking::with(['user', 'room', 'property', 'transaction', 'checkedInByUser', 'checkedOutByUser'])
+            ->latestPerOrder()
+            ->where('t_booking.status', 1)
             ->whereHas('transaction', function ($q) {
-                $q->where('transaction_status', 'paid'); // Only paid transactions
+                $q->where('transaction_status', 'paid');
             })
-            ->whereNull('check_out_at') // Only bookings that haven't checked out
+            ->whereNull('check_out_at')
             ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
             ->orderByRaw('ISNULL(check_in_at) DESC')
             ->orderBy('t_transactions.check_in', 'desc');
@@ -82,12 +88,12 @@ class NewReservController extends Controller
     {
         $query = $this->filterBookings();
 
-        $checkIns = $query->paginate($request->input('per_page', 8));
+        $checkIns = $query->paginate($request->input('per_page', 25));
 
         return response()->json([
             'table' => view('pages.bookings.newreservations.partials.newreserve_table', [
                 'checkIns' => $checkIns,
-                'per_page' => $request->input('per_page', 8),
+                'per_page' => $request->input('per_page', 25),
             ])->render(),
             'pagination' => $checkIns->appends($request->input())->links()->toHtml(),
         ]);
@@ -105,6 +111,19 @@ class NewReservController extends Controller
                     'success' => false,
                     'message' => 'This booking has already been checked in'
                 ], 400);
+            }
+
+            /* Guard: cannot check in when the room is already physically occupied.
+               m_rooms.rental_status = 1 means another guest is currently in the
+               room (set by the previous check-in, cleared by check-out). */
+            if ($booking->room_id) {
+                $room = \App\Models\Room::find($booking->room_id);
+                if ($room && (int) $room->rental_status === 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Room is currently occupied. Please check out the current guest before checking in a new one.'
+                    ], 409);
+                }
             }
 
             // Conditional validation: only require doc_image if doc_path is null
@@ -135,8 +154,10 @@ class NewReservController extends Controller
                 $filePath = $file->storeAs('documents', $fileName, 'public');
             }
 
+            /* Save check-in timestamp and the admin who performed the check-in */
             $updated = $booking->update([
                 'check_in_at' => now(),
+                'checked_in_by' => Auth::id(),
                 'doc_type' => $validated['doc_type'],
                 'doc_path' => $filePath,
                 'updated_by' => Auth::id(),
@@ -145,6 +166,13 @@ class NewReservController extends Controller
                 'user_email' => $validated['guest_email'],
                 'user_phone_number' => $validated['guest_phone'],
             ]);
+
+            /* Flip the room to occupied. m_rooms.rental_status tracks physical
+               occupancy — only check-in sets it to 1, only check-out sets it to 0. */
+            if ($booking->room_id) {
+                \App\Models\Room::where('idrec', $booking->room_id)
+                    ->update(['rental_status' => 1]);
+            }
 
             // Update NIK pada user
             if ($booking->user) {
@@ -208,8 +236,25 @@ class NewReservController extends Controller
                 ->with(['user', 'property', 'room', 'booking'])
                 ->firstOrFail();
 
-            // Increment print counter berdasarkan order_id
-            Booking::where('order_id', $order_id)->increment('is_printed');
+            // <!-- 3-day print window: registration form is only available up to and including
+            //      end-of-day on (scheduled check-in + 3 days). Past that window, the form is
+            //      no longer relevant and we reject the request to prevent stale-URL bypass of
+            //      the UI hide. Mirrors the $printAllowed guard in newreserve_table.blade.php. -->
+            if ($transaction->check_in) {
+                $cutoff = \Carbon\Carbon::parse($transaction->check_in)->copy()->addDays(3)->endOfDay();
+                if (now()->gt($cutoff)) {
+                    return redirect()->back()
+                        ->with('error', __('ui.print_window_expired'));
+                }
+            }
+
+            // <!-- Increment print counter berdasarkan order_id.
+            //      NULL-safe: legacy rows can have `is_printed = NULL`, and `NULL + 1 = NULL` in MySQL,
+            //      which leaves Eloquent's ->increment() inert (counter stuck at NULL forever).
+            //      Use COALESCE so NULL bookings advance to 1 on first print, 2 on second, etc. -->
+            Booking::where('order_id', $order_id)->update([
+                'is_printed' => DB::raw('COALESCE(is_printed, 0) + 1'),
+            ]);
 
             // Ambil ulang booking setelah update (optional)
             $booking = $transaction->booking;
@@ -319,17 +364,32 @@ class NewReservController extends Controller
             abort(404, 'Transaction data not found');
         }
 
-        // Generate nomor invoice sesuai format: No. (id)/KGA-INV/(bulan)/(tahun)
-        $transactionDate = $booking->transaction->transaction_date ?? now();
-        $currentYear = $transactionDate->format('Y');
-        $currentMonth = $transactionDate->format('m');
-
-        // Ambil ID transaksi
-        $transactionId = $booking->transaction->idrec;
-
-        $invoiceNumberFormatted = "No.{$transactionId}/KGA-INV/{$currentMonth}/{$currentYear}";
+        // Read persisted invoice number from t_transactions.invoice_number.
+        // For paid transactions on/after 2026-03-06 this is set by InvoiceNumberService::assign().
+        // For pre-cutoff or not-yet-paid transactions, render '-'.
+        $invoiceNumberFormatted = $booking->transaction->invoice_number ?: '-';
 
         // Return view dengan data invoice number
         return view('pages.bookings.components.invoice', compact('booking', 'invoiceNumberFormatted'));
+    }
+
+    /**
+     * Render the invoice from an invoice-number slug.
+     *
+     * The slug is the invoice number with every '/' replaced by '-'
+     * (e.g. "0162/K1/KGA-INV/IV/2026" → "0162-K1-KGA-INV-IV-2026").
+     * Because the invoice number itself also contains '-' (e.g. "KGA-INV"),
+     * the swap is NOT reversible — so we match in SQL via REPLACE() instead
+     * of trying to turn the dashes back into slashes.
+     */
+    public function getInvoiceBySlug($slug)
+    {
+        // Resolve the transaction whose invoice_number (slashes rendered as dashes) matches the slug.
+        $transaction = Transaction::whereNotNull('invoice_number')
+            ->whereRaw("REPLACE(invoice_number, '/', '-') = ?", [$slug])
+            ->firstOrFail();
+
+        // Delegate to the existing order_id-based renderer.
+        return $this->getInvoice($transaction->order_id);
     }
 }

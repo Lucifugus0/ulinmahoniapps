@@ -41,22 +41,24 @@ final registerRepositoryProvider = Provider<RegisterRepository>((ref) {
   return RegisterRepository();
 });
 
-final registerControllerProvider = StateNotifierProvider<RegisterController, RegisterState>((ref) {
-  return RegisterController(ref);
-});
+/// Migrated from StateNotifierProvider to NotifierProvider for Riverpod 3.x
+final registerControllerProvider = NotifierProvider<RegisterController, RegisterState>(RegisterController.new);
 
-class RegisterController extends StateNotifier<RegisterState> {
-  final Ref _ref;
+/// Register controller — migrated from StateNotifier to Notifier.
+/// Uses build() instead of constructor for initial state.
+/// ref is available as a property (no need to store it).
+class RegisterController extends Notifier<RegisterState> {
+  /// Returns initial state via build method (Riverpod 3.x pattern)
+  @override
+  RegisterState build() => RegisterState();
 
-  RegisterController(this._ref) : super(RegisterState());
 
-  
-  
+
   Future<void> register(String username, String email, String password, String phoneNumber, String firstName, String lastName) async {
     state = state.copyWith(status: RegisterStatus.loading, errorMessage: null);
 
     // Use Repository with ApiResult pattern
-    final repository = _ref.read(registerRepositoryProvider);
+    final repository = ref.read(registerRepositoryProvider);
     final result = await repository.register(
       username: username,
       email: email,
@@ -81,7 +83,7 @@ class RegisterController extends StateNotifier<RegisterState> {
     }
   }
 
-  
+
   void setLoading(bool isLoading) {
     if (isLoading) {
       state = state.copyWith(status: RegisterStatus.loading);
@@ -90,8 +92,8 @@ class RegisterController extends StateNotifier<RegisterState> {
     }
   }
 
-  
-  
+
+
   Future<void> registerWithGoogle(String idToken) async {
     state = state.copyWith(status: RegisterStatus.loading, errorMessage: null);
 
@@ -123,7 +125,7 @@ class RegisterController extends StateNotifier<RegisterState> {
     }
   }
 
-  
+
   void resetState() {
     state = RegisterState();
   }

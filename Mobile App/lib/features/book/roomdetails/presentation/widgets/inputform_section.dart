@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
+import 'package:ulinmahoniapps/core/theme/glass_theme.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 
 class RoomInputSection extends StatelessWidget {
@@ -52,22 +53,23 @@ class RoomInputSection extends StatelessWidget {
   // --- Helper Styles (Desain Baru) ---
 
   // 1. Style Label di atas input
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600, // Semi-bold agar terbaca jelas
-          color: Colors.black87,
+          color: isDark ? Colors.white : Colors.black87,
         ),
       ),
     );
   }
 
   // 2. Style Dekorasi Input (Clean, Border Tipis)
-  InputDecoration _buildInputDecoration({required String hintText, IconData? suffixIcon}) {
+  // Takes context so primaryAdaptive can resolve the correct color for dark/light mode
+  InputDecoration _buildInputDecoration({required String hintText, IconData? suffixIcon, required bool isDark, required BuildContext context}) {
     return InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
@@ -76,19 +78,23 @@ class RoomInputSection extends StatelessWidget {
       suffixIcon: suffixIcon != null
           ? Icon(suffixIcon, color: Colors.grey.shade400, size: 20)
           : null,
-      fillColor: Colors.white,
+      // Glass-style semi-transparent fill
+      fillColor: isDark
+          ? const Color(0xFF374151).withValues(alpha: 0.6)
+          : Colors.white.withValues(alpha: 0.7),
       filled: true,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+        borderSide: BorderSide(color: isDark ? Colors.grey.shade600 : Colors.grey.shade300, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primaryColor, width: 1.5),
+        // Use primaryAdaptive for the focused border color
+        borderSide: BorderSide(color: AppColors.primaryAdaptive(context), width: 1.5),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade200, width: 1),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -100,6 +106,8 @@ class RoomInputSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    // Dark mode detection — passed to helper methods that don't have BuildContext
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       // Margin kiri-kanan 16px (Standar Mobile)
@@ -128,7 +136,7 @@ class RoomInputSection extends StatelessWidget {
           // ----------------------
 
           // 1. RENT TYPE
-          buildRentTypeInput(localizations),
+          buildRentTypeInput(localizations, isDark, context),
           const SizedBox(height: 20), // Jarak antar field lebih lega
 
           // 2. CHECK-IN DATE
@@ -139,13 +147,15 @@ class RoomInputSection extends StatelessWidget {
                 localizations.checkInDateLabel,
                 "Select Date",
                 checkInDateController,
+                isDark,
+                context,
               ),
             ),
           ),
           const SizedBox(height: 20),
 
           // 3. DURATION
-          buildDurationInput(localizations),
+          buildDurationInput(localizations, isDark, context),
           const SizedBox(height: 20),
 
           // 4. CHECK-OUT DATE
@@ -153,13 +163,15 @@ class RoomInputSection extends StatelessWidget {
             localizations.checkOutDateLabel,
             localizations.autoFilledHint,
             checkOutDateController,
+            isDark,
+            context,
           ),
         ],
       ),
     );
   }
 
-  Widget buildRentTypeInput(AppLocalizations localizations) {
+  Widget buildRentTypeInput(AppLocalizations localizations, bool isDark, BuildContext context) {
     final List<String> displayOptions = availableRentTypes
         .map((value) => _mapRentTypeValueToDisplay(localizations, value))
         .toList();
@@ -177,17 +189,23 @@ class RoomInputSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel(localizations.rentTypeLabel),
+        _buildLabel(localizations.rentTypeLabel, isDark),
         DropdownButtonFormField<String>(
           value: currentDisplayValue,
           items: displayOptions.map((item) => DropdownMenuItem(
             value: item,
-            child: Text(item, style: const TextStyle(color: Colors.black87, fontSize: 14)),
+            child: Text(item, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
           )).toList(),
-          icon: const SizedBox.shrink(), // Sembunyikan ikon default dropdown (kita pakai decoration)
+          icon: const SizedBox.shrink(),
+          // Glass-style dropdown menu background
+          dropdownColor: isDark
+              ? const Color(0xFF1F2937).withValues(alpha: 0.92)
+              : Colors.white.withValues(alpha: 0.92),
           decoration: _buildInputDecoration(
             hintText: "Select Type",
-            suffixIcon: Icons.keyboard_arrow_down_rounded, // Custom arrow icon
+            suffixIcon: Icons.keyboard_arrow_down_rounded,
+            isDark: isDark,
+            context: context,
           ),
           onChanged: (displayValue) {
             if (displayValue != null) {
@@ -200,17 +218,17 @@ class RoomInputSection extends StatelessWidget {
     );
   }
 
-  Widget buildDurationInput(AppLocalizations localizations) {
+  Widget buildDurationInput(AppLocalizations localizations, bool isDark, BuildContext context) {
     int maxDuration = 1;
     String labelText = localizations.durationLabel;
 
     final safeRentType = rentType?.toLowerCase();
 
     if (safeRentType == 'daily') {
-      maxDuration = 31;
+      maxDuration = 60;  // Max 60 days, matching frontend web
       labelText = localizations.dailyDurationLabel;
     } else if (safeRentType == 'monthly') {
-      maxDuration = 12;
+      maxDuration = 12;  // Max 12 months, matching frontend web
       labelText = localizations.monthlyDurationLabel;
     }
 
@@ -219,12 +237,15 @@ class RoomInputSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel(labelText),
+        _buildLabel(labelText, isDark),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            // Glass-style semi-transparent fill
+            color: isDark
+                ? const Color(0xFF374151).withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300, width: 1),
+            border: Border.all(color: isDark ? Colors.grey.shade600 : Colors.grey.shade300, width: 1),
           ),
           child: Row(
             children: [
@@ -235,9 +256,9 @@ class RoomInputSection extends StatelessWidget {
                   child: Text(
                     currentDuration.toString(),
                     textAlign: TextAlign.left,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                 ),
@@ -252,7 +273,8 @@ class RoomInputSection extends StatelessWidget {
                       onDurationChanged(currentDuration - 1);
                     },
                     icon: const Icon(Icons.remove),
-                    color: AppColors.primaryColor,
+                    // Use primaryAdaptive for dark/light mode compatibility
+                    color: AppColors.primaryAdaptive(context),
                     iconSize: 20,
                     disabledColor: Colors.grey.shade300,
                   ),
@@ -267,7 +289,8 @@ class RoomInputSection extends StatelessWidget {
                       onDurationChanged(currentDuration + 1);
                     },
                     icon: const Icon(Icons.add),
-                    color: AppColors.primaryColor,
+                    // Use primaryAdaptive for dark/light mode compatibility
+                    color: AppColors.primaryAdaptive(context),
                     iconSize: 20,
                     disabledColor: Colors.grey.shade300,
                   ),
@@ -280,29 +303,31 @@ class RoomInputSection extends StatelessWidget {
     );
   }
 
-  Widget buildDateInput(String label, String hint, TextEditingController controller) {
+  Widget buildDateInput(String label, String hint, TextEditingController controller, bool isDark, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel(label),
+        _buildLabel(label, isDark),
         TextField(
           controller: controller,
           readOnly: true,
-          style: const TextStyle(color: Colors.black87, fontSize: 14),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
           decoration: _buildInputDecoration(
             hintText: hint,
             suffixIcon: Icons.calendar_today_rounded, // Ikon kalender halus
+            isDark: isDark,
+            context: context,
           ),
         ),
       ],
     );
   }
 
-  Widget buildCheckoutDateInput(String label, String hint, TextEditingController controller) {
+  Widget buildCheckoutDateInput(String label, String hint, TextEditingController controller, bool isDark, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel(label),
+        _buildLabel(label, isDark),
         TextField(
           controller: controller,
           enabled: false,
@@ -310,8 +335,10 @@ class RoomInputSection extends StatelessWidget {
           decoration: _buildInputDecoration(
             hintText: hint,
             suffixIcon: Icons.event_busy_rounded, // Ikon berbeda untuk disabled (opsional)
+            isDark: isDark,
+            context: context,
           ).copyWith(
-            fillColor: Colors.grey.shade100,
+            fillColor: isDark ? const Color(0xFF2D3748) : Colors.grey.shade100,
           ),
         ),
       ],

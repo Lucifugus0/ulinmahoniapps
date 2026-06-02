@@ -12,7 +12,8 @@ class PendingController extends Controller
     public function index(Request $request)
     {
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('status', 1) // Only show active bookings (filter out room-changed old records)
+            ->latestPerOrder()
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->whereIn('transaction_status', ['pending', 'waiting']);
             })
@@ -54,7 +55,7 @@ class PendingController extends Controller
             });
         }
 
-        $bookings = $query->paginate($request->input('per_page', 8));
+        $bookings = $query->paginate($request->input('per_page', 25));
 
         return view('pages.bookings.pending.index', compact('bookings'));
     }
@@ -62,7 +63,8 @@ class PendingController extends Controller
     public function filter(Request $request)
     {
         $query = Booking::with(['user', 'room', 'property', 'transaction'])
-            ->where('status', 1) // Only show active bookings (filter out room-changed old records)
+            ->latestPerOrder()
+            ->where('status', 1)
             ->whereHas('transaction', function ($q) {
                 $q->whereIn('transaction_status', ['pending', 'waiting']);
             })
@@ -104,12 +106,12 @@ class PendingController extends Controller
             });
         }
 
-        $bookings = $query->paginate($request->input('per_page', 8));
+        $bookings = $query->paginate($request->input('per_page', 25));
 
         return response()->json([
             'table' => view('pages.bookings.allbookings.partials.allbookings_table', [
                 'bookings' => $bookings,
-                'per_page' => $request->input('per_page', 8),
+                'per_page' => $request->input('per_page', 25),
             ])->render(),
             'pagination' => $bookings->appends($request->input())->links()->toHtml()
         ]);

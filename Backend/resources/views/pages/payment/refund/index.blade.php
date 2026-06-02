@@ -14,8 +14,8 @@
 
         <!-- Bagian Pencarian dan Filter -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
-            <form method="GET" action="{{ route('admin.payments.filter') }}"
-                onsubmit="event.preventDefault(); fetchFilteredBookings();"
+            <!-- Search form — submits via GET to reload page with filters -->
+            <form method="GET" action="{{ route('admin.refunds.index') }}"
                 class="flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
 
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
@@ -83,6 +83,9 @@
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 {{ __('ui.property') }}</th>
                             <th scope="col"
+                                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Source</th>
+                            <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 {{ __('ui.refund_amount') }}</th>
                             <th scope="col"
@@ -116,12 +119,44 @@
                                     <div class="text-sm text-gray-500">{{ $refund->transaction->room_name ?? 'N/A' }}
                                     </div>
                                 </td>
+                                <!-- Source column: User Request or Admin -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    @if($refund->refund_type === 'user')
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                            User Request
+                                        </span>
+                                        @if($refund->refund_bank_name)
+                                        <div class="text-xs text-gray-500 mt-1" title="Bank: {{ $refund->refund_bank_name }} - {{ $refund->refund_account_no }} ({{ $refund->refund_account_holder }})">
+                                            {{ $refund->refund_bank_name }}
+                                        </div>
+                                        @endif
+                                    @else
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            Admin
+                                        </span>
+                                    @endif
+                                </td>
+                                <!-- Refund amount with breakdown -->
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="text-sm font-medium text-gray-900">Rp
-                                        {{ number_format($refund->transaction->grandtotal_price ?? 0, 0, ',', '.') }}
+                                        {{ number_format($refund->amount ?? $refund->transaction->grandtotal_price ?? 0, 0, ',', '.') }}
                                     </div>
+                                    @if($refund->room_refund || $refund->deposit_refund || $refund->other_refund)
+                                    <div class="text-xs text-gray-500 space-y-0.5 mt-1">
+                                        @if($refund->room_refund > 0)
+                                        <div>Kamar: Rp {{ number_format($refund->room_refund, 0, ',', '.') }}</div>
+                                        @endif
+                                        @if($refund->deposit_refund > 0)
+                                        <div>Deposit: Rp {{ number_format($refund->deposit_refund, 0, ',', '.') }}</div>
+                                        @endif
+                                        @if($refund->other_refund > 0)
+                                        <div>Parkir: Rp {{ number_format($refund->other_refund, 0, ',', '.') }}</div>
+                                        @endif
+                                    </div>
+                                    @else
                                     <div class="text-xs text-gray-500">{{ $refund->transaction->booking_days ?? 0 }}
                                         {{ __('ui.days') }}</div>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {{ \Carbon\Carbon::parse($refund->refund_date)->format('d M Y') }}
@@ -189,7 +224,7 @@
                                                     <div
                                                         class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                                                         <h3 class="text-lg font-semibold text-gray-800">
-                                                            {{ __('ui.refund_proof') }} #{{ $refund->id_booking }}<span x-text="orderId"></span>
+                                                            {{ __('ui.refund_proof') }} #{{ $refund->id_booking }}<span x-text="orderIdDisplay"></span>
                                                         </h3>
                                                         <button @click="closeModal"
                                                             class="text-gray-500 hover:text-gray-700">
@@ -204,14 +239,14 @@
 
                                                     <!-- Modal content -->
                                                     <div class="overflow-y-auto flex-1 p-6">
-                                                        <form :id="'refund-form-' + orderId" method="POST"
+                                                        <form :id="'refund-form-' + idBooking" method="POST"
                                                             action="{{ route('admin.refunds.store') }}"
                                                             enctype="multipart/form-data">
                                                             @csrf
 
                                                             <!-- Input hidden untuk order_id -->
                                                             <input type="hidden" name="order_id"
-                                                                x-bind:value="orderId">
+                                                                x-bind:value="idBooking">
 
                                                             <div class="mb-6">
                                                                 <label
@@ -236,10 +271,10 @@
                                                                         </svg>
                                                                         <div
                                                                             class="flex text-sm text-gray-600 justify-center">
-                                                                            <label :for="'refund_image-' + orderId"
+                                                                            <label :for="'refund_image-' + idBooking"
                                                                                 class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
                                                                                 <span>{{ __('ui.upload_photo') }}</span>
-                                                                                <input :id="'refund_image-' + orderId"
+                                                                                <input :id="'refund_image-' + idBooking"
                                                                                     name="refund_image" type="file"
                                                                                     accept="image/*"
                                                                                     @change="handleFileSelect($event)"
@@ -321,6 +356,36 @@
                                                                     </div>
                                                                 </div>
                                                             </div>
+                                                            <!-- Admin Notes -->
+                                                            <div class="mb-4">
+                                                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                                    Catatan Admin (opsional)
+                                                                </label>
+                                                                <textarea name="admin_notes" rows="3"
+                                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                                    placeholder="Catatan tambahan untuk refund ini..."></textarea>
+                                                            </div>
+
+                                                            <!-- Bank details display for user-initiated refunds -->
+                                                            @if($refund->refund_type === 'user' && $refund->refund_bank_name)
+                                                            <div class="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                                                                <h4 class="text-sm font-medium text-orange-800 mb-2">Rekening Tujuan Refund (dari User)</h4>
+                                                                <div class="grid grid-cols-3 gap-3 text-sm">
+                                                                    <div>
+                                                                        <span class="text-gray-500">Bank:</span>
+                                                                        <span class="font-medium text-gray-900">{{ $refund->refund_bank_name }}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="text-gray-500">No. Rekening:</span>
+                                                                        <span class="font-medium text-gray-900">{{ $refund->refund_account_no }}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="text-gray-500">Atas Nama:</span>
+                                                                        <span class="font-medium text-gray-900">{{ $refund->refund_account_holder }}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            @endif
                                                         </form>
                                                     </div>
 
@@ -375,7 +440,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
                                     <div class="flex flex-col items-center justify-center py-8">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-4"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -518,7 +583,7 @@
 
                     this.isLoading = true;
 
-                    const form = document.getElementById('refund-form-' + this.modalId);
+                    const form = document.getElementById('refund-form-' + this.idBooking);
                     const formData = new FormData();
 
                     // Tambahkan data ke FormData
@@ -526,6 +591,12 @@
                         .content);
                     formData.append('order_id', this.idBooking);
                     formData.append('refund_image', this.selectedFile);
+
+                    // Include admin notes if provided
+                    const adminNotes = form.querySelector('textarea[name="admin_notes"]');
+                    if (adminNotes && adminNotes.value) {
+                        formData.append('admin_notes', adminNotes.value);
+                    }
 
                     try {
                         const response = await fetch(form.action, {

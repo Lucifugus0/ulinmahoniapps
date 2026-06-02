@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import '../constants/appcolor_constants.dart';
 import '../constants/app_asset_constants.dart';
+import '../../l10n/app_localizations.dart';
 
 class ComingSoonWidget extends StatelessWidget {
   final double? customHeight;
@@ -17,6 +18,7 @@ class ComingSoonWidget extends StatelessWidget {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
     final screenSize = MediaQuery.of(context).size;
     final double widgetHeight = customHeight ?? screenSize.height * 0.3;
+    final localizations = AppLocalizations.of(context)!;
 
     return Container(
       height: widgetHeight,
@@ -31,7 +33,7 @@ class ComingSoonWidget extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'COMING',
+            localizations.comingSoonTitle1,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -39,18 +41,18 @@ class ComingSoonWidget extends StatelessWidget {
             ),
           ),
           Text(
-            'SOON',
+            localizations.comingSoonTitle2,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppColors.primaryColor,
+              color: AppColors.primaryAdaptive(context),
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            "We're working hard to making\nsomething amazing, stay tune",
+          Text(
+            localizations.comingSoonMessage,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11,
               height: 1.5,
             ),

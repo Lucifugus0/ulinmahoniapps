@@ -18,6 +18,7 @@ import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../provider/googlesignin_provider.dart';
 import '../../provider/applesignin_provider.dart';
 import 'package:ulinmahoniapps/core/widgets/languagedropdown.dart';
+import '../../../../../core/theme/theme_provider.dart';
 import '../../../../../core/network/api_result.dart';
 import '../../../../../core/services/apple_multi_account_storage.dart';
 import '../../../../../core/utils/app_logger.dart';
@@ -51,23 +52,38 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _authenticateBiometricsOnLoad();
   }
 
+  /// Navigate to home and show biometric opt-in dialog if not yet shown
+  Future<void> _navigateToHomeWithOptIn() async {
+    if (!mounted) return;
+    context.go('/home');
+
+    // Show biometric opt-in dialog after navigation if not yet shown
+    final optInShown = await _biometricAuthService.wasOptInShown();
+    if (!optInShown && mounted) {
+      // Small delay to let home page render first
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        await _biometricAuthService.showOptInDialog(context);
+      }
+    }
+  }
+
   Future<void> _authenticateBiometricsOnLoad() async {
     if (!mounted) return;
 
-    // Step 1: Check if user has Remember Me enabled (token + user in SharedPreferences)
+    // Step 1: Check if user has saved credentials (token + user in SharedPreferences)
     final authRepository = ref.read(authRepositoryProvider);
     final storedToken = await authRepository.getTokenLocally();
     final storedUser = await authRepository.getUserLocally();
 
     if (storedToken == null || storedUser == null) {
-      // No Remember Me - stay on login page
+      // Fresh install or logged out — stay on login page, no biometric
       return;
     }
 
     // Step 2: Verify user still exists in backend via GET /users/{id}
     final userId = storedUser['id'] as int?;
     if (userId == null) {
-      // Invalid user data - clear and stay on login page
       await authRepository.logout();
       return;
     }
@@ -76,14 +92,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     switch (userResult) {
       case Failure():
-        // User doesn't exist or API error - clear local data and stay on login page
         await authRepository.logout();
         return;
 
       case Success(:final data):
-        // Check if email is verified
         if (!data.isEmailVerified) {
-          // Email not verified - logout and show dialog
           await authRepository.logout();
           if (mounted) {
             final localizations = AppLocalizations.of(context)!;
@@ -98,16 +111,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           return;
         }
 
-        // User exists and email verified - proceed with biometric
         if (!mounted) return;
 
-        final didAuthenticate = await _biometricAuthService.authenticateOnLoad(context);
+        // Check if biometric is enabled by user preference
+        final biometricEnabled = await _biometricAuthService.isEnabled();
 
-        if (didAuthenticate && mounted) {
-          // Biometric success - navigate to home
-          context.go('/home');
+        if (biometricEnabled) {
+          // Biometric enabled — prompt authentication
+          final didAuthenticate = await _biometricAuthService.authenticate();
+          if (didAuthenticate && mounted) {
+            context.go('/home');
+          }
+          // If failed — stay on login page
+        } else {
+          // Biometric not enabled — auto-login directly
+          if (mounted) {
+            context.go('/home');
+          }
         }
-        // If biometric fails - stay on login page with fingerprint button available
     }
   }
 
@@ -218,7 +239,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
         if (didAuthenticate && mounted) {
           // Biometric success - navigate to home
-          context.go('/home');
+          _navigateToHomeWithOptIn();
         } else if (mounted) {
           // Biometric failed - show error
           showErrorDialog(context, localizations.biometricAuthFailed);
@@ -238,6 +259,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         next.when(
           data: (result) {
             if (result != null) {
+              // Check if account is deactivated (status == 0)
+              if (result.isAccountDeactivated) {
+                showNotificationDialog(
+                  context,
+                  localizations.accountDeactivatedMessage,
+                  title: localizations.accountDeactivatedTitle,
+                  iconColor: Colors.red,
+                  defaultIcon: Icons.block_outlined,
+                  onOkPressed: () async {
+                    // Logout any residual session and go to home (no user logged in)
+                    await ref.read(authProvider.notifier).logout();
+                    if (context.mounted) {
+                      _navigateToHomeWithOptIn();
+                    }
+                  },
+                );
+                return;
+              }
+
               // Check if email verification is required
               if (result.requiresEmailVerification) {
                 // Email not verified - show dialog and logout
@@ -280,7 +320,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     final authState = ref.read(authProvider);
                     if (authState.isLoggedIn) {
                       AppLogger.i('Sign-In successful, navigating to home', 'LOGIN-PAGE');
-                      context.go('/home');
+                      _navigateToHomeWithOptIn();
                     } else {
                       AppLogger.w('Auth state not logged in after sign-in', 'LOGIN-PAGE');
                     }
@@ -404,7 +444,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     final authState = ref.read(authProvider);
                     if (authState.isLoggedIn) {
                       AppLogger.i('Sign-In successful, navigating to home', 'LOGIN-PAGE');
-                      context.go('/home');
+                      _navigateToHomeWithOptIn();
                     } else {
                       AppLogger.w('Auth state not logged in after sign-in', 'LOGIN-PAGE');
                     }
@@ -431,8 +471,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       },
     );
 
+    // Detect dark/light mode for theme-aware styling
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      // Use theme scaffold background (dark or light)
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Stack(
@@ -445,11 +489,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     padding: const EdgeInsets.all(12.0),
                     child: Column(
                       children: [
+                        // Language dropdown + dark/light mode toggle aligned to the right
                         Align(
                           alignment: Alignment.centerRight,
                           child: Padding(
                             padding: const EdgeInsets.only(top: 16.0, bottom: 10.0),
-                            child: const LanguageDropdown(),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const LanguageDropdown(),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  onPressed: () => ref.read(themeProvider.notifier).toggle(),
+                                  icon: Icon(
+                                    isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                                    color: isDark ? Colors.white70 : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -458,8 +516,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           padding: const EdgeInsets.all(12.0),
                           child: Text(
                             localizations.loginWelcomeTitle,
-                            style: const TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -467,6 +527,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         inputField(
                           localizations.loginEmailHint,
                           controller: _emailController,
+                          context: context,
                         ),
                         const SizedBox(height: 15),
                         PasswordField(
@@ -487,31 +548,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   },
                                   activeColor: const Color(0xFF124624),
                                   side: BorderSide(
-                                    color: Colors.grey.shade400,
+                                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                                     width: 2.0,
                                   ),
                                 ),
                                 Text(
                                   localizations.rememberMe,
                                   style: TextStyle(
-                                      fontSize: 14, color: Colors.grey[600]),
+                                      fontSize: 14,
+                                      color: isDark ? Colors.grey[400] : Colors.grey[600]),
                                 ),
                               ],
                             ),
-                            // TextButton(
-                            //   onPressed: () {
-                            //     context.push('/forgetpassword');
-                            //   },
-                            //   style: ButtonStyle(
-                            //     backgroundColor: MaterialStateProperty.all(
-                            //         Colors.transparent),
-                            //     foregroundColor:
-                            //     MaterialStateProperty.all(Colors.grey[600]),
-                            //     overlayColor: MaterialStateProperty.all(
-                            //         Colors.transparent),
-                            //   ),
-                            //   child: Text(localizations.forgotPasswordTitle),
-                            // ),
+                            TextButton(
+                              onPressed: () {
+                                context.push('/forgetpassword');
+                              },
+                              style: ButtonStyle(
+                                backgroundColor: WidgetStateProperty.all(
+                                    Colors.transparent),
+                                foregroundColor:
+                                WidgetStateProperty.all(Colors.grey[600]),
+                                overlayColor: WidgetStateProperty.all(
+                                    Colors.transparent),
+                              ),
+                              child: Text(localizations.forgotPasswordTitle),
+                            ),
                           ],
                         ),
                         SizedBox(
@@ -579,7 +641,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   final authState =
                                   ref.read(authProvider);
                                   if (authState.isLoggedIn) {
-                                    context.go('/home');
+                                    _navigateToHomeWithOptIn();
                                   } else {
                                     // Use the error message from authState if available
                                     final errorMessage = authState.errorMessage ??
@@ -640,10 +702,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             style: ButtonStyle(
                               backgroundColor: _isLoginProcessing
                                   ? MaterialStateProperty.all(Colors.grey)
-                                  : MaterialStateProperty.all(
-                                  const Color(0xFF124624)),
-                              foregroundColor:
-                              MaterialStateProperty.all(Colors.white),
+                                  : MaterialStateProperty.all(const Color(0xFF124624)),
+                              foregroundColor: MaterialStateProperty.all(Colors.white),
+                              // Prevent Material 3 theme from tinting/changing button color in dark mode
+                              surfaceTintColor: MaterialStateProperty.all(Colors.transparent),
+                              overlayColor: MaterialStateProperty.all(Colors.white10),
                               shape: MaterialStateProperty.all(
                                 RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -668,16 +731,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         const SizedBox(height: 20),
                         Row(
                           children: [
-                            Expanded(child: Divider(color: Colors.grey.shade400)),
+                            Expanded(child: Divider(color: isDark ? Colors.grey.shade700 : Colors.grey.shade400)),
                             Padding(
                               padding:
                               const EdgeInsets.symmetric(horizontal: 12.0),
                               child: Text(
                                 localizations.loginOrText,
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey),
                               ),
                             ),
-                            Expanded(child: Divider(color: Colors.grey.shade400)),
+                            Expanded(child: Divider(color: isDark ? Colors.grey.shade700 : Colors.grey.shade400)),
                           ],
                         ),
                         const SizedBox(height: 5),
@@ -716,19 +779,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       },
                       style: ButtonStyle(
                         backgroundColor:
-                        MaterialStateProperty.all(Colors.transparent),
+                        WidgetStateProperty.all(Colors.transparent),
                         foregroundColor:
-                        MaterialStateProperty.all(const Color(0xFF124624)),
+                        WidgetStateProperty.all(const Color(0xFF124624)),
                         overlayColor:
-                        MaterialStateProperty.all(Colors.transparent),
+                        WidgetStateProperty.all(Colors.transparent),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             localizations.loginNoAccountPrompt,
-                            style: const TextStyle(
-                                color: Colors.black,
+                            style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
                                 fontWeight: AppFontWeight.bold),
                           ),
                           const SizedBox(width: 5),
@@ -739,23 +802,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   Text(localizations.loginOrText,
                       style: TextStyle(
-                          color: Colors.black, fontWeight: AppFontWeight.bold)),
+                          color: isDark ? Colors.white : Colors.black,
+                          fontWeight: AppFontWeight.bold)),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2.0, top: 5),
                     child: TextButton(
                       onPressed: () async {
                         await ref.read(authProvider.notifier).logout();
                         if (mounted) {
-                          context.go('/home');
+                          _navigateToHomeWithOptIn();
                         }
                       },
                       style: ButtonStyle(
                         backgroundColor:
-                        MaterialStateProperty.all(Colors.transparent),
+                        WidgetStateProperty.all(Colors.transparent),
                         foregroundColor:
-                        MaterialStateProperty.all(const Color(0xFF124624)),
+                        WidgetStateProperty.all(const Color(0xFF124624)),
                         overlayColor:
-                        MaterialStateProperty.all(Colors.transparent),
+                        WidgetStateProperty.all(Colors.transparent),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -768,17 +832,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ],
               ),
             ),
-            const Positioned(
+            Positioned(
               top: 16,
               left: 16,
-              child: CustomBackButton(iconColor: Colors.black),
+              child: CustomBackButton(iconColor: isDark ? Colors.white : Colors.black),
             ),
             Positioned(
               left: 20,
               bottom: -10,
               child: IconButton(
                 icon: const Icon(Icons.fingerprint, size: 25),
-                color: const Color(0xFF124624),
+                color: isDark ? Colors.white70 : const Color(0xFF124624),
                 onPressed: _onFingerprintPressed,
               ),
             ),

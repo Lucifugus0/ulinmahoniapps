@@ -53,8 +53,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage>
 
     // Set selected conversation
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(selectedConversationProvider.notifier).state =
-          widget.conversationId;
+      ref.read(selectedConversationProvider.notifier).select(
+          widget.conversationId);
 
       // Cancel notification for this conversation
       _cancelNotification();
@@ -431,9 +431,10 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage>
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
+                            // Use adaptive primary color for left-side message bubbles
                             color: isRight
                                 ? AppColors.secondaryColor
-                                : AppColors.primaryColor,
+                                : AppColors.primaryAdaptive(context),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
@@ -636,7 +637,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage>
             icon: const Icon(Icons.refresh),
             label: Text(localizations.tryAgain),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryColor,
+              // Use adaptive primary color for retry button background
+              backgroundColor: AppColors.primaryAdaptive(context),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -661,7 +663,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit, color: AppColors.primaryColor),
+              // Remove const — adaptive color requires context, not a compile-time constant
+              leading: Icon(Icons.edit, color: AppColors.primaryAdaptive(context)),
               title: const Text('Edit'),
               onTap: () {
                 Navigator.pop(context);

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ulinmahoniapps/core/widgets/dialog/errordialog.dart';
 import '../../provider/forgotpassword_provider.dart';
 import '../../../../../core/constants/appcolor_constants.dart';
+import '../../../../../core/theme/theme_provider.dart';
 import 'package:ulinmahoniapps/core/constants/app_asset_constants.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import 'package:ulinmahoniapps/core/widgets/languagedropdown.dart';
@@ -28,20 +29,20 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    
     final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final forgotPasswordState = ref.watch(forgotPasswordControllerProvider);
     final forgotPasswordNotifier = ref.read(forgotPasswordControllerProvider.notifier);
 
     ref.listen<ForgotPasswordState>(
       forgotPasswordControllerProvider,
-          (previous, current) {
+      (previous, current) {
         if (current.status == ForgotPasswordStatus.success) {
           showNotificationDialog(
             context,
             localizations.passwordResetSuccess,
-            iconColor: AppColors.primaryColor,
+            iconColor: AppColors.primaryAdaptive(context),
             defaultIcon: Icons.check_circle_outline,
           );
           context.go('/login');
@@ -54,11 +55,11 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -71,11 +72,25 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   key: _formKey,
                   child: Column(
                     children: [
+                      /* Language dropdown + theme toggle aligned to the right — same as login page */
                       Align(
                         alignment: Alignment.centerRight,
                         child: Padding(
                           padding: const EdgeInsets.only(top: 16.0, bottom: 10.0),
-                          child: const LanguageDropdown(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const LanguageDropdown(),
+                              const SizedBox(width: 4),
+                              IconButton(
+                                onPressed: () => ref.read(themeProvider.notifier).toggle(),
+                                icon: Icon(
+                                  isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                                  color: isDark ? Colors.white70 : Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -84,7 +99,11 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                         padding: const EdgeInsets.all(12.0),
                         child: Text(
                           localizations.forgotPasswordTitle,
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                         ),
                       ),
                       Padding(
@@ -92,23 +111,72 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                         child: Text(
                           localizations.forgotPasswordSubtitle,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 16, color: Colors.grey),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      _inputField(
-                        localizations.emailInputHint,
-                        controller: _emailController,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return localizations.emailEmptyError;
-                          }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                            return localizations.emailInvalidError;
-                          }
-                          return null;
-                        },
+
+                      /* Email input — single border via OutlineInputBorder, no Container wrapper */
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: localizations.emailInputHint,
+                            hintStyle: TextStyle(
+                              color: isDark ? Colors.grey[500] : Colors.grey[500],
+                            ),
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1F2937) : Colors.grey[100],
+                            /* Single clean border — no double border */
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: AppColors.primaryAdaptive(context),
+                                width: 2,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.red),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.red, width: 2),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return localizations.emailEmptyError;
+                            }
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                              return localizations.emailInvalidError;
+                            }
+                            return null;
+                          },
+                        ),
                       ),
+
                       const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
@@ -119,14 +187,14 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                             onPressed: forgotPasswordState.status == ForgotPasswordStatus.loading
                                 ? null
                                 : () {
-                              if (_formKey.currentState!.validate()) {
-                                forgotPasswordNotifier.requestPasswordReset(_emailController.text);
-                              }
-                            },
+                                    if (_formKey.currentState!.validate()) {
+                                      forgotPasswordNotifier.requestPasswordReset(_emailController.text);
+                                    }
+                                  },
                             style: ButtonStyle(
-                              backgroundColor: MaterialStateProperty.all(const Color(0xFF124624)),
-                              foregroundColor: MaterialStateProperty.all(Colors.white),
-                              shape: MaterialStateProperty.all(
+                              backgroundColor: WidgetStateProperty.all(const Color(0xFF124624)),
+                              foregroundColor: WidgetStateProperty.all(Colors.white),
+                              shape: WidgetStateProperty.all(
                                 RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -134,16 +202,16 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                             ),
                             child: forgotPasswordState.status == ForgotPasswordStatus.loading
                                 ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
                                 : Text(
-                              localizations.sendCodeButton,
-                              style: const TextStyle(fontSize: 20),
-                            ),
+                                    localizations.sendCodeButton,
+                                    style: const TextStyle(fontSize: 20),
+                                  ),
                           ),
                         ),
                       ),
@@ -158,14 +226,17 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                     context.push('/login');
                   },
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Colors.transparent),
-                    foregroundColor: MaterialStateProperty.all(Colors.green),
-                    overlayColor: MaterialStateProperty.all(Colors.transparent),
+                    backgroundColor: WidgetStateProperty.all(Colors.transparent),
+                    foregroundColor: WidgetStateProperty.all(Colors.green),
+                    overlayColor: WidgetStateProperty.all(Colors.transparent),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(localizations.rememberPasswordPrompt, style: const TextStyle(color: Colors.black)),
+                      Text(
+                        localizations.rememberPasswordPrompt,
+                        style: TextStyle(color: isDark ? Colors.white70 : Colors.black),
+                      ),
                       const SizedBox(width: 4),
                       Text(localizations.loginButtonText),
                     ],
@@ -173,32 +244,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _inputField(String hint, {TextEditingController? controller, String? Function(String?)? validator}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: TextFormField(
-            controller: controller,
-            obscureText: false,
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              hintText: hint,
-            ),
-            validator: validator,
-            keyboardType: TextInputType.emailAddress,
           ),
         ),
       ),

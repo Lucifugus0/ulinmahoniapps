@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/constants/appcolor_constants.dart';
 import '../../../../core/widgets/appbar.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../provider/promo_banner_provider.dart';
 import '../widgets/promo_detail_banner.dart';
 import '../widgets/promo_detail_description.dart';
@@ -25,9 +26,11 @@ class PromoDetailPage extends ConsumerWidget {
     final bannerAsyncValue = ref.watch(bannerByIdProvider(bannerId));
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      appBar: const CustomAppBar(
-        title: 'Detail Promo',
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundColor,
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context)!.promoDetailTitle,
         showBackButton: true,
       ),
       body: bannerAsyncValue.when(
@@ -149,7 +152,7 @@ class PromoDetailPage extends ConsumerWidget {
 
             // Error message
             Text(
-              'Gagal memuat detail promo',
+              AppLocalizations.of(context)?.promoLoadError ?? 'Failed to load promo',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -177,9 +180,10 @@ class PromoDetailPage extends ConsumerWidget {
                 ref.invalidate(bannerByIdProvider(bannerId));
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
+              label: Text(AppLocalizations.of(context)?.retryButton ?? 'Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                // Use primaryAdaptive for dark/light mode compatibility
+                backgroundColor: AppColors.primaryAdaptive(context),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

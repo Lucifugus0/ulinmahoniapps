@@ -18,19 +18,70 @@ class AppLocalizationsId extends AppLocalizations {
   String get categories => 'Kategori';
 
   @override
-  String get bestSeller => 'Terlaris';
+  String get availableNow => 'Tersedia Sekarang';
+
+  @override
+  String get filterCategoryAll => 'Semua';
 
   @override
   String get popularArea => 'Area Populer';
 
   @override
-  String get budget => 'Sesuaikan Budget Anda';
+  String get budget => 'Dekat Anda';
 
   @override
   String get promotion => 'Promosi';
 
   @override
   String get promoBanner => 'Promo Spesial';
+
+  @override
+  String get promoDetailTitle => 'Detail Promo';
+
+  @override
+  String get promoDescription => 'Deskripsi Promo';
+
+  @override
+  String get promoCodeLabel => 'Kode Promo';
+
+  @override
+  String get noDescription => 'Tidak ada deskripsi';
+
+  @override
+  String get promoHowToClaim => 'Cara Klaim';
+
+  @override
+  String get promoClaimStep1 => 'Pilih properti yang diinginkan';
+
+  @override
+  String get promoClaimStep2 => 'Lalu Pilih Kamar yang diinginkan';
+
+  @override
+  String get promoClaimStep3 => 'Masukkan Kode Voucher saat pemesanan';
+
+  @override
+  String get promoClaimStep4 => 'Lakukan Pemesanan';
+
+  @override
+  String get promoClaimStep5 => 'Nikmati promo/diskon yang didapatkan';
+
+  @override
+  String get promoTermsTitle => 'Syarat & Ketentuan';
+
+  @override
+  String get promoTerm1 => 'Syarat dan ketentuan berlaku';
+
+  @override
+  String get promoTerm2 => 'Tidak dapat digabung dengan promo lain';
+
+  @override
+  String get promoTerm3 => 'Periode promo terbatas';
+
+  @override
+  String get promoTerm4 => 'Hanya berlaku untuk pengguna secara terbatas';
+
+  @override
+  String get promoLoadError => 'Gagal memuat detail promo';
 
   @override
   String get homeLabel => 'Beranda';
@@ -244,6 +295,38 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get emailNotVerifiedMessage =>
       'Silakan verifikasi email Anda terlebih dahulu untuk melanjutkan. Cek inbox email Anda dan klik link verifikasi yang telah kami kirimkan.';
+
+  @override
+  String get emailVerifyResend => 'Kirim Ulang Email';
+
+  @override
+  String get emailVerifyChangeEmail => 'Ubah Email';
+
+  @override
+  String get emailVerifyLater => 'Nanti Saja';
+
+  @override
+  String get emailVerifySentTitle => 'Email Terkirim!';
+
+  @override
+  String get emailVerifySentMessage =>
+      'Email verifikasi telah dikirim. Silakan periksa inbox atau folder spam Anda.';
+
+  @override
+  String get emailVerifyChangeTitle => 'Ubah Alamat Email';
+
+  @override
+  String get emailVerifyNewEmailHint => 'Masukkan email baru';
+
+  @override
+  String get emailVerifyChangeConfirm => 'Ubah & Kirim Verifikasi';
+
+  @override
+  String get accountDeactivatedTitle => 'Akun Dinonaktifkan';
+
+  @override
+  String get accountDeactivatedMessage =>
+      'Akun Anda telah dinonaktifkan. Silakan hubungi support untuk informasi lebih lanjut.';
 
   @override
   String get registerWelcomeTitle => 'Hello! Daftar untuk memulai';
@@ -627,6 +710,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get myBookingDetailSubtotal => 'Subtotal:';
 
   @override
+  String get myBookingDetailSubtotalBeforeDiscount =>
+      'Subtotal Sebelum Diskon:';
+
+  @override
+  String get myBookingDetailVoucher => 'Voucher';
+
+  @override
+  String get myBookingDetailDeposit => 'Deposit:';
+
+  @override
   String get myBookingDetailNumberOfDays => 'Jumlah Malam:';
 
   @override
@@ -847,6 +940,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get roomDetailsFacilitiesTitle => 'Fasilitas Ruangan';
 
   @override
+  String get roomDetailsDailyPricing => 'Rincian Harga Harian';
+
+  @override
+  String get roomDetailsDailyPricingLoading =>
+      'Menghitung harga per tanggal...';
+
+  @override
   String get roomDetailsNoFacilities => 'Tidak ada fasilitas tersedia';
 
   @override
@@ -953,6 +1053,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get renewBookingRoomNumber => 'No. Kamar';
+
+  @override
+  String get renewBookingCutoffPassed =>
+      'Periode perpanjangan sewa telah berakhir. Perpanjangan harian harus diselesaikan paling lambat pukul 12:00 dan perpanjangan bulanan pukul 21:00 pada tanggal check-out.';
 
   @override
   String get checkInDateLabel => 'Tanggal Masuk';
@@ -1181,16 +1285,23 @@ class AppLocalizationsId extends AppLocalizations {
       'Lengkapi semua data untuk melanjutkan';
 
   @override
-  String get paymentTermsAgreePrefix => 'Saya menyetujui ';
+  String get paymentTermsAgreePrefix =>
+      'Saya menyatakan telah membaca, mengerti, memahami dan menyetujui data, informasi dan rincian transaksi di atas, serta ';
 
   @override
-  String get paymentTermsAnd => ' serta ';
+  String get paymentTermsAnd => ', ';
 
   @override
-  String get paymentTermsConditions => 'Syarat dan Ketentuan';
+  String get paymentTermsConditions => 'S&K';
 
   @override
   String get paymentPrivacyPolicy => 'Kebijakan Privasi';
+
+  @override
+  String get paymentTermsAndRental => ', dan ';
+
+  @override
+  String get paymentRentalAgreement => 'Perjanjian Sewa';
 
   @override
   String get vaGenerationFailedTitle => 'Gagal Membuat VA';
@@ -2089,4 +2200,16 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get expiresIn => 'Berakhir dalam';
+
+  @override
+  String get darkModeLabel => 'Mode Gelap';
+
+  @override
+  String get lightModeLabel => 'Mode Terang';
+
+  @override
+  String get switchToLightMode => 'Beralih ke mode terang';
+
+  @override
+  String get switchToDarkMode => 'Beralih ke mode gelap';
 }

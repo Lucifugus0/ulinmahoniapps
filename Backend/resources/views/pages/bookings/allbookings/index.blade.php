@@ -7,14 +7,17 @@
                     class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                     {{ __('ui.all_bookings') }}
                 </h1>
+                <!-- Description text explaining what all bookings page shows -->
+                <p class="text-sm text-gray-500 mt-1">{{ __('ui.all_bookings_desc') }}</p>
             </div>
         </div>
         
         <!-- Search and Filter Section -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
+        <!-- Search and filter container - lighter bg in dark mode to differentiate from page background -->
+        <div class="search-filter-container bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible mb-6">
             <form method="GET" action="{{ route('bookings.filter') }}"
                 onsubmit="event.preventDefault(); fetchFilteredBookings();"
-                class="flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 rounded-lg overflow-visible">
+                class="search-filter-form flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 rounded-lg overflow-visible">
 
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                     <!-- Search Booking -->
@@ -47,9 +50,10 @@
                         </option>
                     </select>
 
-                    <div class="md:col-span-2 flex gap-2">
+                    <div class="md:col-span-2 flex gap-2 items-end">
                         <div class="flex-1">
-                            <div class="relative z-50">
+                            <!-- z-20 keeps datepicker below sticky header (z-30) but above table content -->
+                            <div class="relative z-20">
                                 <input type="text" id="date_picker" placeholder="{{ __('ui.select_date_range') }}"
                                     data-input
                                     class="w-full min-w-[320px] px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
@@ -58,6 +62,12 @@
                                 <input type="hidden" id="end_date" name="end_date" value="{{ request('end_date') }}">
                             </div>
                         </div>
+                        <!-- Checkbox to show/hide expired bookings -->
+                        <label class="flex items-center gap-2 cursor-pointer whitespace-nowrap pb-1">
+                            <input type="checkbox" id="show_expired" name="show_expired"
+                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm text-gray-600">{{ __('ui.show_expired_bookings') }}</span>
+                        </label>
                     </div>
 
                     <!-- Show Per Page (aligned to the right) -->
@@ -66,9 +76,10 @@
                             <label for="per_page" class="text-sm text-gray-600">{{ __('ui.show') }}:</label>
                             <select name="per_page" id="per_page"
                                 class="border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="8" {{ request('per_page') == 8 ? 'selected' : '' }}>8</option>
-                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                <!-- Default 25 per page -->
+                                <option value="8" {{ request('per_page', 25) == 8 ? 'selected' : '' }}>8</option>
+                                <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ request('per_page', 25) == 50 ? 'selected' : '' }}>50</option>
                             </select>
                         </div>
                     </div>
@@ -81,7 +92,7 @@
         <div class="overflow-x-auto rounded-lg" id="bookingsTableContainer">
             @include('pages.bookings.allbookings.partials.allbookings_table', [
                 'bookings' => $bookings,
-                'per_page' => request('per_page', 8),
+                'per_page' => request('per_page', 25),
             ])
         </div>
 
@@ -140,10 +151,31 @@
                 };
             };
 
+            /* Sort state: persists across AJAX refreshes.
+               Default sort: Booking ID descending — surfaces the newest bookings first
+               since the order_id format `UMH-{ymd}{rand}{property}` sorts naturally by date. */
+            window._bookingSortBy = 'orderid';
+            window._bookingSortDir = 'desc';
+
+            /* Server-side sort: toggle direction or switch column, then refetch */
+            window.sortBookingsBy = function(column) {
+                if (window._bookingSortBy === column) {
+                    window._bookingSortDir = window._bookingSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    window._bookingSortBy = column;
+                    window._bookingSortDir = 'asc';
+                }
+                fetchFilteredBookings();
+            };
+
+            // Show expired checkbox
+            const showExpiredCheckbox = document.getElementById('show_expired');
+
             // Event listeners
             searchInput.addEventListener('input', debounce(fetchFilteredBookings, 300));
             statusSelect.addEventListener('change', fetchFilteredBookings);
             perPageSelect.addEventListener('change', fetchFilteredBookings);
+            showExpiredCheckbox.addEventListener('change', fetchFilteredBookings);
 
             // Function to fetch filtered bookings
             function fetchFilteredBookings(url = null) {
@@ -174,6 +206,16 @@
                     // Get per page value
                     const perPage = document.getElementById('per_page').value;
                     params.append('per_page', perPage);
+
+                    /* Server-side sorting: pass current sort state.
+                       Fallbacks must match window._bookingSortBy/Dir initial values. */
+                    params.append('sort_by', window._bookingSortBy || 'orderid');
+                    params.append('sort_dir', window._bookingSortDir || 'desc');
+
+                    /* Pass show_expired checkbox state */
+                    if (document.getElementById('show_expired').checked) {
+                        params.append('show_expired', '1');
+                    }
                 }
 
                 // Show loading state
@@ -240,4 +282,7 @@
             attachPaginationListeners();
         });
     </script>
+
+    @include('pages.bookings.partials.dark-badge-styles')
+
 </x-app-layout>

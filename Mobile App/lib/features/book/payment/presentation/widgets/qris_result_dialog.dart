@@ -54,13 +54,13 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
         _remainingTime = Duration.zero;
       }
 
-      // Force maximum 15 minutes countdown
-      if (_remainingTime.inMinutes > 15) {
-        _remainingTime = const Duration(minutes: 15);
+      // Force maximum 30 minutes countdown
+      if (_remainingTime.inMinutes > 30) {
+        _remainingTime = const Duration(minutes: 30);
       }
     } catch (e) {
-      // Default to 15 minutes if parsing fails
-      _remainingTime = const Duration(minutes: 15);
+      // Default to 30 minutes if parsing fails
+      _remainingTime = const Duration(minutes: 30);
     }
   }
 
@@ -111,7 +111,8 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
           context,
           localizations.qrisResultDialogDownloadSuccess,
           defaultIcon: Icons.check_circle_outline,
-          iconColor: AppColors.primaryColor,
+          // Use primaryAdaptive for the download success notification icon color
+          iconColor: AppColors.primaryAdaptive(context),
         );
       }
     } catch (e) {
@@ -130,8 +131,11 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
+    // Dark mode detection for dialog colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -148,10 +152,11 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
                 height: 75,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
+                  // Use primaryAdaptive for the fallback icon color
+                  return Icon(
                     Icons.check_circle,
                     size: 75,
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryAdaptive(context),
                   );
                 },
               ),
@@ -160,10 +165,10 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
               // Title
               Text(
                 localizations.qrisResultDialogTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -218,9 +223,9 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: isDark ? const Color(0xFF374151) : Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: isDark ? Colors.grey.shade600 : Colors.grey.shade200),
                 ),
                 child: Column(
                   children: [
@@ -245,9 +250,10 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
+                  // Use dark-aware amber/warning box background and border
+                  color: isDark ? AppColors.surfaceDarkElevated : Colors.orange.shade50,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade200),
+                  border: Border.all(color: isDark ? Colors.white24 : Colors.orange.shade200),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -284,7 +290,8 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
+                        // Use primaryAdaptive for the download button background
+                        backgroundColor: AppColors.primaryAdaptive(context),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -330,8 +337,9 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
                     child: OutlinedButton(
                       onPressed: widget.onClose,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryColor,
-                        side: const BorderSide(color: AppColors.primaryColor),
+                        // Use primaryAdaptive for the close button foreground and border
+                        foregroundColor: AppColors.primaryAdaptive(context),
+                        side: BorderSide(color: AppColors.primaryAdaptive(context)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -356,6 +364,7 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -363,16 +372,16 @@ class _QRISResultDialogState extends State<QRISResultDialog> {
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey.shade600,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
           ),
         ),
         Flexible(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: isDark ? Colors.white : Colors.black87,
             ),
             textAlign: TextAlign.right,
             maxLines: 2,

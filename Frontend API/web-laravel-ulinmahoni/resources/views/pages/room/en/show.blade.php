@@ -6,13 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Room Details - {{ $room['name'] }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker.min.css">
     <!-- Styles -->
     @include('components.property.styles')
+    @include('components.property.dark-mode')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -20,6 +22,81 @@
         }
         .fa-spin {
             animation: spin 1s linear infinite;
+        }
+
+        /* Dark mode overrides for booking form card, containers, and inputs */
+        html.dark .bg-white { background-color: #1e293b !important; }
+        html.dark .bg-blue-50 { background-color: #374151 !important; }
+        html.dark .bg-purple-50 { background-color: #374151 !important; }
+        html.dark .border-gray-100,
+        html.dark .border-blue-200,
+        html.dark .border-purple-200,
+        html.dark .border-gray-300 { border-color: #4b5563 !important; }
+        html.dark #dailyBookingComponent input,
+        html.dark #dailyBookingComponent select,
+        html.dark #monthlyBookingComponent input,
+        html.dark #monthlyBookingComponent select,
+        html.dark #bookingForm select {
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+            border-color: #4b5563 !important;
+        }
+        html.dark #dailyBookingComponent label,
+        html.dark #monthlyBookingComponent label,
+        html.dark #dailyBookingComponent h3,
+        html.dark #monthlyBookingComponent h3,
+        html.dark .text-gray-700 {
+            color: #d1d5db !important;
+        }
+
+        /* Datepicker popup z-index — must be above the leafy background overlay
+           (main::after z-index:1, main > * z-index:2) */
+        .datepicker {
+            z-index: 100 !important;
+        }
+
+        /* Dark mode: vanillajs-datepicker calendar popup.
+           Targets .datepicker-picker (the actual calendar panel) since the CDN CSS
+           sets background-color:#fff on .datepicker-picker, not .datepicker. */
+        html.dark .datepicker-picker {
+            background-color: #1f2937 !important;
+            border: 1px solid #4b5563 !important;
+        }
+        html.dark .datepicker-header {
+            background-color: #1f2937 !important;
+        }
+        html.dark .datepicker-controls .button {
+            color: #f3f4f6 !important;
+            background-color: transparent !important;
+            border-color: #4b5563 !important;
+        }
+        html.dark .datepicker-controls .button:hover {
+            background-color: #374151 !important;
+        }
+        /* Enabled dates — bright white for clear visibility */
+        html.dark .datepicker-cell {
+            color: #ffffff !important;
+        }
+        html.dark .datepicker-cell:hover {
+            background-color: #374151 !important;
+        }
+        html.dark .datepicker-cell.focused,
+        html.dark .datepicker-cell.selected {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+        }
+        html.dark .datepicker-cell.today:not(.selected) {
+            background-color: #374151 !important;
+            color: #60a5fa !important;
+        }
+        /* Disabled/out-of-range dates — dim grey to distinguish from enabled */
+        html.dark .datepicker-cell.disabled,
+        html.dark .datepicker-cell.prev,
+        html.dark .datepicker-cell.next {
+            color: #4b5563 !important;
+        }
+        html.dark .dow {
+            color: #9ca3af !important;
         }
     </style>
 </head>
@@ -45,7 +122,8 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <!-- Room Details (left) -->
                 <div class="lg:col-span-7">
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                    <!-- Liquid glass room detail card — frosted container with glass tokens -->
+                    <div class="overflow-hidden" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                         <!-- Room Image Gallery -->
                         <div class="relative h-96" x-data="{ showModal: false, modalImg: '', modalAlt: '' }">
                             <!-- Modal Popup -->
@@ -169,7 +247,7 @@
                             <div class="space-y-6">
                                 <div class="prose prose-lg max-w-none">
                                     <h3 class="text-xl font-semibold text-gray-900 mb-4">Room Description</h3>
-                                    <p class="text-gray-600 leading-relaxed">{{ $room['descriptions'] }}</p>
+                                    <div class="text-gray-600 leading-relaxed">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
                                 </div>
                             </div>
                         </div>
@@ -178,7 +256,8 @@
 
                 <!-- Booking Form (right) -->
                 <div class="lg:col-span-5 lg:pl-4">
-                    <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-8 sticky top-8">
+                    <!-- Liquid glass booking form card -->
+                    <div class="p-8 sticky top-8" style="background: var(--glass-bg, rgba(255, 255, 255, 0.18)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--radius-lg, 1.75rem); border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35)); box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));">
                         <!-- Status and Price Summary -->
                         <div class="flex items-center justify-between mb-8">
                             <div>
@@ -209,7 +288,7 @@
                             {{-- <input type="hidden" name="tax_fees" id="taxFees" value="{{ $room['tax_fees'] ?? 0 }}"> --}}
                             <!-- Rental Type -->
                             <div class="mb-6">
-                                <label for="rent_type" class="block text-sm font-medium text-gray-700 mb-2">Booking Type</label>
+                                <label for="rent_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Booking Type</label>
                                 <select id="rent_type" name="rent_type"
                                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                                     onchange="updateRentalType()">
@@ -224,30 +303,30 @@
 
                             <!-- Daily Booking Component -->
                             <div id="dailyBookingComponent" class="space-y-4 hidden">
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-gray-600 rounded-lg p-4">
                                     <div class="flex items-center mb-3">
                                         <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
-                                        <h3 class="text-sm font-semibold text-gray-800">Daily Booking</h3>
+                                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">Daily Booking</h3>
                                     </div>
 
                                     <!-- Check-in Date -->
                                     <div class="mb-4">
-                                        <label for="check_in" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="check_in" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-sign-in-alt mr-1 text-gray-500"></i>Check In
                                         </label>
                                         <input type="text" id="check_in" name="check_in"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             placeholder="Select check-in date" data-required="true" readonly>
                                         <div id="check_inError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
                                     </div>
 
                                     <!-- Check-out Date -->
                                     <div>
-                                        <label for="check_out" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="check_out" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-sign-out-alt mr-1 text-gray-500"></i>Check Out
                                         </label>
                                         <input type="text" id="check_out" name="check_out"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             placeholder="Select check-out date" data-required="true" readonly>
                                         <div id="check_outError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
                                     </div>
@@ -256,30 +335,30 @@
 
                             <!-- Monthly Booking Component -->
                             <div id="monthlyBookingComponent" class="space-y-4 hidden">
-                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <div class="bg-purple-50 dark:bg-gray-700 border border-purple-200 dark:border-gray-600 rounded-lg p-4">
                                     <div class="flex items-center mb-3">
                                         <i class="fas fa-calendar-alt text-purple-600 mr-2"></i>
-                                        <h3 class="text-sm font-semibold text-gray-800">Monthly Booking</h3>
+                                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">Monthly Booking</h3>
                                     </div>
 
                                     <!-- Check-in Date -->
                                     <div class="mb-4">
-                                        <label for="check_in_monthly" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="check_in_monthly" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-calendar-check mr-1 text-gray-500"></i>Check In
                                         </label>
                                         <input type="text" id="check_in_monthly" name="check_in_monthly"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             placeholder="Select check-in date" data-required="true" readonly>
                                         <div id="check_in_monthlyError" class="text-red-500 text-xs mt-1 hidden error-message"></div>
                                     </div>
 
                                     <!-- Months Selection -->
                                     <div>
-                                        <label for="months" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <label for="months" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <i class="fas fa-hourglass-half mr-1 text-gray-500"></i>Rental Duration
                                         </label>
                                         <select id="months" name="months"
-                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
+                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
                                             onchange="updatePriceSummary()">
                                             @for ($i = 1; $i <= 12; $i++)
                                                 <option value="{{ $i }}">{{ $i }} {{ $i > 1 ? 'Months' : 'Month' }}</option>
@@ -347,7 +426,8 @@
                             <div class="bg-gray-50 p-4 rounded-lg mb-6">
                                 <h4 class="font-medium text-gray-900 mb-3">Total Price</h4>
                                 <div class="space-y-3 text-sm">
-                                    <div class="flex items-center justify-between">
+                                    <!-- Rate row — hidden for daily bookings, shown for monthly -->
+                                    <div class="flex items-center justify-between" id="rateRow">
                                         <span class="text-gray-600" id="rateTypeDisplay">Daily Rate: </span>
                                         <div class="text-right">
                                             <div class="text-gray-900" id="rateDisplay">
@@ -407,7 +487,14 @@
                                         </div>
                                         <div class="ml-3 text-sm">
                                             <label for="agreementCheckbox" class="text-gray-700">
-                                                I agree to the <a href="/rental-agreement" target="_blank" class="text-teal-600 hover:text-teal-700 underline">Rental Agreement</a>
+                                                {{-- :terms_link / :privacy_link / :rental_link are substituted with anchor tags
+                                                     pointing to the legal pages. {!! !!} is required so the HTML renders;
+                                                     route() returns trusted URLs and link text is e()-escaped. --}}
+                                                {!! __('properties.booking.rental_agreement', [
+                                                    'terms_link'   => '<a href="' . route('terms-of-services') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.terms_link_text')) . '</a>',
+                                                    'privacy_link' => '<a href="' . route('privacy-policy') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.privacy_link_text')) . '</a>',
+                                                    'rental_link'  => '<a href="' . route('rental-agreement') . '" target="_blank" rel="noopener" class="text-teal-600 hover:text-teal-700 underline">' . e(__('properties.booking.rental_link_text')) . '</a>',
+                                                ]) !!}
                                             </label>
                                         </div>
                                     </div>
@@ -461,6 +548,17 @@
     @include('components.homepage.footer')
 
     <script>
+        // Clamped month addition: avoids overflow when target month has fewer days
+        function addMonthsClamped(date, months) {
+            const d = new Date(date);
+            const day = d.getDate();
+            d.setDate(1);
+            d.setMonth(d.getMonth() + months);
+            const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(day, maxDay));
+            return d;
+        }
+
         // --- Global variables ---
         let bookingForm, errorAlert, loadingOverlay, submitButton, monthInput, dateInputs, monthsSelect, rentTypeSelect;
         let checkInInput, checkOutInput, availabilityStatusDiv;
@@ -903,18 +1001,55 @@
                 if (rateTypeDisplay) rateTypeDisplay.textContent = rentType === 'monthly' ? 'Monthly Price' : 'Daily Price';
                 if (dailyRateDisplay) dailyRateDisplay.classList.toggle('hidden', rentType !== 'daily');
                 if (monthlyRateDisplay) monthlyRateDisplay.classList.toggle('hidden', rentType !== 'monthly');
+                // Hide the entire rate row for daily bookings (price breakdown per date is shown instead)
+                const rateRow = document.getElementById('rateRow');
+                if (rateRow) rateRow.classList.toggle('hidden', rentType === 'daily');
 
                 let duration = 0, rate = 0, roomTotal = 0;
-                
+
+                /* Helper to update total displays */
+                function updateTotals(roomTotal) {
+                    const adminFee = 0;
+                    const serviceFees = 30000;
+                    const taxFees = 0;
+                    const grandTotal = roomTotal + serviceFees + adminFee + taxFees;
+                    document.getElementById('roomTotal').textContent = formatRupiah(roomTotal);
+                    document.getElementById('serviceFeesDisplay').textContent = formatRupiah(serviceFees);
+                    document.getElementById('grandTotal').textContent = formatRupiah(grandTotal);
+                }
+
                 try {
                     if (rentType === 'daily') {
                         if (!checkInInput.value || !checkOutInput.value) return resetSummary();
                         const nights = getDaysBetweenDates(checkInInput.value, checkOutInput.value);
                         if (nights <= 0) return resetSummary();
-                        duration = nights;
-                        rate = parseFloat(priceDailyInput.value) || 0;
-                        roomTotal = duration * rate;
-                        if (durationDisplay) durationDisplay.textContent = `${duration} malam`;
+
+                        /* Daily Multi Tier Pricing: fetch per-date price breakdown */
+                        const roomId = document.querySelector('[name="room_id"]').value;
+                        fetch(`/api/v1/rooms/${roomId}/price-preview?check_in=${checkInInput.value}&check_out=${checkOutInput.value}`, {
+                            headers: { 'X-API-KEY': '{{ env('API_KEY') }}', 'Accept': 'application/json' }
+                        })
+                            .then(res => res.json())
+                            .then(json => {
+                                if (json.status === 'success' && json.data.breakdown && json.data.breakdown.length > 0) {
+                                    roomTotal = json.data.total_price;
+                                    duration = json.data.total_days;
+                                } else {
+                                    duration = nights;
+                                    rate = parseFloat(priceDailyInput.value) || 0;
+                                    roomTotal = duration * rate;
+                                }
+                                if (durationDisplay) durationDisplay.textContent = `${duration} night(s)`;
+                                updateTotals(roomTotal);
+                            })
+                            .catch(() => {
+                                duration = nights;
+                                rate = parseFloat(priceDailyInput.value) || 0;
+                                roomTotal = duration * rate;
+                                if (durationDisplay) durationDisplay.textContent = `${duration} night(s)`;
+                                updateTotals(roomTotal);
+                            });
+                        return; /* Handled in .then() */
                     } else {
                         duration = parseInt(monthsSelect.value || '1', 10);
                         rate = parseFloat(priceMonthlyInput.value) || 0;
@@ -925,16 +1060,7 @@
                     console.error('Error updating price summary:', error);
                     return resetSummary();
                 }
-                // Get admin fee value from the hidden input or use the default
-                const adminFee = 0;
-                const serviceFees= 30000;
-                const taxFees = 0;
-                const grandTotal = roomTotal + serviceFees +adminFee + taxFees;
-                document.getElementById('roomTotal').textContent = formatRupiah(roomTotal);
-                document.getElementById('serviceFeesDisplay').textContent = formatRupiah(serviceFees);
-                // document.getElementById('taxDisplay').textContent = formatRupiah(taxFees);
-                // document.getElementById('adminFee').textContent = formatRupiah(adminFee);
-                document.getElementById('grandTotal').textContent = formatRupiah(grandTotal);
+                updateTotals(roomTotal);
             }
 
             // --- Rental type toggle logic ---
@@ -973,7 +1099,7 @@
                     // Set check-in date for monthly with 14-day minimum
                     const today = new Date();
                     const minCheckInDate = new Date(today);
-                    minCheckInDate.setDate(today.getDate() + 14);
+                    // Default check-in is today (no offset)
 
                     if (checkInMonthlyInput) {
                         checkInMonthlyInput.value = searchState?.check_in || minCheckInDate.toISOString().split('T')[0];
@@ -989,8 +1115,7 @@
                     if (checkInMonthlyInput && checkOutInput) {
                         const checkInDate = new Date(checkInMonthlyInput.value);
                         const months = parseInt(monthsSelect.value, 10) || 1;
-                        const checkOutDate = new Date(checkInDate);
-                        checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                        const checkOutDate = addMonthsClamped(checkInDate, months);
                         checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                     }
 
@@ -1007,7 +1132,7 @@
                     // Set dates from saved search or use defaults with 14-day minimum
                     const today = new Date();
                     const minCheckInDate = new Date(today);
-                    minCheckInDate.setDate(today.getDate() + 14);
+                    // Default check-in is today (no offset)
                     const minCheckOutDate = new Date(minCheckInDate);
                     minCheckOutDate.setDate(minCheckInDate.getDate() + 1);
 
@@ -1037,8 +1162,7 @@
                     // For monthly, update check-out based on months
                     const checkInDate = new Date(checkInInput.value);
                     const months = parseInt(monthsSelect.value, 10) || 1;
-                    const checkOutDate = new Date(checkInDate);
-                    checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                    const checkOutDate = addMonthsClamped(checkInDate, months);
                     checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                 } else {
                     // For daily, apply month boundary and 14-day limit
@@ -1048,11 +1172,9 @@
 
                     // Calculate max checkout: 14 days OR end of month, whichever is earlier
                     const maxCheckoutDate = new Date(checkInDate);
-                    maxCheckoutDate.setDate(checkInDate.getDate() + 14);
+                    maxCheckoutDate.setDate(checkInDate.getDate() + 60);
 
-                    const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                    const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
+                    const actualMaxCheckout = maxCheckoutDate;
 
                     checkOutInput.min = minCheckout.toISOString().split('T')[0];
                     checkOutInput.max = actualMaxCheckout.toISOString().split('T')[0];
@@ -1107,33 +1229,11 @@
                     checkInInput.value = defaultCheckIn;
                     checkInInput.min = minCheckInStr;
 
-                    // Handle check-in date changes
+                    // Check-in change handler — only triggers availability check.
+                    // Check-out date constraints are managed by the Datepicker changeDate
+                    // handler via setOptions/setDate. Direct DOM manipulation here would
+                    // desync the Datepicker's internal state, breaking date selection.
                     checkInInput.addEventListener('change', function() {
-                        if (checkInInput.value) {
-                            const checkInDate = new Date(checkInInput.value);
-                            const minCheckout = new Date(checkInDate);
-                            minCheckout.setDate(checkInDate.getDate() + 1);
-
-                            // Calculate max checkout: 14 days OR end of month, whichever is earlier
-                            const maxCheckoutDate = new Date(checkInDate);
-                            maxCheckoutDate.setDate(checkInDate.getDate() + 14);
-
-                            const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                            const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
-
-                            if (checkOutInput) {
-                                checkOutInput.min = formatDate(minCheckout);
-                                checkOutInput.max = formatDate(actualMaxCheckout);
-
-                                // If current check-out is before new min date or after max date, update it
-                                if (!checkOutInput.value ||
-                                    new Date(checkOutInput.value) <= new Date(checkInInput.value) ||
-                                    new Date(checkOutInput.value) > actualMaxCheckout) {
-                                    checkOutInput.value = formatDate(minCheckout);
-                                }
-                            }
-                        }
                         checkRoomAvailability();
                     });
                 }
@@ -1153,8 +1253,7 @@
                         if (checkOutInput && monthsSelect) {
                             const checkInDate = new Date(checkInMonthlyInput.value);
                             const months = parseInt(monthsSelect.value, 10) || 1;
-                            const checkOutDate = new Date(checkInDate);
-                            checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                            const checkOutDate = addMonthsClamped(checkInDate, months);
                             checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                         }
 
@@ -1188,8 +1287,7 @@
                             if (checkInMonthlyInput && checkOutInput && checkInMonthlyInput.value) {
                                 const checkInDate = new Date(checkInMonthlyInput.value);
                                 const months = parseInt(monthsSelect.value, 10) || 1;
-                                const checkOutDate = new Date(checkInDate);
-                                checkOutDate.setMonth(checkOutDate.getMonth() + months);
+                                const checkOutDate = addMonthsClamped(checkInDate, months);
                                 checkOutInput.value = checkOutDate.toISOString().split('T')[0];
                             }
                         }
@@ -1242,23 +1340,13 @@
                         isValid = false;
                     }
 
-                    // Validate month boundaries and 14-day maximum
+                    // Validate max 60-day booking period (cross-month is allowed)
                     if (checkInInput.value && checkOutInput.value) {
                         const checkIn = new Date(checkInInput.value);
                         const checkOut = new Date(checkOutInput.value);
-
-                        // Check if dates are in the same month
-                        if (checkIn.getMonth() !== checkOut.getMonth() || checkIn.getFullYear() !== checkOut.getFullYear()) {
-                            document.getElementById('check_outError').textContent = 'Booking cannot cross month boundaries';
-                            document.getElementById('check_outError').classList.remove('hidden');
-                            checkOutInput.classList.add('border-red-500');
-                            isValid = false;
-                        }
-
-                        // Check if booking period exceeds 14 days
                         const daysDiff = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-                        if (daysDiff > 14) {
-                            document.getElementById('check_outError').textContent = 'Booking period cannot exceed 14 days';
+                        if (daysDiff > 60) {
+                            document.getElementById('check_outError').textContent = 'Booking period cannot exceed 60 days';
                             document.getElementById('check_outError').classList.remove('hidden');
                             checkOutInput.classList.add('border-red-500');
                             isValid = false;
@@ -1473,33 +1561,9 @@
                 checkInInput.value = formatDate(minCheckInDate);
                 checkInInput.min = formatDate(minCheckInDate);
 
-                // Handle check-in date changes
+                // Check-in change handler — only triggers price update.
+                // Check-out constraints are managed by Datepicker changeDate handler.
                 checkInInput.addEventListener('change', function() {
-                    if (checkInInput.value) {
-                        const checkInDate = new Date(checkInInput.value);
-                        const minCheckout = new Date(checkInDate);
-                        minCheckout.setDate(checkInDate.getDate() + 1);
-
-                        // Calculate max checkout: 14 days OR end of month, whichever is earlier
-                        const maxCheckoutDate = new Date(checkInDate);
-                        maxCheckoutDate.setDate(checkInDate.getDate() + 14);
-
-                        const endOfMonth = new Date(checkInDate.getFullYear(), checkInDate.getMonth() + 1, 0);
-
-                        const actualMaxCheckout = maxCheckoutDate < endOfMonth ? maxCheckoutDate : endOfMonth;
-
-                        if (checkOutInput) {
-                            checkOutInput.min = formatDate(minCheckout);
-                            checkOutInput.max = formatDate(actualMaxCheckout);
-
-                            // If current check-out is before new min date or after max date, update it
-                            if (!checkOutInput.value ||
-                                new Date(checkOutInput.value) <= new Date(checkInInput.value) ||
-                                new Date(checkOutInput.value) > actualMaxCheckout) {
-                                checkOutInput.value = formatDate(minCheckout);
-                            }
-                        }
-                    }
                     updatePriceSummary();
                 });
             }
@@ -1542,12 +1606,15 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
-            const maxDate = new Date();
-            maxDate.setDate(today.getDate() + 14);
+            // Max check-in dates differ by booking type:
+            // Daily booking — up to 90 days from today. Monthly — up to 14 days ahead.
+            const maxCheckInDaily = new Date();
+            maxCheckInDaily.setDate(today.getDate() + 90);
+            const maxCheckInMonthly = new Date();
+            maxCheckInMonthly.setDate(today.getDate() + 14);
 
-            // Set default dates
+            // Set default dates (check-in defaults to today)
             const minCheckInDate = new Date(today);
-            minCheckInDate.setDate(today.getDate() + 14);
             const minCheckOutDate = new Date(minCheckInDate);
             minCheckOutDate.setDate(minCheckInDate.getDate() + 1);
 
@@ -1558,7 +1625,7 @@
                 checkInPicker = new Datepicker(checkInElem, {
                     format: 'yyyy-mm-dd',
                     minDate: today,
-                    maxDate: maxDate,
+                    maxDate: maxCheckInDaily,
                     autohide: true,
                     todayHighlight: true,
                     weekStart: 0
@@ -1567,7 +1634,10 @@
                 // Set default date
                 checkInPicker.setDate(minCheckInDate);
 
-                // Update check-out picker when check-in changes
+                // Update check-out picker when check-in changes.
+                // Destroys and recreates the check-out datepicker because
+                // vanillajs-datepicker's setOptions() does not reliably update
+                // min/max constraints, leaving the picker unresponsive.
                 checkInElem.addEventListener('changeDate', function(e) {
                     if (e.detail.date) {
                         const selectedCheckIn = new Date(e.detail.date);
@@ -1576,27 +1646,34 @@
 
                         // Calculate max checkout: 14 days from check-in OR end of month
                         const maxCheckOutDate = new Date(selectedCheckIn);
-                        maxCheckOutDate.setDate(selectedCheckIn.getDate() + 14);
+                        maxCheckOutDate.setDate(selectedCheckIn.getDate() + 60);
 
-                        const endOfMonth = new Date(selectedCheckIn.getFullYear(), selectedCheckIn.getMonth() + 1, 0);
-                        const actualMaxCheckOut = maxCheckOutDate < endOfMonth ? maxCheckOutDate : endOfMonth;
+                        const actualMaxCheckOut = maxCheckOutDate;
 
-                        // Update check-out datepicker options
+                        // Destroy and recreate check-out datepicker with new constraints.
+                        // setOptions() breaks the picker in vanillajs-datepicker v1.3.4.
+                        // Pass Date objects directly (not strings) to avoid timezone issues
+                        // where toISOString() shifts dates back a day in Asian timezones.
                         if (checkOutPicker) {
-                            checkOutPicker.setOptions({
+                            checkOutPicker.destroy();
+                        }
+                        const coElem = document.getElementById('check_out');
+                        if (coElem) {
+                            checkOutPicker = new Datepicker(coElem, {
+                                format: 'yyyy-mm-dd',
                                 minDate: minCheckOut,
-                                maxDate: actualMaxCheckOut
+                                maxDate: actualMaxCheckOut,
+                                autohide: true,
+                                todayHighlight: true,
+                                weekStart: 0
                             });
-
-                            // Auto-set check-out to min date if current value is invalid
-                            const currentCheckOut = checkOutPicker.getDate();
-                            if (!currentCheckOut || currentCheckOut <= selectedCheckIn || currentCheckOut > actualMaxCheckOut) {
-                                checkOutPicker.setDate(minCheckOut);
-                            }
+                            checkOutPicker.setDate(minCheckOut);
                         }
 
-                        // Trigger change event for form validation
-                        checkInElem.dispatchEvent(new Event('change', { bubbles: true }));
+                        // Update price summary and availability directly
+                        // (don't dispatch 'change' event — that would conflict with Datepicker)
+                        updatePriceSummary();
+                        checkRoomAvailability();
                     }
                 });
             }
@@ -1632,7 +1709,7 @@
                 checkInMonthlyPicker = new Datepicker(checkInMonthlyElem, {
                     format: 'yyyy-mm-dd',
                     minDate: today,
-                    maxDate: maxDate,
+                    maxDate: maxCheckInMonthly,
                     autohide: true,
                     todayHighlight: true,
                     weekStart: 0

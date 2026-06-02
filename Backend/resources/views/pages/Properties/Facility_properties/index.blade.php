@@ -15,7 +15,7 @@
                                 d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
                                 clip-rule="evenodd" />
                         </svg>
-                        Tambah Fasilitas
+                        {{ __('ui.facility_add_btn') }}
                     </button>
 
                     <!-- Backdrop -->
@@ -59,19 +59,23 @@
                                     <select name="category" x-model="currentFacility.category" required
                                         class="w-full text-sm rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500">
                                         <option value="" disabled>{{ __('ui.facility_category_select') }}</option>
-                                        <option value="general">General</option>
-                                        <option value="security">Security</option>
-                                        <option value="amenities">Amenities</option>
+                                        <option value="general">{{ __('ui.category_general') }}</option>
+                                        <option value="security">{{ __('ui.category_security') }}</option>
+                                        <option value="amenities">{{ __('ui.category_amenities') }}</option>
                                     </select>
                                 </div>
 
-                                <!-- Facility Name -->
+                                <!-- Facility Name (multi-language) -->
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.facility_name_label') }} <span
-                                            class="text-red-500">*</span></label>
-                                    <input type="text" name="facility" x-model="currentFacility.facility"
-                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="{{ __('ui.facility_name_placeholder') }}" required />
+                                    <x-multilang-textarea
+                                        name="facility"
+                                        :value="''"
+                                        :required="true"
+                                        :rows="1"
+                                        :placeholder="__('ui.facility_name_placeholder')"
+                                        :label="__('ui.facility_name_label')"
+                                        xModel="currentFacility.facility"
+                                    />
                                 </div>
 
                                 <!-- Icon -->
@@ -89,11 +93,11 @@
                                 <div class="flex justify-end gap-2 pt-2 border-t">
                                     <button type="button" @click="modalOpenDetail = false"
                                         class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md bg-white hover:bg-gray-50">
-                                        Batal
+                                        {{ __('ui.cancel') }}
                                     </button>
                                     <button type="submit"
                                         class="px-4 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow">
-                                        Simpan
+                                        {{ __('ui.save') }}
                                     </button>
                                 </div>
                             </form>
@@ -220,18 +224,23 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.facility_category_label') }} <span class="text-red-500">*</span></label>
                         <select x-model="facility.category" required
                             class="w-full text-sm rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="general">General</option>
-                            <option value="security">Security</option>
-                            <option value="amenities">Amenities</option>
+                            <option value="general">{{ __('ui.category_general') }}</option>
+                            <option value="security">{{ __('ui.category_security') }}</option>
+                            <option value="amenities">{{ __('ui.category_amenities') }}</option>
                         </select>
                     </div>
 
-                    <!-- Facility Name -->
+                    <!-- Facility Name (multi-language) -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('ui.facility_name_label') }} <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="facility.facility"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="{{ __('ui.facility_name_placeholder') }}" required />
+                        <x-multilang-textarea
+                            name="facility"
+                            :value="''"
+                            :required="true"
+                            :rows="1"
+                            :placeholder="__('ui.facility_name_placeholder')"
+                            :label="__('ui.facility_name_label')"
+                            xModel="facility.facility"
+                        />
                     </div>
 
                     <!-- Icon -->
@@ -257,7 +266,7 @@
                                     <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer-checked:bg-blue-600 transition-all duration-300"></div>
                                     <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 peer-checked:translate-x-5"></div>
                                 </label>
-                                <span class="text-sm text-gray-600">Active</span>
+                                <span class="text-sm text-gray-600">{{ __('ui.active') }}</span>
                             </div>
                         </div>
                     </div>
@@ -266,7 +275,7 @@
                     <div class="flex justify-end gap-2 pt-2 border-t">
                         <button type="button" @click="closeModal()"
                             class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md bg-white hover:bg-gray-50">
-                            Batal
+                            {{ __('ui.cancel') }}
                         </button>
                         <button type="submit" :disabled="isSubmitting"
                             class="px-4 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow disabled:opacity-50">

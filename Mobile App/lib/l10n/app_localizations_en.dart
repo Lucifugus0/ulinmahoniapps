@@ -18,19 +18,70 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categories => 'Categories';
 
   @override
-  String get bestSeller => 'Best Seller';
+  String get availableNow => 'Available Now';
+
+  @override
+  String get filterCategoryAll => 'All';
 
   @override
   String get popularArea => 'Popular Area';
 
   @override
-  String get budget => 'Fit Your Budget';
+  String get budget => 'Near You';
 
   @override
   String get promotion => 'Promotion';
 
   @override
   String get promoBanner => 'Special Promo';
+
+  @override
+  String get promoDetailTitle => 'Promo Details';
+
+  @override
+  String get promoDescription => 'Promo Description';
+
+  @override
+  String get promoCodeLabel => 'Promo Code';
+
+  @override
+  String get noDescription => 'No description';
+
+  @override
+  String get promoHowToClaim => 'How to Claim';
+
+  @override
+  String get promoClaimStep1 => 'Choose the desired property';
+
+  @override
+  String get promoClaimStep2 => 'Then select the desired room';
+
+  @override
+  String get promoClaimStep3 => 'Enter Voucher Code when booking';
+
+  @override
+  String get promoClaimStep4 => 'Complete the booking';
+
+  @override
+  String get promoClaimStep5 => 'Enjoy your promo/discount';
+
+  @override
+  String get promoTermsTitle => 'Terms & Conditions';
+
+  @override
+  String get promoTerm1 => 'Terms and conditions apply';
+
+  @override
+  String get promoTerm2 => 'Cannot be combined with other promos';
+
+  @override
+  String get promoTerm3 => 'Promo period is limited';
+
+  @override
+  String get promoTerm4 => 'Only valid for limited users';
+
+  @override
+  String get promoLoadError => 'Failed to load promo details';
 
   @override
   String get homeLabel => 'Home';
@@ -243,6 +294,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get emailNotVerifiedMessage =>
       'Please verify your email first to continue. Check your email inbox and click the verification link we sent you.';
+
+  @override
+  String get emailVerifyResend => 'Resend Email';
+
+  @override
+  String get emailVerifyChangeEmail => 'Change Email';
+
+  @override
+  String get emailVerifyLater => 'Later';
+
+  @override
+  String get emailVerifySentTitle => 'Email Sent!';
+
+  @override
+  String get emailVerifySentMessage =>
+      'Verification email has been sent. Please check your inbox or spam folder.';
+
+  @override
+  String get emailVerifyChangeTitle => 'Change Email Address';
+
+  @override
+  String get emailVerifyNewEmailHint => 'Enter new email';
+
+  @override
+  String get emailVerifyChangeConfirm => 'Change & Send Verification';
+
+  @override
+  String get accountDeactivatedTitle => 'Account Deactivated';
+
+  @override
+  String get accountDeactivatedMessage =>
+      'Your account has been deactivated. Please contact support for more information.';
 
   @override
   String get registerWelcomeTitle => 'Hello! Register to get started';
@@ -628,6 +711,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myBookingDetailSubtotal => 'Subtotal:';
 
   @override
+  String get myBookingDetailSubtotalBeforeDiscount =>
+      'Subtotal Before Discount:';
+
+  @override
+  String get myBookingDetailVoucher => 'Voucher';
+
+  @override
+  String get myBookingDetailDeposit => 'Deposit:';
+
+  @override
   String get myBookingDetailNumberOfDays => 'Number of days:';
 
   @override
@@ -845,6 +938,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roomDetailsFacilitiesTitle => 'Room Facilities';
 
   @override
+  String get roomDetailsDailyPricing => 'Daily Pricing';
+
+  @override
+  String get roomDetailsDailyPricingLoading =>
+      'Calculating per-date pricing...';
+
+  @override
   String get roomDetailsNoFacilities => 'No facilities available';
 
   @override
@@ -949,6 +1049,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get renewBookingRoomNumber => 'Room No.';
+
+  @override
+  String get renewBookingCutoffPassed =>
+      'The renewal window has closed. Daily renewals must be completed by 12:00 PM and monthly renewals by 9:00 PM on your check-out date.';
 
   @override
   String get checkInDateLabel => 'Check-in Date';
@@ -1174,16 +1278,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentWarningCompleteData => 'Complete all data to continue';
 
   @override
-  String get paymentTermsAgreePrefix => 'I agree to the ';
+  String get paymentTermsAgreePrefix =>
+      'I declare that I have read, understood, and agree to the data, information and transaction details above, as well as the ';
 
   @override
-  String get paymentTermsAnd => ' and ';
+  String get paymentTermsAnd => ', ';
 
   @override
-  String get paymentTermsConditions => 'Terms and Conditions';
+  String get paymentTermsConditions => 'T&C';
 
   @override
   String get paymentPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get paymentTermsAndRental => ', and ';
+
+  @override
+  String get paymentRentalAgreement => 'Rental Agreement';
 
   @override
   String get vaGenerationFailedTitle => 'VA Generation Failed';
@@ -2076,4 +2187,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get expiresIn => 'Expires in';
+
+  @override
+  String get darkModeLabel => 'Dark Mode';
+
+  @override
+  String get lightModeLabel => 'Light Mode';
+
+  @override
+  String get switchToLightMode => 'Switch to light mode';
+
+  @override
+  String get switchToDarkMode => 'Switch to dark mode';
 }

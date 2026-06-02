@@ -23,9 +23,11 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
+            'gender' => ['required', 'string', 'in:male,female'],
             'name' => ['nullable', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users', 'alpha_dash'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'country_code' => ['nullable', 'string', 'max:10'],
             'phone_number' => ['nullable', 'string', 'max:20'],
             'password' => $this->passwordRules(),
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
@@ -38,13 +40,15 @@ class CreateNewUser implements CreatesNewUsers
         return User::create([
             'first_name' => $input['first_name'],
             'last_name' => $input['last_name'],
+            'gender' => $input['gender'],
             'name' => $name,
             'username' => $input['username'],
             'email' => $input['email'],
+            'country_code' => $input['country_code'] ?? '+62',
             'phone_number' => $input['phone_number'] ?? null,
             'password' => Hash::make($input['password']),
-            'status' => 1, // Setting a default status
-            'is_admin' => 0, // Default user group (adjust as needed)
+            'status' => 1,
+            'is_admin' => 0,
         ]);
     }
 }

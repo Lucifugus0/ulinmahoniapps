@@ -28,6 +28,13 @@ class PropertyModel {
   final int? totalRooms;
   final int? availableRooms;
   final String? gender;
+  final double? latitude;
+  final double? longitude;
+
+  /* Daily Multi Tier Pricing: optional fields for search results with per-date totals */
+  final double? lowestTotalPrice;
+  final int? totalDays;
+  final bool? isFlatRate;
 
   PropertyModel({
     required this.idrec,
@@ -59,6 +66,11 @@ class PropertyModel {
     this.totalRooms,
     this.availableRooms,
     this.gender,
+    this.latitude,
+    this.longitude,
+    this.lowestTotalPrice,
+    this.totalDays,
+    this.isFlatRate,
   });
 
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
@@ -129,6 +141,16 @@ class PropertyModel {
       totalRooms: json['total_rooms'],
       availableRooms: json['available_rooms'],
       gender: json['gender'] as String?,
+      latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
+      longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
+      /* Daily Multi Tier Pricing: parse optional total price fields from search API */
+      lowestTotalPrice: json['lowest_total_price'] != null
+          ? double.tryParse(json['lowest_total_price'].toString())
+          : null,
+      totalDays: json['total_days'] != null
+          ? int.tryParse(json['total_days'].toString())
+          : null,
+      isFlatRate: json['is_flat_rate'] as bool?,
     );
   }
 
@@ -163,6 +185,9 @@ class PropertyModel {
       'total_rooms': totalRooms,
       'available_rooms': availableRooms,
       'gender': gender,
+      'lowest_total_price': lowestTotalPrice,
+      'total_days': totalDays,
+      'is_flat_rate': isFlatRate,
     };
   }
 }

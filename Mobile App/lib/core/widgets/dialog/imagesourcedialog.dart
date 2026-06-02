@@ -13,19 +13,21 @@ Future<ImageSourceOption?> showImageSourceDialog(
   String cancelButtonText = 'Cancel',
   bool barrierDismissible = true,
 }) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
   return showDialog<ImageSourceOption>(
     context: context,
     barrierDismissible: barrierDismissible,
     builder: (ctx) => AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       title: title != null
           ? Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             )
           : null,
@@ -39,9 +41,10 @@ Future<ImageSourceOption?> showImageSourceDialog(
             width: 80,
             height: 80,
             errorBuilder: (context, error, stackTrace) {
-              return const Icon(
+              // Use primaryAdaptive for the fallback icon color
+              return Icon(
                 Icons.image_outlined,
-                color: AppColors.primaryColor,
+                color: AppColors.primaryAdaptive(context),
                 size: 80,
               );
             },
@@ -50,9 +53,9 @@ Future<ImageSourceOption?> showImageSourceDialog(
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Colors.black87,
+                color: isDark ? Colors.white70 : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -68,7 +71,8 @@ Future<ImageSourceOption?> showImageSourceDialog(
               icon: const Icon(Icons.camera_alt, color: Colors.white),
               label: Text(cameraButtonText),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                // Use primaryAdaptive for the camera button background
+                backgroundColor: AppColors.primaryAdaptive(context),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -107,8 +111,8 @@ Future<ImageSourceOption?> showImageSourceDialog(
           },
           child: Text(
             cancelButtonText,
-            style: const TextStyle(
-              color: Colors.black54,
+            style: TextStyle(
+              color: isDark ? Colors.grey[400] : Colors.black54,
               fontWeight: FontWeight.w500,
             ),
           ),

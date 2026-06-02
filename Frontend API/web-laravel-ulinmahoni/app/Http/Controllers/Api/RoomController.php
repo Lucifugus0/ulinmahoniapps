@@ -32,8 +32,15 @@ class RoomController extends ApiController
 
             $rooms = $query->get();
 
+            /* Lookup table from room type name → admin-controlled sort_priority.
+               Forwarded to each room as `type_sort_priority` so the Mobile App's
+               room-name filter dropdown can order types by admin priority
+               instead of alphabetically. */
+            $roomTypePriorities = \DB::table('m_room_name_types')
+                ->pluck('sort_priority', 'name');
+
             // Group images by room
-            $groupedRooms = $rooms->groupBy('idrec')->map(function ($roomGroup) use ($parkingFees, $depositFee) {
+            $groupedRooms = $rooms->groupBy('idrec')->map(function ($roomGroup) use ($parkingFees, $depositFee, $roomTypePriorities) {
                 $room = $roomGroup->first();
 
                 // Map and sort images - images with thumbnails come first
@@ -66,16 +73,25 @@ class RoomController extends ApiController
                 $roomArray['parking_fees'] = $parkingFees;
                 $roomArray['deposit_fee'] = $depositFee;
 
+                /* Admin-controlled ordering for the Mobile App's room-name filter.
+                   Null when the room's `name` is not registered in m_room_name_types. */
+                $roomArray['type_sort_priority'] = $roomTypePriorities[$room->name] ?? null;
+
                 /* Multi-Tier Pricing: add additive pricing fields to room response */
                 $roomArray['price_weekday'] = $room->price_weekday;
                 $roomArray['price_weekend'] = $room->price_weekend;
                 $roomArray['price_original_annual'] = $room->price_original_annual;
                 $roomArray['periode_annual'] = $room->periode_annual;
-                $roomArray['has_seasonal_pricing'] = \DB::table('m_room_pricing_rules')
-                    ->where('room_id', $room->idrec)
-                    ->whereIn('rule_type', ['holiday', 'high_season', 'low_season'])
+                // Check global calendar for any active seasonal/holiday dates
+                $roomArray['has_seasonal_pricing'] = \DB::table('m_calendar_dates')
+                    ->whereIn('date_type', ['holiday', 'high_season', 'low_season'])
                     ->where('status', 1)
                     ->exists();
+
+                // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
+                $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $roomArray['descriptions'] = \App\Helpers\DescriptionHelper::get($room->descriptions ?? '', 'id');
 
                 // Remove image-related fields from the main room object
                 unset(
@@ -147,11 +163,16 @@ class RoomController extends ApiController
                 $roomArray['price_weekend'] = $room->price_weekend;
                 $roomArray['price_original_annual'] = $room->price_original_annual;
                 $roomArray['periode_annual'] = $room->periode_annual;
-                $roomArray['has_seasonal_pricing'] = \DB::table('m_room_pricing_rules')
-                    ->where('room_id', $room->idrec)
-                    ->whereIn('rule_type', ['holiday', 'high_season', 'low_season'])
+                // Check global calendar for any active seasonal/holiday dates
+                $roomArray['has_seasonal_pricing'] = \DB::table('m_calendar_dates')
+                    ->whereIn('date_type', ['holiday', 'high_season', 'low_season'])
                     ->where('status', 1)
                     ->exists();
+
+                // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
+                $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $roomArray['descriptions'] = \App\Helpers\DescriptionHelper::get($room->descriptions ?? '', 'id');
 
                 // Remove image-related fields from the main room object
                 unset(
@@ -229,6 +250,11 @@ class RoomController extends ApiController
                 $roomArray['images'] = $images;
                 $roomArray['parking_fees'] = $parkingFees;
                 $roomArray['deposit_fee'] = $depositFee;
+
+                // <!-- Multi-language: add parsed descriptions for mobile app locale selection -->
+                $roomArray['descriptions_parsed'] = \App\Helpers\DescriptionHelper::parse($room->descriptions ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $roomArray['descriptions'] = \App\Helpers\DescriptionHelper::get($room->descriptions ?? '', 'id');
 
                 // Remove image-related fields from the main room object
                 unset(
@@ -364,24 +390,20 @@ class RoomController extends ApiController
             }
 
             /* Build per-date breakdown with day names and optional labels */
-            $pricingRuleLabels = \DB::table('m_room_pricing_rules')
-                ->where('room_id', $roomId)
+            // Use global calendar dates instead of per-room pricing rules for labels
+            $calendarLabels = \DB::table('m_calendar_dates')
                 ->where('status', 1)
-                ->whereIn('rule_type', ['holiday', 'high_season', 'low_season'])
-                ->get(['rule_type', 'date_start', 'date_end', 'label']);
+                ->whereIn('date_type', ['holiday', 'high_season', 'low_season'])
+                ->whereBetween('date', [$checkIn->toDateString(), $checkOut->toDateString()])
+                ->pluck('label', 'date')
+                ->toArray();
 
-            $breakdown = $datePrices->map(function ($p) use ($pricingRuleLabels) {
+            $breakdown = $datePrices->map(function ($p) use ($calendarLabels) {
                 $date = \Carbon\Carbon::parse($p->date);
                 $dateStr = $date->toDateString();
 
-                /* Find matching label if this date is in a holiday/season */
-                $label = null;
-                foreach ($pricingRuleLabels as $rule) {
-                    if ($dateStr >= $rule->date_start && $dateStr <= $rule->date_end) {
-                        $label = $rule->label;
-                        break;
-                    }
-                }
+                /* Find matching label from global calendar */
+                $label = $calendarLabels[$dateStr] ?? null;
 
                 return [
                     'date' => $dateStr,

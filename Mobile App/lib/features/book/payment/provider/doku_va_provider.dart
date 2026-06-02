@@ -4,7 +4,7 @@ import '../../../../../core/utils/app_logger.dart';
 import '../model/doku_va_model.dart';
 import '../data/repositories/doku_va_repository.dart';
 
-/// State for DOKU VA
+/// State for DOKU VA payment — holds the async result and selected bank
 class DokuVAState {
   final AsyncValue<DokuVAResponse> generateResult;
   final String? selectedBank;
@@ -25,11 +25,11 @@ class DokuVAState {
   }
 }
 
-/// StateNotifier for managing DOKU VA state
-class DokuVANotifier extends StateNotifier<DokuVAState> {
-  final DokuVARepository _repository;
-
-  DokuVANotifier(this._repository) : super(DokuVAState());
+/// Riverpod 3.x Notifier for managing DOKU VA state — migrated from StateNotifier
+class DokuVANotifier extends Notifier<DokuVAState> {
+  /// Build method returns the initial state (replaces constructor super call)
+  @override
+  DokuVAState build() => DokuVAState();
 
   /// Select bank for VA generation
   void selectBank(String bank) {
@@ -42,7 +42,7 @@ class DokuVANotifier extends StateNotifier<DokuVAState> {
     state = state.copyWith(selectedBank: null);
   }
 
-  /// Generate DOKU Virtual Account
+  /// Generate DOKU Virtual Account via repository and update state accordingly
   Future<void> generateVA({
     required String orderId,
     required String userName,
@@ -70,7 +70,8 @@ class DokuVANotifier extends StateNotifier<DokuVAState> {
       bank: bank,
     );
 
-    final result = await _repository.generateVA(request);
+    final repository = dokuVARepositoryProvider;
+    final result = await repository.generateVA(request);
 
     switch (result) {
       case Success(:final data):
@@ -94,20 +95,17 @@ class DokuVANotifier extends StateNotifier<DokuVAState> {
     }
   }
 
-  /// Reset state
+  /// Reset state back to initial values
   void resetState() {
     AppLogger.d('Resetting DOKU VA state', 'DOKU-VA-PROVIDER');
     state = DokuVAState();
   }
 
-  /// Convenience getters
+  /// Convenience getters for checking bank selection status
   bool get hasSelectedBank => state.selectedBank != null && state.selectedBank!.isNotEmpty;
   String? get selectedBank => state.selectedBank;
 }
 
-/// Provider for DokuVANotifier
+/// Provider for DokuVANotifier — migrated from StateNotifierProvider to NotifierProvider
 final dokuVANotifierProvider =
-    StateNotifierProvider<DokuVANotifier, DokuVAState>((ref) {
-  final repository = dokuVARepositoryProvider;
-  return DokuVANotifier(repository);
-});
+    NotifierProvider<DokuVANotifier, DokuVAState>(DokuVANotifier.new);

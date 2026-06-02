@@ -5,7 +5,7 @@ import '../../../../core/layout/mainlayout.dart';
 import '../widgets/searchresult_grid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../provider/searchresult_provider.dart';
-import 'package:ulinmahoniapps/features/home/model/properties_model.dart';
+import 'package:ulinmahoniapps/features/home/provider/property_provider.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../core/widgets/card/propertycard.dart';
@@ -18,7 +18,7 @@ class SearchResult extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final localizations = AppLocalizations.of(context)!; 
-    final AsyncValue<List<PropertyModel>> searchResults = ref.watch(searchResultsProvider);
+    final searchResults = ref.watch(searchResultsProvider);
     final currentFilter = ref.watch(searchFilterProvider);
 
     int activeFilterCount = 0;

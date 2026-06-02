@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../../../core/layout/mainlayout.dart';
 import '../widgets/profile_menuitem_dart.dart';
 import '../../../../auth/login/provider/auth_provider.dart';
@@ -23,6 +24,7 @@ import '../../../../../core/network/api_result.dart';
 import '../../../../../core/utils/app_logger.dart';
 import '../../../../../core/services/apple_multi_account_storage.dart';
 import '../../../../auth/presentation/pages/account_picker_page.dart';
+import '../../../../../core/theme/theme_provider.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -81,15 +83,29 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             final currentLocale = ref.watch(localeProvider);
             final localizations = AppLocalizations.of(context)!;
 
+            // Dark mode detection inside dialog builder
+            final isDarkDialog = Theme.of(context).brightness == Brightness.dark;
+            // Dark-aware inactive button colors
+            final inactiveBg = isDarkDialog ? const Color(0xFF374151) : Colors.white;
+            final inactiveFg = isDarkDialog ? Colors.white : Colors.black87;
+            final inactiveBorder = isDarkDialog ? Colors.white24 : Colors.grey[300]!;
+
             return AlertDialog(
-          backgroundColor: Colors.white,
+          // Dark-aware dialog background
+          backgroundColor: isDarkDialog ? const Color(0xFF1F2937) : Colors.white,
           title: Text(
-            currentLocale.languageCode == 'id' ? 'Pilih Bahasa' : 'Select Language',
+            // Dialog title in each language
+            currentLocale.languageCode == 'id'
+                ? 'Pilih Bahasa'
+                : currentLocale.languageCode == 'zh'
+                    ? '选择语言'
+                    : 'Select Language',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              // Dark-aware title color
+              color: isDarkDialog ? Colors.white : Colors.black87,
             ),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -102,9 +118,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 width: 80,
                 height: 80,
                 errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
+                  return Icon(
                     Icons.language,
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryAdaptive(context),
                     size: 80,
                   );
                 },
@@ -119,18 +135,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: currentLocale.languageCode == 'id'
-                        ? AppColors.primaryColor
-                        : Colors.white,
+                        ? AppColors.primaryAdaptive(context)
+                        : inactiveBg,
                     foregroundColor: currentLocale.languageCode == 'id'
                         ? Colors.white
-                        : Colors.black87,
+                        : inactiveFg,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
                         color: currentLocale.languageCode == 'id'
-                            ? AppColors.primaryColor
-                            : Colors.grey[300]!,
+                            ? AppColors.primaryAdaptive(context)
+                            : inactiveBorder,
                         width: 1,
                       ),
                     ),
@@ -159,18 +175,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: currentLocale.languageCode == 'en'
-                        ? AppColors.primaryColor
-                        : Colors.white,
+                        ? AppColors.primaryAdaptive(context)
+                        : inactiveBg,
                     foregroundColor: currentLocale.languageCode == 'en'
                         ? Colors.white
-                        : Colors.black87,
+                        : inactiveFg,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
                         color: currentLocale.languageCode == 'en'
-                            ? AppColors.primaryColor
-                            : Colors.grey[300]!,
+                            ? AppColors.primaryAdaptive(context)
+                            : inactiveBorder,
                         width: 1,
                       ),
                     ),
@@ -189,6 +205,46 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              // Simplified Chinese Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(localeProvider.notifier).state = const Locale('zh');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: currentLocale.languageCode == 'zh'
+                        ? AppColors.primaryAdaptive(context)
+                        : inactiveBg,
+                    foregroundColor: currentLocale.languageCode == 'zh'
+                        ? Colors.white
+                        : inactiveFg,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: currentLocale.languageCode == 'zh'
+                            ? AppColors.primaryAdaptive(context)
+                            : inactiveBorder,
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('🇨🇳', style: TextStyle(fontSize: 20)),
+                      const SizedBox(width: 12),
+                      const Text('简体中文'),
+                      if (currentLocale.languageCode == 'zh') ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.check_circle, size: 20),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
           actionsAlignment: MainAxisAlignment.center,
@@ -199,8 +255,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               },
               child: Text(
                 localizations.cancelButton,
-                style: const TextStyle(
-                  color: Colors.black54,
+                // Dark-aware cancel button color
+                style: TextStyle(
+                  color: isDarkDialog ? Colors.grey[400] : Colors.black54,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -263,14 +320,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+              // Remove const: valueColor is adaptive (runtime context)
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAdaptive(context)),
               ),
               const SizedBox(height: 16),
               Text(
@@ -428,14 +487,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+              // Remove const: valueColor is adaptive (runtime context)
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAdaptive(context)),
               ),
               const SizedBox(height: 16),
               Text(
@@ -513,6 +574,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final authState = ref.watch(authProvider);
     final user = authState.user.value;
     final displayName = user?.firstName ?? localizations.profileDefaultUsername;
+    // Dark/light mode detection for theme-aware glass containers
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return MainLayout(
       showBottomNav: false,
@@ -527,7 +590,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _onRefresh,
-              color: AppColors.primaryColor,
+              // Use primaryAdaptive for dark/light mode compatibility
+              color: AppColors.primaryAdaptive(context),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
@@ -535,15 +599,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Profile Card
+                      // Profile Card (glass-style container)
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? AppColors.glassBorderDark : Colors.transparent,
+                            width: 0.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -554,11 +622,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             // CircleAvatar with default profile icon
                             CircleAvatar(
                               radius: 32,
-                              backgroundColor: AppColors.primaryColor.withValues(alpha: 0.1),
+                              // Use primaryAdaptive for dark/light mode compatibility
+                              backgroundColor: AppColors.primaryAdaptive(context).withValues(alpha: 0.1),
                               child: Icon(
                                 Icons.person,
                                 size: 32,
-                                color: AppColors.primaryColor,
+                                color: AppColors.primaryAdaptive(context),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -568,10 +637,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 children: [
                                   Text(
                                     displayName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: isDark ? Colors.white : Colors.black87,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -579,7 +648,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     user?.email ?? localizations.profileDefaultEmail,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.grey[600],
+                                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                                     ),
                                   ),
                                 ],
@@ -593,7 +662,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icon(
                                 Icons.edit_outlined,
                                 size: 24,
-                                color: Colors.grey[700],
+                                color: isDark ? Colors.grey[300] : Colors.grey[700],
                               ),
                             ),
                           ],
@@ -736,14 +805,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
                       const SizedBox(height: 12),
 
-                      // First Menu Group
+                      // First Menu Group (glass-style container)
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? AppColors.glassBorderDark : Colors.transparent,
+                            width: 0.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -755,35 +828,71 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icons.receipt_long_outlined,
                               text: localizations.profileOrderHistoryTitle,
                               subText: localizations.profileOrderHistorySubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 context.push('/mybooking');
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.badge_outlined,
                               text: localizations.profileUploadIdTitle,
                               subText: localizations.profileUploadIdSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: _uploadIdDocument,
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.language_outlined,
                               text: localizations.profileLanguageTitle,
                               subText: localizations.profileLanguageSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: _showLanguageDialog,
+                            ),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
+                            // Dark/Light mode toggle
+                            Consumer(
+                              builder: (context, ref, _) {
+                                final themeMode = ref.watch(themeProvider);
+                                final isDarkMode = themeMode == ThemeMode.dark;
+                                return MenuItem(
+                                  icon: isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                                  text: isDarkMode ? localizations.darkModeLabel : localizations.lightModeLabel,
+                                  subText: isDarkMode ? localizations.switchToLightMode : localizations.switchToDarkMode,
+                                  trailing: Switch(
+                                    value: isDarkMode,
+                                    // Use primaryAdaptive for dark/light mode compatibility
+                                    activeTrackColor: AppColors.primaryAdaptive(context),
+                                    activeThumbColor: Colors.white,
+                                    // In light mode the inactive thumb is white by default — make it visible
+                                    inactiveThumbColor: isDark ? Colors.grey[400] : Colors.grey[600],
+                                    inactiveTrackColor: isDark ? Colors.grey[700] : Colors.grey[300],
+                                    onChanged: (value) {
+                                      ref.read(themeProvider.notifier).toggle();
+                                    },
+                                  ),
+                                  onTap: () {
+                                    ref.read(themeProvider.notifier).toggle();
+                                  },
+                                );
+                              },
+                            ),
+                            /* App version info — displays VERSION_NAME from .env */
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
+                            MenuItem(
+                              icon: Icons.info_outline,
+                              text: 'App Version',
+                              subText: dotenv.env['VERSION_NAME'] ?? 'Unknown',
+                              onTap: () {},
                             ),
                             // Show "Switch Apple Account" only on iOS and if user is signed in with Apple
                             if (Platform.isIOS && user?.appleUserId != null) ...[
-                              Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                              Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                               MenuItem(
                                 icon: Icons.swap_horiz_outlined,
                                 text: 'Switch Apple Account',
                                 subText: 'Switch between multiple Apple accounts',
-                                trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                                trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                                 onTap: _switchAppleAccount,
                               ),
                             ],
@@ -793,14 +902,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
                       const SizedBox(height: 16),
 
-                      // Second Menu Group
+                      // Second Menu Group (glass-style container)
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? AppColors.glassBorderDark : Colors.transparent,
+                            width: 0.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -811,53 +924,53 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             MenuItem(
                               icon: Icons.phone_outlined,
                               text: localizations.profileContactUsMenu,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 showContactDialog(context);
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.shield_outlined,
                               text: localizations.profilePrivacyPolicyTitle,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 _launchURL('https://web.ulinmahoni.com/privacy-policy');
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.description_outlined,
                               text: localizations.profileTermsConditionsTitle,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 _launchURL('https://web.ulinmahoni.com/terms-of-services');
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.lock_outline,
                               text: localizations.changePasswordTitle,
                               subText: localizations.changePasswordSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () {
                                 context.push('/updatepassword');
                               },
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.person_remove_outlined,
                               text: localizations.profileDeactivateAccountTitle,
                               subText: localizations.profileDeactivateAccountSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: _deactivateAccount,
                             ),
-                            Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                            Divider(height: 1, indent: 60, color: isDark ? Colors.grey[800] : Colors.grey[200]),
                             MenuItem(
                               icon: Icons.logout_outlined,
                               text: localizations.logoutTitle,
                               subText: localizations.logoutSubText,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.grey[500] : Colors.grey),
                               onTap: () async {
                                 final bool? confirmLogout = await showErrorDialog(
                                   context,

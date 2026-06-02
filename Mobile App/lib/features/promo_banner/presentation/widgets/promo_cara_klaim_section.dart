@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/appcolor_constants.dart';
 import '../../../../core/constants/appfontweight_constants.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../model/promo_banner_model.dart';
 
-/// Widget untuk menampilkan section "Cara Klaim"
-/// Menampilkan langkah cara klaim promo dengan numbered list
-/// Menggunakan data dari API jika tersedia, fallback ke hardcoded steps
+/// Widget to display "How to Claim" steps — dark/light mode aware with translations
 class PromoCaraKlaimSection extends StatelessWidget {
   final PromoBannerModel banner;
 
@@ -14,62 +13,60 @@ class PromoCaraKlaimSection extends StatelessWidget {
     required this.banner,
   });
 
-  // Default cara klaim steps (fallback jika API tidak mengembalikan data)
-  static const List<String> _defaultCaraKlaim = [
-    'Pilih properti yang diinginkan',
-    'Lalu Pilih Kamar yang diinginkan',
-    'Masukkan Kode Voucher saat pemesanan',
-    'Lakukan Pemesanan',
-    'Nikmati promo/diskon yang didapatkan',
-  ];
-
   @override
   Widget build(BuildContext context) {
-    // Use API data if available, otherwise use default steps
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final localizations = AppLocalizations.of(context)!;
+
+    // Default steps as fallback
+    final defaultSteps = [
+      localizations.promoClaimStep1,
+      localizations.promoClaimStep2,
+      localizations.promoClaimStep3,
+      localizations.promoClaimStep4,
+      localizations.promoClaimStep5,
+    ];
+
     final List<String> caraKlaim =
         (banner.howToClaim != null && banner.howToClaim!.isNotEmpty)
             ? banner.howToClaim!
-            : _defaultCaraKlaim;
+            : defaultSteps;
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.backgroundColor, // white
+        color: isDark ? AppColors.surfaceDark : AppColors.backgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey[300]!,
+          color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
-          const Text(
-            'Cara Klaim',
+          Text(
+            localizations.promoHowToClaim,
             style: TextStyle(
               fontSize: 18,
               fontWeight: AppFontWeight.bold,
-              color: AppColors.fontcolor,
+              color: isDark ? AppColors.fontColorDark : AppColors.fontcolor,
             ),
           ),
           const SizedBox(height: 16),
-
-          // List of steps
           ...List.generate(caraKlaim.length, (index) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Number indicator
                   Container(
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryColor,
+                      color: AppColors.primaryAdaptive(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -84,14 +81,12 @@ class PromoCaraKlaimSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-
-                  // Step text
                   Expanded(
                     child: Text(
                       caraKlaim[index],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.fontcolor,
+                        color: isDark ? AppColors.fontColorDark : AppColors.fontcolor,
                         height: 1.4,
                       ),
                     ),

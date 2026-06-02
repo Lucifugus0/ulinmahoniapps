@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         .login-container {
             position: relative;
@@ -35,12 +36,15 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
             z-index: 2;
         }
+        /* Liquid glass — translucent register panel with strong blur */
         .login-box {
             position: relative;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(48px);
+            -webkit-backdrop-filter: blur(48px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 2rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             padding: 2.5rem;
             max-width: 28rem;
@@ -53,6 +57,7 @@
                 padding: 1.5rem;
             }
         }
+        /* Text colors handled by central .login-container .login-box rules in homepage/styles.blade.php */
     </style>
 </head>
 <body class="bg-gray-50">
@@ -71,7 +76,7 @@
         <div class="login-box">
             <div class="text-center mb-6">
                 <div class="flex justify-center mb-4">
-                    <img src="{{ asset('images/assets/ulinmahoni-logo.svg') }}" alt="Ulin Mahoni Logo" class="h-16 w-auto">
+                    <img src="{{ asset('images/assets/new-ullinmahoni.PNG') }}" alt="Ulin Mahoni Logo" class="h-16 w-auto">
                 </div>
                 <h2 class="text-4xl font-light text-gray-900 mb-2">Create Account</h2>
                 <p class="text-gray-600 text-lg">UlinMahoni</p>

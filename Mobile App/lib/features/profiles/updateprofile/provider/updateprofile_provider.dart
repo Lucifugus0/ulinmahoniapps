@@ -4,10 +4,12 @@ import '../../../auth/login/provider/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_logger.dart';
 
+/// Provider for UpdateProfileService singleton.
 final updateProfileServiceProvider = Provider<UpdateProfileService>((ref) {
   return UpdateProfileService();
 });
 
+/// Sealed class hierarchy for update profile state.
 sealed class UpdateProfileState {}
 
 class UpdateProfileInitial extends UpdateProfileState {}
@@ -21,11 +23,17 @@ class UpdateProfileError extends UpdateProfileState {
   UpdateProfileError(this.message);
 }
 
-class UpdateProfileNotifier extends StateNotifier<UpdateProfileState> {
-  final UpdateProfileService _service;
-  final AuthNotifier _authNotifier; 
+/// Notifier for update profile actions.
+/// Migrated from StateNotifier to Notifier for Riverpod 3.x.
+/// Uses ref directly instead of constructor-injected dependencies.
+class UpdateProfileNotifier extends Notifier<UpdateProfileState> {
+  /// build() returns initial state.
+  @override
+  UpdateProfileState build() {
+    return UpdateProfileInitial();
+  }
 
-  UpdateProfileNotifier(this._service, this._authNotifier) : super(UpdateProfileInitial());
+  /// Update user profile with the given fields.
   Future<void> updateProfile({
     required String username,
     required String email,
@@ -34,18 +42,19 @@ class UpdateProfileNotifier extends StateNotifier<UpdateProfileState> {
     required String lastName,
     String? profilePhotoBase64,
   }) async {
-    state = UpdateProfileLoading(); 
+    state = UpdateProfileLoading();
 
     try {
-      
-      final currentUser = _authNotifier.state.user.value;
+      final service = ref.read(updateProfileServiceProvider);
+      final authNotifier = ref.read(authProvider.notifier);
+      final currentUser = authNotifier.state.user.value;
 
       if (currentUser == null ) {
         throw Exception("Pengguna tidak terautentikasi atau data tidak lengkap.");
       }
 
-      final updatedUser = await _service.updateProfile(
-        userId: currentUser.id, 
+      final updatedUser = await service.updateProfile(
+        userId: currentUser.id,
         username: username,
         email: email,
         phoneNumber: phoneNumber,
@@ -54,7 +63,8 @@ class UpdateProfileNotifier extends StateNotifier<UpdateProfileState> {
         lastName: lastName ,
       );
 
-      _authNotifier.setUser(updatedUser);
+      /// Update auth state with new user data
+      authNotifier.setUser(updatedUser);
 
       state = UpdateProfileSuccess(updatedUser);
       AppLogger.s("Profile updated successfully for userId: ${currentUser.id}", "UPDATE-PROFILE");
@@ -65,9 +75,7 @@ class UpdateProfileNotifier extends StateNotifier<UpdateProfileState> {
   }
 }
 
-final updateProfileNotifierProvider = StateNotifierProvider<UpdateProfileNotifier, UpdateProfileState>((ref) {
-  final service = ref.watch(updateProfileServiceProvider);
-  
-  final authNotifier = ref.watch(authProvider.notifier);
-  return UpdateProfileNotifier(service, authNotifier);
-});
+/// Provider for UpdateProfileNotifier — Riverpod 3.x NotifierProvider.
+final updateProfileNotifierProvider = NotifierProvider<UpdateProfileNotifier, UpdateProfileState>(
+  UpdateProfileNotifier.new,
+);

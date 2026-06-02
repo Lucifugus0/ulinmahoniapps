@@ -11,10 +11,11 @@
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.ico') }}">
 
     <!-- CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
 
     @stack('styles')
     <style>
@@ -111,6 +112,57 @@
         html.dark .bg-teal-100 { background-color: rgba(13,148,136,0.2) !important; }
         html.dark .text-teal-800 { color: #5eead4 !important; }
         html.dark .border-teal-400 { border-color: #2dd4bf !important; }
+
+        /* Gender badge — dark mode override */
+        .gender-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            border: 1.5px solid #d1d5db;
+            border-radius: 6px;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #374151;
+        }
+        /* Gender badge dark mode — semi-transparent bg + brighter text for visibility on dark cards */
+        html.dark .gender-badge {
+            color: #f3f4f6 !important;
+            border-color: #6b7280 !important;
+            background-color: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        /* Liquid glass — filter/search container panel */
+        .bg-white.rounded-xl.shadow-sm.border.border-gray-100 {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: var(--glass-shadow);
+        }
+        /* Liquid glass — active filters banner */
+        .bg-blue-50.border-l-4.border-blue-400 {
+            background: rgba(59, 130, 246, 0.12) !important;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+        }
+        /* Liquid glass — room cards rendered by JS */
+        .room-card {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: var(--glass-shadow);
+        }
+        .room-card:hover {
+            background: var(--glass-bg-hover) !important;
+            box-shadow: var(--glass-shadow-hover);
+        }
+        /* Light mode text brightening — darker grays for glass readability */
+        .text-gray-400 { color: #555570 !important; }
+        .text-gray-500 { color: #4a4a68 !important; }
+        input::placeholder { color: #555570 !important; opacity: 1 !important; }
+        html.dark input::placeholder { color: #a0a0b8 !important; }
     </style>
 </head>
 <body style="background-color: #f8f7f4;">
@@ -630,9 +682,15 @@
                                 <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500">
                                     <span class="flex items-center gap-1">
                                         <i class="fas fa-door-open"></i>
-                                        <span>${property.available_rooms.filter(r => r.status === 1 && r.rental_status !== 1).length} kamar tersedia</span>
+                                        <span>${property.available_rooms.filter(r => r.status === 1 && (r.is_available !== undefined ? r.is_available : r.rental_status !== 1)).length} kamar tersedia</span>
                                     </span>
-                                    ${property.lowest_price ? `
+                                    <!-- Daily Multi Tier Pricing: show total price at property level when dates selected -->
+                                    ${property.lowest_total_price ? `
+                                        <span class="flex items-center gap-1">
+                                            <i class="fas fa-tag"></i>
+                                            <span>Mulai dari <strong class="text-teal-600">Rp ${formatRupiah(property.lowest_total_price)}</strong> / ${property.available_rooms[0]?.total_days || ''} malam</span>
+                                        </span>
+                                    ` : property.lowest_price ? `
                                         <span class="flex items-center gap-1">
                                             <i class="fas fa-tag"></i>
                                             <span>Mulai dari <strong class="text-teal-600">Rp ${formatRupiah(property.lowest_price)}</strong>/${periodLabel}</span>
@@ -652,7 +710,7 @@
                     </div>
                     <div class="p-5 bg-gray-50">
                         ${(() => {
-                            const availableRooms = property.available_rooms.filter(room => room.status === 1 && room.rental_status !== 1);
+                            const availableRooms = property.available_rooms.filter(room => room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1));
                             if (availableRooms.length === 0) {
                                 return `<p class="text-center text-gray-500 py-3 text-sm">{{ __('properties.room.no_rooms') }}</p>`;
                             }
@@ -704,9 +762,15 @@
                                     <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500">
                                         <span class="flex items-center gap-1">
                                             <i class="fas fa-door-open"></i>
-                                            <span>${property.available_rooms.filter(r => r.status === 1 && r.rental_status !== 1).length} ${translations.rooms_available}</span>
+                                            <span>${property.available_rooms.filter(r => r.status === 1 && (r.is_available !== undefined ? r.is_available : r.rental_status !== 1)).length} ${translations.rooms_available}</span>
                                         </span>
-                                        ${property.lowest_price ? `
+                                        <!-- Daily Multi Tier Pricing: show total price when dates selected -->
+                                        ${property.lowest_total_price ? `
+                                            <span class="flex items-center gap-1">
+                                                <i class="fas fa-tag"></i>
+                                                <span>${translations.start_from} <strong class="text-teal-600">Rp ${formatRupiah(property.lowest_total_price)}</strong> / ${property.available_rooms[0]?.total_days || ''} malam</span>
+                                            </span>
+                                        ` : property.lowest_price ? `
                                             <span class="flex items-center gap-1">
                                                 <i class="fas fa-tag"></i>
                                                 <span>${translations.start_from} <strong class="text-teal-600">Rp ${formatRupiah(property.lowest_price)}</strong>/${periodLabel}</span>
@@ -730,7 +794,7 @@
                         <!-- Available Rooms Grid -->
                         <div class="p-5 bg-gray-50">
                             ${(() => {
-                                const availableRooms = property.available_rooms.filter(room => room.status === 1 && room.rental_status !== 1);
+                                const availableRooms = property.available_rooms.filter(room => room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1));
                                 if (availableRooms.length === 0) {
                                     return `<p class="text-center text-gray-500 py-3 text-sm">{{ __('properties.room.no_rooms') }}</p>`;
                                 }
@@ -756,7 +820,7 @@
                 const propertyRoute = getPropertyRoute(property);
                 const thumbnail = getPropertyThumbnail(property);
 
-                const availableRooms = property.available_rooms.filter(room => room.status === 1 && room.rental_status !== 1);
+                const availableRooms = property.available_rooms.filter(room => room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1));
                 availableRooms.forEach(room => {
                     const roomRoute = `/rooms/${room.slug || room.id}`;
                     const roomThumbnail = getRoomThumbnail(room, property);
@@ -784,7 +848,7 @@
                                         ` : ''}
 
                                         <!-- Availability Badge -->
-                                        ${room.status === 1 && room.rental_status !== 1 ? `
+                                        ${room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1) ? `
                                             <span class="absolute bottom-3 left-3 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white shadow-sm">
                                                 ${translations.status_available}
                                             </span>
@@ -835,15 +899,24 @@
                                             ` : ''}
                                         </div>
 
-                                        <!-- Price and Action -->
+                                        <!-- Price and Action: Daily Multi Tier Pricing — show total when dates selected -->
                                         <div class="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
                                             <div>
-                                                <div class="text-2xl font-bold text-teal-600">
-                                                    Rp ${formatRupiah(room.current_price)}
-                                                </div>
-                                                <div class="text-sm text-gray-500">
-                                                    per ${periodLabel}
-                                                </div>
+                                                ${room.total_price && room.total_days ? `
+                                                    <div class="text-2xl font-bold text-teal-600">
+                                                        Rp ${formatRupiah(room.total_price)}
+                                                    </div>
+                                                    <div class="text-sm text-gray-500">
+                                                        / ${room.total_days} malam
+                                                    </div>
+                                                ` : `
+                                                    <div class="text-2xl font-bold text-teal-600">
+                                                        Rp ${formatRupiah(room.current_price)}
+                                                    </div>
+                                                    <div class="text-sm text-gray-500">
+                                                        per ${periodLabel}
+                                                    </div>
+                                                `}
                                             </div>
                                             <a href="${roomRoute}" class="room-link bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center">
                                                 ${translations.view_details}
@@ -891,7 +964,7 @@
                             ` : ''}
 
                             <!-- Availability Badge -->
-                            ${room.status === 1 && room.rental_status !== 1 ? `
+                            ${room.status === 1 && (room.is_available !== undefined ? room.is_available : room.rental_status !== 1) ? `
                                 <span class="absolute bottom-2 left-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white shadow-sm">
                                     ${translations.status_available}
                                 </span>
@@ -917,15 +990,24 @@
                             ${room.room_size ? `<span><i class="fas fa-expand-arrows-alt mr-1"></i>${room.room_size}m²</span>` : ''}
                         </div>
 
-                        <!-- Price -->
+                        <!-- Price: Daily Multi Tier Pricing — show total when dates selected, else per-night rate -->
                         <div class="room-price flex items-center justify-between pt-2 border-t border-gray-100">
                             <div>
-                                <div class="text-lg font-bold text-teal-600">
-                                    Rp ${formatRupiah(room.current_price)}
-                                </div>
-                                <div class="text-xs text-gray-500">
-                                    /${periodLabel}
-                                </div>
+                                ${room.total_price && room.total_days ? `
+                                    <div class="text-lg font-bold text-teal-600">
+                                        Rp ${formatRupiah(room.total_price)}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        / ${room.total_days} malam
+                                    </div>
+                                ` : `
+                                    <div class="text-lg font-bold text-teal-600">
+                                        Rp ${formatRupiah(room.current_price)}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        /${periodLabel}
+                                    </div>
+                                `}
                             </div>
                             <a href="${roomRoute}" class="room-link text-teal-600 hover:text-teal-700 text-sm font-medium">
                                 ${translations.view_details} <i class="fas fa-arrow-right text-xs ml-1"></i>
@@ -1133,7 +1215,7 @@
             };
             const label = labels[key] || gender;
             const icon  = icons[key]  || '';
-            return `<div style="display:inline-flex;align-items:center;gap:0.3rem;border:1.5px solid #d1d5db;border-radius:6px;padding:0.1rem 0.4rem;font-size:0.875rem;font-weight:700;color:#374151;">${icon}<span>${label}</span></div>`;
+            return `<div class="gender-badge">${icon}<span>${label}</span></div>`;
         }
 
         // Helper functions

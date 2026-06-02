@@ -4,6 +4,7 @@ return [
     'hero' => [
         'title' => '欢迎来到 Ulin Mahoni',
         'subtitle' => '安全和谐的居住环境',
+        'description' => '轻松、快速、可靠地找到您理想的宿舍、公寓或别墅。',
         'hashtag' => '#UlinMahoni',
     ],
 
@@ -14,9 +15,15 @@ return [
         'submit' => '搜索房源',
         'all_properties' => '所有房源',
         'all_periods' => '所有周期',
+        // Field labels rendered above each input in the hero search bar
+        'label_property_type' => '房源类型',
+        'label_period' => '周期',
+        'label_check_in' => '入住',
+        'label_check_out' => '退房',
     ],
 
     'property_types' => [
+        'All' => '全部',
         'Kos' => '公寓',
         'House' => '房屋',
         'Apartment' => '公寓楼',
@@ -34,6 +41,8 @@ return [
         'promos' => '特别优惠',
         'areas' => '热门区域',
         'featured' => '精选房源',
+        'category_property' => '房源分类',
+        'location' => '位置',
     ],
 
     'actions' => [
@@ -44,12 +53,14 @@ return [
 
     'titles' => [
         'ongoing_promos' => '进行中的促销',
-        'available_areas' => '可用区域',
+        'available_areas' => '离你最近',
     ],
 
     'subtitles' => [
         'limited_offers' => '限时优惠',
-        'areas_around_you' => '您附近的可用区域',
+        'areas_around_you' => '离您最近的房产',
+        'enable_location' => '启用定位以查看距离',
+        'calculating_distance' => '正在计算距离...',
     ],
 
     'messages' => [

@@ -9,12 +9,20 @@ final renewBookingRepositoryProvider = Provider<RenewBookingRepository>((ref) {
   return RenewBookingRepository();
 });
 
-// State Notifier for Renew Booking
-class RenewBookingNotifier extends StateNotifier<AsyncValue<RenewBookingResponse?>> {
-  final RenewBookingRepository _repository;
+/// Notifier for renew booking state.
+/// Migrated from StateNotifier to Notifier for Riverpod 3.x.
+/// Removed `mounted` checks since Notifier handles lifecycle automatically.
+class RenewBookingNotifier extends Notifier<AsyncValue<RenewBookingResponse?>> {
+  late final RenewBookingRepository _repository;
 
-  RenewBookingNotifier(this._repository) : super(const AsyncData(null));
+  /// build() returns the initial state and initializes dependencies.
+  @override
+  AsyncValue<RenewBookingResponse?> build() {
+    _repository = ref.watch(renewBookingRepositoryProvider);
+    return const AsyncData(null);
+  }
 
+  /// Submit a renew booking request — returns the response on success, null on failure.
   Future<RenewBookingResponse?> renewBooking({
     required String orderId,
     required int userId,
@@ -84,35 +92,28 @@ class RenewBookingNotifier extends StateNotifier<AsyncValue<RenewBookingResponse
           AppLogger.d('Response data: $data', 'RENEW-BOOKING-PROVIDER');
           AppLogger.d('Response data.data: ${data.data}', 'RENEW-BOOKING-PROVIDER');
           AppLogger.d('Response data.data.orderId: ${data.data?.orderId}', 'RENEW-BOOKING-PROVIDER');
-          if (mounted) {
-            state = AsyncData(data);
-          }
+          state = AsyncData(data);
           return data;
 
         case Failure(:final message):
           AppLogger.e('Renew booking failed', message, null, 'RENEW-BOOKING-PROVIDER');
-          if (mounted) {
-            state = AsyncError(message, StackTrace.current);
-          }
+          state = AsyncError(message, StackTrace.current);
           return null;
       }
     } catch (e, stackTrace) {
       AppLogger.e('Error in renew booking provider', e, stackTrace, 'RENEW-BOOKING-PROVIDER');
-      if (mounted) {
-        state = AsyncError(e, stackTrace);
-      }
+      state = AsyncError(e, stackTrace);
       return null;
     }
   }
 
+  /// Reset state back to initial (no data).
   void resetState() {
     state = const AsyncData(null);
   }
 }
 
-// Provider for Renew Booking State
-final renewBookingProvider = StateNotifierProvider.autoDispose<RenewBookingNotifier, AsyncValue<RenewBookingResponse?>>(
-  (ref) {
-    return RenewBookingNotifier(ref.watch(renewBookingRepositoryProvider));
-  },
+/// Provider for renew booking state — Riverpod 3.x NotifierProvider with autoDispose.
+final renewBookingProvider = NotifierProvider.autoDispose<RenewBookingNotifier, AsyncValue<RenewBookingResponse?>>(
+  RenewBookingNotifier.new,
 );

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
-
 
 class MenuItem extends StatelessWidget {
   final IconData icon;
@@ -20,17 +18,18 @@ class MenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: AppColors.white,
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           child: Row(
             children: [
-              Icon(icon, size: 28, color: Colors.grey[600]),
-              SizedBox(width: 12),
+              Icon(icon, size: 28, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,6 +39,7 @@ class MenuItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
                     if (subText != null)
@@ -47,7 +47,7 @@ class MenuItem extends StatelessWidget {
                         subText!,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
                         ),
                       ),
                   ],

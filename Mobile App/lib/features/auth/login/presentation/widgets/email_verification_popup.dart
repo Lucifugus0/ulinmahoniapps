@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/utils/app_logger.dart';
+import '../../../../../core/constants/appcolor_constants.dart';
 
 /// Popup dialog shown when user tries to login with unverified email
 /// Provides options to resend verification email or cancel
@@ -17,7 +18,12 @@ class EmailVerificationPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for dialog background and text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AlertDialog(
+      // Use dark-aware dialog background color
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -29,12 +35,14 @@ class EmailVerificationPopup extends StatelessWidget {
             size: 32,
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
               'Email Belum Diverifikasi',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                // Use dark-aware title text color
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           ),
@@ -44,25 +52,30 @@ class EmailVerificationPopup extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Akun Anda belum diverifikasi. Silakan periksa email Anda untuk verifikasi.',
             style: TextStyle(
               fontSize: 16,
               height: 1.5,
+              // Use dark-aware body text color
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              // Use dark-aware container background color
+              color: isDark ? AppColors.surfaceDarkElevated : Colors.grey[100],
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.email_outlined,
-                  color: Colors.grey[700],
+                  // Use dark-aware icon color
+                  color: isDark ? Colors.grey[400] : Colors.grey[700],
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -72,7 +85,8 @@ class EmailVerificationPopup extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
+                      // Use dark-aware email text color
+                      color: isDark ? Colors.white : Colors.grey[800],
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -82,11 +96,12 @@ class EmailVerificationPopup extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Tidak menerima email verifikasi?',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              // Use dark-aware subtitle text color
+              color: isDark ? Colors.grey[400] : Colors.grey,
             ),
           ),
         ],
@@ -103,7 +118,8 @@ class EmailVerificationPopup extends StatelessWidget {
             'Batal',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[700],
+              // Use dark-aware cancel button text color
+              color: isDark ? Colors.grey[400] : Colors.grey[700],
             ),
           ),
         ),
@@ -162,7 +178,12 @@ class EmailVerificationSentPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for dialog background and text colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AlertDialog(
+      // Use dark-aware dialog background color
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -174,12 +195,14 @@ class EmailVerificationSentPopup extends StatelessWidget {
             size: 32,
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
               'Email Terkirim',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                // Use dark-aware title text color
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           ),
@@ -189,25 +212,30 @@ class EmailVerificationSentPopup extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Email verifikasi telah dikirim ke:',
             style: TextStyle(
               fontSize: 16,
               height: 1.5,
+              // Use dark-aware body text color
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              // Use dark-aware container background color
+              color: isDark ? AppColors.surfaceDarkElevated : Colors.grey[100],
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.email_outlined,
-                  color: Colors.grey[700],
+                  // Use dark-aware icon color
+                  color: isDark ? Colors.grey[400] : Colors.grey[700],
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -217,7 +245,8 @@ class EmailVerificationSentPopup extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
+                      // Use dark-aware email text color
+                      color: isDark ? Colors.white : Colors.grey[800],
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -227,11 +256,12 @@ class EmailVerificationSentPopup extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Silakan periksa inbox atau folder spam Anda.',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              // Use dark-aware subtitle text color
+              color: isDark ? Colors.grey[400] : Colors.grey,
             ),
           ),
         ],

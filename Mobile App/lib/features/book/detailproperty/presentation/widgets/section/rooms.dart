@@ -16,12 +16,43 @@ import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
 import 'package:ulinmahoniapps/core/constants/app_asset_constants.dart';
 import '../../../../../../core/utils/app_logger.dart';
 
-// StateProvider untuk selected room name filter
-final selectedRoomFilterProvider = StateProvider.family<String?, int>((ref, propertyId) => null);
+/// Notifier for selected room name filter — replaces StateProvider.family for Riverpod 3.x
+class SelectedRoomFilterNotifier extends Notifier<String?> {
+  final int propertyId;
+  SelectedRoomFilterNotifier(this.propertyId);
 
-// StateProvider untuk selected room status filter (rental_status)
-// null = all, '0' = available (Tersedia), '1' = occupied (Terisi)
-final selectedRoomStatusFilterProvider = StateProvider.family<String?, int>((ref, propertyId) => null);
+  @override
+  String? build() => null;
+
+  /// Update the selected room name filter value
+  void update(String? value) => state = value;
+}
+
+/// Provider for selected room name filter per property ID
+final selectedRoomFilterProvider =
+    NotifierProvider.family<SelectedRoomFilterNotifier, String?, int>(
+  (propertyId) => SelectedRoomFilterNotifier(propertyId),
+);
+
+/// Notifier for selected room status filter (rental_status) — replaces StateProvider.family for Riverpod 3.x
+/// null = all, '0' = available (Tersedia), '1' = occupied (Terisi)
+class SelectedRoomStatusFilterNotifier extends Notifier<String?> {
+  final int propertyId;
+  SelectedRoomStatusFilterNotifier(this.propertyId);
+
+  @override
+  // Default to '0' (available rooms only)
+  String? build() => '0';
+
+  /// Update the selected room status filter value
+  void update(String? value) => state = value;
+}
+
+/// Provider for selected room status filter per property ID
+final selectedRoomStatusFilterProvider =
+    NotifierProvider.family<SelectedRoomStatusFilterNotifier, String?, int>(
+  (propertyId) => SelectedRoomStatusFilterNotifier(propertyId),
+);
 
 class RoomTypeSection extends ConsumerWidget {
   final DetailPropertyModel propertyData;
@@ -35,12 +66,14 @@ class RoomTypeSection extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final selectedFilter = ref.watch(selectedRoomFilterProvider(propertyId));
     final selectedStatusFilter = ref.watch(selectedRoomStatusFilterProvider(propertyId));
+    // Dark mode: slightly lighter than page bg so the section is still distinct
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     AppLogger.d('RoomTypeSection building for propertyId: $propertyId, state: ${roomsAsyncValue.isLoading ? "loading" : roomsAsyncValue.hasError ? "error" : "data"}', 'ROOMS');
 
     return Container(
       width: double.infinity,
-      color: AppColors.secondaryBackgroundColor,
+      color: isDark ? const Color(0xFF1F2937) : AppColors.secondaryBackgroundColor,
       padding: const EdgeInsets.only(top: 16, bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,14 +100,22 @@ class RoomTypeSection extends ConsumerWidget {
                 roomsAsyncValue.maybeWhen(
                   data: (rooms) {
                     final availableRooms = rooms.where((room) => room.status != 0 && room.status != 2).toList();
-                    // Get distinct room names
-                    final distinctRoomNames = availableRooms
-                        .map((room) => room.name)
-                        .where((name) => name != null && name.isNotEmpty)
-                        .cast<String>()
-                        .toSet()
-                        .toList()
-                      ..sort();
+                    // Build name → sort_priority map from rooms (admin-controlled order
+                    // from m_room_name_types via API field `type_sort_priority`).
+                    // Names without a registered priority go to the end.
+                    final Map<String, int> namePriority = {};
+                    for (final room in availableRooms) {
+                      final n = room.name;
+                      if (n != null && n.isNotEmpty) {
+                        // First non-null priority wins (all rooms of the same type share it).
+                        namePriority[n] = room.typeSortPriority ?? namePriority[n] ?? 999999;
+                      }
+                    }
+                    final distinctRoomNames = namePriority.keys.toList()
+                      ..sort((a, b) {
+                        final cmp = namePriority[a]!.compareTo(namePriority[b]!);
+                        return cmp != 0 ? cmp : a.compareTo(b);
+                      });
 
                     if (distinctRoomNames.isEmpty) {
                       return const SizedBox.shrink();
@@ -87,7 +128,8 @@ class RoomTypeSection extends ConsumerWidget {
                           child: _RoomStatusFilterDropdown(
                             selectedStatusFilter: selectedStatusFilter,
                             onStatusFilterChanged: (value) {
-                              ref.read(selectedRoomStatusFilterProvider(propertyId).notifier).state = value;
+                              // Riverpod 3.x: use .update() method instead of .state setter
+                              ref.read(selectedRoomStatusFilterProvider(propertyId).notifier).update(value);
                             },
                             localizations: localizations,
                             isEnabled: true,
@@ -100,7 +142,8 @@ class RoomTypeSection extends ConsumerWidget {
                             roomNames: distinctRoomNames,
                             selectedFilter: selectedFilter,
                             onFilterChanged: (value) {
-                              ref.read(selectedRoomFilterProvider(propertyId).notifier).state = value;
+                              // Riverpod 3.x: use .update() method instead of .state setter
+                              ref.read(selectedRoomFilterProvider(propertyId).notifier).update(value);
                             },
                             localizations: localizations,
                             isEnabled: true,
@@ -155,6 +198,13 @@ class RoomTypeSection extends ConsumerWidget {
               if (selectedFilter != null && selectedFilter.isNotEmpty) {
                 availableRooms = availableRooms.where((room) => room.name == selectedFilter).toList();
               }
+
+              // Sort by room number ascending (numeric comparison for string room numbers)
+              availableRooms.sort((a, b) {
+                final numA = int.tryParse(a.no ?? '') ?? 999999;
+                final numB = int.tryParse(b.no ?? '') ?? 999999;
+                return numA.compareTo(numB);
+              });
 
               if (availableRooms.isEmpty) {
                 // Beri padding juga untuk text kosong
@@ -264,13 +314,16 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for dropdown container and text
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primaryColor.withValues(alpha: 0.3),
+          // Use primaryAdaptive for the status filter dropdown border
+          color: AppColors.primaryAdaptive(context).withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
@@ -287,17 +340,17 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
           icon: Icon(
             Icons.filter_alt_rounded,
             size: 20,
-            color: isEnabled ? AppColors.primaryColor : Colors.grey[400],
+            color: isEnabled ? AppColors.primaryAdaptive(context) : Colors.grey[400],
           ),
           isDense: true,
           isExpanded: true,
           style: TextStyle(
             fontSize: 13,
-            color: isEnabled ? Colors.black87 : Colors.grey[400],
+            color: isEnabled ? (isDark ? Colors.white : Colors.black87) : Colors.grey[400],
             fontWeight: FontWeight.w500,
           ),
           borderRadius: BorderRadius.circular(12),
-          dropdownColor: Colors.white,
+          dropdownColor: isDark ? const Color(0xFF374151) : Colors.white,
           items: [
             DropdownMenuItem<String?>(
               value: null,
@@ -306,14 +359,14 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
                   Icon(
                     Icons.all_inclusive,
                     size: 18,
-                    color: Colors.grey[600],
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       localizations.roomFilterAllStatus,
                       style: TextStyle(
-                        color: Colors.grey[800],
+                        color: isDark ? Colors.white : Colors.grey[800],
                         fontSize: 13,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -335,7 +388,7 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
                   Expanded(
                     child: Text(
                       localizations.roomFilterAvailable,
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white : null),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -355,7 +408,7 @@ class _RoomStatusFilterDropdown extends StatelessWidget {
                   Expanded(
                     child: Text(
                       localizations.roomFilterOccupied,
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white : null),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -408,13 +461,16 @@ class _RoomFilterDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for dropdown container and text
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primaryColor.withValues(alpha: 0.3),
+          // Use primaryAdaptive for the room name filter dropdown border
+          color: AppColors.primaryAdaptive(context).withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
@@ -431,17 +487,17 @@ class _RoomFilterDropdown extends StatelessWidget {
           icon: Icon(
             Icons.filter_list_rounded,
             size: 20,
-            color: isEnabled ? AppColors.primaryColor : Colors.grey[400],
+            color: isEnabled ? AppColors.primaryAdaptive(context) : Colors.grey[400],
           ),
           isDense: true,
           isExpanded: true,
           style: TextStyle(
             fontSize: 13,
-            color: isEnabled ? Colors.black87 : Colors.grey[400],
+            color: isEnabled ? (isDark ? Colors.white : Colors.black87) : Colors.grey[400],
             fontWeight: FontWeight.w500,
           ),
           borderRadius: BorderRadius.circular(12),
-          dropdownColor: Colors.white,
+          dropdownColor: isDark ? const Color(0xFF374151) : Colors.white,
           items: [
             DropdownMenuItem<String?>(
               value: null,
@@ -450,14 +506,14 @@ class _RoomFilterDropdown extends StatelessWidget {
                   Icon(
                     Icons.clear_all,
                     size: 18,
-                    color: Colors.grey[600],
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       localizations.roomSortAllRooms,
                       style: TextStyle(
-                        color: Colors.grey[800],
+                        color: isDark ? Colors.white : Colors.grey[800],
                         fontSize: 13,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -471,16 +527,17 @@ class _RoomFilterDropdown extends StatelessWidget {
                 value: roomName,
                 child: Row(
                   children: [
+                    // Use primaryAdaptive for the room name dropdown item icon
                     Icon(
                       Icons.meeting_room_outlined,
                       size: 18,
-                      color: AppColors.primaryColor,
+                      color: AppColors.primaryAdaptive(context),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         roomName,
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(fontSize: 13, color: isDark ? Colors.white : null),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

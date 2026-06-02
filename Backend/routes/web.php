@@ -12,8 +12,10 @@ use App\Http\Controllers\Bookings\CheckIn\CheckInController;
 use App\Http\Controllers\Bookings\CheckOut\CheckOutController;
 use App\Http\Controllers\Bookings\Completed\CompletedController;
 use App\Http\Controllers\Bookings\NewReservation\NewReservController;
+use App\Http\Controllers\Bookings\ModifyBooking\ModifyBookingController;
 use App\Http\Controllers\Bookings\Pending\PendingController;
 use App\Http\Controllers\Rooms\ChangeRoomController;
+use App\Http\Controllers\Properties\CalendarDateController;
 use App\Http\Controllers\Properties\ManajementPropertiesController;
 use App\Http\Controllers\Properties\ManajementRoomsController;
 use App\Http\Controllers\Payment\PaymentController;
@@ -22,6 +24,7 @@ use App\Http\Controllers\Payment\DepositPaymentController;
 use App\Http\Controllers\Payment\RefundController;
 use App\Http\Controllers\Properties\DepositFeeController;
 use App\Http\Controllers\Properties\ParkingFeeController;
+use App\Http\Controllers\Properties\PropertyFeesController;
 use App\Http\Controllers\Properties\ParkingController;
 use App\Http\Controllers\Properties\DoorLockController;
 use App\Http\Controllers\RoomAvailability\RoomAvailabilityController;
@@ -31,6 +34,7 @@ use App\Http\Controllers\Reports\PaymentReportController;
 use App\Http\Controllers\Reports\ParkingReportController;
 use App\Http\Controllers\Reports\DepositReportController;
 use App\Http\Controllers\Reports\RentedRoomsReportController;
+use App\Http\Controllers\Reports\RefundReportController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\PromoBannerController;
 use App\Http\Controllers\Chat\ChatController;
@@ -79,6 +83,15 @@ Route::get('storage/{path}', function ($path) {
     }
 })->where('path', '.*');
 
+// <!-- Auto-translation endpoint for admin description fields (requires auth) -->
+Route::middleware(['auth'])->group(function () {
+    Route::post('/api/translate', [\App\Http\Controllers\TranslateController::class, 'translate'])->name('api.translate');
+
+    /* Web push notification device token routes — session auth, no permission check needed */
+    Route::post('/web/device-token', [\App\Http\Controllers\Web\WebDeviceTokenController::class, 'store'])->name('web.device-token.store');
+    Route::delete('/web/device-token', [\App\Http\Controllers\Web\WebDeviceTokenController::class, 'destroy'])->name('web.device-token.destroy');
+});
+
 Route::middleware(['auth', 'permission'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/room-report', [DashboardController::class, 'getPropertyRoomReport']);
@@ -99,6 +112,56 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
     Route::get('/settings/users-management', [UserController::class, 'index'])->name('users-management');
     Route::get('/settings/users-management/show', [UserController::class, 'show'])->name('users.show');
+
+    // <!-- Maintenance mode routes: dedicated page + toggle/status API endpoints -->
+    Route::get('/settings/maintenance', [\App\Http\Controllers\MaintenanceModeController::class, 'index'])->name('maintenance.index');
+    Route::get('/settings/maintenance/status', [\App\Http\Controllers\MaintenanceModeController::class, 'status'])->name('maintenance.status');
+    Route::post('/settings/maintenance/toggle', [\App\Http\Controllers\MaintenanceModeController::class, 'toggle'])->name('maintenance.toggle');
+
+    // <!-- Content management routes: tagline and hero video CRUD -->
+    Route::get('/settings/content-management', [\App\Http\Controllers\ContentManagementController::class, 'index'])->name('content-management.index');
+    Route::get('/settings/content-management/taglines', [\App\Http\Controllers\ContentManagementController::class, 'taglineList'])->name('content-management.taglines.list');
+    Route::post('/settings/content-management/taglines', [\App\Http\Controllers\ContentManagementController::class, 'taglineStore'])->name('content-management.taglines.store');
+    Route::put('/settings/content-management/taglines/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineUpdate'])->name('content-management.taglines.update');
+    Route::delete('/settings/content-management/taglines/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineDestroy'])->name('content-management.taglines.destroy');
+    // <!-- Tagline description CRUD — mirrors taglines, stored in m_tagline_desc -->
+    Route::get('/settings/content-management/tagline-descs', [\App\Http\Controllers\ContentManagementController::class, 'taglineDescList'])->name('content-management.tagline-descs.list');
+    Route::post('/settings/content-management/tagline-descs', [\App\Http\Controllers\ContentManagementController::class, 'taglineDescStore'])->name('content-management.tagline-descs.store');
+    Route::put('/settings/content-management/tagline-descs/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineDescUpdate'])->name('content-management.tagline-descs.update');
+    Route::delete('/settings/content-management/tagline-descs/{id}', [\App\Http\Controllers\ContentManagementController::class, 'taglineDescDestroy'])->name('content-management.tagline-descs.destroy');
+    Route::get('/settings/content-management/videos', [\App\Http\Controllers\ContentManagementController::class, 'videoList'])->name('content-management.videos.list');
+    Route::post('/settings/content-management/videos', [\App\Http\Controllers\ContentManagementController::class, 'videoStore'])->name('content-management.videos.store');
+    Route::post('/settings/content-management/videos/{id}/activate', [\App\Http\Controllers\ContentManagementController::class, 'videoActivate'])->name('content-management.videos.activate');
+    Route::delete('/settings/content-management/videos/{id}', [\App\Http\Controllers\ContentManagementController::class, 'videoDestroy'])->name('content-management.videos.destroy');
+
+    // <!-- Footer content management routes -->
+    Route::get('/settings/content-management/footer-content', [\App\Http\Controllers\ContentManagementController::class, 'footerContentList'])->name('content-management.footer-content.list');
+    Route::put('/settings/content-management/footer-content/{key}', [\App\Http\Controllers\ContentManagementController::class, 'footerContentUpdate'])->name('content-management.footer-content.update');
+
+    Route::get('/settings/content-management/footer-links', [\App\Http\Controllers\ContentManagementController::class, 'footerLinkList'])->name('content-management.footer-links.list');
+    Route::post('/settings/content-management/footer-links', [\App\Http\Controllers\ContentManagementController::class, 'footerLinkStore'])->name('content-management.footer-links.store');
+    Route::put('/settings/content-management/footer-links/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerLinkUpdate'])->name('content-management.footer-links.update');
+    Route::delete('/settings/content-management/footer-links/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerLinkDestroy'])->name('content-management.footer-links.destroy');
+
+    Route::get('/settings/content-management/footer-contacts', [\App\Http\Controllers\ContentManagementController::class, 'footerContactList'])->name('content-management.footer-contacts.list');
+    Route::post('/settings/content-management/footer-contacts', [\App\Http\Controllers\ContentManagementController::class, 'footerContactStore'])->name('content-management.footer-contacts.store');
+    Route::put('/settings/content-management/footer-contacts/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerContactUpdate'])->name('content-management.footer-contacts.update');
+    Route::delete('/settings/content-management/footer-contacts/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerContactDestroy'])->name('content-management.footer-contacts.destroy');
+
+    Route::get('/settings/content-management/footer-socials', [\App\Http\Controllers\ContentManagementController::class, 'footerSocialList'])->name('content-management.footer-socials.list');
+    Route::post('/settings/content-management/footer-socials', [\App\Http\Controllers\ContentManagementController::class, 'footerSocialStore'])->name('content-management.footer-socials.store');
+    Route::put('/settings/content-management/footer-socials/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerSocialUpdate'])->name('content-management.footer-socials.update');
+    Route::delete('/settings/content-management/footer-socials/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerSocialDestroy'])->name('content-management.footer-socials.destroy');
+
+    Route::get('/settings/content-management/footer-payments', [\App\Http\Controllers\ContentManagementController::class, 'footerPaymentList'])->name('content-management.footer-payments.list');
+    Route::post('/settings/content-management/footer-payments', [\App\Http\Controllers\ContentManagementController::class, 'footerPaymentStore'])->name('content-management.footer-payments.store');
+    Route::put('/settings/content-management/footer-payments/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerPaymentUpdate'])->name('content-management.footer-payments.update');
+    Route::delete('/settings/content-management/footer-payments/{id}', [\App\Http\Controllers\ContentManagementController::class, 'footerPaymentDestroy'])->name('content-management.footer-payments.destroy');
+
+    // <!-- Legal pages management routes -->
+    Route::get('/settings/content-management/legal-pages', [\App\Http\Controllers\ContentManagementController::class, 'legalPageList'])->name('content-management.legal-pages.list');
+    Route::get('/settings/content-management/legal-pages/{slug}', [\App\Http\Controllers\ContentManagementController::class, 'legalPageShow'])->name('content-management.legal-pages.show');
+    Route::put('/settings/content-management/legal-pages/{slug}', [\App\Http\Controllers\ContentManagementController::class, 'legalPageUpdate'])->name('content-management.legal-pages.update');
 
     Route::get('/settings/users-management/new', [UserController::class, 'indexNew'])->name('users-newManagement');
     Route::post('/settings/users-management/search', [UserController::class, 'searchUsers'])->name('users.search');
@@ -152,6 +215,9 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
         Route::get('/newReserv-in/{order_id}/regist', [NewReservController::class, 'getRegist'])->name('newReserv.checkin.regist');
         Route::get('/newReserv-in/{order_id}/invoice', [NewReservController::class, 'getInvoice'])->name('newReserv.checkin.invoice');
+        /* Invoice-number-based URL: /newReserv-in/invoice-{slug} where {slug} is the invoice
+           number with '/' replaced by '-' (e.g. 0162/K1/KGA-INV/IV/2026 → invoice-0162-K1-KGA-INV-IV-2026). */
+        Route::get('/newReserv-in/invoice-{slug}', [NewReservController::class, 'getInvoiceBySlug'])->name('newReserv.checkin.invoice.by-number');
 
         Route::get('/checkin', [CheckInController::class, 'index'])->name('checkin.index');
         Route::get('/checkin/filter', [CheckInController::class, 'filter'])->name('checkin.filter');
@@ -165,6 +231,14 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
         Route::get('/completed', [CompletedController::class, 'index'])->name('completed.index');
         Route::get('/completed/filter', [CompletedController::class, 'filter'])->name('completed.filter');
+
+        /* Modify Booking — admin tool for editing scheduled check_in / check_out / paid_at on
+           paid bookings. Same filter set as Confirmed Bookings. Each save clones t_booking
+           (audit Option A) and writes the actual data to t_transactions. */
+        Route::get('/modify-booking', [ModifyBookingController::class, 'index'])->name('modifyBooking.index');
+        Route::get('/modify-booking/filter', [ModifyBookingController::class, 'filter'])->name('modifyBooking.filter');
+        Route::get('/modify-booking/{order_id}/details', [ModifyBookingController::class, 'show'])->name('modifyBooking.show');
+        Route::post('/modify-booking/{order_id}', [ModifyBookingController::class, 'modify'])->name('modifyBooking.update');
     });
     
     // ---------------------------------------------------------------------------------------------------------------------
@@ -200,10 +274,24 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::put('/m-properties/facility/update/{id}', [ManajementPropertiesController::class, 'updateFacility'])->name('facilityProperty.update');
         Route::post('/m-properties/facility/toggle-status', [ManajementPropertiesController::class, 'toggleFacilityStatus'])->name('facilityProperty.toggle-status');
 
+        // ------------------------- CITIES MANAGEMENT -------------------------
+        Route::get('/m-properties/cities', [ManajementPropertiesController::class, 'indexCity'])->name('cityProperty.index');
+        Route::post('/m-properties/cities/store', [ManajementPropertiesController::class, 'storeCity'])->name('cityProperty.store');
+        Route::put('/m-properties/cities/update/{id}', [ManajementPropertiesController::class, 'updateCity'])->name('cityProperty.update');
+        Route::post('/m-properties/cities/toggle-status', [ManajementPropertiesController::class, 'toggleCityStatus'])->name('cityProperty.toggle-status');
+
+        // ------------------------- GLOBAL CALENDAR MANAGEMENT -------------------------
+        Route::get('/calendar', [CalendarDateController::class, 'index'])->name('calendar.index');
+        Route::get('/calendar/entries', [CalendarDateController::class, 'getEntries'])->name('calendar.entries');
+        Route::post('/calendar/store', [CalendarDateController::class, 'storeRange'])->name('calendar.store');
+        Route::post('/calendar/toggle-status', [CalendarDateController::class, 'toggleStatus'])->name('calendar.toggle-status');
+        Route::post('/calendar/regenerate-all', [CalendarDateController::class, 'regenerateAll'])->name('calendar.regenerate-all');
+
         // ------------------------- ROOMS MANAGEMENT -------------------------
         Route::get('/m-rooms', [ManajementRoomsController::class, 'index'])->name('rooms.index');
         Route::post('/rooms/store', [ManajementRoomsController::class, 'store'])->name('rooms.store');
         Route::post('/rooms/check-room-number', [ManajementRoomsController::class, 'checkRoomNumber'])->name('rooms.check-room-number');
+        Route::post('/rooms/check-room-bookings', [ManajementRoomsController::class, 'checkRoomBookings'])->name('rooms.check-room-bookings');
         Route::put('/rooms/update/{idrec}', [ManajementRoomsController::class, 'update'])->name('rooms.update');
         Route::put('/rooms/{room}/status', [ManajementRoomsController::class, 'updateStatus'])->name('room.updateStatus');
         Route::post('/rooms/set-active-all', [ManajementRoomsController::class, 'setActiveAll'])->name('rooms.setActiveAll');
@@ -227,12 +315,24 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::put('/rooms/facilityRooms/update/{id}', [ManajementRoomsController::class, 'updateFacility'])->name('facilityRooms.update');
         Route::post('/rooms/facilityRooms/toggle-status', [ManajementRoomsController::class, 'toggleFacilityStatus'])->name('facilityRooms.toggle-status');
 
+        // ------------------------- ROOM NAME TYPE MANAGEMENT -------------------------
+        Route::get('/rooms/room-name-types', [ManajementRoomsController::class, 'indexRoomNameType'])->name('roomNameTypes.index');
+        Route::post('/rooms/room-name-types/store', [ManajementRoomsController::class, 'storeRoomNameType'])->name('roomNameTypes.store');
+        Route::put('/rooms/room-name-types/update/{id}', [ManajementRoomsController::class, 'updateRoomNameType'])->name('roomNameTypes.update');
+        Route::post('/rooms/room-name-types/toggle-status', [ManajementRoomsController::class, 'toggleRoomNameTypeStatus'])->name('roomNameTypes.toggle-status');
+        Route::post('/rooms/room-name-types/reorder', [ManajementRoomsController::class, 'reorderRoomNameType'])->name('roomNameTypes.reorder');
+
         // ------------------------- DOOR LOCK MANAGEMENT -------------------------
         Route::get('/rooms/door-locks', [DoorLockController::class, 'index'])->name('door-locks.index');
         Route::post('/rooms/door-locks/get-details', [DoorLockController::class, 'getLockDetails'])->name('door-locks.get-details');
         Route::post('/rooms/door-locks/store', [DoorLockController::class, 'store'])->name('door-locks.store');
         Route::post('/rooms/door-locks/{id}/passcode', [DoorLockController::class, 'addPasscode'])->name('door-locks.passcode');
         Route::delete('/rooms/door-locks/{id}', [DoorLockController::class, 'destroy'])->name('door-locks.destroy');
+
+        // ------------------------- UNIFIED DEPOSIT & PARKING FEE PAGE -------------------------
+        Route::get('/property-fees', [PropertyFeesController::class, 'index'])->name('property-fees.index');
+        Route::post('/property-fees/filter', [PropertyFeesController::class, 'filter'])->name('property-fees.filter');
+        Route::post('/property-fees/store-or-update', [PropertyFeesController::class, 'storeOrUpdate'])->name('property-fees.store-or-update');
 
         // ------------------------- DEPOSIT FEE MANAGEMENT -------------------------
         Route::get('/deposit-fees', [DepositFeeController::class, 'index'])->name('deposit-fees.index');
@@ -273,9 +373,16 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
         // ------------------------- PARKING PAYMENTS -------------------------
         Route::get('/parking', [ParkingPaymentController::class, 'index'])->name('admin.parking-payments.index');
-        Route::post('/parking/filter', [ParkingPaymentController::class, 'filter'])->name('admin.parking-payments.filter');
+        /* Accept both GET (pagination links) and POST (AJAX filter) */
+        Route::match(['get', 'post'], '/parking/filter', [ParkingPaymentController::class, 'filter'])->name('admin.parking-payments.filter');
         Route::get('/parking/checked-in-orders', [ParkingPaymentController::class, 'getCheckedInOrders'])->name('admin.parking-payments.checked-in-orders');
-        Route::post('/parking/store', [ParkingPaymentController::class, 'store'])->name('admin.parking-payments.store');
+        // No per-route throttle override — this POST uses the same global `web` group limit
+        // (throttle:500,1 in app/Http/Kernel.php) as every GET route on this page, so submits
+        // and reads share one consistent ceiling. The old per-route override (6→30/min) tripped
+        // a "Too Many Attempts" 429 during normal bulk entry. Double-submit is already prevented
+        // by the server-side dedup guard (lockForUpdate + unique index on t_parking_fee_transaction).
+        Route::post('/parking/store', [ParkingPaymentController::class, 'store'])
+            ->name('admin.parking-payments.store');
         Route::post('/parking/approve/{id}', [ParkingPaymentController::class, 'approve'])->name('admin.parking-payments.approve');
         Route::post('/parking/reject/{id}', [ParkingPaymentController::class, 'reject'])->name('admin.parking-payments.reject');
         Route::post('/parking/checkout/{id}', [ParkingPaymentController::class, 'checkout'])->name('admin.parking-payments.checkout');
@@ -283,7 +390,8 @@ Route::middleware(['auth', 'permission'])->group(function () {
 
         // ------------------------- DEPOSIT PAYMENTS -------------------------
         Route::get('/deposit', [DepositPaymentController::class, 'index'])->name('admin.deposit-payments.index');
-        Route::post('/deposit/filter', [DepositPaymentController::class, 'filter'])->name('admin.deposit-payments.filter');
+        /* Accept GET (pagination links) and POST (AJAX filter) */
+        Route::match(['get', 'post'], '/deposit/filter', [DepositPaymentController::class, 'filter'])->name('admin.deposit-payments.filter');
         Route::get('/deposit/checked-in-orders', [DepositPaymentController::class, 'getCheckedInOrders'])->name('admin.deposit-payments.checked-in-orders');
         Route::post('/deposit/store', [DepositPaymentController::class, 'store'])->name('admin.deposit-payments.store');
         Route::post('/deposit/approve/{id}', [DepositPaymentController::class, 'approve'])->name('admin.deposit-payments.approve');
@@ -323,6 +431,11 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::get('/rented-rooms-report', [RentedRoomsReportController::class, 'index'])->name('reports.rented-rooms.index');
         Route::get('/rented-rooms-report/data', [RentedRoomsReportController::class, 'getData'])->name('reports.rented-rooms.data');
         Route::get('/rented-rooms-report/export', [RentedRoomsReportController::class, 'export'])->name('reports.rented-rooms.export');
+
+        // <!-- Refund Report — lists t_refund rows with filters and Excel export (added 2026-05-20) -->
+        Route::get('/refund-report', [RefundReportController::class, 'index'])->name('reports.refund.index');
+        Route::get('/refund-report/data', [RefundReportController::class, 'getData'])->name('reports.refund.data');
+        Route::get('/refund-report/export', [RefundReportController::class, 'export'])->name('reports.refund.export');
     });
 
     Route::prefix('vouchers')->group(function () {
@@ -345,6 +458,29 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::delete('/{id}', [PromoBannerController::class, 'destroy'])->where('id', '[0-9]+')->name('promo-banners.destroy');
     });
 
+    /** Ticket Management Routes — customer service ticketing system */
+    Route::prefix('tickets')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Tickets\TicketController::class, 'index'])->name('tickets.index');
+        Route::get('/filter', [\App\Http\Controllers\Tickets\TicketController::class, 'filter'])->name('tickets.filter');
+        Route::get('/unread-count', [\App\Http\Controllers\Tickets\TicketController::class, 'getUnreadCount'])->name('tickets.unread-count');
+        Route::get('/{id}', [\App\Http\Controllers\Tickets\TicketController::class, 'show'])->where('id', '[0-9]+')->name('tickets.show');
+        Route::post('/{ticketId}/send', [\App\Http\Controllers\Tickets\TicketController::class, 'sendMessage'])->name('tickets.send');
+        Route::post('/{ticketId}/upload-image', [\App\Http\Controllers\Tickets\TicketController::class, 'uploadImage'])->name('tickets.upload-image');
+        Route::post('/{ticketId}/close', [\App\Http\Controllers\Tickets\TicketController::class, 'closeTicket'])->name('tickets.close');
+        Route::post('/{ticketId}/reopen', [\App\Http\Controllers\Tickets\TicketController::class, 'reopenTicket'])->name('tickets.reopen');
+        Route::post('/{ticketId}/status', [\App\Http\Controllers\Tickets\TicketController::class, 'updateStatus'])->name('tickets.status');
+
+        /** Admin ticket creation — eligible bookings lookup and store */
+        Route::get('/eligible-bookings', [\App\Http\Controllers\Tickets\TicketController::class, 'getEligibleBookings'])->name('tickets.eligible-bookings');
+        Route::post('/store', [\App\Http\Controllers\Tickets\TicketController::class, 'storeAdminTicket'])->name('tickets.store');
+
+        /** Broadcast Routes — one-way announcements to users */
+        Route::get('/broadcasts', [\App\Http\Controllers\Tickets\BroadcastController::class, 'index'])->name('broadcasts.index');
+        Route::get('/broadcasts/create', [\App\Http\Controllers\Tickets\BroadcastController::class, 'create'])->name('broadcasts.create');
+        Route::post('/broadcasts/store', [\App\Http\Controllers\Tickets\BroadcastController::class, 'store'])->name('broadcasts.store');
+        Route::get('/broadcasts/{id}', [\App\Http\Controllers\Tickets\BroadcastController::class, 'show'])->where('id', '[0-9]+')->name('broadcasts.show');
+    });
+
     Route::prefix('chat')->group(function () {
         Route::get('/', [ChatController::class, 'index'])->name('chat.index');
         Route::get('/filter', [ChatController::class, 'filter'])->name('chat.filter');
@@ -357,5 +493,11 @@ Route::middleware(['auth', 'permission'])->group(function () {
         Route::post('/{conversationId}/upload-image', [ChatController::class, 'uploadImage'])->name('chat.upload-image');
         Route::put('/messages/{id}/edit', [ChatController::class, 'editMessage'])->name('chat.messages.edit');
         Route::get('/unread-count', [ChatController::class, 'getUnreadCount'])->name('chat.unread-count');
+    });
+
+    /* Unified notification center — combines chat unread + broadcasts + future types */
+    Route::prefix('notifications')->group(function () {
+        Route::get('/feed', [\App\Http\Controllers\NotificationCenterController::class, 'feed'])->name('notifications.feed');
+        Route::post('/mark-all-read', [\App\Http\Controllers\NotificationCenterController::class, 'markAllRead'])->name('notifications.mark-all-read');
     });
 });

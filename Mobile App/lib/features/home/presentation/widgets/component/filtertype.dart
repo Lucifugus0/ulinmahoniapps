@@ -51,7 +51,8 @@ class _FiltertypeState extends State<Filtertype> {
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isActive ? AppColors.primaryColor : Colors.transparent,
+                  // Use adaptive primary color for active tab background
+                  color: isActive ? AppColors.primaryAdaptive(context) : Colors.transparent,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Center(

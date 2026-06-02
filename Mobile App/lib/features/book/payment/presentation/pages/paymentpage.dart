@@ -28,8 +28,11 @@ import '../../provider/doku_cc_provider.dart';
 import '../widgets/va_result_dialog.dart';
 import '../widgets/qris_result_dialog.dart';
 import '../../../../mybooking/mybookingdetails/provider/renew_booking_provider.dart';
+import '../../../roomdetails/presentation/widgets/daily_price_breakdown.dart';
 import '../../../../mybooking/mybooking/provider/mybooking_provider.dart';
 import '../../../../../core/utils/payment_cache_utils.dart';
+import '../../../../../core/network/dio_client.dart';
+import '../../../../../core/constants/api_constants.dart';
 
 class PaymentPage extends ConsumerStatefulWidget {
   // Normal booking fields
@@ -55,6 +58,10 @@ class PaymentPage extends ConsumerStatefulWidget {
   final double? dailyPrice;
   final double? monthlyPrice;
 
+  // Daily multi-tier pricing breakdown from price-preview API
+  final List<dynamic>? multiTierBreakdown;
+  final double? multiTierTotalPrice;
+
   const PaymentPage({
     super.key,
     this.room,
@@ -76,6 +83,8 @@ class PaymentPage extends ConsumerStatefulWidget {
     this.bookingType,
     this.dailyPrice,
     this.monthlyPrice,
+    this.multiTierBreakdown,
+    this.multiTierTotalPrice,
   });
 
   @override
@@ -87,19 +96,19 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     final localizations = AppLocalizations.of(context)!;
     return [
       {
-        'iconUrl': 'https://dashboard.doku.com/docs/img/logo.png',
+        'iconAsset': 'assets/images/payment/doku_va.png',
         'title': localizations.paymentGenerateTransferVA,
         'subtitle': localizations.paymentVirtualAccountSelectBank,
         'value': 'Transfer VA'
       },
       {
-        'iconUrl': 'https://upload.wikimedia.org/wikipedia/commons/e/e1/QRIS_logo.svg',
+        'iconAsset': 'assets/images/payment/qris.png',
         'title': localizations.paymentQRIS,
         'subtitle': localizations.paymentQRISSubtitle,
         'value': 'QRIS'
       },
       {
-        'iconUrl': 'https://img.freepik.com/free-vector/credit-cards-multiple-colours-set_78370-9361.jpg?semt=ais_hybrid&w=740&q=80',
+        'iconAsset': 'assets/images/payment/mastercard.png',
         'title': localizations.paymentCreditCard,
         'subtitle': localizations.paymentCreditCardSubtitle,
         'value': 'CREDITCARD'
@@ -117,6 +126,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   String? _selectedTransactionValue;
   int? _selectedPaymentMethodIndex;
   bool _agreedToTerms = false;
+
+  // Confirmed total — set when user confirms payment, used for all DOKU gateway calls
+  double _confirmedTotal = 0;
+
+  // Renewal multi-tier pricing — fetched from price-preview API for renewal daily bookings
+  List<dynamic>? _renewalMultiTierBreakdown;
+  double? _renewalMultiTierTotalPrice;
 
   // Deposit & Parking state
   double _depositFee = 0; // Will be loaded from room data
@@ -193,7 +209,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
           AppLogger.d('Renewal - Duration: $duration ${rentType.toLowerCase() == "monthly" ? "months" : "days"}, Price: ${widget.dailyPrice}', 'PAYMENT-PAGE');
 
-          // Load renewal payment details
+          // Load renewal payment details with flat rate first (immediate)
           ref.read(paymentNotifierProvider.notifier).loadRenewalPaymentDetails(
             roomId: widget.roomId ?? 0,
             propertyId: widget.propertyId ?? 0,
@@ -207,6 +223,10 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             checkOutDate: checkOutDate,
             localizations: localizations,
           );
+
+          // Fetch multi-tier pricing immediately — updates provider when API responds
+          // Decoupled from _fetchRoomDataForRenewal so room data errors don't block this
+          _fetchRenewalPricing();
         } else {
           AppLogger.e('Missing renewal data', null, null, 'PAYMENT-PAGE');
         }
@@ -225,9 +245,71 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           checkInDate: widget.checkInDate!,
           checkOutDate: widget.checkOutDate!,
           localizations: localizations,
+          // Pass multi-tier total so provider uses correct weekday/weekend/holiday pricing
+          multiTierTotalPrice: widget.multiTierTotalPrice,
         );
       }
     });
+  }
+
+  /// Fetch price-preview API for renewal daily bookings — gets per-date breakdown
+  Future<void> _fetchRenewalPricing() async {
+    if (widget.roomId == null || widget.newCheckIn == null || widget.newCheckOut == null) return;
+    final rentType = widget.rentType ?? 'daily';
+    if (rentType.toLowerCase() != 'daily') return;
+
+    try {
+      final dioClient = DioClient();
+      final url = ApiConfig.roomPricePreview(widget.roomId.toString())
+          .replaceFirst(ApiConfig.baseUrl, '');
+
+      AppLogger.i('Renewal - Fetching price-preview: roomId=${widget.roomId}, ${widget.newCheckIn} to ${widget.newCheckOut}', 'PAYMENT-PAGE');
+
+      final response = await dioClient.get(url, queryParameters: {
+        'check_in': widget.newCheckIn,
+        'check_out': widget.newCheckOut,
+      });
+
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final data = response.data['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          final totalPrice = (data['total_price'] as num?)?.toDouble() ?? 0;
+          final breakdown = data['breakdown'] as List? ?? [];
+
+          if (totalPrice > 0 && mounted) {
+            setState(() {
+              _renewalMultiTierTotalPrice = totalPrice;
+              _renewalMultiTierBreakdown = breakdown;
+            });
+
+            // Re-load renewal payment details with correct multi-tier total
+            final localizations = AppLocalizations.of(context)!;
+            final checkInDate = DateTime.parse(widget.newCheckIn!);
+            final checkOutDate = DateTime.parse(widget.newCheckOut!);
+            final duration = checkOutDate.difference(checkInDate).inDays;
+
+            ref.read(paymentNotifierProvider.notifier).loadRenewalPaymentDetails(
+              roomId: widget.roomId ?? 0,
+              propertyId: widget.propertyId ?? 0,
+              roomName: widget.roomName ?? 'Room',
+              propertyName: widget.propertyName ?? 'Property',
+              dailyPrice: widget.dailyPrice!,
+              monthlyPrice: widget.monthlyPrice ?? 0.0,
+              rentType: rentType,
+              duration: duration,
+              checkInDate: checkInDate,
+              checkOutDate: checkOutDate,
+              localizations: localizations,
+              multiTierTotalPrice: totalPrice,
+            );
+
+            AppLogger.i('Renewal - Multi-tier total: $totalPrice, days: ${breakdown.length}', 'PAYMENT-PAGE');
+          }
+        }
+      }
+    } catch (e, st) {
+      AppLogger.e('Renewal - Failed to fetch price-preview', e, st, 'PAYMENT-PAGE');
+    }
   }
 
   /// Fetch room data for renewal to get latest parking fees
@@ -350,6 +432,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     );
     final authState = ref.watch(authProvider);
     final textTheme = Theme.of(context).textTheme;
+    // Dark mode detection for payment page colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final isVoucherLoading = voucherValidationState.isLoading;
 
@@ -365,7 +449,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   context,
                   localizations.paymentVoucherApplied,
                   defaultIcon: Icons.check_circle_outline,
-                  iconColor: AppColors.primaryColor,
+                  iconColor: AppColors.primaryAdaptive(context),
                 );
               }
             }
@@ -461,7 +545,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   context,
                   '${localizations.paymentBookingSuccess}: $message',
                   defaultIcon: Icons.check_circle_outline,
-                  iconColor: AppColors.primaryColor,
+                  iconColor: AppColors.primaryAdaptive(context),
                 );
               }
 
@@ -503,29 +587,18 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 if (selectedBank != null && idrec != null) {
                   final user = authState.user.value;
                   if (user != null) {
-                    // Get grandtotal and order_id from backend response (source of truth)
+                    // Use _confirmedTotal (set when user confirmed payment) — matches what was shown on screen
+                    // Backend's grandtotal_price uses flat daily_price × days, not multi-tier rates
                     final paymentState = ref.read(paymentNotifierProvider);
-                    final bookingData = paymentState.postBookingResult.valueOrNull;
-                    final grandTotalValue = bookingData?['data']?['grandtotal_price'];
-                    final grandTotalFromBackend = grandTotalValue != null
-                        ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
-                        : null;
+                    final bookingData = paymentState.postBookingResult.value;
 
                     // Get order_id from booking response (use this for DOKU, not idrec)
                     final orderId = bookingData?['data']?['order_id']?.toString() ?? idrec;
 
-                    // Fallback to local calculation only if backend doesn't provide it
-                    final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.valueOrNull;
-                      final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
-                      final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
-                      final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
-                      final voucherDiscount = ref.read(voucherNotifierProvider.notifier).currentDiscount;
-                      return originalTotal - voucherDiscount;
-                    })();
+                    final finalAmount = _confirmedTotal;
 
                     AppLogger.i(
-                      'Generating DOKU VA for booking $idrec, order_id: $orderId, bank: $selectedBank, amount: $finalAmount (source: ${grandTotalFromBackend != null ? "backend" : "local calculation"})',
+                      'Generating DOKU VA for booking $idrec, order_id: $orderId, bank: $selectedBank, amount: $finalAmount (source: confirmedTotal)',
                       'PAYMENT-PAGE',
                     );
 
@@ -667,29 +740,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 if (idrec != null) {
                   final user = authState.user.value;
                   if (user != null) {
-                    // Get grandtotal and order_id from backend response (source of truth)
+                    // Use _confirmedTotal (set when user confirmed payment) — matches what was shown on screen
                     final paymentState = ref.read(paymentNotifierProvider);
-                    final bookingData = paymentState.postBookingResult.valueOrNull;
-                    final grandTotalValue = bookingData?['data']?['grandtotal_price'];
-                    final grandTotalFromBackend = grandTotalValue != null
-                        ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
-                        : null;
+                    final bookingData = paymentState.postBookingResult.value;
 
                     // Get order_id from booking response (use this for DOKU, not idrec)
                     final orderId = bookingData?['data']?['order_id']?.toString() ?? idrec;
 
-                    // Fallback to local calculation only if backend doesn't provide it
-                    final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.valueOrNull;
-                      final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
-                      final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
-                      final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
-                      final voucherDiscount = ref.read(voucherNotifierProvider.notifier).currentDiscount;
-                      return originalTotal - voucherDiscount;
-                    })();
+                    final finalAmount = _confirmedTotal;
 
                     AppLogger.i(
-                      'Generating DOKU QRIS for booking $idrec, order_id: $orderId, amount: $finalAmount (source: ${grandTotalFromBackend != null ? "backend" : "local calculation"})',
+                      'Generating DOKU QRIS for booking $idrec, order_id: $orderId, amount: $finalAmount (source: confirmedTotal)',
                       'PAYMENT-PAGE',
                     );
 
@@ -754,11 +815,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                               // Note: Don't block user flow, just log the error
                           }
 
-                          // Save QR content to cache (15 minutes expiry)
+                          // Save QR content to cache (30 minutes expiry)
                           final transactionDate = bookingData?['data']?['transaction_date'];
                           if (transactionDate != null) {
                             final createdAt = DateTime.parse(transactionDate);
-                            final expiredAt = createdAt.add(const Duration(minutes: 15));
+                            final expiredAt = createdAt.add(const Duration(minutes: 30));
 
                             await PaymentCacheUtils.saveQRContent(
                               bookingId: idrec.toString(),
@@ -844,28 +905,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   final user = authState.user.value;
                   if (user != null) {
                     // Get grandtotal and order_id from backend response (source of truth)
+                    // Use _confirmedTotal (set when user confirmed payment) — matches what was shown on screen
                     final paymentState = ref.read(paymentNotifierProvider);
-                    final bookingData = paymentState.postBookingResult.valueOrNull;
-                    final grandTotalValue = bookingData?['data']?['grandtotal_price'];
-                    final grandTotalFromBackend = grandTotalValue != null
-                        ? (grandTotalValue is num ? grandTotalValue.toDouble() : double.tryParse(grandTotalValue.toString()))
-                        : null;
+                    final bookingData = paymentState.postBookingResult.value;
 
                     // Get order_id from booking response (use this for DOKU, not idrec)
                     final orderId = bookingData?['data']?['order_id']?.toString() ?? idrec;
 
-                    // Fallback to local calculation only if backend doesn't provide it
-                    final finalAmount = grandTotalFromBackend ?? (() {
-                      final paymentData = paymentState.paymentCalculationData.valueOrNull;
-                      final itemDetails = paymentData?['itemDetails'] as List<Map<String, dynamic>>?;
-                      final afterOriginalTotalFees = (paymentData?['afterOriginalTotalFees'] as num?)?.toDouble() ?? 0.0;
-                      final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails ?? [], afterOriginalTotalFees);
-                      final voucherDiscount = ref.read(voucherNotifierProvider.notifier).currentDiscount;
-                      return originalTotal - voucherDiscount;
-                    })();
+                    final finalAmount = _confirmedTotal;
 
                     AppLogger.i(
-                      'Generating DOKU CC for booking $idrec, order_id: $orderId, amount: $finalAmount (source: ${grandTotalFromBackend != null ? "backend" : "local calculation"})',
+                      'Generating DOKU CC for booking $idrec, order_id: $orderId, amount: $finalAmount (source: confirmedTotal)',
                       'PAYMENT-PAGE',
                     );
 
@@ -936,11 +986,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                               // Note: Don't block user flow, just log the error
                           }
 
-                          // Save CC payment link to cache (15 minutes expiry)
+                          // Save CC payment link to cache (30 minutes expiry)
                           final transactionDate = bookingData?['data']?['transaction_date'];
                           if (transactionDate != null) {
                             final createdAt = DateTime.parse(transactionDate);
-                            final expiredAt = createdAt.add(const Duration(minutes: 15));
+                            final expiredAt = createdAt.add(const Duration(minutes: 30));
 
                             await PaymentCacheUtils.saveCCLink(
                               bookingId: idrec.toString(),
@@ -1129,7 +1179,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         showBottomNav: false,
         showNavBar: false,
         child: Scaffold(
-          backgroundColor: AppColors.primaryColor.withOpacity(0.9), 
+          backgroundColor: AppColors.primaryAdaptive(context).withOpacity(0.9), 
           body: const Center(child: CircularProgressIndicator(color: Colors.white)),
         ),
       ),
@@ -1138,7 +1188,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         showBottomNav: false,
         showNavBar: false,
         child: Scaffold(
-          backgroundColor: AppColors.primaryColor.withOpacity(0.9), 
+          backgroundColor: AppColors.primaryAdaptive(context).withOpacity(0.9), 
           body: Center(
             child: Text('${localizations.paymentError}: ${err.toString()}', style: const TextStyle(color: Colors.white)), 
           ),
@@ -1149,10 +1199,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         final itemDetails = data['itemDetails'] as List<Map<String, dynamic>>;
         final afterOriginalTotalFees = (data['afterOriginalTotalFees'] as num?)?.toDouble();
         final user = authState.user.value;
-        final String normalizedRentType = widget.rentType?.toLowerCase() ?? 'daily';
-        final String durationUnit = (normalizedRentType == 'daily')
-            ? localizations.filterSuffixDays
-            : localizations.filterSuffixMonths;
 
         // Helper to get duration and rentType for both normal and renewal booking
         int getDuration(Map<String, dynamic> roomData) {
@@ -1166,6 +1212,23 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           // For renewal, get from roomData
           return roomData['rentType']?.toString() ?? 'daily';
         }
+
+        // Compute displayed Total Harga once — used for both display and DOKU gateway
+        // For renewal daily: use multi-tier total from price-preview API directly
+        // For new booking: calculateTotalPrice uses rawPrice from provider (already multi-tier via multiTierTotalPrice)
+        final double _roomSubtotal = (widget.isRenewal &&
+                (widget.rentType ?? '').toLowerCase() == 'daily' &&
+                _renewalMultiTierTotalPrice != null)
+            ? _renewalMultiTierTotalPrice! + 30000
+            : ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails, afterOriginalTotalFees ?? 0);
+        final double displayedTotal = _roomSubtotal
+            - voucherNotifier.currentDiscount
+            + ((!widget.isRenewal && _depositFee > 0) ? _depositFee : 0)
+            + (getRentType(roomData).toLowerCase() == 'monthly' ? _parkingFee : 0);
+        final String normalizedRentType = widget.rentType?.toLowerCase() ?? 'daily';
+        final String durationUnit = (normalizedRentType == 'daily')
+            ? localizations.filterSuffixDays
+            : localizations.filterSuffixMonths;
 
         /// Translate booking type based on current locale
         /// 'monthly' -> 'bulanan' (ID) or 'Monthly' (EN)
@@ -1186,20 +1249,20 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           showBottomNav: false,
           showNavBar: false,
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
             appBar: AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
               elevation: 2,
               shadowColor: Colors.black.withOpacity(0.1),
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               title: Text(
                 localizations.paymentPageTitle,
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
               titleSpacing: 0,
@@ -1219,7 +1282,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                               roomData['propertyName']?.toString() ?? 'Property Name Not Available',
                                               style: textTheme.headlineMedium?.copyWith(
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.black,
+                                                color: isDark ? Colors.white : Colors.black,
                                               ),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
@@ -1288,13 +1351,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                           Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+                                            border: Border.all(color: AppColors.primaryAdaptive(context).withOpacity(0.3)),
                                             borderRadius: BorderRadius.circular(8),
-                                            color: AppColors.primaryColor.withOpacity(0.05),
+                                            color: AppColors.primaryAdaptive(context).withOpacity(0.05),
                                           ),
                                           child: Row(
                                             children: [
-                                              Icon(Icons.money, color: AppColors.primaryColor, size: 24),
+                                              Icon(Icons.money, color: AppColors.primaryAdaptive(context), size: 24),
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: Column(
@@ -1319,7 +1382,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                 formatCurrency(_depositFee),
                                                 style: textTheme.bodyLarge?.copyWith(
                                                   fontWeight: FontWeight.bold,
-                                                  color: AppColors.primaryColor,
+                                                  color: AppColors.primaryAdaptive(context),
                                                 ),
                                               ),
                                             ],
@@ -1371,14 +1434,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             decoration: BoxDecoration(
                                               border: Border.all(
                                                 color: _selectedParkingType == 'car'
-                                                    ? AppColors.primaryColor
+                                                    ? AppColors.primaryAdaptive(context)
                                                     : Colors.grey.withValues(alpha: 0.3),
                                                 width: _selectedParkingType == 'car' ? 2 : 1,
                                               ),
                                               borderRadius: BorderRadius.circular(8),
                                               color: _selectedParkingType == 'car'
-                                                  ? AppColors.primaryColor.withValues(alpha: 0.05)
-                                                  : Colors.white,
+                                                  ? AppColors.primaryAdaptive(context).withValues(alpha: 0.05)
+                                                  : (isDark ? const Color(0xFF374151) : Colors.white),
                                             ),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1390,11 +1453,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                         ? Icons.radio_button_checked
                                                         : Icons.radio_button_unchecked,
                                                     color: _selectedParkingType == 'car'
-                                                        ? AppColors.primaryColor
+                                                        ? AppColors.primaryAdaptive(context)
                                                         : Colors.grey,
                                                   ),
                                                   const SizedBox(width: 12),
-                                                  Icon(Icons.directions_car, color: AppColors.primaryColor, size: 20),
+                                                  Icon(Icons.directions_car, color: AppColors.primaryAdaptive(context), size: 20),
                                                   const SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
@@ -1422,7 +1485,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                         ? localizations.paymentParkingFull(0, _carParkingCapacity)
                                                         : localizations.paymentParkingAvailable(availableSlots, _carParkingCapacity),
                                                       style: textTheme.bodySmall?.copyWith(
-                                                        color: isFull ? Colors.red : AppColors.primaryColor,
+                                                        color: isFull ? Colors.red : AppColors.primaryAdaptive(context),
                                                         fontWeight: FontWeight.w600,
                                                       ),
                                                     );
@@ -1468,14 +1531,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             decoration: BoxDecoration(
                                               border: Border.all(
                                                 color: _selectedParkingType == 'motorcycle'
-                                                    ? AppColors.primaryColor
+                                                    ? AppColors.primaryAdaptive(context)
                                                     : Colors.grey[300]!,
                                                 width: _selectedParkingType == 'motorcycle' ? 2 : 1,
                                               ),
                                               borderRadius: BorderRadius.circular(8),
                                               color: _selectedParkingType == 'motorcycle'
-                                                  ? AppColors.primaryColor.withAlpha(13)
-                                                  : Colors.white,
+                                                  ? AppColors.primaryAdaptive(context).withAlpha(13)
+                                                  : (isDark ? const Color(0xFF374151) : Colors.white),
                                             ),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1487,11 +1550,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                         ? Icons.radio_button_checked
                                                         : Icons.radio_button_unchecked,
                                                     color: _selectedParkingType == 'motorcycle'
-                                                        ? AppColors.primaryColor
+                                                        ? AppColors.primaryAdaptive(context)
                                                         : Colors.grey,
                                                   ),
                                                   const SizedBox(width: 12),
-                                                  Icon(Icons.two_wheeler, color: AppColors.primaryColor, size: 20),
+                                                  Icon(Icons.two_wheeler, color: AppColors.primaryAdaptive(context), size: 20),
                                                   const SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
@@ -1519,7 +1582,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                         ? localizations.paymentParkingFull(0, _motorcycleParkingCapacity)
                                                         : localizations.paymentParkingAvailable(availableSlots, _motorcycleParkingCapacity),
                                                       style: textTheme.bodySmall?.copyWith(
-                                                        color: isFull ? Colors.red : AppColors.primaryColor,
+                                                        color: isFull ? Colors.red : AppColors.primaryAdaptive(context),
                                                         fontWeight: FontWeight.w600,
                                                       ),
                                                     );
@@ -1543,9 +1606,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: Colors.grey[50],
+                                            color: isDark ? const Color(0xFF374151) : Colors.grey[50],
                                             borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: Colors.grey[300]!),
+                                            border: Border.all(color: isDark ? Colors.grey.shade600 : Colors.grey[300]!),
                                           ),
                                           child: Column(
                                             children: [
@@ -1561,7 +1624,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                             });
                                                           }
                                                         : null,
-                                                    color: AppColors.primaryColor,
+                                                    color: AppColors.primaryAdaptive(context),
                                                   ),
                                                   Expanded(
                                                     child: Center(
@@ -1581,7 +1644,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                             });
                                                           }
                                                         : null,
-                                                    color: AppColors.primaryColor,
+                                                    color: AppColors.primaryAdaptive(context),
                                                   ),
                                                 ],
                                               ),
@@ -1606,7 +1669,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                     formatCurrency(_parkingFee),
                                                     style: textTheme.bodyLarge?.copyWith(
                                                       fontWeight: FontWeight.bold,
-                                                      color: AppColors.primaryColor,
+                                                      color: AppColors.primaryAdaptive(context),
                                                     ),
                                                   ),
                                                 ],
@@ -1642,11 +1705,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             ),
                                             enabledBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
-                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                              borderSide: BorderSide(color: isDark ? Colors.grey.shade600 : Colors.grey[300]!),
                                             ),
                                             focusedBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
-                                              borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
+                                              // Remove const — primaryAdaptive(context) is not const
+                                              borderSide: BorderSide(color: AppColors.primaryAdaptive(context), width: 2),
                                             ),
                                             errorBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
@@ -1654,7 +1718,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             ),
                                             prefixIcon: Icon(
                                               _selectedParkingType == 'car' ? Icons.directions_car : Icons.two_wheeler,
-                                              color: AppColors.primaryColor,
+                                              color: AppColors.primaryAdaptive(context),
                                             ),
                                           ),
                                           textCapitalization: TextCapitalization.characters,
@@ -1668,67 +1732,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                       const SizedBox(height: 16),
                                       ],
 
-                                      RichText(
-                                        text: TextSpan(
-                                          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                                          children: [
-                                            TextSpan(text: localizations.paymentMethodTitle),
-                                            const TextSpan(
-                                              text: ' *',
-                                              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Column(
-                                        children: [
-                                          ...List.generate(paymentMethods.length, (index) {
-                                            final method = paymentMethods[index];
-                                            final isTransferVA = method['value'] == 'Transfer VA';
-
-                                            return Column(
-                                              children: [
-                                                PaymentMethodItem(
-                                                  iconUrl: method['iconUrl'],
-                                                  title: method['title'],
-                                                  subtitle: method['subtitle'] ?? '',
-                                                  isSelected: _selectedPaymentMethodIndex == index,
-                                                  onTap: () {
-                                                    setState(() {
-                                                      _selectedPaymentMethodIndex = index;
-                                                      _selectedTransactionValue = method['value'];
-                                                    });
-                                                  },
-                                                ),
-
-                                                // Show bank selection when Transfer VA is selected
-                                                if (isTransferVA && _selectedPaymentMethodIndex == index) ...[
-                                                  const SizedBox(height: 8),
-                                                  Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                                    child: Consumer(
-                                                      builder: (context, ref, child) {
-                                                        final dokuVAState = ref.watch(dokuVANotifierProvider);
-                                                        return BankSelectionWidget(
-                                                          selectedBank: dokuVAState.selectedBank,
-                                                          onBankSelected: (bank) {
-                                                            ref.read(dokuVANotifierProvider.notifier).selectBank(bank);
-                                                          },
-                                                        );
-                                                      },
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                ],
-                                              ],
-                                            );
-                                          }),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 16),
-
                                       // Voucher Section
                                       Text(
                                         localizations.paymentVoucherTitle,
@@ -1739,22 +1742,22 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                         Container(
                                           padding: const EdgeInsets.all(16),
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+                                            border: Border.all(color: AppColors.primaryAdaptive(context).withOpacity(0.3)),
                                             borderRadius: BorderRadius.circular(8),
-                                            color: AppColors.primaryColor.withOpacity(0.05),
+                                            color: AppColors.primaryAdaptive(context).withOpacity(0.05),
                                           ),
                                           child: Row(
                                             children: [
                                               Icon(
                                                 Icons.check_circle,
-                                                color: AppColors.primaryColor,
+                                                color: AppColors.primaryAdaptive(context),
                                               ),
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: Text(
                                                   '${localizations.paymentVoucherApplied} - ${voucherNotifier.appliedVoucherCode}',
                                                   style: textTheme.bodyMedium?.copyWith(
-                                                    color: AppColors.primaryColor,
+                                                    color: AppColors.primaryAdaptive(context),
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
@@ -1785,9 +1788,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                   ),
                                                   focusedBorder: OutlineInputBorder(
                                                     borderRadius: BorderRadius.circular(8),
-                                                    borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+                                                    borderSide: BorderSide(color: AppColors.primaryAdaptive(context), width: 2),
                                                   ),
-                                                  prefixIcon: Icon(Icons.local_offer, color: AppColors.primaryColor),
+                                                  prefixIcon: Icon(Icons.local_offer, color: AppColors.primaryAdaptive(context)),
                                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                                 ),
                                                 textCapitalization: TextCapitalization.characters,
@@ -1803,7 +1806,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                       basePrice: afterOriginalTotalFees ?? 0,
                                                     ),
                                               style: ElevatedButton.styleFrom(
-                                                backgroundColor: AppColors.primaryColor,
+                                                backgroundColor: AppColors.primaryAdaptive(context),
                                                 foregroundColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                                                 shape: RoundedRectangleBorder(
@@ -1837,75 +1840,69 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                       ),
                                       const SizedBox(height: 8),
 
-                                      // 1. Harga Bulanan/Harian
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily'
-                                                  ? localizations.paymentDailyPrice
-                                                  : localizations.paymentMonthlyPrice,
-                                              style: textTheme.bodyLarge,
-                                            ),
-                                            Text(
-                                              getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily'
-                                                  ? formatCurrency(roomData['daily_price'] ?? 0.0)
-                                                  : formatCurrency(roomData['monthly_price'] ?? 0.0),
-                                              style: textTheme.bodyLarge,
-                                            ),
-                                          ],
+                                      // Daily pricing: show per-day breakdown if available
+                                      // For renewal, use state vars fetched from price-preview; for new bookings use widget props
+                                      if ((getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily')
+                                          && (widget.multiTierBreakdown ?? _renewalMultiTierBreakdown) != null
+                                          && (widget.multiTierBreakdown ?? _renewalMultiTierBreakdown)!.isNotEmpty
+                                          && (widget.multiTierTotalPrice ?? _renewalMultiTierTotalPrice) != null) ...[
+                                        DailyPriceBreakdown(
+                                          breakdown: (widget.multiTierBreakdown ?? _renewalMultiTierBreakdown)!,
+                                          totalPrice: (widget.multiTierTotalPrice ?? _renewalMultiTierTotalPrice)!,
                                         ),
-                                      ),
-
-                                      // 2. Durasi
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              localizations.confirmationDialogDuration,
-                                              style: textTheme.bodyLarge,
-                                            ),
-                                            Text(
-                                              '${getDuration(roomData)} $durationUnit',
-                                              style: textTheme.bodyLarge,
-                                            ),
-                                          ],
+                                      ] else ...[
+                                        // Monthly or flat rate fallback: show single price + duration
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily'
+                                                    ? localizations.paymentDailyPrice
+                                                    : localizations.paymentMonthlyPrice,
+                                                style: textTheme.bodyLarge,
+                                              ),
+                                              Text(
+                                                getRentType(roomData) == 'daily' || getRentType(roomData) == 'Daily'
+                                                    ? formatCurrency(roomData['daily_price'] ?? 0.0)
+                                                    : formatCurrency(roomData['monthly_price'] ?? 0.0),
+                                                style: textTheme.bodyLarge,
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-
-                                      const Divider(height: 20, thickness: 0.5, color: Colors.grey),
-
-                                      // 3. Subtotal
-                                      Builder(
-                                        builder: (context) {
-                                          final basePrice = widget.rentType == 'daily' || widget.rentType == 'Daily'
-                                              ? roomData['daily_price'] ?? 0.0
-                                              : roomData['monthly_price'] ?? 0.0;
-                                          final duration = getDuration(roomData);
-                                          final subtotal = basePrice * duration;
-
-                                          return Padding(
-                                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Text(
-                                                  'Subtotal',
-                                                  style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-                                                ),
-                                                Text(
-                                                  formatCurrency(subtotal),
-                                                  style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(localizations.confirmationDialogDuration, style: textTheme.bodyLarge),
+                                              Text('${getDuration(roomData)} $durationUnit', style: textTheme.bodyLarge),
+                                            ],
+                                          ),
+                                        ),
+                                        const Divider(height: 20, thickness: 0.5, color: Colors.grey),
+                                        Builder(
+                                          builder: (context) {
+                                            final basePrice = widget.rentType == 'daily' || widget.rentType == 'Daily'
+                                                ? roomData['daily_price'] ?? 0.0
+                                                : roomData['monthly_price'] ?? 0.0;
+                                            final duration = getDuration(roomData);
+                                            final subtotal = basePrice * duration;
+                                            return Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text('Subtotal', style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                                                  Text(formatCurrency(subtotal), style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
 
                                       // 4. Voucher Discount (if applied)
                                       if (voucherNotifier.hasAppliedVoucher && voucherNotifier.currentDiscount > 0)
@@ -1917,14 +1914,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                               Text(
                                                 '${localizations.paymentVoucherTitle} (${voucherNotifier.appliedVoucherCode})',
                                                 style: textTheme.bodyLarge?.copyWith(
-                                                  color: AppColors.primaryColor,
+                                                  color: AppColors.primaryAdaptive(context),
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                               Text(
                                                 '- ${formatCurrency(voucherNotifier.currentDiscount)}',
                                                 style: textTheme.bodyLarge?.copyWith(
-                                                  color: AppColors.primaryColor,
+                                                  color: AppColors.primaryAdaptive(context),
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -1961,8 +1958,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                         );
                                       }),
 
-                                      // Deposit Fee (only for monthly bookings and NOT renewal)
-                                      if (getRentType(roomData).toLowerCase() == 'monthly' && !widget.isRenewal)
+                                      // Deposit Fee — show for any rent type if deposit > 0 and NOT renewal
+                                      if (_depositFee > 0 && !widget.isRenewal)
                                         Padding(
                                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                                           child: Row(
@@ -2011,24 +2008,88 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                             style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                                           ),
                                           Text(
-                                            formatCurrency(
-                                              ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails, (afterOriginalTotalFees) ?? 0) - voucherNotifier.currentDiscount + (getRentType(roomData).toLowerCase() == 'monthly' ? (widget.isRenewal ? 0 : _depositFee) + _parkingFee : 0)
-                                            ),
+                                            formatCurrency(displayedTotal),
                                             style: textTheme.titleLarge?.copyWith(
                                               fontWeight: FontWeight.bold,
-                                              color: AppColors.secondaryColor,
+                                              // Bright orange in dark mode for readability, red in light mode
+                                              color: isDark ? const Color(0xFFFF9500) : AppColors.secondaryColor,
                                             ),
                                           ),
                                         ],
                                       ),
                                       const SizedBox(height: 24),
+
+                                      // Metode Pembayaran Section (moved below Total Harga)
+                                      RichText(
+                                        text: TextSpan(
+                                          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                          children: [
+                                            TextSpan(text: localizations.paymentMethodTitle),
+                                            const TextSpan(
+                                              text: ' *',
+                                              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Column(
+                                        children: [
+                                          ...List.generate(paymentMethods.length, (index) {
+                                            final method = paymentMethods[index];
+                                            final isTransferVA = method['value'] == 'Transfer VA';
+
+                                            return Column(
+                                              children: [
+                                                PaymentMethodItem(
+                                                  iconAsset: method['iconAsset'],
+                                                  title: method['title'],
+                                                  subtitle: method['subtitle'] ?? '',
+                                                  isSelected: _selectedPaymentMethodIndex == index,
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _selectedPaymentMethodIndex = index;
+                                                      _selectedTransactionValue = method['value'];
+                                                    });
+                                                  },
+                                                ),
+
+                                                // Show bank selection when Transfer VA is selected
+                                                if (isTransferVA && _selectedPaymentMethodIndex == index) ...[
+                                                  const SizedBox(height: 8),
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                                    child: Consumer(
+                                                      builder: (context, ref, child) {
+                                                        final dokuVAState = ref.watch(dokuVANotifierProvider);
+                                                        return BankSelectionWidget(
+                                                          selectedBank: dokuVAState.selectedBank,
+                                                          onBankSelected: (bank) {
+                                                            ref.read(dokuVANotifierProvider.notifier).selectBank(bank);
+                                                          },
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                ],
+                                              ],
+                                            );
+                                          }),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 24),
                                       // Terms and Conditions Checkbox
                                       Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: Colors.amber[50],
+                                          // Dark mode: gunakan surface gelap, light mode: amber[50]
+                                          color: isDark ? AppColors.surfaceDarkElevated : Colors.amber[50],
                                           borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: Colors.amber[200]!),
+                                          border: Border.all(
+                                            color: isDark ? Colors.white24 : Colors.amber[200]!,
+                                          ),
                                         ),
                                         child: Row(
                                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2040,16 +2101,20 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                   _agreedToTerms = newValue ?? false;
                                                 });
                                               },
-                                              activeColor: AppColors.primaryColor,
+                                              activeColor: AppColors.primaryAdaptive(context),
+                                              // Dark mode: border checkbox putih supaya keliatan
+                                              side: isDark
+                                                  ? const BorderSide(color: Colors.white70, width: 2)
+                                                  : null,
                                             ),
                                             Expanded(
                                               child: Padding(
                                                 padding: const EdgeInsets.only(top: 12, right: 8),
                                                 child: RichText(
                                                   text: TextSpan(
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 13,
-                                                      color: Colors.black87,
+                                                      color: isDark ? Colors.white : Colors.black87,
                                                     ),
                                                     children: [
                                                       WidgetSpan(
@@ -2057,9 +2122,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                           onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
                                                           child: Text(
                                                             localizations.paymentTermsAgreePrefix,
-                                                            style: const TextStyle(
+                                                            style: TextStyle(
                                                               fontSize: 13,
-                                                              color: Colors.black87,
+                                                              color: isDark ? Colors.white : Colors.black87,
                                                             ),
                                                           ),
                                                         ),
@@ -2076,12 +2141,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                           },
                                                           child: Text(
                                                             localizations.paymentTermsConditions,
-                                                            style: const TextStyle(
+                                                            style: TextStyle(
                                                               fontSize: 13,
-                                                              color: AppColors.primaryColor,
+                                                              color: AppColors.primaryAdaptive(context),
                                                               fontWeight: FontWeight.bold,
                                                               decoration: TextDecoration.underline,
-                                                              decorationColor: AppColors.primaryColor,
+                                                              decorationColor: AppColors.primaryAdaptive(context),
                                                             ),
                                                           ),
                                                         ),
@@ -2099,16 +2164,42 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                           },
                                                           child: Text(
                                                             localizations.paymentPrivacyPolicy,
-                                                            style: const TextStyle(
+                                                            style: TextStyle(
                                                               fontSize: 13,
-                                                              color: AppColors.primaryColor,
+                                                              color: AppColors.primaryAdaptive(context),
                                                               fontWeight: FontWeight.bold,
                                                               decoration: TextDecoration.underline,
-                                                              decorationColor: AppColors.primaryColor,
+                                                              decorationColor: AppColors.primaryAdaptive(context),
                                                             ),
                                                           ),
                                                         ),
                                                       ),
+                                                      // ", dan " / ", and "
+                                                      TextSpan(text: localizations.paymentTermsAndRental),
+                                                      // "Perjanjian Sewa" link
+                                                      WidgetSpan(
+                                                        child: GestureDetector(
+                                                          onTap: () async {
+                                                            await showDialog<bool>(
+                                                              context: context,
+                                                              builder: (BuildContext context) {
+                                                                return const TermsAndConditionsDialog(isTerms: true, isPrivacy: false);
+                                                              },
+                                                            );
+                                                          },
+                                                          child: Text(
+                                                            localizations.paymentRentalAgreement,
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              color: AppColors.primaryAdaptive(context),
+                                                              fontWeight: FontWeight.bold,
+                                                              decoration: TextDecoration.underline,
+                                                              decorationColor: AppColors.primaryAdaptive(context),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const TextSpan(text: '.'),
                                                     ],
                                                   ),
                                                 ),
@@ -2151,13 +2242,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                               return ElevatedButton(
                                                 onPressed: isButtonEnabled
                                                     ? () {
-                                                  final originalTotal = ref.read(paymentNotifierProvider.notifier).calculateTotalPrice(itemDetails, (afterOriginalTotalFees) ?? 0);
-                                                  final voucherDiscount = voucherNotifier.currentDiscount;
-                                                  // Add deposit and parking to final total (only for monthly bookings, deposit only for new bookings)
-                                                  final rentType = getRentType(roomData).toLowerCase();
-                                                  final isMonthly = rentType == 'monthly';
-                                                  final depositAmount = (isMonthly && !widget.isRenewal) ? _depositFee : 0;
-                                                  final finalTotal = originalTotal - voucherDiscount + depositAmount + (isMonthly ? _parkingFee : 0);
+                                                  // Use the same displayedTotal shown on screen — single source of truth
+                                                  setState(() => _confirmedTotal = displayedTotal);
 
                                                   showDialog(
                                                     context: context,
@@ -2166,16 +2252,18 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                       itemDetails: itemDetails,
                                                       rentType: getRentType(roomData),
                                                       duration: getDuration(roomData),
-                                                      totalHarga: finalTotal,
+                                                      totalHarga: displayedTotal,
                                                       voucherCode: voucherNotifier.appliedVoucherCode,
-                                                      voucherDiscount: voucherDiscount > 0 ? voucherDiscount : null,
-                                                      originalTotal: voucherDiscount > 0 ? originalTotal : null,
+                                                      voucherDiscount: voucherNotifier.currentDiscount > 0 ? voucherNotifier.currentDiscount : null,
+                                                      originalTotal: voucherNotifier.currentDiscount > 0 ? _roomSubtotal : null,
                                                       depositFee: widget.isRenewal ? 0 : _depositFee,
                                                       parkingFee: _parkingFee > 0 ? _parkingFee : null,
                                                       parkingType: _selectedParkingType != null
                                                           ? _selectedParkingType
                                                           : null,
                                                       parkingDuration: _parkingFee > 0 ? _parkingDuration : null,
+                                                      // Pass multi-tier subtotal: renewal uses state var, new booking uses widget prop
+                                                      multiTierSubtotal: widget.multiTierTotalPrice ?? _renewalMultiTierTotalPrice,
                                                       onConfirm: () async {
                                                         final selectedTransactionType = paymentMethods[_selectedPaymentMethodIndex!]['value'];
 
@@ -2335,7 +2423,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                               return;
                                                             }
 
-                                                            final amount = renewalResponse.data?.grandTotal ?? 0.0;
+                                                            // Use _confirmedTotal — set when user confirmed, matches displayed price
+                                                            // Backend grandTotal uses flat rate, not multi-tier
+                                                            final amount = _confirmedTotal;
 
                                                             // Use order_id if available, fallback to booking_id
                                                             final orderIdForDoku = newOrderId ?? newBookingId;
@@ -2423,7 +2513,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                             );
                                                           } else if (selectedTransactionType == 'QRIS') {
                                                             // Generate QRIS
-                                                            final amount = renewalResponse.data?.grandTotal ?? 0.0;
+                                                            // Use _confirmedTotal — set when user confirmed, matches displayed price
+                                                            // Backend grandTotal uses flat rate, not multi-tier
+                                                            final amount = _confirmedTotal;
 
                                                             // Use order_id if available, fallback to booking_id
                                                             final orderIdForDoku = newOrderId ?? newBookingId;
@@ -2462,9 +2554,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                                       .read(paymentNotifierProvider.notifier)
                                                                       .updatePaymentMethod(newBookingId, updateRequest);
 
-                                                                  // Save QR content to cache (15 minutes expiry)
+                                                                  // Save QR content to cache (30 minutes expiry)
                                                                   final createdAt = DateTime.now();
-                                                                  final expiredAt = createdAt.add(const Duration(minutes: 15));
+                                                                  final expiredAt = createdAt.add(const Duration(minutes: 30));
 
                                                                   await PaymentCacheUtils.saveQRContent(
                                                                     bookingId: newBookingId,
@@ -2522,7 +2614,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                             );
                                                           } else if (selectedTransactionType == 'CREDITCARD') {
                                                             // Generate CC
-                                                            final amount = renewalResponse.data?.grandTotal ?? 0.0;
+                                                            // Use _confirmedTotal — set when user confirmed, matches displayed price
+                                                            // Backend grandTotal uses flat rate, not multi-tier
+                                                            final amount = _confirmedTotal;
 
                                                             // Use order_id if available, fallback to booking_id
                                                             final orderIdForDoku = newOrderId ?? newBookingId;
@@ -2561,9 +2655,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                                       .read(paymentNotifierProvider.notifier)
                                                                       .updatePaymentMethod(newBookingId, updateRequest);
 
-                                                                  // Save CC payment link to cache (15 minutes expiry)
+                                                                  // Save CC payment link to cache (30 minutes expiry)
                                                                   final createdAt = DateTime.now();
-                                                                  final expiredAt = createdAt.add(const Duration(minutes: 15));
+                                                                  final expiredAt = createdAt.add(const Duration(minutes: 30));
 
                                                                   await PaymentCacheUtils.saveCCLink(
                                                                     bookingId: newBookingId,
@@ -2633,7 +2727,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                   );
                                                 } : null,
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: (isButtonEnabled && user != null) ? AppColors.primaryColor : Colors.grey,
+                                                  backgroundColor: (isButtonEnabled && user != null) ? AppColors.primaryAdaptive(context) : Colors.grey,
                                                   foregroundColor: Colors.white,
                                                   padding: const EdgeInsets.symmetric(vertical: 20),
                                                   textStyle: textTheme.titleMedium?.copyWith(color: Colors.white),
@@ -2710,7 +2804,10 @@ class _PaymentErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dark mode detection for error dialog text and background colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Dialog(
+      backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -2731,10 +2828,10 @@ class _PaymentErrorDialog extends StatelessWidget {
             // Title/Header
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -2743,10 +2840,10 @@ class _PaymentErrorDialog extends StatelessWidget {
             // Main message
             Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: isDark ? Colors.white70 : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -2773,6 +2870,7 @@ class _PaymentErrorDialog extends StatelessWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
+                          // Error box always has a light red bg so black is fine here
                           color: Colors.black87,
                         ),
                       ),
@@ -2796,7 +2894,7 @@ class _PaymentErrorDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: isDark ? const Color(0xFF374151) : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -2808,7 +2906,7 @@ class _PaymentErrorDialog extends StatelessWidget {
                       note,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade700,
+                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                         height: 1.4,
                       ),
                     ),
@@ -2824,7 +2922,7 @@ class _PaymentErrorDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onClose,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
+                  backgroundColor: AppColors.primaryAdaptive(context),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

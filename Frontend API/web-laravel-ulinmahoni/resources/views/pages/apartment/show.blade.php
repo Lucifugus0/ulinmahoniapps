@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $apartment['name'] }} - {{ __('properties.page.property_details') }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
     .image-gallery {
             --gap: 1rem;
@@ -102,6 +103,7 @@
 
         .gallery-item:hover .image-count { opacity: 1; transform: translateY(0); }
     </style>
+    @include('components.property.dark-mode')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
 </head>
@@ -326,7 +328,7 @@
                 <div class="lg:col-span-2">
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ __('properties.sections.about_property') }}</h2>
                     <div class="prose max-w-none">
-                        <p class="text-gray-600">{{ $apartment['description'] }}</p>
+                        <div class="text-gray-600">{!! \App\Helpers\DescriptionHelper::getHtml($apartment['description'] ?? '', app()->getLocale()) !!}</div>
                     </div>
 
                     <!-- Location Map -->
@@ -516,7 +518,7 @@
                                                         @endif
 
                                                         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent h-16">
-                                                            @if($room['status'] === 1 && $room['rental_status'] !== 1)
+                                                            @if($room['status'] === 1 && ($room['is_available'] ?? ($room['rental_status'] !== 1)))
                                                                 <span class="absolute bottom-2 left-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white shadow-sm">
                                                                     {{ __('properties.status.available') }}
                                                                 </span>

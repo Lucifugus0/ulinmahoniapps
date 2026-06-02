@@ -83,7 +83,7 @@ class PaymentCacheUtils {
         return null;
       }
 
-      // VALIDATION 3: Check expiry (15 minutes from created_at)
+      // VALIDATION 3: Check expiry (30 minutes from created_at)
       final expiredAt = DateTime.parse(expiredAtString);
       if (DateTime.now().isAfter(expiredAt)) {
         AppLogger.w(
@@ -181,7 +181,7 @@ class PaymentCacheUtils {
         return null;
       }
 
-      // VALIDATION 2: Check expiry (15 minutes from created_at)
+      // VALIDATION 2: Check expiry (30 minutes from created_at)
       final expiredAt = DateTime.parse(expiredAtString);
       if (DateTime.now().isAfter(expiredAt)) {
         AppLogger.w(

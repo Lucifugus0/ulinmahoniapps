@@ -53,8 +53,8 @@
                                             </div>
                                         </div>
 
-                                        <!-- Booking Cards -->
-                                        <div class="space-y-3 max-h-96 overflow-y-auto" id="bookingResultsContainer">
+                                        <!-- Booking List -->
+                                        <div id="bookingResultsContainer">
                                             @include('pages.rooms.changerooms.partials.changeRoom_table', [
                                                 'bookings' => $bookings,
                                                 'per_page' => request('per_page', 3),
@@ -216,124 +216,31 @@
 
                     <!-- History Tab Content -->
                     <div id="historyContent" class="hidden">
-                        <div class="bg-white rounded-lg shadow-md p-6">
-                            <div class="flex justify-between items-center mb-6">
-                                <h2 class="text-2xl font-bold text-gray-800">{{ __('ui.room_transfer_history') }}</h2>
-                                <div class="relative w-64">
+                        <div class="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+                            {{-- <!-- Header with search --> --}}
+                            <div class="px-6 py-4 flex justify-between items-center border-b border-gray-200">
+                                <h2 class="text-xl font-bold text-gray-800">{{ __('ui.room_transfer_history') }}</h2>
+                                <div class="relative w-72">
                                     <input type="text" id="historySearchInput"
                                         value="{{ $historySearch ?? '' }}"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
                                         placeholder="{{ __('ui.search_order_name_placeholder') }}">
-                                    <div class="absolute right-3 top-2.5 text-gray-400">
-                                        <i class="fas fa-search"></i>
+                                    <div class="absolute left-3 top-2.5 text-gray-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
                                     </div>
                                 </div>
                             </div>
 
-                            @if (request('history_search'))
-                                <div class="flex items-center gap-2 mb-4">
-                                    <span class="text-sm text-gray-600">{{ __('ui.active_filter') }}:</span>
-                                    <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
-                                        {{ request('history_search') }}
-                                        <button onclick="clearHistorySearch()" class="ml-2 hover:text-indigo-900">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </span>
-                                </div>
-                            @endif
+                            {{-- <!-- Table --> --}}
+                            <div class="overflow-x-auto" id="historyTableContainer">
+                                @include('pages.rooms.changerooms.partials.transfer_history_table')
+                            </div>
 
-                            <!-- History Cards with Chain Visualization -->
-                            <div class="space-y-4" id="historyContainer">
-                                @forelse ($transferHistory as $history)
-                                    <div class="border border-gray-200 rounded-lg overflow-hidden">
-                                        <!-- Header -->
-                                        <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
-                                            <div class="flex items-center space-x-4">
-                                                <div>
-                                                    <span class="text-sm text-gray-500">{{ __('ui.order') }}:</span>
-                                                    <span class="font-semibold text-gray-800">{{ $history['order_id'] }}</span>
-                                                </div>
-                                                <div class="text-gray-300">|</div>
-                                                <div>
-                                                    <span class="text-sm text-gray-500">{{ __('ui.guest') }}:</span>
-                                                    <span class="font-medium text-gray-800">{{ $history['guest_name'] }}</span>
-                                                </div>
-                                                <div class="text-gray-300">|</div>
-                                                <div>
-                                                    <span class="text-sm text-gray-500">{{ __('ui.property') }}:</span>
-                                                    <span class="font-medium text-gray-800">{{ $history['property']->name ?? 'N/A' }}</span>
-                                                </div>
-                                            </div>
-                                            <div class="flex items-center space-x-2">
-                                                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                                    {{ $history['transfer_count'] }}x {{ __('ui.transfers') }}
-                                                </span>
-                                                @if($history['active_booking'] && $history['active_booking']->previous_booking_id)
-                                                    <button type="button"
-                                                        onclick="openRollbackModal({{ $history['active_booking']->idrec }}, '{{ $history['order_id'] }}')"
-                                                        class="px-3 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium hover:bg-orange-200 transition">
-                                                        <i class="fas fa-undo mr-1"></i> {{ __('ui.rollback') }}
-                                                    </button>
-                                                @endif
-                                            </div>
-                                        </div>
-
-                                        <!-- Chain Visualization -->
-                                        <div class="p-4 overflow-x-auto">
-                                            <div class="flex items-center space-x-2 min-w-max">
-                                                @foreach ($history['chain'] as $index => $booking)
-                                                    @php $isOrigin = is_null($booking->previous_booking_id); @endphp
-                                                    <!-- Room Node -->
-                                                    <div class="flex flex-col items-center">
-                                                        <div class="w-24 p-3 rounded-lg border-2 text-center
-                                                            {{ $booking->status == 1 ? 'border-green-500 bg-green-50' : ($isOrigin ? 'border-purple-400 bg-purple-50' : 'border-gray-300 bg-gray-50') }}">
-                                                            <div class="font-bold text-sm {{ $booking->status == 1 ? 'text-green-700' : ($isOrigin ? 'text-purple-700' : 'text-gray-600') }}">
-                                                                {{ $booking->room->name ?? 'N/A' }}
-                                                            </div>
-                                                            <div class="text-xs text-gray-500">{{ __('ui.no') }} {{ $booking->room->no ?? '' }}</div>
-                                                            @if($booking->status == 1)
-                                                                <span class="inline-block mt-1 px-2 py-0.5 bg-green-500 text-white text-xs rounded">{{ __('ui.active') }}</span>
-                                                            @elseif($isOrigin)
-                                                                <span class="inline-block mt-1 px-2 py-0.5 bg-purple-500 text-white text-xs rounded">Awal</span>
-                                                            @endif
-                                                        </div>
-                                                        <!-- Info below node -->
-                                                        <div class="mt-2 text-center">
-                                                            @if($isOrigin)
-                                                                <span class="text-xs font-medium text-purple-600">Kamar Asal</span>
-                                                                <div class="text-xs text-gray-400">
-                                                                    {{ $booking->created_at->format('d M H:i') }}
-                                                                </div>
-                                                            @else
-                                                                <span class="text-xs font-medium
-                                                                    @if($booking->reason === 'rollback') text-orange-600
-                                                                    @else text-blue-600
-                                                                    @endif">
-                                                                    {{ ucfirst($booking->reason ?? 'Transfer') }}
-                                                                </span>
-                                                                <div class="text-xs text-gray-400">
-                                                                    {{ $booking->room_changed_at ? $booking->room_changed_at->format('d M H:i') : $booking->created_at->format('d M H:i') }}
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Arrow (except after last item) -->
-                                                    @if(!$loop->last)
-                                                        <div class="flex items-center text-gray-400 pb-8">
-                                                            <i class="fas fa-arrow-right text-lg"></i>
-                                                        </div>
-                                                    @endif
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    </div>
-                                @empty
-                                    <div class="text-center py-12">
-                                        <i class="fas fa-exchange-alt text-6xl text-gray-300 mb-4"></i>
-                                        <p class="text-gray-500">{{ __('ui.no_room_transfer_history') }}</p>
-                                    </div>
-                                @endforelse
+                            {{-- <!-- Pagination --> --}}
+                            <div class="px-6 py-3 border-t border-gray-200" id="historyPagination">
+                                {{ $transferHistory->appends(request()->input())->links() }}
                             </div>
                         </div>
                     </div>
@@ -665,11 +572,13 @@
             document.getElementById('transferNotes').value = '';
             document.getElementById('newRoomSelect').value = '';
 
-            // Update card selection
+            // Update row selection
             document.querySelectorAll('.booking-card').forEach(card => {
-                card.classList.remove('border-indigo-500', 'bg-indigo-50');
+                card.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/30');
+                card.style.boxShadow = '';
             });
-            element.classList.add('border-indigo-500', 'bg-indigo-50');
+            element.classList.add('bg-indigo-50', 'dark:bg-indigo-900/30');
+            element.style.boxShadow = 'inset 3px 0 0 #6366f1';
 
             // Get booking data
             const bookingData = JSON.parse(element.getAttribute('data-booking'));
@@ -799,7 +708,7 @@
             selectElement.classList.remove('border-red-500');
         }
 
-        // History Search
+        // History Search (AJAX)
         let historySearchTimeout;
         const historySearchInput = document.getElementById('historySearchInput');
 
@@ -814,12 +723,19 @@
         }
 
         function performHistoryFilter(search) {
-            const url = new URL('{{ route('changerooom.index') }}');
+            const url = new URL('{{ route('changerooom.index') }}', window.location.origin);
             url.searchParams.append('tab', 'history');
+            url.searchParams.append('ajax', '1');
             if (search) {
                 url.searchParams.append('history_search', search);
             }
-            window.location.href = url.toString();
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('historyTableContainer').innerHTML = data.table;
+                    document.getElementById('historyPagination').innerHTML = data.pagination;
+                })
+                .catch(err => console.error('History search error:', err));
         }
 
         function clearHistorySearch() {
@@ -827,6 +743,11 @@
                 historySearchInput.value = '';
             }
             performHistoryFilter('');
+        }
+
+        // View chain detail from history table — reuses existing chain modal
+        function viewChainDetail(orderId) {
+            showChainDetail(orderId);
         }
 
         // Rollback Modal Functions

@@ -25,10 +25,8 @@ class SearchController extends ApiController
             $query = Room::query()
                 ->join('m_properties', 'm_rooms.property_id', '=', 'm_properties.idrec')
                 ->where('m_rooms.status', 1)
-                ->where(function($q) {
-                    $q->where('m_rooms.rental_status', '!=', 1)
-                      ->orWhereNull('m_rooms.rental_status');
-                })
+                /* Availability: daily rooms always available, monthly-only rooms check active bookings */
+                ->availableRooms()
                 ->where('m_properties.status', 1)
                 ->select('m_rooms.*');
 
@@ -91,20 +89,22 @@ class SearchController extends ApiController
             if ($request->has('check_in') && !empty($request->check_in) &&
                 $request->has('check_out') && !empty($request->check_out)) {
 
-                // Use same time handling as BookingController's checkAvailability
-                // startOfDay() for check-in (00:00:00) and endOfDay() for check-out (23:59:59)
-                $checkIn = Carbon::parse($request->check_in)->startOfDay();
-                $checkOut = Carbon::parse($request->check_out)->endOfDay();
+                // Use actual booking times (14:00 check-in, 12:00 check-out) — matches BookingController
+                // Allows back-to-back daily bookings on same day (checkout noon, checkin 2PM)
+                $checkIn = Carbon::parse($request->check_in . ' 14:00:00');
+                $checkOut = Carbon::parse($request->check_out . ' 12:00:00');
 
-                // Exclude rooms that have conflicting bookings
-                // Match the exact logic from BookingController's checkAvailability function
+                // Exclude rooms with conflicting active bookings.
+                // Uses t_booking as source of truth (room may be reassigned).
                 $query->whereNotExists(function($subQuery) use ($checkIn, $checkOut) {
                     $subQuery->select(DB::raw(1))
-                        ->from('t_transactions')
-                        ->whereColumn('t_transactions.property_id', 'm_rooms.property_id')  // Match property_id
-                        ->whereColumn('t_transactions.room_id', 'm_rooms.idrec')           // Match room_id
-                        ->where('t_transactions.status', '1')
-                        ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired'])
+                        ->from('t_booking')
+                        ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+                        ->whereColumn('t_booking.property_id', 'm_rooms.property_id')
+                        ->whereColumn('t_booking.room_id', 'm_rooms.idrec')
+                        ->where('t_booking.status', 1)
+                        ->whereNull('t_booking.check_out_at')
+                        ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired', 'checked_out'])
                         ->where('t_transactions.check_in', '<', $checkOut)
                         ->where('t_transactions.check_out', '>', $checkIn);
                 });
@@ -117,19 +117,77 @@ class SearchController extends ApiController
             $perPage = $request->get('per_page', 12);
             $rooms = $query->with('property')->paginate($perPage);
 
+            /* Daily Multi Tier Pricing: bulk-query m_room_prices for per-date totals */
+            /* When period=daily and dates are provided, calculate actual total from m_room_prices */
+            /* Falls back to flat rate (price_original_daily × days) if no per-date prices exist */
+            $hasDates = $request->filled('check_in') && $request->filled('check_out');
+            $roomTotalPrices = [];
+            $totalDays = null;
+
+            if ($period === 'daily' && $hasDates) {
+                $checkInDate = Carbon::parse($request->check_in)->toDateString();
+                $checkOutDate = Carbon::parse($request->check_out)->toDateString();
+                $totalDays = Carbon::parse($request->check_in)->diffInDays(Carbon::parse($request->check_out));
+
+                /* Collect all room IDs from current page results */
+                $roomIds = $rooms->pluck('idrec')->toArray();
+
+                if (!empty($roomIds) && $totalDays > 0) {
+                    /* Bulk query m_room_prices — same pattern as RoomController::pricePreview */
+                    $datePrices = DB::table('m_room_prices')
+                        ->whereIn('room_id', $roomIds)
+                        ->where('date', '>=', $checkInDate)
+                        ->where('date', '<', $checkOutDate)
+                        ->where('status', 1)
+                        ->get(['room_id', 'price'])
+                        ->groupBy('room_id');
+
+                    /* Build lookup: room_id → { total_price, total_days, is_flat_rate } */
+                    foreach ($roomIds as $roomId) {
+                        if (isset($datePrices[$roomId]) && $datePrices[$roomId]->count() > 0) {
+                            $roomTotalPrices[$roomId] = [
+                                'total_price' => (float) $datePrices[$roomId]->sum('price'),
+                                'total_days' => $totalDays,
+                                'is_flat_rate' => false,
+                            ];
+                        }
+                        /* Rooms without m_room_prices entries get fallback in the mapping below */
+                    }
+                }
+            }
+
             // Group rooms by property for better display
             $groupedRooms = $rooms->getCollection()->groupBy('property_id');
 
             // Transform to properties with available rooms
-            $properties = $groupedRooms->map(function($roomsGroup) use ($period) {
+            $properties = $groupedRooms->map(function($roomsGroup) use ($period, $roomTotalPrices, $totalDays, $hasDates) {
                 $property = $roomsGroup->first()->property;
 
                 // Add available rooms to property
-                $availableRooms = $roomsGroup->map(function($room) use ($period) {
+                $availableRooms = $roomsGroup->map(function($room) use ($period, $roomTotalPrices, $totalDays, $hasDates) {
                     // Add current price based on period
                     $currentPrice = $period === 'daily'
                         ? $room->price_original_daily
                         : $room->price_original_monthly;
+
+                    /* Daily Multi Tier Pricing: add total_price fields for daily search with dates */
+                    $roomTotal = null;
+                    $roomTotalDays = null;
+                    $isFlatRate = null;
+
+                    if ($period === 'daily' && $hasDates && $totalDays > 0) {
+                        if (isset($roomTotalPrices[$room->idrec])) {
+                            /* Per-date prices found in m_room_prices */
+                            $roomTotal = $roomTotalPrices[$room->idrec]['total_price'];
+                            $roomTotalDays = $roomTotalPrices[$room->idrec]['total_days'];
+                            $isFlatRate = false;
+                        } else {
+                            /* Fallback: no per-date prices, use flat daily rate */
+                            $roomTotal = (float) $room->price_original_daily * $totalDays;
+                            $roomTotalDays = $totalDays;
+                            $isFlatRate = true;
+                        }
+                    }
 
                     return [
                         'id' => $room->idrec,
@@ -146,6 +204,12 @@ class SearchController extends ApiController
                         'price_monthly' => $room->price_original_monthly,
                         'status' => $room->status,
                         'rental_status' => $room->rental_status,
+                        /* Computed availability: daily rooms always available, monthly checks active bookings */
+                        'is_available' => Room::computeAvailability($room->idrec, $room->periode_daily),
+                        /* Daily Multi Tier Pricing: per-date total fields (null when monthly or no dates) */
+                        'total_price' => $roomTotal,
+                        'total_days' => $roomTotalDays,
+                        'is_flat_rate' => $isFlatRate,
                     ];
                 });
 
@@ -155,6 +219,17 @@ class SearchController extends ApiController
                         ? $room->price_original_daily
                         : $room->price_original_monthly;
                 });
+
+                /* Daily Multi Tier Pricing: lowest total price across rooms for the date range */
+                $lowestTotalPrice = null;
+                if ($period === 'daily' && $hasDates && $totalDays > 0) {
+                    $lowestTotalPrice = $roomsGroup->min(function($room) use ($roomTotalPrices, $totalDays) {
+                        if (isset($roomTotalPrices[$room->idrec])) {
+                            return $roomTotalPrices[$room->idrec]['total_price'];
+                        }
+                        return (float) $room->price_original_daily * $totalDays;
+                    });
+                }
 
                 return [
                     'id' => $property->idrec,
@@ -171,6 +246,8 @@ class SearchController extends ApiController
                     'available_rooms_count' => $availableRooms->count(),
                     'available_rooms' => $availableRooms,
                     'lowest_price' => $lowestPrice,
+                    /* Daily Multi Tier Pricing: total price for the date range (null when monthly or no dates) */
+                    'lowest_total_price' => $lowestTotalPrice,
                 ];
             })->values();
 

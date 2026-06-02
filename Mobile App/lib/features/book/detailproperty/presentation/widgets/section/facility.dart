@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// Fallback widget for property facilities using bullet text (no icons).
+/// Uses Column+Row instead of GridView to avoid excess vertical whitespace.
 class PropertyFacilitiesTextGrid extends StatelessWidget {
-
-  // Terima 3 list terpisah sesuai model baru
   final List<String>? general;
   final List<String>? security;
   final List<String>? amenities;
@@ -16,67 +16,58 @@ class PropertyFacilitiesTextGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    // 1. GABUNGKAN DATA:
-    // Menggunakan spread operator (...?) untuk menggabungkan list
-    // dan secara otomatis melewati list yang null.
     final List<String> allFacilities = [
       ...?general,
       ...?security,
       ...?amenities,
     ];
 
-    // Cek jika gabungan kosong
     if (allFacilities.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    const int crossAxisCount = 2;
-    final double mainAxisSpacing = 16.0;
-    final double crossAxisSpacing = 16.0;
-    const double childAspectRatio = 4.5;
+    final List<Widget> rows = [];
+    for (int i = 0; i < allFacilities.length; i += 2) {
+      rows.add(Row(
+        children: [
+          Expanded(child: _buildItem(context, allFacilities[i])),
+          if (i + 1 < allFacilities.length)
+            Expanded(child: _buildItem(context, allFacilities[i + 1]))
+          else
+            const Expanded(child: SizedBox.shrink()),
+        ],
+      ));
+    }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: crossAxisSpacing,
-        mainAxisSpacing: mainAxisSpacing,
-        childAspectRatio: childAspectRatio,
-      ),
-      itemCount: allFacilities.length, // Gunakan jumlah total gabungan
-      itemBuilder: (context, index) {
-        final featureName = allFacilities[index];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: rows,
+    );
+  }
 
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '• ',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Flexible(
-                child: Text(
-                  featureName,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 15, // Consistent font size
-                  ),
-                  softWrap: true,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-              ),
-            ],
+  Widget _buildItem(BuildContext context, String name) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '• ',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        );
-      },
+          Flexible(
+            child: Text(
+              name,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -118,6 +118,26 @@
   --breakpoint-xs: 480px;
 }
 
+/* Glass design tokens — Apple-style glassmorphism / liquid glass variables
+   used across light and dark mode for translucent surfaces, blur, and shadows */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.35);
+  --glass-bg-hover: rgba(255, 255, 255, 0.28);
+  --glass-bg-strong: rgba(255, 255, 255, 0.30);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-border-subtle: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+  --glass-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.15);
+  --glass-blur: blur(24px);
+  --glass-blur-strong: blur(48px);
+  --accent: #0ea5a0;
+  --accent-hover: #0d9488;
+  --radius-sm: 0.75rem;
+  --radius-md: 1.25rem;
+  --radius-lg: 1.75rem;
+  --radius-xl: 2rem;
+}
+
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -136,35 +156,388 @@
   }
 }
 
+/* Light mode animated gradient background — gives a subtle liquid motion effect */
+body.bg-gray-100 {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 25%, #f5f0eb 50%, #eef2f7 75%, #f0f4f8 100%) !important;
+  background-size: 400% 400%;
+  animation: liquidShift 20s ease infinite;
+}
+/* Keyframes for the liquid gradient animation used by both light and dark body backgrounds */
+@keyframes liquidShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Property type / facility selection buttons — peer-checked dark mode override.
+   Tailwind v4 dark:peer-checked: classes aren't in the compiled CSS bundle,
+   so selected state is invisible in dark mode without these explicit rules. */
+html.dark .peer:checked ~ label {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Admin header — glassmorphism matching the frontend's .site-header style.
+   The ::before blur styles are defined in the header blade template (not here)
+   because Lightning CSS strips the unprefixed backdrop-filter that Firefox needs.
+   Only base positioning styles are here. */
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  isolation: isolate;
+}
+
+/* Placeholder text — standard gray for readability */
+::placeholder { color: #6b7280 !important; }
+
+/* Toggle switch — preserve exact colors in dark mode (not affected by glass overrides) */
+html.dark label.cursor-pointer .bg-gray-300 {
+  background-color: #d1d5db !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.dark label.cursor-pointer .peer-checked\:bg-blue-600:is(.peer:checked ~ *) {
+  background-color: #2563eb !important;
+}
+html.dark label.cursor-pointer .bg-white,
+html.dark label.cursor-pointer div[style*="background-color: white"] {
+  background-color: white !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* Global Dark Mode Overrides - outside @layer for highest specificity */
-html.dark .bg-white { background-color: var(--color-gray-900) !important; }
-html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: none !important; }
+/* Glass-style translucent white surface for dark mode panels/cards */
+html.dark .bg-white {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+/* Disable backdrop-filter on containers that have fixed-position modals inside */
+/* backdrop-filter creates a new containing block that traps position:fixed children */
+html.dark .no-backdrop-filter,
+html.dark .no-backdrop-filter.bg-white {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* Glass shadows — subtle depth instead of flat removal */
+html.dark .shadow-sm, html.dark .shadow-md { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important; }
+html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important; }
 html.dark .rounded-xl.border { border-color: var(--color-gray-700) !important; }
-html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color: var(--color-gray-800) !important; }
+/* Dark mode bg-gray-50 — use solid dark color matching the main body background.
+   Was rgba(255,255,255,0.04) which was too transparent, causing page content
+   areas to bleed through the underlying animated gradient. */
+html.dark .bg-gray-50 {
+  background-color: rgb(17, 24, 39) !important;  /* gray-900 — matches dark body bg */
+}
+/* Dark body uses animated deep-blue gradient for immersive liquid glass feel */
+html.dark body.bg-gray-100 {
+  background: linear-gradient(135deg, #0f0f1a 0%, #141428 25%, #1a1a30 50%, #141428 75%, #0f0f1a 100%) !important;
+  background-size: 400% 400%;
+  animation: liquidShift 20s ease infinite;
+}
+/* Non-body bg-gray-100 elements get glass translucency in dark mode */
+html.dark .bg-gray-100:not(body) {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
 html.dark .border-gray-100, html.dark .border-gray-200 { border-color: var(--color-gray-700) !important; }
 html.dark .border-gray-300 { border-color: var(--color-gray-600) !important; }
 html.dark .divide-gray-200 > :not(:last-child) { border-color: var(--color-gray-700) !important; }
-html.dark .text-gray-900, html.dark .text-gray-800 { color: var(--color-gray-100) !important; }
-html.dark .text-gray-700 { color: var(--color-gray-200) !important; }
-html.dark .text-gray-600 { color: var(--color-gray-300) !important; }
-html.dark .text-gray-500 { color: var(--color-gray-400) !important; }
-html.dark select, html.dark input[type="text"], html.dark input[type="search"], html.dark input[type="email"], html.dark input[type="password"], html.dark input[type="number"], html.dark input[type="date"], html.dark textarea {
-  background-color: var(--color-gray-800) !important;
-  border-color: var(--color-gray-600) !important;
-  color: var(--color-gray-200) !important;
+html.dark .divide-gray-300 > :not(:last-child),
+html.dark .divide-gray-400 > :not(:last-child),
+html.dark .divide-gray-500 > :not(:last-child) { border-color: #6b7280 !important; }
+html.dark tbody[class*="divide-y"] > tr { border-bottom: 1px solid #6b7280 !important; }
+html.dark tr.property-table-row { border-bottom-color: #9ca3af !important; }
+html.dark .text-gray-900, html.dark .text-gray-800 { color: #f5f5fa !important; }
+html.dark .text-gray-700 { color: #e8e8f0 !important; }
+html.dark .text-gray-600 { color: #d0d0e0 !important; }
+html.dark .text-gray-500 { color: #b0b0c8 !important; }
+/* Dark mode form inputs — glass-transparent backgrounds with subtle borders */
+html.dark select, html.dark input[type="text"], html.dark input[type="search"], html.dark input[type="email"], html.dark input[type="password"], html.dark input[type="number"], html.dark input[type="date"], html.dark input[type="tel"], html.dark textarea {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  color: #e8e8f0 !important;
 }
-html.dark ::placeholder { color: var(--color-gray-500) !important; }
-html.dark .bg-indigo-50 { background-color: rgba(49, 46, 129, 0.4) !important; }
-html.dark .bg-purple-50 { background-color: rgba(88, 28, 135, 0.4) !important; }
-html.dark .bg-red-50 { background-color: rgba(127, 29, 29, 0.3) !important; }
-html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.3) !important; }
-html.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.3) !important; }
-html.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.3) !important; }
-html.dark .bg-indigo-100 { background-color: rgba(49, 46, 129, 0.3) !important; }
-html.dark .from-gray-50 { --tw-gradient-from: var(--color-gray-900) !important; }
-html.dark .to-gray-100 { --tw-gradient-to: var(--color-gray-800) !important; }
-html.dark .from-gray-100 { --tw-gradient-from: var(--color-gray-800) !important; }
-html.dark .bg-gradient-to-r.from-gray-50 { background: var(--color-gray-900) !important; }
+/* Brighter placeholder text for glass readability */
+html.dark ::placeholder { color: #a0a0b8 !important; }
+/* Colored bg-*-50 overrides — lower opacity for glass-like translucency in dark mode */
+html.dark .bg-indigo-50 { background-color: rgba(49, 46, 129, 0.15) !important; }
+html.dark .bg-purple-50 { background-color: rgba(88, 28, 135, 0.15) !important; }
+html.dark .bg-red-50 { background-color: rgba(127, 29, 29, 0.12) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.12) !important; }
+html.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.12) !important; }
+html.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.12) !important; }
+html.dark .bg-indigo-100 { background-color: rgba(49, 46, 129, 0.12) !important; }
+
+/* Room table: period badge and date badge dark mode overrides */
+html.dark .bg-blue-100.text-blue-800 { background-color: rgba(30, 58, 138, 0.3) !important; color: #93c5fd !important; }
+html.dark .bg-green-100.text-green-800 { background-color: rgba(20, 83, 45, 0.3) !important; color: #86efac !important; }
+html.dark .bg-gray-100.text-gray-800 { background-color: rgba(55, 65, 81, 0.4) !important; color: #d1d5db !important; }
+html.dark .bg-gray-100.text-gray-600 { background-color: rgba(55, 65, 81, 0.4) !important; color: #d1d5db !important; }
+
+/* ================================================================
+   UNIFIED TABLE STYLING — matches Room Availability reference
+   All Backend tables get consistent dark/light colors.
+   ================================================================ */
+
+/* Light mode — gradient header, white body, blue-tinted hover */
+table thead.bg-gray-50,
+table thead.bg-gradient-to-r {
+  background: linear-gradient(to right, #f9fafb, #f1f5f9) !important;
+}
+table thead th {
+  font-weight: 600;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+table tbody tr {
+  transition: background-color 0.2s;
+}
+table tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.04) !important;
+}
+
+/* Dark mode — solid backgrounds, no glass/blur on tables */
+html.dark table thead,
+html.dark table thead.bg-gray-50,
+html.dark table thead.bg-gradient-to-r {
+  background: #334155 !important;  /* slate-700 */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.dark table thead th {
+  color: #cbd5e1 !important;  /* slate-300 */
+}
+html.dark table thead th:hover {
+  background-color: #475569 !important;  /* slate-600 */
+}
+html.dark table tbody,
+html.dark table tbody.bg-white {
+  background-color: #1e293b !important;  /* slate-800 */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.dark table tbody tr {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+html.dark table tbody tr:hover {
+  background-color: #334155 !important;
+}
+html.dark table .text-gray-900 { color: #f1f5f9 !important; }
+html.dark table .text-gray-700 { color: #cbd5e1 !important; }
+html.dark table .text-gray-600 { color: #94a3b8 !important; }
+html.dark table .text-gray-500 { color: #94a3b8 !important; }
+html.dark table .text-gray-400 { color: #64748b !important; }
+html.dark table .divide-y > :not([hidden]) ~ :not([hidden]),
+html.dark table .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+html.dark table .divide-gray-300 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+html.dark table tbody .divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+/* Dark mode gradient overrides for header backgrounds */
+html.dark .from-gray-50 { --tw-gradient-from: #334155 !important; }
+html.dark .to-gray-100 { --tw-gradient-to: #334155 !important; }
+html.dark .to-slate-100 { --tw-gradient-to: #334155 !important; }
+html.dark .from-gray-100 { --tw-gradient-from: #334155 !important; }
+html.dark .bg-gradient-to-r.from-gray-50 { background: #334155 !important; }
+/* Search/filter bar — glass surface with blur and subtle border in dark mode */
+html.dark div.search-filter-container.bg-white {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+html.dark form.search-filter-form.bg-gradient-to-r {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+/* Modal headers — solid opaque backgrounds in dark mode for readability.
+   Check-in header uses dark green, check-out header uses dark yellow/amber. */
+html.dark .checkin-modal-header {
+  background: rgb(6, 78, 59) !important;  /* dark green — matches check-in theme */
+  border-color: rgb(16, 120, 86) !important;
+}
+html.dark .checkout-modal-header {
+  background: rgb(120, 53, 15) !important;  /* dark amber — matches check-out theme */
+  border-color: rgb(161, 98, 7) !important;
+}
+html.dark .checkout-modal-header .text-gray-600,
+html.dark .checkin-modal-header .text-gray-600 { color: #e5e7eb !important; }
+html.dark .checkout-modal-header .text-gray-800,
+html.dark .checkin-modal-header .text-gray-800 { color: #ffffff !important; }
+
+/* Refund option (REFUND / NO REFUND) buttons in cancel modal — explicit
+   light + dark colors so the active state is visible regardless of which
+   Tailwind classes survive the production CSS bundle. JS toggles the
+   .refund-opt-active class on the selected button. */
+.refund-opt-btn {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  color: #374151;
+}
+html.dark .refund-opt-btn {
+  background: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #d1d5db !important;
+}
+.refund-opt-yes.refund-opt-active {
+  background: #ecfdf5;
+  border-color: #059669;
+  color: #047857;
+}
+html.dark .refund-opt-yes.refund-opt-active {
+  background: #064e3b !important;
+  border-color: #10b981 !important;
+  color: #6ee7b7 !important;
+}
+.refund-opt-no.refund-opt-active {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+html.dark .refund-opt-no.refund-opt-active {
+  background: #7f1d1d !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
+}
+.refund-opt-full.refund-opt-active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+html.dark .refund-opt-full.refund-opt-active {
+  background: #1e3a8a !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+/* Cancel booking modal header — dark red/orange to match the orange-red gradient theme */
+html.dark .cancel-modal-header {
+  background: rgb(127, 29, 29) !important;  /* dark red — matches cancel/danger theme */
+  border-color: rgb(153, 27, 27) !important;
+}
+html.dark .cancel-modal-header h3 { color: #ffffff !important; }
+
+/* Room edit modal header — dark blue to match the blue/indigo gradient theme */
+html.dark .room-edit-modal-header {
+  background: rgb(30, 58, 138) !important;  /* dark blue — matches room edit blue theme */
+  border-color: rgb(55, 48, 163) !important;
+}
+html.dark .room-edit-modal-header .text-gray-800 { color: #ffffff !important; }
+html.dark .room-edit-modal-header .text-gray-500 { color: #d1d5db !important; }
+
+/* Payment proof modal — dark mode overrides */
+html.dark .payment-proof-modal {
+  background-color: rgb(31, 41, 55) !important;  /* gray-800 */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.dark .payment-proof-modal-header {
+  background: rgb(30, 58, 138) !important;  /* dark blue — matches blue/indigo gradient */
+  border-color: rgb(55, 48, 163) !important;
+}
+html.dark .payment-proof-modal-header .text-gray-800 { color: #ffffff !important; }
+html.dark .payment-proof-modal-header .text-gray-500,
+html.dark .payment-proof-modal-header button { color: #d1d5db !important; }
+html.dark .payment-proof-modal-footer {
+  background-color: rgb(55, 65, 81) !important;  /* gray-700 */
+  border-color: rgb(75, 85, 99) !important;  /* gray-600 */
+}
+html.dark .payment-proof-modal-footer .text-gray-500 { color: #9ca3af !important; }
+html.dark .payment-proof-modal-footer .bg-gray-200 {
+  background-color: rgb(75, 85, 99) !important;
+  color: #e5e7eb !important;
+}
+html.dark .payment-proof-modal .text-gray-900 { color: #f3f4f6 !important; }
+html.dark .payment-proof-modal .text-gray-500 { color: #9ca3af !important; }
+html.dark .payment-proof-modal .border-gray-200 { border-color: rgb(75, 85, 99) !important; }
+
+/* Check-in/check-out modal body — solid dark background for content area */
+html.dark .checkin-modal-header ~ .flex-1,
+html.dark .checkout-modal-header ~ div {
+  color: #e5e7eb;
+}
+
+/* Light mode ONLY glass surfaces — translucent panels with blur for bordered cards.
+   Disabled in dark mode where solid backgrounds are needed for readability. */
+html:not(.dark) .rounded-xl.border:not([class*="fixed"]):not([class*="overflow-auto"]):not([class*="shadow-xl"]):not([class*="shadow-2xl"]):not(button):not(a),
+html:not(.dark) .rounded-lg.border:not([class*="fixed"]):not([class*="overflow-auto"]):not([class*="shadow-xl"]):not([class*="shadow-2xl"]):not(button):not(a) {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border-subtle) !important;
+}
+
+/* Light mode ONLY glass cards — excludes modal wrappers (shadow-xl and shadow-2xl) */
+html:not(.dark) .bg-white.rounded-xl:not([class*="shadow-xl"]):not([class*="shadow-2xl"]),
+html:not(.dark) .bg-white.rounded-lg:not([class*="shadow-xl"]):not([class*="shadow-2xl"]) {
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+/* Modals: solid white background, no glass effect */
+.bg-white.shadow-2xl,
+.bg-white.shadow-xl {
+  background: white !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* Modal child elements: also solid white */
+.shadow-2xl .bg-white,
+.shadow-2xl .bg-gray-50 {
+  background: inherit !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Dark mode: bg-white elements get solid gray-800 background */
+html.dark .bg-white {
+  background-color: rgb(31, 41, 55) !important;  /* gray-800 */
+}
+
+/* Modals must have solid opaque backgrounds — override glass transparency.
+   Also applies to all child elements inside modals to prevent glass bleed. */
+html.dark .bg-white.rounded-lg.shadow-xl,
+html.dark .bg-white.rounded-xl.shadow-xl {
+  background-color: rgb(31, 41, 55) !important;  /* gray-800 */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.bg-white.rounded-lg.shadow-xl,
+.bg-white.rounded-xl.shadow-xl {
+  background: white !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* Inner cards/panels inside modals — solid dark backgrounds, no glass */
+html.dark .shadow-xl .rounded-lg.border,
+html.dark .shadow-xl .rounded-xl.border,
+html.dark .shadow-xl .bg-white {
+  background-color: rgb(55, 65, 81) !important;  /* gray-700 — subtle contrast from gray-800 body */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: rgb(75, 85, 99) !important;  /* gray-600 */
+}
+.shadow-xl .rounded-lg.border,
+.shadow-xl .rounded-xl.border {
+  background: white !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Dashboard banner glass — light blur for hero/banner sections */
+.dashboard-banner {
+  backdrop-filter: blur(8px);
+}
 
 /* Mobile Sidebar Optimizations */
 @layer components {
@@ -212,4 +585,15 @@ html.dark .bg-gradient-to-r.from-gray-50 { background: var(--color-gray-900) !im
       display: none !important;
     }
   }
+}
+
+/* Chat dropdown and modal — solid opaque backgrounds in dark mode
+   to prevent glassmorphism/backdrop-filter transparency bleed from header */
+html.dark #checkedInUsersModal > div {
+  background-color: rgb(31, 41, 55) !important;
+  border-color: rgb(75, 85, 99) !important;
+}
+
+html.dark #checkedInUsersModal {
+  background-color: rgba(0, 0, 0, 0.7) !important;
 }

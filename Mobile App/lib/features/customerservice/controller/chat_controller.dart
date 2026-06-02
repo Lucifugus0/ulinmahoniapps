@@ -6,7 +6,7 @@ import '../../../core/network/api_result.dart';
 import '../provider/chat_provider.dart';
 import '../../../core/services/chat_background_service.dart';
 
-/// Chat state
+/// Chat state — tracks loading, sending, uploading, error, and success states.
 class ChatState {
   final bool isLoading;
   final bool isSendingMessage;
@@ -39,15 +39,20 @@ class ChatState {
   }
 }
 
-/// Chat controller
-class ChatController extends StateNotifier<ChatState> {
-  final ChatRepository _repository;
-  final Ref _ref;
+/// Chat controller — Riverpod 3.x Notifier managing chat actions.
+/// Migrated from StateNotifier to Notifier (no constructor args, uses build()).
+class ChatController extends Notifier<ChatState> {
+  late final ChatRepository _repository;
 
-  ChatController(this._repository, this._ref) : super(ChatState());
+  /// build() returns the initial state and sets up dependencies.
+  @override
+  ChatState build() {
+    _repository = ref.watch(chatRepositoryProvider);
+    return ChatState();
+  }
 
-  /// Create a new conversation
-  /// Returns conversation ID if successful, or existing conversation ID if duplicate
+  /// Create a new conversation.
+  /// Returns conversation ID if successful, or existing conversation ID if duplicate.
   Future<int?> createConversation({
     required int userId,
     required String orderId,
@@ -76,7 +81,7 @@ class ChatController extends StateNotifier<ChatState> {
           );
 
           // Refresh conversation list
-          _ref.invalidate(conversationListProvider);
+          ref.invalidate(conversationListProvider);
 
           return conversationId;
 
@@ -108,7 +113,7 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  /// Send text message
+  /// Send text message to a conversation.
   Future<bool> sendTextMessage({
     required int conversationId,
     required int userId,
@@ -152,7 +157,7 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  /// Send image message
+  /// Send image message to a conversation.
   Future<bool> sendImageMessage({
     required int conversationId,
     required int userId,
@@ -198,7 +203,7 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  /// Mark messages as read
+  /// Mark messages as read in a conversation.
   Future<void> markAsRead({
     required int conversationId,
     required int userId,
@@ -214,7 +219,7 @@ class ChatController extends StateNotifier<ChatState> {
           AppLogger.s('Marked as read: $conversationId', 'CHAT-CTRL');
 
           // Refresh conversation list to update unread count
-          _ref.invalidate(conversationListProvider);
+          ref.invalidate(conversationListProvider);
 
         case Failure(:final message):
           AppLogger.e('Failed to mark as read', message, null, 'CHAT-CTRL');
@@ -224,7 +229,7 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  /// Update last seen message for background notification tracking
+  /// Update last seen message for background notification tracking.
   Future<void> updateLastSeenMessage({
     required int conversationId,
     required int messageId,
@@ -237,7 +242,7 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  /// Edit message
+  /// Edit an existing message.
   Future<bool> editMessage({
     required int messageId,
     required int userId,
@@ -262,7 +267,7 @@ class ChatController extends StateNotifier<ChatState> {
           );
 
           // Refresh conversation detail
-          final conversationId = _ref.read(selectedConversationProvider);
+          final conversationId = ref.read(selectedConversationProvider);
           if (conversationId != null) {
             _refreshConversationDetail(conversationId, userId);
           }
@@ -287,28 +292,28 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  /// Refresh conversation list
+  /// Refresh conversation list for a user.
   Future<void> refreshConversationList(int userId) async {
-    _ref.invalidate(conversationListProvider(userId));
+    ref.invalidate(conversationListProvider(userId));
   }
 
-  /// Refresh conversation detail
+  /// Refresh conversation detail (messages) for a given conversation.
   void _refreshConversationDetail(int conversationId, int userId) {
-    final currentPage = _ref.read(currentPageProvider(conversationId));
+    final currentPage = ref.read(currentPageProvider(conversationId));
     final params = ConversationDetailParams(
       conversationId: conversationId,
       userId: userId,
       page: currentPage,
     );
-    _ref.invalidate(conversationDetailProvider(params));
+    ref.invalidate(conversationDetailProvider(params));
   }
 
-  /// Clear error
+  /// Clear error state.
   void clearError() {
     state = state.copyWith(error: null);
   }
 
-  /// Clear success message
+  /// Clear success message state.
   void clearSuccessMessage() {
     state = state.copyWith(successMessage: null);
   }

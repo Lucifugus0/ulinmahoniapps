@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="" lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('booking.index.page_title') }} - Ulin Mahoni</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // API Key from .env
@@ -170,14 +171,300 @@
     };
     </script>
     @include('components.homepage.styles')
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
+    <!-- Dark mode + liquid glass overrides for booking page -->
+    <style>
+        /* Dark mode overrides for booking page */
+        html.dark body,
+        html.dark main,
+        html.dark section,
+        html.dark .bg-gray-50 {
+            background-color: #111827 !important; /* gray-900 */
+        }
+        html.dark .bg-white {
+            background-color: #1f2937 !important; /* gray-800 */
+        }
+        html.dark .text-gray-900 {
+            color: #f3f4f6 !important;
+        }
+        html.dark .text-gray-700 {
+            color: #d1d5db !important;
+        }
+        html.dark .text-gray-500 {
+            color: #9ca3af !important;
+        }
+        html.dark .text-gray-600 {
+            color: #9ca3af !important;
+        }
+        html.dark .text-gray-400 {
+            color: #6b7280 !important;
+        }
+        html.dark .border-gray-200,
+        html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #374151 !important;
+        }
+        html.dark .shadow,
+        html.dark .shadow-lg {
+            box-shadow: none !important;
+        }
+        html.dark thead.bg-gray-50 {
+            background-color: #1f2937 !important;
+        }
+        html.dark tbody.bg-white {
+            background-color: #1f2937 !important;
+        }
+        html.dark tr.hover\:bg-gray-50:hover {
+            background-color: #374151 !important;
+        }
+        html.dark .bg-yellow-50 {
+            background-color: rgba(253, 224, 71, 0.1) !important;
+        }
+        html.dark .text-yellow-800 {
+            color: #fbbf24 !important;
+        }
+        html.dark .border-yellow-300 {
+            border-color: rgba(253, 224, 71, 0.3) !important;
+        }
+
+        /* Dark mode status badge overrides — deeper tinted backgrounds for dark cards */
+        html.dark .bg-red-50 {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+        }
+        html.dark .text-red-700 {
+            color: #fca5a5 !important; /* red-300 */
+        }
+        html.dark .bg-yellow-50 {
+            background-color: rgba(234, 179, 8, 0.15) !important;
+        }
+        html.dark .text-yellow-700 {
+            color: #fde047 !important; /* yellow-300 */
+        }
+        html.dark .bg-green-50 {
+            background-color: rgba(34, 197, 94, 0.15) !important;
+        }
+        html.dark .text-green-700 {
+            color: #86efac !important; /* green-300 */
+        }
+        html.dark .bg-gray-100 {
+            background-color: rgba(107, 114, 128, 0.15) !important;
+        }
+        /* Badge border in dark mode */
+        html.dark span.border.border-gray-200 {
+            border-color: #374151 !important;
+        }
+
+        /* --- Dark mode: blue tinted elements (VA box, info button, modal sections) --- */
+        html.dark .bg-blue-50 {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+        }
+        html.dark .text-blue-900 {
+            color: #93c5fd !important; /* blue-300 */
+        }
+        html.dark .text-blue-700 {
+            color: #93c5fd !important;
+        }
+        html.dark .text-blue-600 {
+            color: #60a5fa !important;
+        }
+        html.dark .border-blue-300 {
+            border-color: rgba(59, 130, 246, 0.3) !important;
+        }
+
+        /* --- Dark mode: teal tinted elements (view attachment, checked-in badge) --- */
+        html.dark .bg-teal-50 {
+            background-color: rgba(20, 184, 166, 0.15) !important;
+        }
+        html.dark .text-teal-700 {
+            color: #5eead4 !important; /* teal-300 */
+        }
+        html.dark .text-teal-600 {
+            color: #2dd4bf !important;
+        }
+
+        /* --- Dark mode: amber/orange elements (re-upload button) --- */
+        html.dark .bg-amber-50 {
+            background-color: rgba(245, 158, 11, 0.15) !important;
+        }
+        html.dark .text-amber-600 {
+            color: #fbbf24 !important;
+        }
+
+        /* --- Dark mode: purple elements (checked-out badge) --- */
+        html.dark .bg-purple-50 {
+            background-color: rgba(168, 85, 247, 0.15) !important;
+        }
+        html.dark .text-purple-700 {
+            color: #c4b5fd !important; /* purple-300 */
+        }
+
+        /* --- Dark mode: green tinted modal section --- */
+        html.dark .bg-green-50 {
+            background-color: rgba(34, 197, 94, 0.15) !important;
+        }
+
+        /* --- Dark mode: form inputs and borders --- */
+        html.dark input[type="date"],
+        html.dark input[type="text"],
+        html.dark input[type="number"] {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #f3f4f6 !important;
+        }
+        html.dark input[readonly],
+        html.dark input.bg-gray-100 {
+            background-color: #1f2937 !important;
+            border-color: #4b5563 !important;
+            color: #9ca3af !important;
+        }
+        html.dark .border-gray-300 {
+            border-color: #4b5563 !important;
+        }
+
+        /* --- Dark mode: modal footer and cancel buttons --- */
+        html.dark .bg-gray-200 {
+            background-color: #4b5563 !important;
+        }
+        html.dark button.bg-gray-200 {
+            background-color: #4b5563 !important;
+            color: #e5e7eb !important;
+        }
+        html.dark button.bg-gray-200:hover {
+            background-color: #6b7280 !important;
+        }
+
+        /* --- Dark mode: upload button --- */
+        html.dark label.border-gray-300.bg-white {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #d1d5db !important;
+        }
+        html.dark label.border-gray-300.bg-white:hover {
+            background-color: #4b5563 !important;
+        }
+
+        /* --- Dark mode: radio button labels --- */
+        html.dark .border-gray-300[type="radio"] {
+            border-color: #4b5563 !important;
+        }
+
+        /* --- Dark mode: modal status badge colors (JS-generated) --- */
+        html.dark .bg-red-100 {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+        html.dark .text-red-800 {
+            color: #fca5a5 !important;
+        }
+        html.dark .bg-yellow-100 {
+            background-color: rgba(234, 179, 8, 0.2) !important;
+        }
+        html.dark .text-yellow-800 {
+            color: #fde047 !important;
+        }
+        html.dark .bg-green-100 {
+            background-color: rgba(34, 197, 94, 0.2) !important;
+        }
+        html.dark .text-green-800 {
+            color: #86efac !important;
+        }
+        html.dark .text-gray-800 {
+            color: #e5e7eb !important;
+        }
+
+        /* --- Dark mode: disabled buttons --- */
+        html.dark button.bg-gray-400 {
+            background-color: #4b5563 !important;
+        }
+        html.dark button.bg-blue-400 {
+            background-color: rgba(59, 130, 246, 0.4) !important;
+        }
+
+        /* --- Dark mode: modal overlay backdrop --- */
+        html.dark .bg-black.bg-opacity-50 {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+        }
+
+        /* Main booking card — frosted glass panel */
+        section.py-12 > div > .bg-white.rounded-xl {
+            background: var(--glass-bg) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+        /* Booking section background — transparent instead of opaque gray */
+        section.py-12.bg-gray-50 {
+            background: transparent !important;
+        }
+        /* Table styling — unified with Room Availability reference */
+        /* Light mode: gradient header, white body, blue-tinted hover */
+        .booking-table thead {
+            background: linear-gradient(to right, #f9fafb, #f1f5f9) !important;
+        }
+        .booking-table tbody {
+            background: var(--glass-bg) !important;
+        }
+        .booking-table tbody tr {
+            transition: all 0.2s;
+        }
+        .booking-table tbody tr:hover {
+            background: rgba(59, 130, 246, 0.06) !important;
+        }
+        .booking-table thead th {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        /* Dark mode: solid dark backgrounds matching Room Availability */
+        html.dark .booking-table { border-color: #334155 !important; }
+        html.dark .booking-table thead { background: #334155 !important; }
+        html.dark .booking-table thead th { color: #cbd5e1 !important; }
+        html.dark .booking-table tbody { background-color: #1e293b !important; }
+        html.dark .booking-table tbody tr { background-color: #1e293b !important; border-color: #334155 !important; }
+        html.dark .booking-table tbody tr:nth-child(even) { background-color: #1e293b !important; }
+        html.dark .booking-table tbody tr:hover { background-color: #334155 !important; }
+        html.dark .booking-table .text-gray-900 { color: #f1f5f9 !important; }
+        html.dark .booking-table .text-gray-500 { color: #94a3b8 !important; }
+        html.dark .booking-table .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+        /* Modal dialogs — glass panels */
+        .bg-white.rounded-lg.shadow-xl {
+            background: var(--glass-bg-strong) !important;
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border);
+        }
+        /* Modal footer — glass instead of opaque gray */
+        .border-t.border-gray-200.bg-gray-50 {
+            background: var(--glass-bg) !important;
+        }
+        /* Payment reminder banner — glass tinted yellow */
+        .bg-yellow-50.border.border-yellow-300 {
+            background: rgba(253, 224, 71, 0.15) !important;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid rgba(253, 224, 71, 0.3) !important;
+        }
+        /* Light mode text brightening — darker grays for glass readability */
+        .text-gray-400 { color: #555570 !important; }
+        .text-gray-500 { color: #4a4a68 !important; }
+        input::placeholder { color: #555570 !important; opacity: 1 !important; }
+        html.dark input::placeholder { color: #a0a0b8 !important; }
+
+        /* Fix SweetAlert2 positioning — body > * rule from homepage styles
+           sets position:relative which overrides Swal's position:fixed container */
+        .swal2-container {
+            position: fixed !important;
+            z-index: 10000 !important;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-gray-50 dark:bg-gray-900">
     @include('components.homepage.header')
-    <div class="header-spacer"></div>
 
     <main>
-        <!-- Hero Section -->
-        <div class="hero-section-booking h-72 relative">
+        <!-- Hero Section — starts at top of page, header overlays on top -->
+        <div class="hero-section relative" style="height: 22rem;">
             <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" 
                 alt="Bookings Hero" 
                 class="w-full h-full object-cover" >
@@ -189,135 +476,54 @@
         <!-- Bookings Section -->
 
         
-    <section class="py-12 bg-gray-50">
+    <section class="py-12 bg-gray-50 dark:bg-gray-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="mb-4 flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span class="font-semibold">{{ __('booking.index.payment_reminder') }}</span>
-        </div>
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        {{-- Payment reminder banner removed --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-none overflow-hidden">
             <div class="overflow-x-auto">
                 <div x-data="{ tab: 'all' }">
                     <div class="flex border-b border-gray-200 mb-4">
-                        <button @click="tab = 'all'" :class="tab === 'all' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm focus:outline-none transition">{{ __('booking.index.tabs.upcoming') }}</button>
-                        <button @click="tab = 'completed'" :class="tab === 'completed' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm focus:outline-none transition">{{ __('booking.index.tabs.completed') }}</button>
+                        <button @click="tab = 'all'" :class="tab === 'all' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm focus:outline-none transition">{{ __('booking.index.tabs.all') }}</button>
+                        <button @click="tab = 'upcoming'" :class="tab === 'upcoming' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm focus:outline-none transition">{{ __('booking.index.tabs.upcoming') }}</button>
+                        <button @click="tab = 'completed'" :class="tab === 'completed' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm focus:outline-none transition">{{ __('booking.index.tabs.completed') }}</button>
                     </div>
 
                     <!-- All Bookings Tab -->
                     <div x-show="tab === 'all'">
-                        
-                        <table class="min-w-full divide-y divide-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200 booking-table">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('booking.index.table_headers.details') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('booking.index.table_headers.order_number') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('booking.index.table_headers.property') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('booking.index.table_headers.check_in_out') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('booking.index.table_headers.total_cost') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('booking.index.table_headers.status') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('booking.index.table_headers.attachment') }}
-                                    </th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.booking_id') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.property') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.check_in_out') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.paid_amount') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.status') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                @php
-                                    $filteredBookings = $allBookings->filter(function($booking) {
-                                        $status = strtolower($booking->transaction_status);
-                                        return !in_array($status, ['paid', 'completed']);
-                                    });
-                                @endphp
+                                @php $filteredBookings = $allBookings; @endphp
                                 @forelse ($filteredBookings as $booking)
                                     <tr class="hover:bg-gray-50 transition-colors duration-200">
+                                        {{-- Booking ID --}}
                                         <td class="px-6 py-4">
-                                            <div class="flex justify-center items-center h-full">
-                                                <button onclick="showBookingDetails(
-                                                    {{ $booking->idrec }},
-                                                    '{{ $booking->order_id }}',
-                                                    '{{ $booking->transaction_type }}',
-                                                    '{{ $booking->user_name }}',
-                                                    '{{ $booking->user_phone_number }}',
-                                                    '{{ $booking->user_email }}',
-                                                    '{{ $booking->property_name }}',
-                                                    '{{ $booking->room_name }}',
-                                                    '{{ $booking->property_type }}',
-                                                    '{{ \Carbon\Carbon::parse($booking->check_in)->format('d M Y') }}',
-                                                    '{{ \Carbon\Carbon::parse($booking->check_out)->format('d M Y') }}',
-                                                    '{{ $booking->formatted_grandtotal_price }}',
-                                                    '{{ $booking->transaction_status }}',
-                                                    '{{ $booking->virtual_account_no ?? '' }}',
-                                                    '{{ $booking->payment_bank ?? '' }}'
-                                                )"
-                                                        class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200"
-                                                        title="{{ __('booking.actions.view_details') }}">
-                                                    <i class="fas fa-info-circle"></i>
-                                                </button>
+                                            <div class="text-sm font-medium text-gray-900">{{ $booking->order_id }}</div>
+                                            <div class="text-xs text-gray-500 mt-1">
+                                                <div class="flex items-center"><i class="fas fa-user mr-1"></i> {{ $booking->user_name }}</div>
+                                                <div class="flex items-center"><i class="fas fa-phone mr-1"></i> {{ $booking->user_phone_number }}</div>
+                                                {{-- Transaction created_at — shown so guests/admins can tell renewals/duplicates apart at a glance. --}}
+                                                <div class="flex items-center"><i class="far fa-clock mr-1"></i> {{ optional($booking->created_at)->format('d M Y H:i') ?? '—' }}</div>
                                             </div>
                                         </td>
+                                        {{-- Property: Room No → Type → Property Name --}}
                                         <td class="px-6 py-4">
-                                            <div class="flex flex-col space-y-1">
-                                                <div class="flex items-center space-x-2">
-                                                    <span class="font-semibold text-xs text-gray-500">Order ID:</span>
-                                                    <span class="text-xs text-gray-900">{{ $booking->order_id }}</span>
-                                                </div>
-                                                {{-- <div class="flex items-center space-x-2">
-                                                    <span class="font-semibold text-xs text-gray-500">Transaction Code:</span>
-                                                    <span class="text-xs text-teal-600">{{ $booking->transaction_code }}</span>
-                                                </div> --}}
-                                            </div>
-                                            
-                                           <div class="text-xs text-gray-500">
-                                               <span class="font-semibold text-xs text-gray-500">{{ __('booking.js.transaction') }}</span>
-                                               <span class="text-xs text-gray-900">{{ strtoupper($booking->transaction_type) }}</span>
-
-                                               @if($booking->virtual_account_no)
-                                                   <div class="mt-2 p-3 bg-blue-50 border border-blue-300 rounded-lg">
-                                                       <div class="text-xs text-gray-600 mb-1">{{ __('booking.js.virtual_account') }}</div>
-                                                       <div class="text-base font-bold text-blue-900 tracking-wider">{{ $booking->virtual_account_no }}</div>
-                                                       @if($booking->payment_bank)
-                                                           <div class="text-xs text-blue-700 mt-1">{{ __('booking.js.bank') }} {{ strtoupper($booking->payment_bank) }}</div>
-                                                       @endif
-                                                   </div>
-                                               @endif
-                                           </div>
-                                            <div class="text-xs text-gray-500 mt-4">
-                                                <div class="flex items-center">
-                                                    <i class="fas fa-user mr-1"></i>
-                                                    {{ $booking->user_name }}
-                                                </div>
-                                                <div class="flex items-center">
-                                                    <i class="fas fa-phone mr-1"></i>
-                                                    {{ $booking->user_phone_number }}
-                                                </div>
-                                                <div class="flex items-center">
-                                                    <i class="fas fa-envelope mr-1"></i>
-                                                    {{ $booking->user_email }}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ $booking->property_name }}</div>
-                                            <div class="text-sm text-gray-500">{{ $booking->room_name }}</div>
                                             @if($booking->room?->no)
-                                            <div class="text-xs text-gray-500">No. Room: {{ $booking->room->no }}</div>
+                                            <div class="text-sm font-semibold text-gray-900">No. {{ $booking->room->no }}</div>
                                             @endif
-                                            <div class="text-xs text-gray-500 flex items-center">
-                                                <i class="fas fa-building mr-1"></i>
-                                                {{ ucfirst($booking->property_type) }}
-                                            </div>
+                                            <div class="text-sm text-gray-500">{{ $booking->room_name }}</div>
+                                            <div class="text-xs text-gray-400">{{ $booking->property_name }}</div>
                                         </td>
+                                        {{-- Check In/Out --}}
                                         <td class="px-6 py-4">
                                             <div class="text-sm text-gray-900 flex items-center">
                                                 <i class="far fa-calendar-check mr-1 text-teal-500"></i>
@@ -327,291 +533,165 @@
                                                 <i class="far fa-calendar-times mr-1 text-red-500"></i>
                                                 {{ \Carbon\Carbon::parse($booking->check_out)->format('d M Y') }}
                                             </div>
-                                            <div class="text-xs text-gray-500 flex items-center">
-                                                <i class="far fa-clock mr-1"></i>
-                                                @if(!empty($booking->booking_days))
-                                                    {{ $booking->booking_days }} {{ __('booking.js.days') }}
-                                                @elseif(!empty($booking->booking_months))
-                                                    {{ $booking->booking_months }} {{ __('booking.js.months') }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </div>
                                         </td>
+                                        {{-- Paid Amount --}}
                                         <td class="px-6 py-4">
-                                            <div class="text-sm font-medium text-gray-900">
-                                                {{ $booking->formatted_grandtotal_price }}
-                                            </div>
+                                            @php
+                                                $roomPrice = $booking->room_price ?? 0;
+                                                $parkingFee = $booking->parking_fee ?? 0;
+                                                $serviceFees = $booking->service_fees ?? 0;
+                                                $depositFee = $booking->deposit_fee ?? 0;
+                                                $totalStay = $roomPrice + $parkingFee + $serviceFees;
+                                            @endphp
+                                            <div class="text-sm text-gray-900"><span class="font-medium">{{ __('booking.index.labels.total_stay') }}:</span> Rp {{ number_format($totalStay, 0, ',', '.') }}</div>
+                                            <div class="text-xs text-gray-500">{{ __('booking.index.labels.deposit') }}: Rp {{ number_format($depositFee, 0, ',', '.') }}</div>
                                             @if($booking->paid_at)
-                                                <div class="text-xs text-green-600 flex items-center">
+                                                <div class="text-xs text-green-600 flex items-center mt-1">
                                                     <i class="fas fa-check-circle mr-1"></i>
-                                                    {{ __('booking.js.paid_label') }}: {{ \Carbon\Carbon::parse($booking->paid_at)->format('d M Y H:i') }}
+                                                    {{ \Carbon\Carbon::parse($booking->paid_at)->format('d M Y H:i') }}
                                                 </div>
                                             @endif
-                                            {{-- 
-                                            <div class="text-xs text-gray-500">
-                                                {{ $booking->formatted_daily_price }} / day
-                                            </div>
-                                            --}}
                                         </td>
-                                        <!-- Transaction StatusS -->
-                                        @php
-                                            $status = strtolower($booking->transaction_status);
-                                            $currentTime = now();
-                                            $expiresAt = $booking->expired_at ? \Carbon\Carbon::parse($booking->expired_at) : null;
-                                            $remainingMinutes = $expiresAt ? $currentTime->diffInMinutes($expiresAt, false) : -1;
-                                            $shouldShowTimer = false;
-
-                                            // Status mapping
-                                            $statusMap = [
-                                                'pending' => ['bg-red-50', 'text-red-700', 'bg-red-400', __('booking.status_extended.pending')],
-                                                'waiting' => ['bg-yellow-50', 'text-yellow-700', 'bg-yellow-400', __('booking.status_extended.waiting')],
-                                                'success' => ['bg-green-50', 'text-green-700', 'bg-green-500', __('booking.status_extended.success')],
-                                                'paid' => ['bg-green-50', 'text-green-700', 'bg-green-500', __('booking.status_extended.paid')],
-                                                'canceled' => ['bg-gray-50', 'text-gray-700', 'bg-gray-500', __('booking.status_extended.canceled')],
-                                                'expired' => ['bg-gray-100', 'text-gray-500', 'bg-gray-400', __('booking.status_extended.expired')]
-                                            ];
-
-                                            [$badgeBg, $badgeText, $dot, $transactionText] = $statusMap[$status] ?? ['bg-gray-100', 'text-gray-700', 'bg-gray-400', __('booking.status_extended.failed')];
-
-                                            // Handle pending status
-                                            if ($status === 'pending') {
-                                                $shouldShowTimer = true;
-                                                // if ($hoursDiff >= 1) {
-                                                //     [$badgeBg, $badgeText, $dot, $transactionText] = ['bg-gray-100', 'text-gray-500', 'bg-gray-400', __('booking.status_extended.expired')];
-                                                //     [$badgeBg, $badgeText, $dot, $transactionText] = ['bg-gray-100', 'text-gray-500', 'bg-gray-400', 'Expired'];
-                                                //     $status = 'expired';
-                                                //     $shouldShowTimer = false;
-                                                // }
-                                            }
-
-                                            // Add timer
-                                            if ($shouldShowTimer && $remainingMinutes > 0) {
-                                                $remainingTime = $expiresAt->diffForHumans($currentTime, [
-                                                    'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE,
-                                                    'parts' => 3,
-                                                    'short' => true
-                                                ]);
-                                                $transactionText .= ' (' . $remainingTime . ')';
-                                            }
-                                        @endphp
+                                        {{-- Status + Payment Method Badge --}}
                                         <td class="px-6 py-4">
-                                            <div class="flex justify-center items-center h-full">
-                                                <span class="flex items-center gap-2 px-4 py-1 rounded-2xl shadow-sm font-semibold text-sm {{ $badgeBg }} {{ $badgeText }} border border-gray-200"
-                                                      data-booking-id="{{ $booking->idrec }}"
-                                                      data-expires-at="{{ $shouldShowTimer && $remainingMinutes > 0 ? $expiresAt->toIso8601String() : '' }}"
-                                                      data-initial-text="{{ __('booking.status_extended.pending') }}"
-                                                      data-status="{{ $status }}">
-                                                    <span class="w-2 h-2 rounded-full {{ $dot }} inline-block"></span>
-                                                    <span class="tracking-wide capitalize text-center">{{ $transactionText }}</span>
+                                            @php
+                                                $status = strtolower($booking->transaction_status);
+                                                $isCheckedIn = $booking->booking && $booking->booking->check_in_at;
+                                                $isCheckedOut = $booking->booking && $booking->booking->check_out_at;
+                                                $isAlreadyRenewed = $booking->renewal_status == 1;
+                                            @endphp
+                                            {{-- Cancelled/expired checked first — overrides check-in/check-out state --}}
+                                            @if(in_array($status, ['cancelled', 'canceled']))
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700"><span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>{{ __('booking.index.labels.cancelled') }}</span>
+                                            @elseif($status === 'expired')
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"><span class="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1.5"></span>{{ __('booking.index.labels.expired') }}</span>
+                                            @elseif($isAlreadyRenewed)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"><i class="fas fa-redo mr-1"></i>  {{ __('booking.index.labels.renewed') }}</span>
+                                            @elseif($isCheckedOut)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>{{ __('booking.index.labels.checked_out') }}</span>
+                                            @elseif($isCheckedIn)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>Checked In</span>
+                                            @elseif($status === 'paid')
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>{{ __('booking.index.labels.paid') }}</span>
+                                            @elseif($status === 'pending')
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500 mr-1.5"></span>{{ __('booking.index.labels.pending') }}</span>
+                                            @else
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{{ ucfirst($status) }}</span>
+                                            @endif
+                                            <div class="mt-1">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                                    {{ paymentMethodBadge($booking->transaction_type) }}
                                                 </span>
                                             </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            @if(!$booking->attachment)
-                                                <form action="{{ route('bookings.upload-attachment', $booking->idrec) }}" method="POST" enctype="multipart/form-data" class="flex items-center space-x-2" id="upload-form-{{ $booking->idrec }}">
-                                                    @csrf
-                                                    <div class="relative">
-                                                        <input type="file"
-                                                            name="attachment_file"
-                                                            id="attachment-{{ $booking->idrec }}"
-                                                            class="hidden"
-                                                            accept="image/jpeg, image/png"
-                                                            onchange="handleFileUpload(this, '{{ $booking->idrec }}')">
-                                                        <label for="attachment-{{ $booking->idrec }}"
-                                                            class="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-                                                            <i class="fas fa-paperclip mr-2"></i>
-                                                            <span class="upload-text">{{ __('booking.actions.upload') }}</span>
-                                                            <span class="upload-loader hidden ml-2">
-                                                                <i class="fas fa-spinner fa-spin"></i> {{ __('booking.actions.uploading') }}
-                                                            </span>
-                                                        </label>
-                                                    </div>
-                                                </form>
-                                                <script>
-                                                function handleFileUpload(input, bookingId) {
-                                                    if (!input.files || input.files.length === 0) {
-                                                        return;
-                                                    }
-
-                                                    const file = input.files[0];
-                                                    const validTypes = ['image/jpeg', 'image/png'];
-                                                    const maxSize = 10 * 1024 * 1024; // 10MB
-
-                                                    // Check file type
-                                                    if (!validTypes.includes(file.type)) {
-                                                        Swal.fire({
-                                                            icon: 'error',
-                                                            title: translations.invalid_file_type_js,
-                                                            text: translations.invalid_file_type_js_text,
-                                                        });
-                                                        input.value = '';
-                                                        return;
-                                                    }
-
-                                                    // Check file size
-                                                    if (file.size > maxSize) {
-                                                        Swal.fire({
-                                                            icon: 'error',
-                                                            title: translations.file_too_large_js,
-                                                            text: translations.file_too_large_js_text,
-                                                        });
-                                                        input.value = '';
-                                                        return;
-                                                    }
-
-
-                                                    // Show confirmation
-                                                    Swal.fire({
-                                                        title: translations.upload_payment_proof,
-                                                        text: translations.upload_payment_proof_text,
-                                                        icon: 'question',
-                                                        showCancelButton: true,
-                                                        confirmButtonText: translations.confirm_upload_btn,
-                                                        cancelButtonText: translations.cancel,
-                                                        reverseButtons: true
-                                                    }).then((result) => {
-                                                        if (result.isConfirmed) {
-                                                            // Show loading state
-                                                            const form = document.getElementById(`upload-form-${bookingId}`);
-                                                            const uploadText = form.querySelector('.upload-text');
-                                                            const uploadLoader = form.querySelector('.upload-loader');
-                                                            const submitButton = form.querySelector('button[type="submit"], input[type="submit"]');
-                                                            
-                                                            if (submitButton) submitButton.disabled = true;
-                                                            if (uploadText) uploadText.classList.add('hidden');
-                                                            if (uploadLoader) uploadLoader.classList.remove('hidden');
-
-                                                            // Submit the form
-                                                            form.submit();
-                                                        } else {
-                                                            // Reset the file input if user cancels
-                                                            input.value = '';
-                                                        }
-                                                    });
-                                                }
-                                                </script>
-                                            @else
-                                                <!-- Original image display (commented for reference)
-                                                <div class="flex justify-center items-center h-full">
-                                                    @php
-                                                        $mime = 'image/png';
-                                                        $decoded = base64_decode($booking->attachment, true);
-                                                        if ($decoded !== false && strlen($decoded) > 2) {
-                                                            if (substr($decoded, 0, 2) === "\xFF\xD8") $mime = 'image/jpeg';
-                                                            elseif (substr($decoded, 0, 8) === "\x89PNG\x0D\x0A\x1A\x0A") $mime = 'image/png';
-                                                        }
-                                                    @endphp
-                                                    <a href="{{ route('bookings.view-attachment', $booking->idrec) }}" target="_blank" class="inline-block hover:opacity-90 transition-opacity">
-                                                        <img src="data:{{ $mime }};base64,{{ $booking->attachment }}" alt="Attachment" style="max-width:100px;max-height:100px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);" class="cursor-pointer" />
-                                                    </a>
-                                                </div>
-                                                -->
-                                                
-                                                <!-- Eye icon + re-upload -->
-                                                <div class="flex justify-center items-center gap-2 h-full">
-                                                    <a href="{{ route('bookings.view-attachment', $booking->idrec) }}" target="_blank"
-                                                       class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-teal-50 text-teal-600 hover:bg-teal-100 transition-colors duration-200"
-                                                       title="{{ __('booking.actions.view_attachment') }}">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <form action="{{ route('bookings.upload-attachment', $booking->idrec) }}" method="POST" enctype="multipart/form-data" id="upload-form-{{ $booking->idrec }}">
-                                                        @csrf
-                                                        <input type="file"
-                                                            name="attachment_file"
-                                                            id="attachment-{{ $booking->idrec }}"
-                                                            class="hidden"
-                                                            accept="image/jpeg, image/png"
-                                                            onchange="confirmFileUpload(this)">
-                                                        <label for="attachment-{{ $booking->idrec }}"
-                                                            class="cursor-pointer inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors duration-200"
-                                                            title="{{ __('booking.actions.reupload') }}">
-                                                            <span class="upload-text"><i class="fas fa-upload text-sm"></i></span>
-                                                            <span class="upload-loader hidden"><i class="fas fa-spinner fa-spin text-sm"></i></span>
-                                                        </label>
-                                                    </form>
+                                            {{-- Bank + VA number: shown only for DOKU-issued Virtual Account payments. --}}
+                                            @if (isDokuVaPayment($booking->transaction_type, $booking->virtual_account_no ?? null, $booking->payment_bank ?? null))
+                                                <div class="mt-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/40 font-mono">
+                                                        {{ strtoupper($booking->payment_bank) }} · {{ $booking->virtual_account_no }}
+                                                    </span>
                                                 </div>
                                             @endif
                                         </td>
-                                        
+                                        {{-- Actions --}}
+                                        <td class="px-6 py-4">
+                                            @if(in_array($status, ['pending', 'waiting']))
+                                                <button onclick="cancelBooking('{{ $booking->order_id }}', '{{ $status }}')"
+                                                        class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 text-xs font-medium">
+                                                    <i class="fas fa-times-circle mr-1"></i> {{ __('booking.actions.cancel_booking') }}
+                                                </button>
+                                            @else
+                                                <span class="text-xs text-gray-400">—</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="px-6 py-12 text-center">
-                                            <div class="flex flex-col items-center justify-center text-gray-500">
-                                                <i class="fas fa-calendar-times text-4xl mb-4"></i>
-                                                <p class="text-lg">{{ __('booking.index.empty_states.no_bookings') }}</p>
-                                                <p class="text-sm mt-2">{{ __('booking.index.empty_states.no_bookings_desc') }}</p>
-                                            </div>
+                                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                            <i class="fas fa-calendar-times text-4xl mb-4"></i>
+                                            <p>{{ __('booking.index.empty_states.no_bookings') }}</p>
                                         </td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-                    <!-- Completed Tab -->
-                    <div x-show="tab === 'completed'">
-                        <table class="min-w-full divide-y divide-gray-200">
+
+
+                    @php
+                        // Payment method badge alias helper
+                        function paymentMethodBadge($type) {
+                            $t = $type ?? '';
+                            $map = [
+                                'QRIS' => 'QRIS - App',
+                                'qris' => 'QRIS - Web',
+                                'CREDITCARD' => 'CC - App',
+                                'credit_card' => 'CC - Web',
+                                'BRI Manual' => 'BRI Direct - App',
+                                'bri_manual' => 'BRI Direct - Web',
+                                'Transfer VA' => 'VA - App',
+                                'promo' => 'Promo',
+                            ];
+                            return $map[$t] ?? 'VA - Web';
+                        }
+
+                        /* Render a third "Bank: VA Number" row only for DOKU-issued Virtual
+                           Account payments. BRI Manual stores a static BRI account number in
+                           virtual_account_no (the fixed account guests transfer to manually) —
+                           that's not a per-transaction DOKU VA, so it's excluded along with
+                           QRIS / Credit Card / Promo flows. Effectively matches the channel
+                           set that paymentMethodBadge() falls through to "VA - Web" for plus
+                           the explicit "Transfer VA" mobile-app channel. */
+                        function isDokuVaPayment($transactionType, $vaNumber, $paymentBank) {
+                            if (empty($vaNumber) || empty($paymentBank)) return false;
+                            $excluded = ['BRI Manual', 'bri_manual', 'QRIS', 'qris', 'credit_card', 'CREDITCARD', 'Credit Card', 'promo'];
+                            return !in_array($transactionType, $excluded, true);
+                        }
+                    @endphp
+
+                    <!-- Upcoming Bookings Tab: paid, not yet checked out -->
+                    <div x-show="tab === 'upcoming'">
+                        <table class="min-w-full divide-y divide-gray-200 booking-table">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.order_number') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.booking_id') }}</th>
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.property') }}</th>
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.check_in_out') }}</th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.total_cost') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.paid_amount') }}</th>
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.status') }}</th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.attachment') }}</th>
-                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @php
-                                    // Filter to only show paid and completed bookings in this tab
-                                    $filteredBookings = $allBookings->filter(function($booking) {
+                                    $upcomingBookings = $allBookings->filter(function($booking) {
                                         $status = strtolower($booking->transaction_status);
-                                        return in_array($status, ['paid', 'completed']);
+                                        if (!in_array($status, ['paid', 'completed'])) return false;
+                                        if ($booking->booking && $booking->booking->check_out_at) return false;
+                                        if ($booking->renewal_status == 1 && $booking->check_out && \Carbon\Carbon::parse($booking->check_out)->lt(now())) return false;
+                                        return true;
                                     });
-                                    
                                 @endphp
-                                @forelse ($filteredBookings as $booking)
+                                @forelse ($upcomingBookings as $booking)
                                     <tr class="hover:bg-gray-50 transition-colors duration-200">
+                                        {{-- Booking ID --}}
                                         <td class="px-6 py-4">
-                                            <div class="flex flex-col space-y-1">
-                                                <div class="flex items-center space-x-2">
-                                                    <span class="font-semibold text-xs text-gray-500">Order ID:</span>
-                                                    <span class="text-xs text-gray-900">{{ $booking->order_id }}</span>
-                                                </div>
-                                                <div class="flex items-center space-x-2">
-                                                    <span class="font-semibold text-xs text-gray-500">Transaction Code:</span>
-                                                    <span class="text-xs text-teal-600">{{ $booking->transaction_code }}</span>
-                                                </div>
-                                            </div>
-                                            <div class="text-xs text-gray-500">{{ $booking->transaction_type }}</div>
+                                            <div class="text-sm font-medium text-gray-900">{{ $booking->order_id }}</div>
                                             <div class="text-xs text-gray-500 mt-1">
-                                                <div class="flex items-center">
-                                                    <i class="fas fa-user mr-1"></i>
-                                                    {{ $booking->user_name }}
-                                                </div>
-                                                <div class="flex items-center">
-                                                    <i class="fas fa-phone mr-1"></i>
-                                                    {{ $booking->user_phone_number }}
-                                                </div>
-                                                <div class="flex items-center">
-                                                    <i class="fas fa-envelope mr-1"></i>
-                                                    {{ $booking->user_email }}
-                                                </div>
+                                                <div class="flex items-center"><i class="fas fa-user mr-1"></i> {{ $booking->user_name }}</div>
+                                                <div class="flex items-center"><i class="fas fa-phone mr-1"></i> {{ $booking->user_phone_number }}</div>
+                                                {{-- Transaction created_at — shown so guests/admins can tell renewals/duplicates apart at a glance. --}}
+                                                <div class="flex items-center"><i class="far fa-clock mr-1"></i> {{ optional($booking->created_at)->format('d M Y H:i') ?? '—' }}</div>
                                             </div>
                                         </td>
+                                        {{-- Property: Room No → Type → Property Name --}}
                                         <td class="px-6 py-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ $booking->property_name }}</div>
-                                            <div class="text-sm text-gray-500">{{ $booking->room_name }}</div>
                                             @if($booking->room?->no)
-                                            <div class="text-xs text-gray-500">No. Room: {{ $booking->room->no }}</div>
+                                            <div class="text-sm font-semibold text-gray-900">No. {{ $booking->room->no }}</div>
                                             @endif
-                                            <div class="text-xs text-gray-500 flex items-center">
-                                                <i class="fas fa-building mr-1"></i>
-                                                {{ ucfirst($booking->property_type) }}
-                                            </div>
+                                            <div class="text-sm text-gray-500">{{ $booking->room_name }}</div>
+                                            <div class="text-xs text-gray-400">{{ $booking->property_name }}</div>
                                         </td>
+                                        {{-- Check In/Out --}}
                                         <td class="px-6 py-4">
                                             <div class="text-sm text-gray-900 flex items-center">
                                                 <i class="far fa-calendar-check mr-1 text-teal-500"></i>
@@ -621,68 +701,64 @@
                                                 <i class="far fa-calendar-times mr-1 text-red-500"></i>
                                                 {{ \Carbon\Carbon::parse($booking->check_out)->format('d M Y') }}
                                             </div>
-                                            <div class="text-xs text-gray-500 flex items-center">
-                                                <i class="far fa-clock mr-1"></i>
-                                                @if(!empty($booking->booking_days))
-                                                    {{ $booking->booking_days }} hari
-                                                @elseif(!empty($booking->booking_months))
-                                                    {{ $booking->booking_months }} bulan
-                                                @else
-                                                    -
-                                                @endif
-                                            </div>
                                         </td>
+                                        {{-- Paid Amount: Total Stay, Deposit, Paid date --}}
                                         <td class="px-6 py-4">
-                                            <div class="text-sm font-medium text-gray-900">
-                                                {{ $booking->formatted_price }}
+                                            @php
+                                                $roomPrice = $booking->room_price ?? 0;
+                                                $parkingFee = $booking->parking_fee ?? 0;
+                                                $serviceFees = $booking->service_fees ?? 0;
+                                                $depositFee = $booking->deposit_fee ?? 0;
+                                                $totalStay = $roomPrice + $parkingFee + $serviceFees;
+                                            @endphp
+                                            <div class="text-sm text-gray-900">
+                                                <span class="font-medium">{{ __('booking.index.labels.total_stay') }}:</span> Rp {{ number_format($totalStay, 0, ',', '.') }}
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                {{ __('booking.index.labels.deposit') }}: Rp {{ number_format($depositFee, 0, ',', '.') }}
                                             </div>
                                             @if($booking->paid_at)
-                                                <div class="text-xs text-green-600 flex items-center">
+                                                <div class="text-xs text-green-600 flex items-center mt-1">
                                                     <i class="fas fa-check-circle mr-1"></i>
-                                                    Paid: {{ \Carbon\Carbon::parse($booking->paid_at)->format('d M Y H:i') }}
+                                                    {{ \Carbon\Carbon::parse($booking->paid_at)->format('d M Y H:i') }}
                                                 </div>
                                             @endif
-                                            {{-- <div class="text-xs text-gray-500">
-                                                {{ $booking->daily_price }} / day
-                                            </div> --}}
                                         </td>
+                                        {{-- Status + Payment Method Badge --}}
                                         <td class="px-6 py-4">
-                                            <div class="flex justify-center items-center h-full">
-                                                @if($booking->booking && $booking->booking->check_out_at)
-                                                {{-- Already checked out --}}
-                                                <span class="flex items-center gap-2 px-4 py-1 rounded-2xl shadow-sm font-semibold text-sm bg-purple-50 text-purple-700 border border-gray-200">
-                                                    <span class="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
-                                                    <span class="tracking-wide capitalize">Checked Out</span>
+                                            @php
+                                                $isCheckedIn = $booking->booking && $booking->booking->check_in_at;
+                                                $isAlreadyRenewed = $booking->renewal_status == 1;
+                                            @endphp
+                                            {{-- Cancelled/expired checked first — overrides check-in state --}}
+                                            @if(in_array(strtolower($booking->transaction_status), ['cancelled', 'canceled']))
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span> {{ __('booking.index.labels.cancelled') }}
                                                 </span>
-                                                @elseif($booking->booking && $booking->booking->check_in_at)
-                                                {{-- Already checked in but not checked out --}}
-                                                <span class="flex items-center gap-2 px-4 py-1 rounded-2xl shadow-sm font-semibold text-sm bg-teal-50 text-teal-700 border border-gray-200">
-                                                    <span class="w-2 h-2 rounded-full bg-teal-500 inline-block"></span>
-                                                    <span class="tracking-wide capitalize">Checked In</span>
+                                            @elseif($isAlreadyRenewed)
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                                                    <i class="fas fa-redo mr-1.5 text-xs"></i> {{ __('booking.index.labels.renewed') }}
                                                 </span>
-                                                @elseif(strtolower($booking->transaction_status) === 'paid')
-                                                <span class="flex items-center gap-2 px-4 py-1 rounded-2xl shadow-sm font-semibold text-sm bg-green-50 text-green-700 border border-gray-200">
-                                                    <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
-                                                    <span class="tracking-wide capitalize">Paid</span>
+                                            @elseif($isCheckedIn)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span> Checked In
                                                 </span>
-                                                @else
-                                                <span class="flex items-center gap-2 px-4 py-1 rounded-2xl shadow-sm font-semibold text-sm bg-blue-50 text-blue-700 border border-gray-200">
-                                                    <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
-                                                    <span class="tracking-wide capitalize">{{ ucfirst($booking->transaction_status) }}</span>
-                                                </span>
-                                                @endif
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            @if(!$booking->attachment)
-                                                <span class="text-gray-400 italic">{{ __('booking.js.no_attachment') }}</span>
                                             @else
-                                                <div class="flex justify-center items-center h-full">
-                                                    <a href="{{ route('bookings.view-attachment', $booking->idrec) }}" target="_blank"
-                                                       class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-teal-50 text-teal-600 hover:bg-teal-100 transition-colors duration-200"
-                                                       title="{{ __('booking.actions.view_attachment') }}">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span> Paid
+                                                </span>
+                                            @endif
+                                            <div class="mt-1">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                                    {{ paymentMethodBadge($booking->transaction_type) }}
+                                                </span>
+                                            </div>
+                                            {{-- Bank + VA number: shown only for DOKU-issued Virtual Account payments. --}}
+                                            @if (isDokuVaPayment($booking->transaction_type, $booking->virtual_account_no ?? null, $booking->payment_bank ?? null))
+                                                <div class="mt-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/40 font-mono">
+                                                        {{ strtoupper($booking->payment_bank) }} · {{ $booking->virtual_account_no }}
+                                                    </span>
                                                 </div>
                                             @endif
                                         </td>
@@ -691,76 +767,176 @@
                                                 $checkOutDate = \Carbon\Carbon::parse($booking->check_out)->startOfDay();
                                                 $today = now()->startOfDay();
                                                 $isTooLate = $today > $checkOutDate;
-                                                $isAlreadyRenewed = $booking->renewal_status == 1;
-                                                $isCheckedIn = $booking->booking && $booking->booking->check_in_at;
-                                                $isCheckedOut = $booking->booking && $booking->booking->check_out_at;
-                                                // Can only renew if: checked in, not checked out, not too late, not already renewed
-                                                $canRenew = $isCheckedIn && !$isCheckedOut && !$isTooLate && !$isAlreadyRenewed;
+                                                $canRenew = $isCheckedIn && !$isTooLate && !$isAlreadyRenewed;
                                             @endphp
-                                            @if($isAlreadyRenewed)
-                                            <button disabled
-                                                    class="inline-flex items-center px-4 py-2 bg-blue-400 text-white rounded-md cursor-not-allowed text-sm font-medium"
-                                                    title="Booking ini sudah diperpanjang">
-                                                <i class="fas fa-check-circle mr-2"></i>
-                                                Already Renewed
-                                            </button>
-                                            @elseif($isCheckedOut)
-                                            <button disabled
-                                                    class="inline-flex items-center px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed text-sm font-medium"
-                                                    title="Tidak bisa perpanjang, sudah checkout">
-                                                <i class="fas fa-sign-out-alt mr-2"></i>
-                                                Checked Out
-                                            </button>
-                                            @elseif(!$isCheckedIn)
-                                            <button disabled
-                                                    class="inline-flex items-center px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed text-sm font-medium"
-                                                    title="Tidak bisa perpanjang, belum check-in">
-                                                <i class="fas fa-door-closed mr-2"></i>
-                                                Not Checked In
-                                            </button>
-                                            @elseif($canRenew)
-                                            <button onclick="openRenewModal({
-                                                orderId: '{{ $booking->order_id }}',
-                                                roomId: {{ $booking->room_id }},
-                                                bookingType: '{{ $booking->booking_type }}',
-                                                months: {{ $booking->booking_months ?? 1 }},
-                                                previousCheckOut: '{{ $booking->check_out->format('Y-m-d') }}',
-                                                userId: {{ $booking->user_id }},
-                                                userName: '{{ addslashes($booking->user_name) }}',
-                                                userPhone: '{{ $booking->user_phone_number }}',
-                                                userEmail: '{{ $booking->user_email }}',
-                                                propertyId: {{ $booking->property_id }},
-                                                propertyName: '{{ addslashes($booking->property_name) }}',
-                                                propertyType: '{{ $booking->property_type }}',
-                                                roomName: '{{ addslashes($booking->room_name) }}'
-                                            })"
+                                            @if(!$isCheckedIn && strtolower($booking->transaction_status) === 'paid')
+                                                <button onclick="cancelBooking('{{ $booking->order_id }}', 'paid')"
+                                                        class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 text-sm font-medium mb-2">
+                                                    <i class="fas fa-times-circle mr-2"></i> Batalkan
+                                                </button>
+                                            @endif
+                                            @if($canRenew)
+                                                @php
+                                                    /* Renewal check-in must come from the latest PAID/COMPLETED non-renewed
+                                                       booking for this room+user. Cancelled rows are intentionally excluded —
+                                                       a cancelled renewal must not push the renewal start date forward. */
+                                                    $renewalCheckOut = \DB::table('t_transactions')
+                                                        ->where('room_id', $booking->room_id)
+                                                        ->where('user_id', $booking->user_id)
+                                                        ->whereRaw('LOWER(transaction_status) IN (?, ?)', ['paid', 'completed'])
+                                                        ->where('renewal_status', 0)
+                                                        ->whereNull('cancel_at')
+                                                        ->orderBy('check_out', 'desc')
+                                                        ->value('check_out')
+                                                        ?? $booking->check_out;
+                                                    $renewalCheckOutStr = \Carbon\Carbon::parse($renewalCheckOut)->format('Y-m-d');
+                                                @endphp
+                                                <button onclick="openRenewModal({
+                                                    orderId: '{{ $booking->order_id }}',
+                                                    roomId: {{ $booking->room_id }},
+                                                    bookingType: '{{ $booking->booking_type }}',
+                                                    months: {{ $booking->booking_months ?? 1 }},
+                                                    previousCheckOut: '{{ $renewalCheckOutStr }}',
+                                                    originalCheckinDay: {{ $booking->original_checkin_day ?? $booking->check_in->day }},
+                                                    userId: {{ $booking->user_id }},
+                                                    userName: '{{ addslashes($booking->user_name) }}',
+                                                    userPhone: '{{ $booking->user_phone_number }}',
+                                                    userEmail: '{{ $booking->user_email }}',
+                                                    propertyId: {{ $booking->property_id }},
+                                                    propertyName: '{{ addslashes($booking->property_name) }}',
+                                                    propertyType: '{{ $booking->property_type }}',
+                                                    roomName: '{{ addslashes($booking->room_name) }}'
+                                                })"
                                                     class="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors duration-200 text-sm font-medium">
-                                                <i class="fas fa-redo mr-2"></i>
-                                                {{ __('booking.actions.renew_booking') }}
-                                            </button>
-                                            @else
-                                            <button disabled
-                                                    class="inline-flex items-center px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed text-sm font-medium"
-                                                    title="Masa perpanjangan sudah berakhir">
-                                                <i class="fas fa-redo mr-2"></i>
-                                                {{ __('booking.actions.renew_booking') }}
-                                            </button>
+                                                    <i class="fas fa-redo mr-2"></i> {{ __('booking.actions.renew_booking') }}
+                                                </button>
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="px-6 py-12 text-center">
+                                        <td colspan="6" class="px-6 py-12 text-center">
                                             <div class="flex flex-col items-center justify-center text-gray-500">
-                                                <i class="fas fa-calendar-times text-4xl mb-4"></i>
-                                                <p class="text-lg">{{ __('booking.index.empty_states.no_completed_bookings') }}</p>
-                                                <p class="text-sm mt-2">{{ __('booking.index.empty_states.no_completed_bookings_desc') }}</p>
+                                                <i class="fas fa-calendar-check text-4xl mb-4"></i>
+                                                <p class="text-lg">No upcoming bookings</p>
+                                                <p class="text-sm mt-2">Your active and future bookings will appear here</p>
                                             </div>
                                         </td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Completed Bookings Tab -->
+                    <div x-show="tab === 'completed'">
+                        <table class="min-w-full divide-y divide-gray-200 booking-table">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.booking_id') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.property') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.check_in_out') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.paid_amount') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.status') }}</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('booking.index.table_headers.actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @php
+                                    $filteredBookings = $allBookings->filter(function($booking) {
+                                        $status = strtolower($booking->transaction_status);
+                                        if (!in_array($status, ['paid', 'completed'])) return false;
+                                        if ($booking->booking && $booking->booking->check_out_at) return true;
+                                        if ($booking->renewal_status == 1 && $booking->check_out && \Carbon\Carbon::parse($booking->check_out)->lt(now())) return true;
+                                        return false;
+                                    });
+                                @endphp
+                                @forelse ($filteredBookings as $booking)
+                                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                                        {{-- Booking ID --}}
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm font-medium text-gray-900">{{ $booking->order_id }}</div>
+                                            <div class="text-xs text-gray-500 mt-1">
+                                                <div class="flex items-center"><i class="fas fa-user mr-1"></i> {{ $booking->user_name }}</div>
+                                                <div class="flex items-center"><i class="fas fa-phone mr-1"></i> {{ $booking->user_phone_number }}</div>
+                                                {{-- Transaction created_at — shown so guests/admins can tell renewals/duplicates apart at a glance. --}}
+                                                <div class="flex items-center"><i class="far fa-clock mr-1"></i> {{ optional($booking->created_at)->format('d M Y H:i') ?? '—' }}</div>
+                                            </div>
+                                        </td>
+                                        {{-- Property: Room No → Type → Property Name --}}
+                                        <td class="px-6 py-4">
+                                            @if($booking->room?->no)
+                                            <div class="text-sm font-semibold text-gray-900">No. {{ $booking->room->no }}</div>
+                                            @endif
+                                            <div class="text-sm text-gray-500">{{ $booking->room_name }}</div>
+                                            <div class="text-xs text-gray-400">{{ $booking->property_name }}</div>
+                                        </td>
+                                        {{-- Check In/Out --}}
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm text-gray-900 flex items-center">
+                                                <i class="far fa-calendar-check mr-1 text-teal-500"></i>
+                                                {{ \Carbon\Carbon::parse($booking->check_in)->format('d M Y') }}
+                                            </div>
+                                            <div class="text-sm text-gray-500 flex items-center">
+                                                <i class="far fa-calendar-times mr-1 text-red-500"></i>
+                                                {{ \Carbon\Carbon::parse($booking->check_out)->format('d M Y') }}
+                                            </div>
+                                        </td>
+                                        {{-- Paid Amount --}}
+                                        <td class="px-6 py-4">
+                                            @php
+                                                $roomPrice = $booking->room_price ?? 0;
+                                                $parkingFee = $booking->parking_fee ?? 0;
+                                                $serviceFees = $booking->service_fees ?? 0;
+                                                $depositFee = $booking->deposit_fee ?? 0;
+                                                $totalStay = $roomPrice + $parkingFee + $serviceFees;
+                                            @endphp
+                                            <div class="text-sm text-gray-900"><span class="font-medium">{{ __('booking.index.labels.total_stay') }}:</span> Rp {{ number_format($totalStay, 0, ',', '.') }}</div>
+                                            <div class="text-xs text-gray-500">{{ __('booking.index.labels.deposit') }}: Rp {{ number_format($depositFee, 0, ',', '.') }}</div>
+                                            @if($booking->paid_at)
+                                                <div class="text-xs text-green-600 flex items-center mt-1">
+                                                    <i class="fas fa-check-circle mr-1"></i>
+                                                    {{ \Carbon\Carbon::parse($booking->paid_at)->format('d M Y H:i') }}
+                                                </div>
+                                            @endif
+                                        </td>
+                                        {{-- Status + Payment Method Badge --}}
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col items-center gap-1">
+                                                @if($booking->renewal_status == 1)
+                                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"><i class="fas fa-redo mr-1.5"></i>  {{ __('booking.index.labels.renewed') }}</span>
+                                                @elseif($booking->booking && $booking->booking->check_out_at)
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>{{ __('booking.index.labels.checked_out') }}</span>
+                                                @else
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>{{ __('booking.index.labels.completed') }}</span>
+                                                @endif
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                                    {{ paymentMethodBadge($booking->transaction_type) }}
+                                                </span>
+                                                {{-- Bank + VA number: shown only for DOKU-issued Virtual Account payments. --}}
+                                                @if (isDokuVaPayment($booking->transaction_type, $booking->virtual_account_no ?? null, $booking->payment_bank ?? null))
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/40 font-mono">
+                                                        {{ strtoupper($booking->payment_bank) }} · {{ $booking->virtual_account_no }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        {{-- Actions --}}
+                                        <td class="px-6 py-4">
+                                            <span class="text-xs text-gray-400">—</span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                            <i class="fas fa-calendar-times text-4xl mb-4"></i>
+                                            <p>{{ __('booking.index.empty_states.no_completed_bookings') }}</p>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -835,9 +1011,16 @@
                             <label for="renew_months" class="block text-sm font-medium text-gray-700 mb-1">
                                 Jumlah Bulan *
                             </label>
-                            <input type="number" id="renew_months" name="months" min="1" value="1"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                   oninput="updateCheckOutDate()">
+                            {{-- Dropdown 1-12 months. Options that would push the new check_out
+                                 past today + 15 months are disabled at runtime by
+                                 refreshMonthsDropdown() — the 15-month cumulative cap. --}}
+                            <select id="renew_months" name="months" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                    onchange="updateCheckOutDate()">
+                                @for ($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}">{{ $i }} {{ $i === 1 ? 'bulan' : 'bulan' }}</option>
+                                @endfor
+                            </select>
                         </div>
                         <div>
                             <label for="renew_check_out_monthly" class="block text-sm font-medium text-gray-700 mb-1">
@@ -984,16 +1167,16 @@
                         }
                         
                         // Update styling to expired state
-                        element.classList.remove('bg-red-50', 'text-red-700');
+                        element.classList.remove('bg-red-50', 'text-red-700', 'bg-yellow-50', 'text-yellow-700');
                         element.classList.add('bg-gray-100', 'text-gray-500');
                         const dot = element.querySelector('span:first-child');
                         if (dot) {
-                            dot.classList.remove('bg-red-400');
+                            dot.classList.remove('bg-red-400', 'bg-yellow-400');
                             dot.classList.add('bg-gray-400');
                         }
-                        
-                        // Mark as expired in backend if not already done
-                        if (element.dataset.status === 'pending') {
+
+                        // Mark as expired in backend if not already done (pending or waiting)
+                        if (element.dataset.status === 'pending' || element.dataset.status === 'waiting') {
                             markBookingAsExpired(bookingId);
                             element.dataset.status = 'expired';
                         }
@@ -1154,6 +1337,38 @@
     async function openRenewModal(bookingData) {
         const { orderId, roomId, bookingType, months, previousCheckOut, userId, userName, userPhone, userEmail, propertyId, propertyName, propertyType, roomName } = bookingData;
 
+        // Renewal availability window — must be 0-90 days before check-out, with a
+        // type-specific hard cutoff on the check-out day: 12:00 WIB for daily
+        // (new guest arrives after noon checkout), 21:00 WIB for monthly. Block early
+        // and with localised message rather than open the modal then fail at submit.
+        if (previousCheckOut) {
+            const co = new Date(previousCheckOut + 'T12:00:00');
+            const now = new Date();
+            const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const co0 = new Date(co.getFullYear(), co.getMonth(), co.getDate());
+            const daysUntilCheckOut = Math.floor((co0 - today0) / 86400000);
+            const sameDayCutoffHour = bookingType === 'monthly' ? 21 : 12;
+
+            if (daysUntilCheckOut > 90) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '{{ __("booking.js.renewal_unavailable_title") }}',
+                    text: '{{ __("booking.js.renewal_window_too_early") }}',
+                    confirmButtonColor: '#0d9488',
+                });
+                return;
+            }
+            if (daysUntilCheckOut < 0 || (daysUntilCheckOut === 0 && now.getHours() >= sameDayCutoffHour)) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '{{ __("booking.js.renewal_unavailable_title") }}',
+                    text: '{{ __("booking.js.renewal_window_closed") }}',
+                    confirmButtonColor: '#0d9488',
+                });
+                return;
+            }
+        }
+
         // Store booking data for submitRenewal
         currentBookingData = {
             orderId,
@@ -1168,8 +1383,12 @@
             roomName,
             bookingType,
             months,
-            previousCheckOut
+            previousCheckOut,
+            originalCheckinDay: bookingData.originalCheckinDay
         };
+
+        // Store originalCheckinDay for updateCheckOutDate() to use
+        window._renewOriginalCheckinDay = bookingData.originalCheckinDay || null;
 
         const modal = document.getElementById('renewBookingModal');
 
@@ -1284,6 +1503,12 @@
 
             // Set minimum date for check-out (must be after check-in)
             document.getElementById('renew_check_out').min = previousCheckOut;
+            // Daily renewal: cap check_out at today + 60 days (max stay window).
+            // Monthly renewals don't use this input; the 15-month dropdown cap applies there.
+            const maxDailyCheckOut = new Date();
+            maxDailyCheckOut.setDate(maxDailyCheckOut.getDate() + 60);
+            document.getElementById('renew_check_out').max =
+                maxDailyCheckOut.toISOString().slice(0, 10);
 
             // Show appropriate fields
             toggleBookingTypeFields();
@@ -1347,8 +1572,52 @@
         document.getElementById('renewBookingForm').reset();
     }
 
+    // Clamped month addition: avoids overflow when target month has fewer days.
+    // originalDay: use the original check-in day for renewals to preserve days across chain.
+    // e.g. Jan 31→Feb 28→Mar 31 (not Mar 28)
+    function addMonthsClamped(date, months, originalDay) {
+        const d = new Date(date);
+        const day = originalDay || d.getDate();
+        d.setDate(1);
+        d.setMonth(d.getMonth() + months);
+        const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        d.setDate(Math.min(day, maxDay));
+        return d;
+    }
+
+    // Compute today + 15 months (the cumulative cap) — used to disable invalid
+    // dropdown options and to validate at submit time.
+    function getMaxAllowedRenewalCheckOut() {
+        const t = new Date();
+        return new Date(t.getFullYear(), t.getMonth() + 15, t.getDate());
+    }
+
+    // Disable any dropdown option that would push new check_out past today + 15 months.
+    function refreshMonthsDropdown() {
+        const select = document.getElementById('renew_months');
+        const checkInStr = document.getElementById('renew_check_in_monthly').value;
+        if (!select || !checkInStr) return;
+        const checkInDate = new Date(checkInStr);
+        if (isNaN(checkInDate.getTime())) return;
+        const maxAllowed = getMaxAllowedRenewalCheckOut();
+        let firstEnabledValue = null;
+        for (let i = 0; i < select.options.length; i++) {
+            const m = parseInt(select.options[i].value);
+            const projected = addMonthsClamped(checkInDate, m, window._renewOriginalCheckinDay);
+            const tooLong = projected > maxAllowed;
+            select.options[i].disabled = tooLong;
+            if (!tooLong && firstEnabledValue === null) firstEnabledValue = String(m);
+        }
+        // If currently selected option is now disabled, fall back to the smallest valid one
+        if (select.options[select.selectedIndex] && select.options[select.selectedIndex].disabled && firstEnabledValue !== null) {
+            select.value = firstEnabledValue;
+        }
+    }
+
     function updateCheckOutDate() {
         const checkIn = document.getElementById('renew_check_in_monthly').value;
+        // Refresh disabled options first so the value we read is guaranteed allowed.
+        refreshMonthsDropdown();
         const months = parseInt(document.getElementById('renew_months').value) || 1;
 
         console.log('updateCheckOutDate - checkIn:', checkIn, 'months:', months);
@@ -1362,12 +1631,12 @@
                 return;
             }
 
-            checkInDate.setMonth(checkInDate.getMonth() + months);
+            const coDate = addMonthsClamped(checkInDate, months, window._renewOriginalCheckinDay);
 
             // Format as YYYY-MM-DD
-            const year = checkInDate.getFullYear();
-            const month = String(checkInDate.getMonth() + 1).padStart(2, '0');
-            const day = String(checkInDate.getDate()).padStart(2, '0');
+            const year = coDate.getFullYear();
+            const month = String(coDate.getMonth() + 1).padStart(2, '0');
+            const day = String(coDate.getDate()).padStart(2, '0');
             const checkOutDate = `${year}-${month}-${day}`;
 
             document.getElementById('renew_check_out_monthly').value = checkOutDate;
@@ -1408,6 +1677,20 @@
                 updateCheckOutDate();
                 checkOut = document.getElementById('renew_check_out_monthly').value;
             }
+
+            // 15-month cumulative cap — defence-in-depth in case dropdown was tampered with.
+            if (checkOut) {
+                const projected = new Date(checkOut + 'T12:00:00');
+                if (projected > getMaxAllowedRenewalCheckOut()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __("booking.js.renewal_unavailable_title") }}',
+                        text: '{{ __("booking.js.renewal_max_15_months") }}',
+                        confirmButtonColor: '#0d9488',
+                    });
+                    return;
+                }
+            }
         } else {
             checkIn = document.getElementById('renew_check_in').value;
             checkOut = document.getElementById('renew_check_out').value;
@@ -1417,6 +1700,22 @@
                     icon: 'error',
                     title: '{{ __("booking.js.invalid_dates") }}',
                     text: '{{ __("booking.js.invalid_dates_text") }}',
+                    confirmButtonColor: '#0d9488',
+                });
+                return;
+            }
+
+            // 60-day cap for daily renewals — defence-in-depth in case the date
+            // input's max attribute was tampered with. Mirrors the server validator.
+            const projectedCheckOut = new Date(checkOut + 'T12:00:00');
+            const maxDailyCheckOut = new Date();
+            maxDailyCheckOut.setDate(maxDailyCheckOut.getDate() + 60);
+            maxDailyCheckOut.setHours(23, 59, 59, 999);
+            if (projectedCheckOut > maxDailyCheckOut) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '{{ __("booking.js.renewal_unavailable_title") }}',
+                    text: '{{ __("booking.js.renewal_max_60_days") }}',
                     confirmButtonColor: '#0d9488',
                 });
                 return;
@@ -1563,6 +1862,299 @@
             submitBtn.disabled = false;
             btnText.classList.remove('hidden');
             btnLoader.classList.add('hidden');
+        }
+    }
+    </script>
+
+    {{-- Cancel-modal styling — scoped to .swal-cancel-popup so it only affects the redesigned cancel dialog --}}
+    <style>
+        .swal-cancel-popup { border-radius: 24px !important; padding: 28px 24px 22px !important; max-width: 440px; }
+        .swal-cancel-popup .swal2-html-container { margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+        .swal-cancel-popup .swal2-actions { gap: 10px; margin-top: 18px !important; padding: 0 !important; width: 100%; }
+        .swal-cancel-popup .swal2-actions button { margin: 0 !important; }
+        .swal-cancel-popup .swal2-cancel {
+            flex: 0 0 38% !important;
+            background: #ffffff !important;
+            color: #374151 !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            padding: 12px 18px !important;
+            box-shadow: none !important;
+        }
+        .swal-cancel-popup .swal2-confirm {
+            flex: 1 1 auto !important;
+            background: linear-gradient(135deg, #0F513D 0%, #167a5a 100%) !important;
+            color: #fff !important;
+            border: none !important;
+            border-radius: 999px !important;
+            font-weight: 700 !important;
+            padding: 12px 18px !important;
+            box-shadow: 0 6px 14px rgba(15, 81, 61, 0.28) !important;
+        }
+        .swal-cancel-popup .swal-refund-input {
+            width: 100%; height: 44px;
+            padding: 0 12px 0 38px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fff;
+            color: #111827;
+            font-size: 14px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .swal-cancel-popup .swal-refund-input:focus { border-color: #0F513D; box-shadow: 0 0 0 3px rgba(15, 81, 61, 0.12); }
+        html.dark .swal-cancel-popup .swal-refund-input { background: #334155; border-color: #475569; color: #e2e8f0; }
+        html.dark .swal-cancel-popup .swal2-cancel { background: #334155 !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+    </style>
+
+    <script>
+    /**
+     * Cancel booking flow — shows refund preview for paid bookings,
+     * simple confirmation for pending/waiting bookings.
+     */
+    // Translation strings for cancel modal (rendered server-side for current locale)
+    const cancelT = {
+        title: '{{ __("booking.js.cancel_title") }}',
+        confirmText: '{{ __("booking.js.cancel_confirm_text") }}',
+        yes: '{{ __("booking.js.cancel_yes") }}',
+        no: '{{ __("booking.js.cancel_no") }}',
+        processing: '{{ __("booking.js.cancel_processing") }}',
+        success: '{{ __("booking.js.cancel_success") }}',
+        failed: '{{ __("booking.js.cancel_failed") }}',
+        error: '{{ __("booking.js.cancel_error") }}',
+        calculating: '{{ __("booking.js.cancel_calculating") }}',
+        refundFailed: '{{ __("booking.js.cancel_refund_failed") }}',
+        yesRefund: '{{ __("booking.js.cancel_yes_refund") }}',
+        processingCancel: '{{ __("booking.js.cancel_processing_cancel") }}',
+        bankRequired: '{{ __("booking.js.cancel_bank_required") }}',
+        refundRoom: '{{ __("booking.js.refund_room") }}',
+        refund{{ __('booking.index.labels.deposit') }}: '{{ __("booking.js.refund_deposit") }}',
+        refundParking: '{{ __("booking.js.refund_parking") }}',
+        refundTotal: '{{ __("booking.js.refund_total") }}',
+        daysBefore: '{{ __("booking.js.refund_days_before") }}',
+        days: '{{ __("booking.js.refund_days") }}',
+        processTime: '{{ __("booking.js.refund_process_time") }}',
+        bankTitle: '{{ __("booking.js.refund_bank_title") }}',
+        bankName: '{{ __("booking.js.refund_bank_name") }}',
+        accountNo: '{{ __("booking.js.refund_account_no") }}',
+        accountHolder: '{{ __("booking.js.refund_account_holder") }}',
+    };
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const swalDark = isDarkMode ? { background: '#1e293b', color: '#e2e8f0' } : {};
+    const refundBoxBg = isDarkMode ? '#064e3b' : '#f0fdf4';
+    const refundBoxBorder = isDarkMode ? '#065f46' : '#bbf7d0';
+    const bankBoxBg = isDarkMode ? '#78350f' : '#fef3c7';
+    const bankBoxBorder = isDarkMode ? '#92400e' : '#fde68a';
+    const bankTitleColor = isDarkMode ? '#fbbf24' : '#92400e';
+    const labelColor = isDarkMode ? '#94a3b8' : '#6b7280';
+    const inputBg = isDarkMode ? '#334155' : '#fff';
+    const inputColor = isDarkMode ? '#e2e8f0' : '#111';
+    const inputBorder = isDarkMode ? '#475569' : '#d1d5db';
+
+    async function cancelBooking(orderId, status) {
+        const apiBase = '{{ rtrim(config("app.url"), "/") }}/api/v1';
+
+        if (status === 'pending' || status === 'waiting') {
+            const result = await Swal.fire({
+                title: cancelT.title,
+                text: `${cancelT.confirmText} ${orderId}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: cancelT.yes,
+                cancelButtonText: cancelT.no,
+                ...swalDark,
+            });
+            if (!result.isConfirmed) return;
+
+            try {
+                Swal.fire({ title: cancelT.processing, allowOutsideClick: false, ...swalDark, didOpen: () => Swal.showLoading() });
+                const res = await fetch(`${apiBase}/booking/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'x-api-key': API_KEY },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    await Swal.fire({ icon: 'success', title: cancelT.success, text: data.message, confirmButtonColor: '#0d9488', ...swalDark });
+                    window.location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: cancelT.failed, text: data.message || cancelT.error, confirmButtonColor: '#0d9488', ...swalDark });
+                }
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0d9488', ...swalDark });
+            }
+            return;
+        }
+
+        try {
+            Swal.fire({ title: cancelT.calculating, allowOutsideClick: false, ...swalDark, didOpen: () => Swal.showLoading() });
+
+            const previewRes = await fetch(`${apiBase}/booking/${orderId}/cancel-preview`, {
+                headers: { 'Accept': 'application/json', 'x-api-key': API_KEY }
+            });
+            const previewData = await previewRes.json();
+            Swal.close();
+
+            if (!previewRes.ok) {
+                Swal.fire({ icon: 'error', title: cancelT.failed, text: previewData.message || cancelT.refundFailed, confirmButtonColor: '#0d9488', ...swalDark });
+                return;
+            }
+
+            const refund = previewData.data.refund;
+            const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
+
+            // Theme-aware colors for the redesigned modal
+            const subtitleColor = isDarkMode ? '#94a3b8' : '#6b7280';
+            const titleColor = isDarkMode ? '#f1f5f9' : '#111827';
+            const itemColor = isDarkMode ? '#cbd5e1' : '#374151';
+            const dividerColor = isDarkMode ? '#065f46' : '#bbf7d0';
+            const totalColor = isDarkMode ? '#34d399' : '#0F513D';
+            const infoBoxBg = isDarkMode ? '#1e293b' : '#f3f4f6';
+            const infoBoxText = isDarkMode ? '#cbd5e1' : '#4b5563';
+            const sectionLabelColor = isDarkMode ? '#cbd5e1' : '#374151';
+            const fieldLabelColor = isDarkMode ? '#94a3b8' : '#6b7280';
+
+            // Subtitle copy — short confirmation line shown under the title
+            const subtitleCopy = '{{ __("booking.js.cancel_subtitle") }}';
+
+            let breakdownHtml = `
+                <div style="text-align:center; padding:4px 2px 0;">
+                    <!-- Amber warning icon -->
+                    <div style="width:60px; height:60px; margin:0 auto 16px; background:#fef3c7; border-radius:16px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-exclamation" style="color:#d97706; font-size:26px;"></i>
+                    </div>
+                    <!-- Title + subtitle -->
+                    <h2 style="font-size:22px; font-weight:700; color:${titleColor}; margin:0 0 8px; line-height:1.2;">${cancelT.title}</h2>
+                    <p style="font-size:13.5px; color:${subtitleColor}; margin:0 0 18px; line-height:1.5;">${subtitleCopy}</p>
+
+                    <!-- Refund breakdown card -->
+                    <div style="background:${refundBoxBg}; border-radius:14px; padding:16px 18px; text-align:left; margin-bottom:14px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px;">
+                            <span style="color:${itemColor};">${cancelT.refundRoom} (${refund.refund_percentage}%)</span>
+                            <strong style="color:${titleColor}; font-weight:600;">${fmt(refund.room_refund)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px;">
+                            <span style="color:${itemColor};">${cancelT.refundDeposit} (100%)</span>
+                            <strong style="color:${titleColor}; font-weight:600;">${fmt(refund.deposit_refund)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px;">
+                            <span style="color:${itemColor};">${cancelT.refundParking} (${refund.refund_percentage}%)</span>
+                            <strong style="color:${titleColor}; font-weight:600;">${fmt(refund.other_refund)}</strong>
+                        </div>
+                        <div style="height:1px; background:${dividerColor}; margin:12px 0;"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="color:${titleColor}; font-size:15px; font-weight:700;">${cancelT.refundTotal}</strong>
+                            <strong style="color:${totalColor}; font-size:18px; font-weight:800;">${fmt(refund.total_refund)}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Info box: days before check-in + estimated process time -->
+                    <div style="background:${infoBoxBg}; border-radius:12px; padding:12px 14px; margin-bottom:18px; text-align:left;">
+                        <div style="display:flex; gap:10px; align-items:flex-start;">
+                            <i class="fas fa-info-circle" style="color:#9ca3af; font-size:14px; margin-top:2px;"></i>
+                            <div style="font-size:12.5px; color:${infoBoxText}; line-height:1.6;">
+                                <div>${cancelT.daysBefore}: <strong>${refund.days_before_checkin} ${cancelT.days}</strong></div>
+                                <div>${cancelT.processTime}</div>
+                            </div>
+                        </div>
+                    </div>
+            `;
+
+            if (refund.requires_bank_account) {
+                breakdownHtml += `
+                    <!-- Bank account section -->
+                    <div style="text-align:left; font-size:11px; font-weight:800; letter-spacing:0.08em; color:${sectionLabelColor}; margin:0 0 12px; display:flex; align-items:center; gap:8px; text-transform:uppercase;">
+                        <i class="far fa-credit-card" style="font-size:14px;"></i>
+                        <span>{{ __("booking.js.refund_bank_section_title") }}</span>
+                    </div>
+                    <div style="text-align:left; margin-bottom:12px;">
+                        <label style="display:block; font-size:12px; color:${fieldLabelColor}; margin-bottom:6px; font-weight:500;">${cancelT.bankName}</label>
+                        <div style="position:relative;">
+                            <i class="fas fa-university" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:13px;"></i>
+                            <input id="refund-bank-name" type="text" placeholder="BCA, Mandiri, BNI..." class="swal-refund-input">
+                        </div>
+                    </div>
+                    <div style="text-align:left; margin-bottom:12px;">
+                        <label style="display:block; font-size:12px; color:${fieldLabelColor}; margin-bottom:6px; font-weight:500;">${cancelT.accountNo}</label>
+                        <div style="position:relative;">
+                            <i class="far fa-credit-card" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:13px;"></i>
+                            <input id="refund-account-no" type="text" placeholder="1234567890" class="swal-refund-input">
+                        </div>
+                    </div>
+                    <div style="text-align:left; margin-bottom:4px;">
+                        <label style="display:block; font-size:12px; color:${fieldLabelColor}; margin-bottom:6px; font-weight:500;">${cancelT.accountHolder}</label>
+                        <div style="position:relative;">
+                            <i class="far fa-user" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:13px;"></i>
+                            <input id="refund-account-holder" type="text" placeholder="Contoh: Budi Santoso" class="swal-refund-input">
+                        </div>
+                    </div>
+                `;
+            }
+            breakdownHtml += '</div>';
+
+            const confirmResult = await Swal.fire({
+                html: breakdownHtml,
+                showCancelButton: true,
+                showCloseButton: false,
+                reverseButtons: true,
+                confirmButtonText: '{{ __("booking.js.cancel_yes_refund_short") }}',
+                cancelButtonText: '{{ __("booking.js.cancel_back") }}',
+                buttonsStyling: false,
+                customClass: { popup: 'swal-cancel-popup' },
+                width: '460px',
+                ...swalDark,
+                preConfirm: () => {
+                    if (refund.requires_bank_account) {
+                        const bankName = document.getElementById('refund-bank-name').value.trim();
+                        const accountNo = document.getElementById('refund-account-no').value.trim();
+                        const accountHolder = document.getElementById('refund-account-holder').value.trim();
+                        if (!bankName || !accountNo || !accountHolder) {
+                            Swal.showValidationMessage(cancelT.bankRequired);
+                            return false;
+                        }
+                        return { bank_name: bankName, account_no: accountNo, account_holder: accountHolder };
+                    }
+                    return {};
+                }
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
+            // Execute cancellation
+            Swal.fire({ title: cancelT.processingCancel, allowOutsideClick: false, ...swalDark, didOpen: () => Swal.showLoading() });
+
+            const cancelBody = confirmResult.value || {};
+            const cancelRes = await fetch(`${apiBase}/booking/${orderId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'x-api-key': API_KEY },
+                body: JSON.stringify(cancelBody)
+            });
+            const cancelData = await cancelRes.json();
+
+            if (cancelRes.ok) {
+                const totalRefund = cancelData.data?.refund?.total_refund;
+                const successMsg = totalRefund
+                    ? '{!! __("booking.js.cancel_refund_success") !!}'.replace(':amount', fmt(totalRefund))
+                    : cancelData.message;
+                await Swal.fire({
+                    icon: 'success',
+                    title: cancelT.success,
+                    html: successMsg,
+                    confirmButtonColor: '#0d9488',
+                    ...swalDark,
+                });
+                window.location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: cancelT.failed, text: cancelData.message || cancelT.error, confirmButtonColor: '#0d9488', ...swalDark });
+            }
+
+        } catch (e) {
+            console.error('Cancel booking error:', e);
+            Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0d9488' });
         }
     }
     </script>

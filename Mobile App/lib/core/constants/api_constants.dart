@@ -3,6 +3,64 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiConfig {
   static String get baseUrl =>dotenv.env['BASE_URL'] ?? 'https://default-url.com';
   static String get apiKey => dotenv.env['API_KEY'] ?? '';
+
+  /// Storage base URL — origin of BASE_URL used to resolve relative /storage/... paths
+  /// returned by the backend (e.g., BASE_URL=https://staging.ulinmahoni.com/api/v1
+  /// → storageBaseUrl=https://staging.ulinmahoni.com).
+  static String get storageBaseUrl {
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null) return '';
+    /* Include port only if non-standard (not 80/443) */
+    final port = uri.hasPort && uri.port != 80 && uri.port != 443 ? ':${uri.port}' : '';
+    return '${uri.scheme}://${uri.host}$port';
+  }
+  /// Origin (scheme + host) of the Backend/admin server that serves
+  /// `/storage/...` media (hero video, property & room images, etc.).
+  ///
+  /// The Frontend API embeds an absolute media host built from its OWN
+  /// server-side `ADMIN_URL`. On staging that value is misconfigured to point
+  /// at the production admin (`admin.ulinmahoni.com`). To stay correct
+  /// regardless of server config, the app derives the admin origin from the
+  /// active API host:
+  ///   staging.ulinmahoni.com   -> staging-admin.ulinmahoni.com
+  ///   ulinmahoni.com / api.*   -> admin.ulinmahoni.com
+  /// An explicit `ADMIN_URL` in `.env` overrides the derivation when present.
+  /// Returns '' for unknown hosts (e.g. local dev) so media URLs are left as-is.
+  static String get adminBaseUrl {
+    final override = dotenv.env['ADMIN_URL'];
+    if (override != null && override.isNotEmpty) {
+      return override.replaceAll(RegExp(r'/+$'), '');
+    }
+
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null || uri.host.isEmpty) return '';
+    final host = uri.host;
+    String adminHost;
+    if (host.startsWith('staging.')) {
+      adminHost = 'staging-admin.${host.substring('staging.'.length)}';
+    } else if (host == 'ulinmahoni.com' || host.startsWith('api.')) {
+      adminHost = 'admin.ulinmahoni.com';
+    } else {
+      return ''; // unknown host (local dev etc.) — don't rewrite
+    }
+    return '${uri.scheme}://$adminHost';
+  }
+
+  /// Rewrites the origin of a server-returned media URL to [adminBaseUrl],
+  /// keeping the path + query intact. This corrects URLs that point at the
+  /// wrong admin host due to a server-side `ADMIN_URL` misconfiguration.
+  /// Returns [url] unchanged if it cannot be resolved (empty, unparseable,
+  /// or [adminBaseUrl] is unknown).
+  static String resolveMediaUrl(String url) {
+    if (url.isEmpty) return url;
+    final admin = adminBaseUrl;
+    if (admin.isEmpty) return url;
+    final src = Uri.tryParse(url);
+    if (src == null) return url;
+    final path = src.path.isEmpty ? url : src.path;
+    return '$admin$path${src.hasQuery ? '?${src.query}' : ''}';
+  }
+
   static String get loginUrl => '$baseUrl/auth/login';
   static String get registerUrl => '$baseUrl/auth/register';
   static String get forgotPasswordUrl => '$baseUrl/forgot-password';
@@ -23,6 +81,8 @@ class ApiConfig {
   static String get checkavailabilityUrl =>'$baseUrl/booking/check-availability';
   // Multi-Tier Pricing: price preview endpoint for per-date breakdown
   static String roomPricePreview(String roomId) => '$baseUrl/rooms/$roomId/price-preview';
+  /* Daily Multi Tier Pricing: search rooms endpoint with availability and per-date pricing */
+  static String get searchRoomsUrl => '$baseUrl/search/rooms';
   static String get updateattachmentUrl =>'$baseUrl/booking/{idrec}/update-attachment';
   static String get mybookingidUrl => '$baseUrl/booking/{idrec}';
   static String get deactiveaccountUrl => '$baseUrl/users/{userId}/deactivate';
@@ -52,9 +112,29 @@ class ApiConfig {
   static String get promoBannerImages => "$baseUrl/promo-banner";
   static String promoBannerbyId(int bannerId) => "$baseUrl/promo-banner?id=$bannerId";
 
+  // <!-- Content management API endpoints for dynamic tagline and hero video -->
+  static String get contentTagline => "$baseUrl/content/tagline";
+  static String get contentHeroVideo => "$baseUrl/content/hero-video";
+
+  /// Ticket endpoints — customer service ticketing system
+  static String get ticketCategories => "$baseUrl/tickets/categories";
+  static String get ticketEligibility => "$baseUrl/tickets/eligibility";
+  static String get ticketEligibleBookings => "$baseUrl/tickets/eligible-bookings";
+  static String get tickets => "$baseUrl/tickets";
+  static String ticketById(int id) => "$baseUrl/tickets/$id";
+  static String ticketMessages(int id) => "$baseUrl/tickets/$id/messages";
+  static String ticketRead(int id) => "$baseUrl/tickets/$id/read";
+  static String ticketClose(int id) => "$baseUrl/tickets/$id/close";
+  static String ticketReopen(int id) => "$baseUrl/tickets/$id/reopen";
+  /// Broadcast endpoints — one-way announcements
+  static String get broadcasts => "$baseUrl/broadcasts";
+  static String broadcastById(int id) => "$baseUrl/broadcasts/$id";
+
   // FCM (Firebase Cloud Messaging) endpoints
-  static String get fcmToken => "$baseUrl/users/fcm-token";
-  static String get fcmTokenDelete => "$baseUrl/users/fcm-token";
+  // POST /device-token  → register/update device token (upsert by backend)
+  // DELETE /device-token → remove device token on logout
+  static String get fcmToken => "$baseUrl/device-token";
+  static String get fcmTokenDelete => "$baseUrl/device-token";
 
   static const dokuUrl = "https://api-sandbox.doku.com";
   static const dokuPayment ="$dokuUrl/checkout/v1/payment"; // Ini boleh const krn dokuUrl juga const

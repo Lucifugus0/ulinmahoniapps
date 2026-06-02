@@ -19,32 +19,30 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
     public function update($user, array $input)
     {
         Validator::make($input, [
-            'name' => ['required', 'string', 'max:255'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'gender' => ['nullable', 'string', 'in:male,female'],
+            'country_code' => ['nullable', 'string', 'max:10'],
             'phone_number' => ['nullable', 'string', 'max:16', Rule::unique('users')->ignore($user->id)],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
         ])->validateWithBag('updateProfileInformation');
-
-        // $input['phone_number'] = isset($input['phone_number']) ? '+62' . $input['phone_number'] : $user->phone_number;
 
         if (isset($input['photo'])) {
             $user->updateProfilePhoto($input['photo']);
         }
 
-        if ($input['email'] !== $user->email &&
-            $user instanceof MustVerifyEmail) {
-            $this->updateVerifiedUser($user, $input);
-        } else {
-            $user->forceFill([
-                'name' => $input['name'],
-                'first_name' => $input['first_name'],
-                'last_name' => $input['last_name'],
-                'email' => $input['email'] ?? $user->email,
-                'phone_number' => $input['phone_number'],
-            ])->save();
-        }
+        // Auto-generate name from first_name + last_name
+        $name = trim($input['first_name'] . ' ' . $input['last_name']);
+
+        // Email is read-only — always keep the existing email
+        $user->forceFill([
+            'name' => $name,
+            'first_name' => $input['first_name'],
+            'last_name' => $input['last_name'],
+            'gender' => $input['gender'] ?? $user->gender,
+            'country_code' => $input['country_code'] ?? $user->country_code,
+            'phone_number' => $input['phone_number'],
+        ])->save();
     }
 
     /**

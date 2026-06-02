@@ -241,6 +241,18 @@ class ChatController extends Controller
         // Update conversation last_message_at
         $conversation->update(['last_message_at' => now()]);
 
+        /**
+         * Send push notification to other participants in this conversation.
+         * Includes conversation_id for mobile deep-linking to the chat room.
+         * Wrapped in try/catch so notification failure doesn't break message sending.
+         */
+        try {
+            $fcmService = new \App\Services\FirebaseNotificationService();
+            $fcmService->sendChatNotification($conversation, $user, $request->message_text);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Chat FCM notification failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => $message->load('sender', 'attachments')
@@ -355,6 +367,7 @@ class ChatController extends Controller
                 'order_id' => $booking->order_id,
                 'user_name' => $booking->user_name ?? 'N/A',
                 'user_email' => $booking->user_email ?? 'N/A',
+                'room_no' => $booking->room->no ?? null,
                 'room_name' => $booking->room->name ?? 'N/A',
                 'property_name' => $booking->property->name ?? 'N/A',
                 'check_in_at' => $checkInFormatted,

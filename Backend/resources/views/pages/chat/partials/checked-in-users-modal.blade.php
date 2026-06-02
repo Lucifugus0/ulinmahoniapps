@@ -1,12 +1,13 @@
 <!-- Modal untuk memilih user yang check-in -->
-<div id="checkedInUsersModal" class="hidden fixed inset-0 bg-black/20 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white">
+{{-- Modal backdrop: increased opacity for better contrast in dark mode --}}
+<div id="checkedInUsersModal" class="hidden fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-600 w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white dark:bg-gray-800">
         <!-- Modal Header -->
-        <div class="flex items-center justify-between pb-3 border-b border-gray-200">
-            <h3 class="text-xl font-semibold text-gray-900">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-600">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 {{ __('ui.chat_select_user_title') }}
             </h3>
-            <button onclick="closeCheckedInModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <button onclick="closeCheckedInModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -21,7 +22,7 @@
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p class="mt-2 text-gray-600">Loading...</p>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Loading...</p>
             </div>
 
             <!-- User List -->
@@ -29,29 +30,29 @@
                 <!-- Search Box -->
                 <div class="mb-4">
                     <input type="text" id="modalSearch" placeholder="{{ __('ui.chat_search_modal_placeholder') }}"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <!-- Users Table -->
                 <div class="max-h-96 overflow-y-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50 sticky top-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                        <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     User Info
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Room
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Period
                                 </th>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Action
                                 </th>
                             </tr>
                         </thead>
-                        <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200">
+                        <tbody id="usersTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                             <!-- Dynamic content will be loaded here -->
                         </tbody>
                     </table>
@@ -126,25 +127,28 @@ function renderCheckedInUsers(users) {
 
     emptyState.classList.add('hidden');
 
+    // Detect dark mode once before rendering all rows
+    const isDarkMode = document.documentElement.classList.contains('dark');
+
     tbody.innerHTML = users.map(user => {
         // Format period display
         let periodDisplay = user.check_in_at;
         if (user.check_out_at) {
             periodDisplay = `
-                <p class="text-sm text-gray-900">${user.check_in_at}</p>
-                <p class="text-xs text-gray-500">to ${user.check_out_at}</p>
+                <p class="text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}">${user.check_in_at}</p>
+                <p class="text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}">to ${user.check_out_at}</p>
             `;
         } else {
             periodDisplay = `
-                <p class="text-sm text-gray-900">${user.check_in_at}</p>
-                <p class="text-xs text-gray-500">- ongoing</p>
+                <p class="text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}">${user.check_in_at}</p>
+                <p class="text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}">- ongoing</p>
             `;
         }
 
-        // Status badge for display
+        // Status badge — "Checked Out" for departed, "Checked-In" for active
         let statusBadge = user.status === 'departed'
-            ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">Departed</span>`
-            : `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Checked-In</span>`;
+            ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isDarkMode ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-800'}">Checked Out</span>`
+            : `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'}">Checked-In</span>`;
 
         // Action button - different for existing conversation vs new
         let actionButton = '';
@@ -171,23 +175,24 @@ function renderCheckedInUsers(users) {
         }
 
         return `
-        <tr class="hover:bg-gray-50 transition-colors">
+        <tr class="transition-colors" style="cursor: pointer;" onmouseover="this.style.backgroundColor='${isDarkMode ? 'rgba(55,65,81,0.5)' : '#f9fafb'}'" onmouseout="this.style.backgroundColor=''">
             <td class="px-4 py-3">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
                         ${user.user_name ? user.user_name.charAt(0).toUpperCase() : 'U'}
                     </div>
                     <div class="ml-3">
-                        <p class="text-sm font-medium text-gray-900">${user.user_name || 'N/A'}</p>
-                        <p class="text-sm text-gray-500">${user.user_email || 'N/A'}</p>
-                        <p class="text-xs text-gray-400">Order: ${user.order_id}</p>
+                        <p class="text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}">${user.user_name || 'N/A'}</p>
+                        <p class="text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}">${user.user_email || 'N/A'}</p>
+                        <p class="text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}">Order: ${user.order_id}</p>
                         ${statusBadge}
                     </div>
                 </div>
             </td>
             <td class="px-4 py-3">
-                <p class="text-sm text-gray-900">${user.room_name}</p>
-                <p class="text-xs text-gray-500">${user.property_name}</p>
+                ${user.room_no ? `<p class="text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}">No. ${user.room_no}</p>` : ''}
+                <p class="text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-900'}">${user.room_name}</p>
+                <p class="text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}">${user.property_name}</p>
             </td>
             <td class="px-4 py-3">
                 ${periodDisplay}

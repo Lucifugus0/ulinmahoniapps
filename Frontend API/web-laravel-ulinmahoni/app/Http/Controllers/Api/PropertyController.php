@@ -100,17 +100,19 @@ class PropertyController extends ApiController
                 // Get total rooms count
                 $totalRooms = $property->rooms()->where('status', 1)->count();
 
-                // Get available rooms count (status = 1 and rental_status != 1)
+                /* Availability: daily rooms always available, monthly-only rooms check active bookings */
                 $availableRooms = $property->rooms()
                     ->where('status', 1)
-                    ->where(function($query) {
-                        $query->where('rental_status', '!=', 1)
-                              ->orWhereNull('rental_status');
-                    })
+                    ->availableRooms()
                     ->count();
 
                 $propertyArray['total_rooms'] = $totalRooms;
                 $propertyArray['available_rooms'] = $availableRooms;
+
+                // <!-- Multi-language: add parsed description for mobile app locale selection -->
+                $propertyArray['description_parsed'] = \App\Helpers\DescriptionHelper::parse($property->description ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $propertyArray['description'] = \App\Helpers\DescriptionHelper::get($property->description ?? '', 'id');
 
                 // Remove image-related fields from the main property object
                 unset(
@@ -122,7 +124,7 @@ class PropertyController extends ApiController
 
                 return $propertyArray;
             })->values();
-            
+
             // Handle pagination if requested
             if ($request->has('limit') && $request->has('page')) {
                 $page = $request->page;
@@ -212,17 +214,19 @@ class PropertyController extends ApiController
                 // Get total rooms count
                 $totalRooms = $property->rooms()->where('status', 1)->count();
 
-                // Get available rooms count (status = 1 and rental_status != 1)
+                /* Availability: daily rooms always available, monthly-only rooms check active bookings */
                 $availableRooms = $property->rooms()
                     ->where('status', 1)
-                    ->where(function($query) {
-                        $query->where('rental_status', '!=', 1)
-                              ->orWhereNull('rental_status');
-                    })
+                    ->availableRooms()
                     ->count();
 
                 $propertyArray['total_rooms'] = $totalRooms;
                 $propertyArray['available_rooms'] = $availableRooms;
+
+                // <!-- Multi-language: add parsed description for mobile app locale selection -->
+                $propertyArray['description_parsed'] = \App\Helpers\DescriptionHelper::parse($property->description ?? '');
+                // <!-- Backward compat: strip XML tags from raw field so old apps show plain ID text -->
+                $propertyArray['description'] = \App\Helpers\DescriptionHelper::get($property->description ?? '', 'id');
 
                 // Remove image-related fields from the main property object
                 unset(
@@ -387,7 +391,12 @@ class PropertyController extends ApiController
             // Order by category then facility name
             $query->orderBy('category')->orderBy('facility');
 
-            $facilities = $query->get();
+            $facilities = $query->get()->map(function ($f) {
+                // <!-- Multi-language: add parsed facility name for mobile app -->
+                $f->facility_parsed = \App\Helpers\DescriptionHelper::parse($f->facility ?? '');
+                $f->facility = \App\Helpers\DescriptionHelper::get($f->facility ?? '', 'id');
+                return $f;
+            });
 
             return $this->respond([
                 'data' => $facilities

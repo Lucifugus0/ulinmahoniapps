@@ -97,13 +97,14 @@ class BookingSelectCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryColor.withOpacity(0.1),
+                        // Use primaryAdaptive for dark/light mode compatibility
+                        color: AppColors.primaryAdaptive(context).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         _getPropertyIcon(propertyType),
                         size: 24,
-                        color: AppColors.primaryColor,
+                        color: AppColors.primaryAdaptive(context),
                       ),
                     ),
                     const SizedBox(width: 12),

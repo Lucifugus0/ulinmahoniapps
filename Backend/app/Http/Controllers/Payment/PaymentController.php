@@ -13,7 +13,10 @@ use App\Models\ParkingFeeTransaction;
 use App\Models\ParkingFee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\RefundCalculationService;
+use App\Services\InvoiceNumberService;
 
 class PaymentController extends Controller
 {
@@ -21,6 +24,10 @@ class PaymentController extends Controller
     {
         $user = Auth::user();
         $perPage = $request->input('per_page', 8);
+
+        // Server-side sorting: supported columns map to actual DB columns/joins
+        $sortBy = $request->input('sort_by', 'tanggal');
+        $sortDir = $request->input('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
 
         $query = Payment::with([
             'booking',
@@ -30,16 +37,28 @@ class PaymentController extends Controller
                 $query->with(['property', 'room', 'user']);
             }
         ])->whereHas('transaction', function ($q) use ($user) {
-            // Filter by property based on user access
-            // Site users (user_type = 1) only see their property
-            // HO users (user_type = 0) and Super Admin see all
             if ($user->isSite() && $user->property_id) {
                 $q->where('property_id', $user->property_id);
             }
-            // Exclude expired transactions
             $q->where('transaction_status', '!=', 'expired');
-        })
-            ->orderBy('idrec', 'desc');
+        });
+
+        // Apply sort — join t_transactions for sortable columns
+        if (in_array($sortBy, ['tanggal', 'orderid', 'pelanggan', 'property'])) {
+            $query->join('t_transactions', 't_payment.order_id', '=', 't_transactions.order_id');
+            if ($sortBy === 'tanggal') {
+                $query->orderBy('t_transactions.created_at', $sortDir);
+            } elseif ($sortBy === 'orderid') {
+                $query->orderBy('t_transactions.order_id', $sortDir);
+            } elseif ($sortBy === 'pelanggan') {
+                $query->orderBy('t_transactions.user_name', $sortDir);
+            } elseif ($sortBy === 'property') {
+                $query->orderBy('t_transactions.property_name', $sortDir);
+            }
+            $query->select('t_payment.*'); // avoid ambiguous columns
+        } else {
+            $query->orderBy('idrec', 'desc');
+        }
 
         $payments = $perPage === 'all'
             ? $query->get()
@@ -58,6 +77,10 @@ class PaymentController extends Controller
         $search = $request->input('search');
         $status = $request->input('status', 'all');
 
+        // Server-side sorting
+        $sortBy = $request->input('sort_by', 'tanggal');
+        $sortDir = $request->input('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
+
         $query = Payment::with([
             'booking',
             'user',
@@ -66,21 +89,34 @@ class PaymentController extends Controller
                 $query->with(['property', 'room', 'user']);
             }
         ])->whereHas('transaction', function ($q) use ($user) {
-            // Filter by property based on user access
-            // Site users (user_type = 1) only see their property
-            // HO users (user_type = 0) and Super Admin see all
             if ($user->isSite() && $user->property_id) {
                 $q->where('property_id', $user->property_id);
             }
-            // Exclude expired transactions
             $q->where('transaction_status', '!=', 'expired');
-        })
-            ->orderBy('idrec', 'desc');
+        });
+
+        // Apply sort
+        if (in_array($sortBy, ['tanggal', 'orderid', 'pelanggan', 'property'])) {
+            $query->join('t_transactions', 't_payment.order_id', '=', 't_transactions.order_id');
+            if ($sortBy === 'tanggal') {
+                $query->orderBy('t_transactions.created_at', $sortDir);
+            } elseif ($sortBy === 'orderid') {
+                $query->orderBy('t_transactions.order_id', $sortDir);
+            } elseif ($sortBy === 'pelanggan') {
+                $query->orderBy('t_transactions.user_name', $sortDir);
+            } elseif ($sortBy === 'property') {
+                $query->orderBy('t_transactions.property_name', $sortDir);
+            }
+            $query->select('t_payment.*');
+        } else {
+            $query->orderBy('t_payment.idrec', 'desc');
+        }
 
         // Filter based on search
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('order_id', 'like', '%' . $search . '%')
+                /* Prefix with t_payment. to avoid ambiguous column when sort joins t_transactions */
+                $q->where('t_payment.order_id', 'like', '%' . $search . '%')
                     ->orWhereHas('user', function ($userQuery) use ($search) {
                         $userQuery->where('username', 'like', '%' . $search . '%')
                             ->orWhere('email', 'like', '%' . $search . '%');
@@ -100,7 +136,8 @@ class PaymentController extends Controller
 
         // Date range filter if needed
         if ($request->has('start_date') && $request->has('end_date')) {
-            $query->whereBetween('created_at', [
+            /* Prefix with t_payment. to avoid ambiguous column when sort joins t_transactions */
+            $query->whereBetween('t_payment.created_at', [
                 $request->input('start_date') . ' 00:00:00',
                 $request->input('end_date') . ' 23:59:59'
             ]);
@@ -113,6 +150,12 @@ class PaymentController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'html' => view('pages.payment.pay.partials.pay_table', ['payments' => $payments])->render(),
+                /* JS at index.blade.php:411-413 swaps this into the .bg-gray-50 footer.
+                   Without it, the unfiltered page count + entry total stay frozen on screen.
+                   appends() preserves filter params so pagination links don't drop the search. */
+                'pagination' => $payments instanceof \Illuminate\Pagination\LengthAwarePaginator
+                    ? $payments->appends($request->except('page'))->links()->toHtml()
+                    : '',
             ]);
         }
 
@@ -149,6 +192,9 @@ class PaymentController extends Controller
                     'transaction_status' => 'paid',
                     'paid_at' => now()
                 ]);
+
+                // Assign persisted invoice number now that this transaction is paid
+                InvoiceNumberService::assign($transaction->fresh());
             } else {
                 // Update existing payment
                 $payment->update([
@@ -163,6 +209,9 @@ class PaymentController extends Controller
                         'transaction_status' => 'paid',
                         'paid_at' => now()
                     ]);
+
+                    // Assign persisted invoice number now that this transaction is paid
+                    InvoiceNumberService::assign($payment->transaction->fresh());
                 }
             }
 
@@ -191,6 +240,8 @@ class PaymentController extends Controller
     public function reject(Request $request, $id)
     {
         try {
+            DB::beginTransaction();
+
             // Find payment by idrec (primary key)
             $payment = Payment::findOrFail($id);
 
@@ -204,12 +255,88 @@ class PaymentController extends Controller
             ]);
 
             // Update related transaction if exists
-            if ($payment->transaction) {
-                $payment->transaction->update([
+            $transaction = $payment->transaction;
+            if ($transaction) {
+                $transaction->update([
                     'transaction_status' => 'rejected',
                     'paid_at' => now()
                 ]);
+
+                /* Renewal rollback — when a renewal's payment is rejected, the
+                   previous booking was already marked "checked out" by the renewal
+                   flow (sets previous.check_out_at = now and renewal_status = 1).
+                   Without rollback the room would appear available even though
+                   the guest is still in their original paid period. Mirrors the
+                   rollback in Frontend API BookingController::cancel(). */
+                if ($transaction->is_renewal == 1) {
+                    $txRoomId    = (int)    $transaction->getAttribute('room_id');
+                    $txUserId    = (int)    $transaction->getAttribute('user_id');
+                    $txIdrec     = (int)    $transaction->getAttribute('idrec');
+                    $txCreatedAt = (string) $transaction->getAttribute('created_at');
+
+                    $previousTransaction = DB::table('t_transactions')
+                        ->where('room_id', $txRoomId)
+                        ->where('user_id', $txUserId)
+                        ->where('idrec', '!=', $txIdrec)
+                        ->whereRaw('UPPER(transaction_status) IN (?, ?)', ['PAID', 'CONFIRMED'])
+                        ->where('created_at', '<', $txCreatedAt)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+
+                    if ($previousTransaction) {
+                        $prevIdrec   = (int)    $previousTransaction->idrec;
+                        $prevOrderId = (string) $previousTransaction->order_id;
+
+                        $previousBooking = DB::table('t_booking')->where('order_id', $prevOrderId)->first();
+                        $hadCheckOut = $previousBooking && $previousBooking->check_out_at !== null;
+
+                        /* Skip rollback if the parent has another successful
+                           renewal (paid/confirmed/completed, is_renewal=1) that
+                           is newer than this rejected one. Rejecting a
+                           single attempt of a multi-attempt renewal must not
+                           undo state set by a later, paid renewal. */
+                        $hasNewerSuccessfulRenewal = DB::table('t_transactions')
+                            ->where('room_id', $txRoomId)
+                            ->where('user_id', $txUserId)
+                            ->where('idrec', '!=', $txIdrec)
+                            ->where('idrec', '!=', $prevIdrec)
+                            ->where('is_renewal', 1)
+                            ->whereRaw('LOWER(transaction_status) IN (?, ?, ?)', ['paid', 'confirmed', 'completed'])
+                            ->where('created_at', '>', $previousTransaction->created_at)
+                            ->exists();
+
+                        if ($hasNewerSuccessfulRenewal) {
+                            Log::info('Renewal rollback SKIPPED on payment rejection — newer successful renewal exists', [
+                                'rejected_transaction_id' => $txIdrec,
+                                'previous_transaction_id' => $prevIdrec,
+                                'previous_order_id'       => $prevOrderId,
+                            ]);
+                        } else {
+                            // Allow previous booking to be renewed again
+                            DB::table('t_transactions')
+                                ->where('idrec', $prevIdrec)
+                                ->update(['renewal_status' => 0]);
+
+                            // Restore previous booking as active (clear the check_out_at set during renewal)
+                            DB::table('t_booking')
+                                ->where('order_id', $prevOrderId)
+                                ->update(['check_out_at' => null]);
+
+                            /* rental_status untouched — physical occupancy is
+                               owned by check-in / check-out only. */
+
+                            Log::info('Renewal rollback on payment rejection', [
+                                'rejected_transaction_id' => $txIdrec,
+                                'previous_transaction_id' => $prevIdrec,
+                                'previous_order_id'       => $prevOrderId,
+                                'had_check_out'           => $hadCheckOut,
+                            ]);
+                        }
+                    }
+                }
             }
+
+            DB::commit();
 
             if ($request->ajax()) {
                 return response()->json([
@@ -220,6 +347,7 @@ class PaymentController extends Controller
 
             return redirect()->back()->with('success', 'Pembayaran berhasil ditolak');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Payment rejection failed: ' . $e->getMessage());
 
             if ($request->ajax()) {
@@ -254,49 +382,184 @@ class PaymentController extends Controller
                 ? $request->customCancelReason
                 : $request->cancelReason;
 
-            // Bersihkan nilai refundAmount dari format rupiah (misal: "1.000.000" → 1000000)
-            $refundAmount = (int) str_replace(['Rp', '.', ' '], '', $request->refundAmount);
+            // Calculate refund using RefundCalculationService for breakdown
+            $refundService = new RefundCalculationService();
+            $refundCalc = $refundService->calculate($payment->transaction);
 
-            // Simpan data refund ke tabel t_refund
-            Refund::create([
-                'id_booking'    => $payment->order_id,
-                'status'        => 'pending',
-                'reason'        => $cancelReason,
-                'amount'        => $refundAmount,
-                'img'           => null,
-                'image_caption' => null,
-                'image_path'    => null,
-                'refund_date'   => Carbon::now(),
-            ]);
-
-            // Update status transaksi & pembayaran
-            $payment->transaction->update([
-                'transaction_status' => 'cancelled',
-                'cancel_at' => Carbon::now(),
-            ]);
-
-            // Update related booking status to 0 (cancelled)
-            $booking = $payment->booking ?? Booking::where('order_id', $payment->order_id)->where('status', 1)->first();
-
-            if ($booking) {
-                $booking->update([
-                    'status' => 0,
-                    'reason' => $cancelReason,
-                ]);
-
-                // Cancel booking selalu membebaskan kamar (rental_status = 0)
-                if ($booking->room_id) {
-                    Room::where('idrec', $booking->room_id)
-                        ->update(['rental_status' => 0]);
-                }
+            /* Honor the refund option. Three modes:
+                 - no_refund   → zero everything
+                 - full_refund → room + parking + deposit (everything except service/admin fees) — backend-only override
+                 - refund      → tier-based amount from RefundCalculationService
+               The "Bukti pembayaran tidak sesuai" reason is forced to no_refund server-side
+               regardless of the submitted option, as a safety net if the JS lock is bypassed. */
+            $refundOption = $request->input('refundOption', 'refund');
+            if ($request->cancelReason === 'bukti_pembayaran_tidak_sesuai') {
+                $refundOption = 'no_refund';
             }
 
-            // Release parking quota for this cancelled booking
-            $this->releaseParkingQuota($payment->order_id);
+            if ($refundOption === 'no_refund') {
+                $refundAmount = 0;
+                $refundCalc['room_refund']    = 0;
+                $refundCalc['deposit_refund'] = 0;
+                $refundCalc['other_refund']   = 0;
+                $refundCalc['total_refund']   = 0;
+            } elseif ($refundOption === 'full_refund') {
+                /* Full refund: 100% of room + parking + deposit. Service and admin fees still excluded. */
+                $refundCalc['room_refund']    = (float) ($payment->transaction->room_price ?? 0);
+                $refundCalc['deposit_refund'] = (float) ($payment->transaction->deposit_fee ?? 0);
+                $refundCalc['other_refund']   = (float) ($payment->transaction->parking_fee ?? 0);
+                $refundCalc['refund_percentage'] = 100;
+                $refundCalc['total_refund']   = $refundCalc['room_refund'] + $refundCalc['deposit_refund'] + $refundCalc['other_refund'];
+                $refundAmount = (int) round($refundCalc['total_refund']);
+            } else {
+                /* Use the server-calculated tier total — modal field is read-only so it should match.
+                   Fall back to the calc total if missing. */
+                $refundAmount = $request->refundAmount
+                    ? (int) str_replace(['Rp', '.', ' '], '', $request->refundAmount)
+                    : $refundCalc['total_refund'];
+            }
 
-            $payment->update([
-                'payment_status' => 'refunded',
-            ]);
+            /* Wrap the entire cancel flow (refund row, status update, renewal rollback,
+               booking status, room release, payment status) in a single DB transaction so
+               every side-effect either commits together or rolls back together. Guarantees
+               t_transactions.transaction_status = 'cancelled' AND parent renewal rollback
+               are both applied — or neither is. */
+            DB::transaction(function () use ($payment, $cancelReason, $refundAmount, $refundCalc) {
+                // Simpan data refund ke tabel t_refund with breakdown.
+                // `requested_by` records the admin who initiated the cancellation —
+                // surfaced on the All Bookings table alongside the cancel timestamp.
+                Refund::create([
+                    'id_booking'    => $payment->order_id,
+                    'status'        => 'pending',
+                    'reason'        => $cancelReason,
+                    'amount'        => $refundAmount,
+                    'refund_type'   => 'admin',
+                    'requested_by'  => Auth::id(),
+                    'room_refund'   => $refundCalc['room_refund'],
+                    'deposit_refund' => $refundCalc['deposit_refund'],
+                    'other_refund'  => $refundCalc['other_refund'],
+                    'img'           => null,
+                    'image_caption' => null,
+                    'image_path'    => null,
+                    'refund_date'   => Carbon::now(),
+                ]);
+
+                // Update status transaksi (Eloquent fires model events)
+                $payment->transaction->update([
+                    'transaction_status' => 'cancelled',
+                    'cancel_at' => Carbon::now(),
+                ]);
+
+                /* Defensive double-check via raw query — even if Eloquent's update()
+                   silently no-ops (e.g. due to model events), this guarantees the row is updated. */
+                DB::table('t_transactions')
+                    ->where('idrec', $payment->transaction->idrec)
+                    ->update([
+                        'transaction_status' => 'cancelled',
+                        'cancel_at'          => Carbon::now(),
+                    ]);
+
+                /* Renewal rollback — if this cancelled booking is a renewal,
+                   reset the parent booking's renewal_status and check_out_at
+                   so the parent booking is no longer marked as "already renewed".
+                   Inside the same DB transaction so it's atomic with the cancel. */
+                if ($payment->transaction->is_renewal == 1) {
+                    $txRoomId    = (int) $payment->transaction->room_id;
+                    $txUserId    = (int) $payment->transaction->user_id;
+                    $txIdrec     = (int) $payment->transaction->idrec;
+                    $txCreatedAt = (string) $payment->transaction->created_at;
+
+                    /* Find the most recent previous PAID/CONFIRMED transaction
+                       for the same room + user (the parent booking that was renewed). */
+                    $previousTransaction = DB::table('t_transactions')
+                        ->where('room_id', $txRoomId)
+                        ->where('user_id', $txUserId)
+                        ->where('idrec', '!=', $txIdrec)
+                        ->whereRaw('UPPER(transaction_status) IN (?, ?)', ['PAID', 'CONFIRMED'])
+                        ->where('created_at', '<', $txCreatedAt)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+
+                    if ($previousTransaction) {
+                        $prevIdrec   = (int) $previousTransaction->idrec;
+                        $prevOrderId = (string) $previousTransaction->order_id;
+
+                        // Check if parent booking had a check_out_at before clearing it
+                        $previousBooking = DB::table('t_booking')->where('order_id', $prevOrderId)->first();
+                        $hadCheckOut = $previousBooking && $previousBooking->check_out_at !== null;
+
+                        /* Skip rollback if the parent has another successful
+                           renewal (paid/confirmed/completed, is_renewal=1) that
+                           is newer than this cancelled one. Cancelling one
+                           attempt must not undo the state set by a later,
+                           paid renewal of the same parent booking. */
+                        $hasNewerSuccessfulRenewal = DB::table('t_transactions')
+                            ->where('room_id', $txRoomId)
+                            ->where('user_id', $txUserId)
+                            ->where('idrec', '!=', $txIdrec)
+                            ->where('idrec', '!=', $prevIdrec)
+                            ->where('is_renewal', 1)
+                            ->whereRaw('LOWER(transaction_status) IN (?, ?, ?)', ['paid', 'confirmed', 'completed'])
+                            ->where('created_at', '>', $previousTransaction->created_at)
+                            ->exists();
+
+                        if ($hasNewerSuccessfulRenewal) {
+                            Log::info('Renewal rollback SKIPPED on cancellation — newer successful renewal exists', [
+                                'cancelled_transaction_id' => $txIdrec,
+                                'previous_transaction_id'  => $prevIdrec,
+                                'previous_order_id'        => $prevOrderId,
+                            ]);
+                        } else {
+                            // Reset parent transaction's renewal_status back to 0
+                            DB::table('t_transactions')
+                                ->where('idrec', $prevIdrec)
+                                ->update(['renewal_status' => 0]);
+
+                            /* Clear parent booking's check_out_at (undo the checkout
+                               that was set when this renewal was created) */
+                            DB::table('t_booking')
+                                ->where('order_id', $prevOrderId)
+                                ->update(['check_out_at' => null]);
+
+                            /* rental_status untouched — physical occupancy is
+                               owned by check-in / check-out only. */
+
+                            Log::info('Renewal rollback on cancellation', [
+                                'cancelled_transaction_id' => $txIdrec,
+                                'previous_transaction_id'  => $prevIdrec,
+                                'previous_order_id'        => $prevOrderId,
+                            ]);
+                        }
+                    } else {
+                        Log::warning('Renewal cancel: parent transaction not found for rollback', [
+                            'cancelled_transaction_id' => $txIdrec,
+                            'room_id'                  => $txRoomId,
+                            'user_id'                  => $txUserId,
+                        ]);
+                    }
+                }
+
+                // Update related booking status to 0 (cancelled)
+                $booking = $payment->booking ?? Booking::where('order_id', $payment->order_id)->where('status', 1)->first();
+
+                if ($booking) {
+                    $booking->update([
+                        'status' => 0,
+                        'reason' => $cancelReason,
+                    ]);
+
+                    /* rental_status untouched — cancellation is disallowed
+                       after check-in (see business rule), so the flag is
+                       already in the correct state. Only check-out flips it. */
+                }
+
+                // Release parking quota for this cancelled booking
+                $this->releaseParkingQuota($payment->order_id);
+
+                $payment->update([
+                    'payment_status' => 'refunded',
+                ]);
+            });
 
             // Kirim notifikasi (opsional)
             if ($request->has('sendNotification')) {

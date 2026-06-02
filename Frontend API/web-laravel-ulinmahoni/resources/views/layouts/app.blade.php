@@ -5,11 +5,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <link rel="shortcut icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
-        <title>{{ $CRM_ISS->nilai }}</title>
+        <title>{{ $CRM_ISS->nilai ?? 'Ulin Mahoni' }}</title>
 
 
         <!-- style -->
-        <link rel="stylesheet" href="/resources/css/mystyle.css">
+        <!-- Custom styles served from public/css/ -->
+        <link rel="stylesheet" href="{{ asset('css/mystyle.css') }}">
         <!-- Fonts -->
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap">
         
@@ -22,9 +23,9 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        <!-- Dark mode: apply 'dark' class before render to prevent flash of light mode -->
+        <!-- Dark mode: default to dark — only disable if explicitly set to false -->
         <script>
-            if (localStorage.getItem('dark-mode') === 'true') {
+            if (localStorage.getItem('dark-mode') !== 'false') {
                 document.documentElement.classList.add('dark');
             }
         </script>
@@ -50,7 +51,8 @@
             } else {
                 document.querySelector('body').classList.remove('sidebar-expanded');
             }
-            if (localStorage.getItem('dark-mode') === 'true') {
+            // <!-- Default to dark mode -->
+            if (localStorage.getItem('dark-mode') !== 'false') {
                 document.documentElement.classList.add('dark');
             }
         </script>
@@ -116,6 +118,90 @@
                 };
             };
         </script>
+        <!-- Firebase Web Push Notifications — CDN-loaded, only for authenticated users -->
+        @auth
+        <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+        <script>
+            /* Initialize Firebase and register for web push notifications.
+             * Requests permission on page load, gets FCM token, and sends
+             * it to the server for storage in device_tokens table. */
+            (function() {
+                if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+
+                var firebaseConfig = {
+                    apiKey: "{{ config('firebase.web.api_key') }}",
+                    authDomain: "{{ config('firebase.web.auth_domain') }}",
+                    projectId: "{{ config('firebase.web.project_id') }}",
+                    storageBucket: "{{ config('firebase.web.storage_bucket') }}",
+                    messagingSenderId: "{{ config('firebase.web.messaging_sender_id') }}",
+                    appId: "{{ config('firebase.web.app_id') }}",
+                };
+                var vapidKey = "{{ config('firebase.web.vapid_key') }}";
+
+                firebase.initializeApp(firebaseConfig);
+                var messaging = firebase.messaging();
+
+                /* Register service worker and pass Firebase config to it */
+                navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .then(function(registration) {
+                        registration.active && registration.active.postMessage({
+                            type: 'FIREBASE_CONFIG', config: firebaseConfig
+                        });
+                        navigator.serviceWorker.ready.then(function(reg) {
+                            reg.active && reg.active.postMessage({
+                                type: 'FIREBASE_CONFIG', config: firebaseConfig
+                            });
+                        });
+
+                        /* Request permission if not yet decided */
+                        if (Notification.permission === 'default') {
+                            Notification.requestPermission().then(function(permission) {
+                                if (permission === 'granted') registerToken(registration);
+                            });
+                        } else if (Notification.permission === 'granted') {
+                            registerToken(registration);
+                        }
+                    });
+
+                /* Get FCM token and send to server */
+                function registerToken(registration) {
+                    messaging.getToken({ vapidKey: vapidKey, serviceWorkerRegistration: registration })
+                        .then(function(token) {
+                            if (!token) return;
+                            /* Skip if token already sent this session */
+                            if (sessionStorage.getItem('fcm_token') === token) return;
+
+                            fetch('/web/device-token', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                },
+                                body: JSON.stringify({
+                                    token: token,
+                                    device_name: navigator.userAgent.substring(0, 100),
+                                }),
+                            }).then(function() {
+                                sessionStorage.setItem('fcm_token', token);
+                            });
+                        });
+                }
+
+                /* Handle foreground messages — show browser notification */
+                messaging.onMessage(function(payload) {
+                    var data = payload.data || {};
+                    if (Notification.permission === 'granted') {
+                        new Notification(data.title || 'Ulin Mahoni', {
+                            body: data.body || '',
+                            icon: '/favicon.ico',
+                        });
+                    }
+                });
+            })();
+        </script>
+        @endauth
+
         @yield('js-page')
     </body>
 </html>

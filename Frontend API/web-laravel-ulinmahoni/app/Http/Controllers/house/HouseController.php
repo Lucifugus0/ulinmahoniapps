@@ -122,7 +122,8 @@ class HouseController extends Controller {
                 'gender' => $property->gender,
                 'status' => $property->status,
                 'rooms' => $this->getPropertyRooms($property->idrec),
-                'nearby_locations' => is_string($property->nearby_locations) ? json_decode($property->nearby_locations, true) : ($property->nearby_locations ?? [])
+                'nearby_locations' => is_string($property->nearby_locations) ? json_decode($property->nearby_locations, true) : ($property->nearby_locations ?? []),
+                'parking_fees' => $property->parking_fees ?? [],
             ];
 
             return view('pages.house.show', [
@@ -184,7 +185,8 @@ class HouseController extends Controller {
                     'full_address' => $property->address
                 ],
                 'status' => $property->status,
-                'rooms' => $this->getPropertyRooms($property->idrec)
+                'rooms' => $this->getPropertyRooms($property->idrec),
+                'parking_fees' => $property->parking_fees ?? [],
             ];
 
             return view('pages.house.id.show', [
@@ -249,7 +251,8 @@ class HouseController extends Controller {
                     'full_address' => $property->address
                 ],
                 'status' => $property->status,
-                'rooms' => $this->getPropertyRooms($property->idrec)
+                'rooms' => $this->getPropertyRooms($property->idrec),
+                'parking_fees' => $property->parking_fees ?? [],
             ];
 
             return view('pages.house.en.show', [
@@ -307,7 +310,9 @@ class HouseController extends Controller {
                 'price_discounted_daily' => $room->price_discounted_daily,
                 'price_discounted_monthly' => $room->price_discounted_monthly,
                 'status' => $room->status,
-                'rental_status'=>$room->rental_status
+                'rental_status'=>$room->rental_status,
+                /* Computed availability: daily rooms always available, monthly checks active bookings */
+                'is_available' => \App\Models\Room::computeAvailability($room->idrec, $room->periode_daily)
             ];
         })->toArray();
     }

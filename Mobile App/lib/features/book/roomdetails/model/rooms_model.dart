@@ -42,6 +42,12 @@ class RoomModel {
   final String? priceOriginalAnnual;
   final int? periodeAnnual;
   final bool? hasSeasonalPricing;
+  /// Multi-language descriptions parsed from API as `{"id": "...", "en": "...", "zh": "..."}`
+  final Map<String, String>? descriptionsParsed;
+  /// Admin-controlled sort_priority for the room's type name (m_room_name_types).
+  /// Drives ordering of the room-name filter dropdown — lower values come first.
+  /// Null when the room's name isn't registered in m_room_name_types.
+  final int? typeSortPriority;
 
   RoomModel({
     required this.id,
@@ -83,7 +89,32 @@ class RoomModel {
     this.priceOriginalAnnual,
     this.periodeAnnual,
     this.hasSeasonalPricing,
+    this.descriptionsParsed,
+    this.typeSortPriority,
   });
+
+  /* Daily Multi Tier Pricing: create a copy with overridden daily price */
+  /* Used to pass effective average rate to payment so it calculates correct total */
+  RoomModel copyWithDailyPrice(String newDailyPrice) {
+    return RoomModel(
+      id: id, propertyId: propertyId, propertyName: propertyName, slug: slug,
+      name: name, descriptions: descriptions, periode: periode,
+      periode_daily: periode_daily, periode_monthly: periode_monthly,
+      type: type, level: level, facility: facility, facilities: facilities,
+      price: price, priceOriginalDaily: newDailyPrice,
+      priceOriginalMonthly: priceOriginalMonthly, adminfee: adminfee,
+      attachment: attachment, createdAt: createdAt, updatedAt: updatedAt,
+      createdBy: createdBy, updatedBy: updatedBy, status: status,
+      roomimages: roomimages, roomimageshow: roomimageshow, thumbnail: thumbnail,
+      capacity: capacity, bed_type: bed_type, size: size, no: no,
+      rentalStatus: rentalStatus, depositFee: depositFee, parkingFees: parkingFees,
+      priceWeekday: priceWeekday, priceWeekend: priceWeekend,
+      priceOriginalAnnual: priceOriginalAnnual, periodeAnnual: periodeAnnual,
+      hasSeasonalPricing: hasSeasonalPricing,
+      descriptionsParsed: descriptionsParsed,
+      typeSortPriority: typeSortPriority,
+    );
+  }
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
     final List<ImageModel>? parsedImages =
@@ -175,12 +206,26 @@ class RoomModel {
       rentalStatus: json['rental_status'] ?? 0,
       depositFee: json['deposit_fee'] != null ? double.tryParse(json['deposit_fee'].toString()) : null,
       parkingFees: parsedParkingFees,
+      // Multi-language: parse descriptions_parsed map for locale-aware display
+      descriptionsParsed: json['descriptions_parsed'] != null
+          ? Map<String, String>.from(
+              (json['descriptions_parsed'] as Map).map(
+                (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+              ),
+            )
+          : null,
       // Multi-Tier Pricing: parse new optional fields with null-safety fallback
       priceWeekday: json['price_weekday']?.toString(),
       priceWeekend: json['price_weekend']?.toString(),
       priceOriginalAnnual: json['price_original_annual']?.toString(),
       periodeAnnual: json['periode_annual'] ?? 0,
       hasSeasonalPricing: json['has_seasonal_pricing'] ?? false,
+      // Admin-controlled room-type ordering (lower = comes first). Null when missing.
+      typeSortPriority: json['type_sort_priority'] is int
+          ? json['type_sort_priority'] as int
+          : (json['type_sort_priority'] != null
+              ? int.tryParse(json['type_sort_priority'].toString())
+              : null),
     );
   }
 

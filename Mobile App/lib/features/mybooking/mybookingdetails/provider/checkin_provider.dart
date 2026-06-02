@@ -1,16 +1,33 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/checkin_repository.dart';
 
+/// Provider for CheckInRepository singleton.
 final checkInRepositoryProvider = Provider<CheckInRepository>((ref) {
   return CheckInRepository();
 });
 
-/// Provider for check-in state
-final checkInStateProvider = StateProvider<AsyncValue<Map<String, dynamic>?>>((ref) {
-  return const AsyncValue.data(null);
-});
+/// Notifier for check-in state — tracks async status of check-in operation.
+/// Migrated from StateProvider to Notifier for Riverpod 3.x.
+class CheckInStateNotifier extends Notifier<AsyncValue<Map<String, dynamic>?>> {
+  /// build() returns the initial idle state.
+  @override
+  AsyncValue<Map<String, dynamic>?> build() {
+    return const AsyncValue.data(null);
+  }
 
-/// Check-in method provider
+  /// Update state directly.
+  void setState(AsyncValue<Map<String, dynamic>?> newState) {
+    state = newState;
+  }
+}
+
+/// Provider for check-in state.
+final checkInStateProvider =
+    NotifierProvider<CheckInStateNotifier, AsyncValue<Map<String, dynamic>?>>(
+  CheckInStateNotifier.new,
+);
+
+/// Check-in method provider — returns a function that performs check-in.
 final checkInProvider = Provider<Future<Map<String, dynamic>> Function({
   required String orderId,
   required String idCardBase64,
@@ -21,7 +38,8 @@ final checkInProvider = Provider<Future<Map<String, dynamic>> Function({
     required String orderId,
     required String idCardBase64,
   }) async {
-    ref.read(checkInStateProvider.notifier).state = const AsyncValue.loading();
+    /// Set loading state before API call
+    ref.read(checkInStateProvider.notifier).setState(const AsyncValue.loading());
 
     try {
       final result = await repository.checkIn(
@@ -29,10 +47,12 @@ final checkInProvider = Provider<Future<Map<String, dynamic>> Function({
         idCardBase64: idCardBase64,
       );
 
-      ref.read(checkInStateProvider.notifier).state = AsyncValue.data(result);
+      /// Set success state with result data
+      ref.read(checkInStateProvider.notifier).setState(AsyncValue.data(result));
       return result;
     } catch (e, stackTrace) {
-      ref.read(checkInStateProvider.notifier).state = AsyncValue.error(e, stackTrace);
+      /// Set error state on failure
+      ref.read(checkInStateProvider.notifier).setState(AsyncValue.error(e, stackTrace));
       rethrow;
     }
   };

@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../../core/widgets/html_description.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../roomdetails/provider/rooms_provider.dart';
 import '../../../../../core/layout/mainlayout.dart';
@@ -34,6 +36,8 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
   late PageController _pageController;
   Timer? _timer;
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
+  // Key to locate the rooms section for scroll-to-rooms
+  final GlobalKey _roomsSectionKey = GlobalKey();
 
   @override
   void initState() {
@@ -101,6 +105,8 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
     if (property.location == null || property.location!.isEmpty) {
       return const SizedBox.shrink();
     }
+    // Dark mode detection for map button
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Parse location string (format: "latitude,longitude")
     final locationParts = property.location!.split(',');
@@ -151,7 +157,8 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                         height: 40,
                         child: Icon(
                           Icons.location_on,
-                          color: AppColors.primaryColor,
+                          // Use primaryAdaptive for the map marker icon color
+                          color: AppColors.primaryAdaptive(context),
                           size: 40,
                         ),
                       ),
@@ -164,7 +171,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                 bottom: 8,
                 right: 8,
                 child: Material(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1F2937) : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   elevation: 2,
                   child: InkWell(
@@ -180,12 +187,13 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.open_in_new, size: 16, color: AppColors.primaryColor),
+                          // Bright green so it's legible on the map tile background
+                          const Icon(Icons.open_in_new, size: 16, color: Color(0xFF34C759)),
                           const SizedBox(width: 4),
                           Text(
                             'View Larger Map',
                             style: textTheme.labelSmall?.copyWith(
-                              color: AppColors.primaryColor,
+                              color: const Color(0xFF34C759),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -314,12 +322,13 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
           children: [
             Row(
               children: [
-                Icon(info['icon'] as IconData, size: 20, color: AppColors.primaryColor),
+                // Use primaryAdaptive for the info section icon and label color
+                Icon(info['icon'] as IconData, size: 20, color: AppColors.primaryAdaptive(context)),
                 const SizedBox(width: 8),
                 Text(
                   info['label'] as String,
                   style: textTheme.labelMedium?.copyWith(
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryAdaptive(context),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -357,7 +366,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!; 
+    final localizations = AppLocalizations.of(context)!;
+    // Dark mode detection for scaffold and content backgrounds
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     _timer?.cancel();
     _startAutoSlide();
     final detailProperty = ref.watch(detailPropertyProvider(widget.id));
@@ -378,11 +389,11 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
         double? cheapestDaily;
 
         for (var room in rooms) {
-          // Check monthly price
+          // Check monthly price — skip 0 so daily-only properties fall back correctly
           if (room.priceOriginalMonthly != null && room.priceOriginalMonthly!.isNotEmpty) {
             try {
               final monthlyPrice = double.parse(room.priceOriginalMonthly!);
-              if (cheapestMonthly == null || monthlyPrice < cheapestMonthly) {
+              if (monthlyPrice > 0 && (cheapestMonthly == null || monthlyPrice < cheapestMonthly)) {
                 cheapestMonthly = monthlyPrice;
               }
             } catch (e) {
@@ -390,11 +401,11 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
             }
           }
 
-          // Check daily price
+          // Check daily price — skip 0 as well
           if (room.priceOriginalDaily != null && room.priceOriginalDaily!.isNotEmpty) {
             try {
               final dailyPrice = double.parse(room.priceOriginalDaily!);
-              if (cheapestDaily == null || dailyPrice < cheapestDaily) {
+              if (dailyPrice > 0 && (cheapestDaily == null || dailyPrice < cheapestDaily)) {
                 cheapestDaily = dailyPrice;
               }
             } catch (e) {
@@ -423,7 +434,15 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
       showNavBar: false,
       showBottomNav: false,
       showContactBar: true,
-      bottomcontactbar_pesansekarang: false,
+      // Show "Pesan Sekarang" (Book Now) button in the bottom bar
+      bottomcontactbar_pesansekarang: true,
+      bottomcontactbar_buttonpressed: () {
+        // Scroll to rooms section so user can pick a room to book
+        final ctx = _roomsSectionKey.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+        }
+      },
       bottomcontactbar_price: priceToDisplay != null
           ? formatCurrency(priceToDisplay)
           : localizations.bottomBarContactCustomerService,
@@ -440,11 +459,14 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
           });
 
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
+            extendBodyBehindAppBar: true,
             appBar: CustomAppBar(
               title: localizations.detailPropertyPageTitle,
             ),
             body: SafeArea(
+              top: false,
+              bottom: false,
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
                 child: _buildDetailHouseContent(context, property),
@@ -453,7 +475,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
           );
         },
         loading: () => Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
           appBar: CustomAppBar(
             title: localizations.detailPropertyPageTitle,
           ),
@@ -623,8 +645,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                     margin: const EdgeInsets.symmetric(horizontal: 4.0),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      // Use primaryAdaptive for the active page indicator dot
                       color: currentPage == index
-                          ? AppColors.primaryColor
+                          ? AppColors.primaryAdaptive(context)
                           : Colors.grey.withOpacity(0.7),
                     ),
                   ),
@@ -812,6 +835,8 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
     final textTheme = Theme.of(context).textTheme;
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    // Dark mode detection for content card colors
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final double contentMarginHorizontal = screenWidth * 0.04;
     final double contentPaddingAll = screenWidth * 0.04;
@@ -874,7 +899,10 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
               margin: EdgeInsets.symmetric(horizontal: contentMarginHorizontal),
               padding: EdgeInsets.all(contentPaddingAll),
               decoration: BoxDecoration(
-                color: Colors.white,
+                // 10% transparent (90% opacity) so leafy background shows through
+                color: isDark
+                    ? const Color(0xFF1F2937).withValues(alpha: 0.90)
+                    : Colors.white.withValues(alpha: 0.90),
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
@@ -892,19 +920,19 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                       property.name!,
                       style: textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                       softWrap: true,
                       overflow: TextOverflow.visible,
                     )
                   else
-                    Text(localizations.detailPropertyNameNotAvailable), 
+                    Text(localizations.detailPropertyNameNotAvailable),
 
                   if (property.tags != null && property.tags!.isNotEmpty)
                     Text(
                       property.tags!,
                       style: textTheme.titleMedium?.copyWith(
-                        color: Colors.black,
+                        color: isDark ? Colors.grey[300] : Colors.black,
                       ),
                       softWrap: true,
                       overflow: TextOverflow.visible,
@@ -914,16 +942,22 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
 
                   const SizedBox(height: 8),
 
-                  if (property.description != null && property.description!.isNotEmpty)
-                    Text(
-                      property.description!,
-                      style: textTheme.bodyMedium,
-                      softWrap: true,
-                      overflow: TextOverflow.visible,
-                      textAlign: TextAlign.left,
-                    )
-                  else
-                    const SizedBox.shrink(),
+                  // Multi-language: resolve property description by current locale with fallback chain
+                  Builder(builder: (context) {
+                    final locale = Localizations.localeOf(context).languageCode;
+                    final description = property.descriptionParsed?[locale]
+                        ?? property.descriptionParsed?['en']
+                        ?? property.descriptionParsed?['id']
+                        ?? property.description
+                        ?? '';
+                    if (description.isNotEmpty) {
+                      return HtmlDescription(
+                        html: description,
+                        textStyle: textTheme.bodyMedium,
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }),
 
                   // Gender
                   if (property.gender != null && property.gender!.isNotEmpty) ...[
@@ -969,8 +1003,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Use primaryAdaptive for the walking distance icon color
                         Icon(Icons.directions_walk,
-                            color: AppColors.primaryColor,
+                            color: AppColors.primaryAdaptive(context),
                             size: (textTheme.bodyLarge?.fontSize ?? 28) * 1.5),
                         const SizedBox(width: 4),
                         Expanded(
@@ -991,8 +1026,9 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Use primaryAdaptive for the floor count icon color
                         Icon(Icons.layers,
-                            color: AppColors.primaryColor,
+                            color: AppColors.primaryAdaptive(context),
                             size: (textTheme.bodyLarge?.fontSize ?? 28) * 1.5),
                         const SizedBox(width: 4),
                         Expanded(
@@ -1015,7 +1051,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                       localizations.propertyDetailLocation,
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1027,7 +1063,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                     localizations.detailPropertyFacilitiesTitle,
                     style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   // Use new format with icons if available, otherwise fallback to old format
@@ -1059,7 +1095,7 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
                       localizations.propertyDetailNearbyLocations,
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1075,11 +1111,46 @@ class _DetailHousePageState extends ConsumerState<DetailPropertyPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 RoomTypeSection(
+                  key: _roomsSectionKey,
                   propertyData: property,
                 ),
               ],
             ),
           ),
+          // "Properti Lainnya" button below the rooms section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  context.push('/browse-all');
+                },
+                icon: const Icon(Icons.house, color: Colors.white),
+                label: Text(
+                  AppLocalizations.of(context)!.contactBarOtherPropertiesButton,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: AppColors.primaryAdaptive(context),
+                    width: 1.5,
+                  ),
+                  backgroundColor: AppColors.primaryAdaptive(context).withValues(alpha: 0.2),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Extra padding so content can scroll behind the glass bottom bar
+          const SizedBox(height: 80),
         ],
       ),
     );

@@ -12,22 +12,23 @@ class CompletedController extends Controller
 {
     public function index(Request $request)
     {
-        // Show completed bookings:
-        // 1. Checked-out bookings (paid, check_out_at NOT NULL)
-        // 2. Cancelled bookings (exclude expired)
         $query = Booking::with(['user', 'room', 'property', 'transaction', 'refund'])
+            ->latestPerOrder()
             ->where(function ($q) {
-                // Checked-out bookings (status=0 after checkout)
+                // Checked-out bookings: inactive booking + valid transaction + paid
                 $q->where(function ($checkedOut) {
-                    $checkedOut->whereNotNull('check_out_at')
+                    $checkedOut->where('t_booking.status', 0)
+                        ->whereNotNull('check_out_at')
                         ->whereHas('transaction', function ($t) {
-                            $t->where('transaction_status', 'paid');
+                            $t->where('status', 1)
+                              ->where('transaction_status', 'paid');
                         });
                 })
-                // OR cancelled bookings (exclude expired)
+                // OR cancelled bookings with valid transaction
                 ->orWhere(function ($cancelled) {
                     $cancelled->whereHas('transaction', function ($t) {
-                        $t->whereIn('transaction_status', ['canceled', 'cancelled']);
+                        $t->where('status', 1)
+                          ->whereIn('transaction_status', ['canceled', 'cancelled']);
                     });
                 });
             });
@@ -61,29 +62,30 @@ class CompletedController extends Controller
         }
 
         $bookings = $query->orderByDesc('created_at')
-            ->paginate($request->input('per_page', 8));
+            ->paginate($request->input('per_page', 25));
 
         return view('pages.bookings.completed.index', compact('bookings'));
     }
 
     public function filter(Request $request)
     {
-        // Show completed bookings:
-        // 1. Checked-out bookings (paid, check_out_at NOT NULL)
-        // 2. Cancelled bookings (exclude expired)
         $query = Booking::with(['user', 'room', 'property', 'transaction', 'refund'])
+            ->latestPerOrder()
             ->where(function ($q) {
-                // Checked-out bookings (status=0 after checkout)
+                // Checked-out bookings: inactive booking + valid transaction + paid
                 $q->where(function ($checkedOut) {
-                    $checkedOut->whereNotNull('check_out_at')
+                    $checkedOut->where('t_booking.status', 0)
+                        ->whereNotNull('check_out_at')
                         ->whereHas('transaction', function ($t) {
-                            $t->where('transaction_status', 'paid');
+                            $t->where('status', 1)
+                              ->where('transaction_status', 'paid');
                         });
                 })
-                // OR cancelled bookings (exclude expired)
+                // OR cancelled bookings with valid transaction
                 ->orWhere(function ($cancelled) {
                     $cancelled->whereHas('transaction', function ($t) {
-                        $t->whereIn('transaction_status', ['canceled', 'cancelled']);
+                        $t->where('status', 1)
+                          ->whereIn('transaction_status', ['canceled', 'cancelled']);
                     });
                 });
             });
@@ -94,7 +96,7 @@ class CompletedController extends Controller
             $query->where('property_id', $user->property_id);
         }
 
-        // ✅ Filter pencarian
+        // Filter pencarian
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -117,12 +119,12 @@ class CompletedController extends Controller
         }
 
         $bookings = $query->orderByDesc('created_at')
-            ->paginate($request->input('per_page', 8));
+            ->paginate($request->input('per_page', 25));
 
         return response()->json([
             'table' => view('pages.bookings.allbookings.partials.allbookings_table', [
                 'bookings' => $bookings,
-                'per_page' => $request->input('per_page', 8),
+                'per_page' => $request->input('per_page', 25),
             ])->render(),
             'pagination' => $bookings->appends($request->input())->links()->toHtml()
         ]);

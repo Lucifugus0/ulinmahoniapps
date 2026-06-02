@@ -16,7 +16,7 @@
                             d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
                             clip-rule="evenodd" />
                     </svg>
-                    Tambah Kamar
+                    {{ __('ui.room_add_title') }}
                 </button>
 
                 <!-- Modal -->
@@ -36,13 +36,13 @@
                     x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                     x-transition:leave-end="opacity-0 translate-y-4 scale-95" x-cloak>
 
-                    <div class="bg-white rounded-2xl shadow-lg overflow-auto w-3/4 max-h-full flex flex-col text-left"
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-auto w-3/4 max-h-full flex flex-col text-left"
                         @click.outside="modalOpen = true" @keydown.escape.window="modalOpen = false">
 
                         <!-- Modal header with step indicator -->
-                        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800">
                             <div class="flex justify-between items-center mb-4">
-                                <div class="font-bold text-xl text-gray-800">{{ __('ui.room_add_title') }}</div>
+                                <div class="font-bold text-xl text-gray-800 dark:text-gray-100">{{ __('ui.room_add_title') }}</div>
                                 <button type="button"
                                     class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
                                     @click="modalOpen = false">
@@ -140,8 +140,9 @@
 
                         <!-- Modal content -->
                         <div class="flex-1 overflow-y-auto px-6 py-6">
+                            <!-- novalidate: browser validation disabled — JS validateStep() handles it -->
                             <form id="roomForm" method="POST" action="{{ route('rooms.store') }}"
-                                enctype="multipart/form-data" @submit.prevent="submitForm">
+                                enctype="multipart/form-data" @submit.prevent="submitForm" novalidate>
                                 @csrf
 
                                 <!-- Step 1 - Basic Information -->
@@ -152,7 +153,7 @@
                                         <!-- Property Selector -->
                                         <div>
                                             <label for="property_id"
-                                                class="block text-sm font-semibold text-gray-700 mb-2">
+                                                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_property_label') }} <span class="text-red-500">*</span>
                                             </label>
                                             <select id="property_id" name="property_id" required
@@ -168,36 +169,36 @@
                                         <div class="grid grid-cols-4 md:grid-cols-4 gap-4">
                                             <div>
                                                 <label for="room_no"
-                                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                     {{ __('ui.room_number_label') }} <span class="text-red-500">*</span>
                                                 </label>
                                                 <input type="text" id="room_no" name="room_no" required
-                                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4"
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4"
                                                     placeholder="{{ __('ui.room_number_placeholder') }}">
                                             </div>
 
                                             <div>
                                                 <label for="room_name"
-                                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                     {{ __('ui.room_name_type_label') }} <span class="text-red-500">*</span>
                                                 </label>
+                                                {{-- Room type dropdown — populated from m_room_name_types master table --}}
                                                 <select id="room_name" name="room_name" required
-                                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4">
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4">
                                                     <option value="" disabled selected>{{ __('ui.room_select_type') }}</option>
-                                                    <option value="Standar">Standar</option>
-                                                    <option value="Superior">Superior</option>
-                                                    <option value="Deluxe">Deluxe</option>
-                                                    <option value="Suite">Suite</option>
+                                                    @foreach($roomNameTypes as $type)
+                                                        <option value="{{ $type->name }}">{{ $type->name }}</option>
+                                                    @endforeach
                                                 </select>
                                             </div>
 
                                             <div>
                                                 <label for="room_bed"
-                                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                     {{ __('ui.room_bed_type_label') }} <span class="text-red-500">*</span>
                                                 </label>
                                                 <select id="room_bed" name="room_bed" required
-                                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4">
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4">
                                                     <option value="">{{ __('ui.room_select_bed_type') }}</option>
                                                     <option value="Single">Single</option>
                                                     <option value="Twin">Twin</option>
@@ -209,12 +210,12 @@
 
                                             <div>
                                                 <label for="room_capacity"
-                                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                     {{ __('ui.room_capacity_label') }} <span class="text-red-500">*</span>
                                                 </label>
                                                 <input type="number" id="room_capacity" name="room_capacity"
                                                     required
-                                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4"
+                                                    class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4"
                                                     placeholder="{{ __('ui.room_capacity_placeholder') }}">
                                             </div>
                                         </div>
@@ -222,23 +223,25 @@
                                         <!-- Hidden Room Size Input -->
                                         <div class="hidden">
                                             <label for="room_size"
-                                                class="block text-sm font-semibold text-gray-700 mb-2">
+                                                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_size_label') }}²) <span class="text-red-500">*</span>
                                             </label>
                                             <input type="number" id="room_size" name="room_size" value="0"
                                                 required
-                                                class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4"
+                                                class="w-full border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm py-3 px-4"
                                                 placeholder="Ukuran">
                                         </div>
 
+                                        <!-- Room Description Multi-language -->
                                         <div>
-                                            <label for="description_id"
-                                                class="block text-sm font-semibold text-gray-700 mb-2">
-                                                {{ __('ui.room_description_label') }} <span class="text-red-500">*</span>
-                                            </label>
-                                            <textarea id="description_id" name="description_id" rows="4" required
-                                                class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                                placeholder="{{ __('ui.room_description_placeholder') }}"></textarea>
+                                            <x-multilang-textarea
+                                                name="description_id"
+                                                :value="''"
+                                                :required="true"
+                                                :rows="4"
+                                                :placeholder="__('ui.room_description_placeholder')"
+                                                :label="__('ui.room_description_label')"
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -277,7 +280,7 @@
                                         </div>
 
                                         <div x-show="priceType === 'daily'" x-transition>
-                                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_daily_price') }} <span class="text-red-500">*</span>
                                             </label>
                                             <div class="relative">
@@ -295,37 +298,89 @@
                                             <p x-show="dailyPriceError" class="text-red-500 text-xs mt-1"
                                                 x-text="dailyPriceError"></p>
 
-                                            {{-- <!-- Multi-Tier Pricing: Weekday/Weekend price fields for daily rooms --> --}}
+                                            {{-- <!-- Multi-Tier Pricing: All 5 pricing category fields for daily rooms --> --}}
+                                            {{-- <!-- Required fields: weekday, weekend, holiday, high_season, low_season --> --}}
                                             <div class="grid grid-cols-2 gap-4 mt-4">
+                                                {{-- <!-- Weekday price (Sun-Thu) with blue indicator --> --}}
                                                 <div>
-                                                    <label class="block text-sm font-medium text-gray-600 mb-1">Harga Weekday (Sen-Jum)</label>
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-blue-500 mr-1"></span>
+                                                        {{ __('ui.room_weekday_price') }} <span class="text-red-500">*</span>
+                                                    </label>
                                                     <div class="relative">
                                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
                                                         <input type="text" x-model="weekdayPriceFormatted"
                                                             @input="updateWeekdayPrice($event.target.value)"
                                                             class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-blue-500 text-sm"
-                                                            placeholder="Sama dengan harga harian">
+                                                            placeholder="{{ __('ui.room_weekday_price_placeholder') }}" required>
                                                         <input type="hidden" name="weekday_price" x-model="weekdayPrice">
                                                     </div>
-                                                    <p class="text-xs text-gray-400 mt-1">Kosongkan = sama dengan harga harian</p>
                                                 </div>
+                                                {{-- <!-- Weekend price (Fri-Sat) with purple indicator --> --}}
                                                 <div>
-                                                    <label class="block text-sm font-medium text-gray-600 mb-1">Harga Weekend (Sab-Min)</label>
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-purple-500 mr-1"></span>
+                                                        {{ __('ui.room_weekend_price') }} <span class="text-red-500">*</span>
+                                                    </label>
                                                     <div class="relative">
                                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
                                                         <input type="text" x-model="weekendPriceFormatted"
                                                             @input="updateWeekendPrice($event.target.value)"
-                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-blue-500 text-sm"
-                                                            placeholder="Sama dengan harga harian">
+                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-purple-500 text-sm"
+                                                            placeholder="{{ __('ui.room_weekend_price_placeholder') }}" required>
                                                         <input type="hidden" name="weekend_price" x-model="weekendPrice">
                                                     </div>
-                                                    <p class="text-xs text-gray-400 mt-1">Kosongkan = sama dengan harga harian</p>
+                                                </div>
+                                                {{-- <!-- Holiday price with orange indicator --> --}}
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-orange-500 mr-1"></span>
+                                                        {{ __('ui.room_holiday_price') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                                        <input type="text" x-model="holidayPriceFormatted"
+                                                            @input="updateHolidayPrice($event.target.value)"
+                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-orange-500 text-sm"
+                                                            placeholder="{{ __('ui.room_holiday_price_placeholder') }}" required>
+                                                        <input type="hidden" name="holiday_price" x-model="holidayPrice">
+                                                    </div>
+                                                </div>
+                                                {{-- <!-- High season price with red indicator --> --}}
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span>
+                                                        {{ __('ui.room_high_season_price') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                                        <input type="text" x-model="highSeasonPriceFormatted"
+                                                            @input="updateHighSeasonPrice($event.target.value)"
+                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-red-500 text-sm"
+                                                            placeholder="{{ __('ui.room_high_season_price_placeholder') }}" required>
+                                                        <input type="hidden" name="high_season_price" x-model="highSeasonPrice">
+                                                    </div>
+                                                </div>
+                                                {{-- <!-- Low season price with green indicator --> --}}
+                                                <div class="col-span-2 sm:col-span-1">
+                                                    <label class="block text-sm font-medium text-gray-600 mb-1">
+                                                        <span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
+                                                        {{ __('ui.room_low_season_price') }} <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                                                        <input type="text" x-model="lowSeasonPriceFormatted"
+                                                            @input="updateLowSeasonPrice($event.target.value)"
+                                                            class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-2 px-4 focus:ring-2 focus:ring-green-500 text-sm"
+                                                            placeholder="{{ __('ui.room_low_season_price_placeholder') }}" required>
+                                                        <input type="hidden" name="low_season_price" x-model="lowSeasonPrice">
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div x-show="priceType === 'monthly'" x-transition class="mt-4">
-                                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {{ __('ui.room_monthly_price') }} <span class="text-red-500">*</span>
                                             </label>
                                             <div class="relative">
@@ -347,7 +402,7 @@
 
                                         {{-- <!-- Multi-Tier Pricing: Annual price input --> --}}
                                         <div x-show="priceType === 'annual'" x-transition class="mt-4">
-                                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Harga Tahunan <span class="text-red-500">*</span>
                                             </label>
                                             <div class="relative">
@@ -399,7 +454,7 @@
                                                                     @if (!empty($facility->icon))
                                                                         <span class="iconify text-lg" data-icon="{{ $facility->icon }}"></span>
                                                                     @endif
-                                                                    {{ $facility->facility }}
+                                                                    {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                                                                 </span>
                                                                 @if (!empty($facility->description))
                                                                     <span class="block text-xs text-gray-500 mt-1">
@@ -436,19 +491,18 @@
                                     <div class="space-y-6">
                                         <div>
                                             <label class="block text-sm font-semibold text-gray-700 mb-3">
-                                                Foto Kamar <span class="text-red-500">*</span>
+                                                {{ __('ui.room_photos_label') }} <span class="text-red-500">*</span>
                                                 <span class="text-sm font-normal text-gray-500">
-                                                    (Minimal 3 foto, maksimal 5 foto - <span
-                                                        x-text="remainingSlots"></span> slot tersisa)
+                                                    ({{ __('ui.room_photos_min_max') }} - <span
+                                                        x-text="remainingSlots"></span> {{ __('ui.room_slots_remaining') }})
                                                 </span>
                                             </label>
 
                                             <!-- Thumbnail Selection Area -->
                                             <div class="mb-6">
                                                 <h4 class="text-sm font-semibold text-gray-700 mb-2">
-                                                    Pilih Thumbnail <span class="text-red-500">*</span>
-                                                    <span class="text-xs font-normal text-gray-500">(Foto utama yang
-                                                        akan ditampilkan)</span>
+                                                    {{ __('ui.room_select_thumbnail') }} <span class="text-red-500">*</span>
+                                                    <span class="text-xs font-normal text-gray-500">({{ __('ui.room_thumbnail_hint') }})</span>
                                                 </h4>
 
                                                 <div class="flex items-center space-x-4">
@@ -508,12 +562,12 @@
                                                     <div class="flex text-sm text-gray-600 justify-center">
                                                         <label for="room_images"
                                                             class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                                            <span>Upload foto</span>
+                                                            <span>{{ __('ui.upload_photo') }}</span>
                                                             <input id="room_images" name="room_images[]"
                                                                 type="file" multiple accept="image/*"
                                                                 @change="handleFileSelect($event)" class="sr-only">
                                                         </label>
-                                                        <p class="pl-1">atau drag and drop</p>
+                                                        <p class="pl-1">{{ __('ui.or_drag_and_drop') }}</p>
                                                     </div>
                                                     <p class="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
                                                     <p class="text-xs text-blue-600"
@@ -530,15 +584,14 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                     </svg>
-                                                    <p class="text-sm text-green-600 font-medium">5 foto telah
-                                                        diupload!</p>
-                                                    <p class="text-xs text-green-500">Maksimal foto telah tercapai</p>
+                                                    <p class="text-sm text-green-600 font-medium">5 {{ __('ui.photos_uploaded') }}!</p>
+                                                    <p class="text-xs text-green-500">{{ __('ui.max_photos_reached') }}</p>
                                                 </div>
                                             </div>
 
                                             <!-- Image Preview Grid -->
                                             <div x-show="images.length > 0" class="mt-4">
-                                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Foto Terupload
+                                                <h4 class="text-sm font-semibold text-gray-700 mb-2">{{ __('ui.uploaded_photos') }}
                                                 </h4>
                                                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3"
                                                     x-transition:enter="transition ease-out duration-300"
@@ -612,8 +665,7 @@
 
                                                 <p class="text-sm text-green-600"
                                                     x-show="images.length === 3 && thumbnailIndex !== null">
-                                                    <span class="font-medium">Sempurna!</span>
-                                                    Semua foto telah diupload dan thumbnail telah dipilih.
+                                                    {{ __('ui.validation_perfect') }}
                                                 </p>
                                             </div>
                                         </div>
@@ -630,12 +682,12 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M15 19l-7-7 7-7"></path>
                                             </svg>
-                                            Sebelumnya
+                                            {{ __('ui.previous') }}
                                         </button>
                                         <button type="button" x-show="step < 4"
                                             @click="validateStep(step) && step++"
                                             class="px-6 py-2 border-2 border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                                            Selanjutnya
+                                            {{ __('ui.next') }}
                                             <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -649,7 +701,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M5 13l4 4L19 7"></path>
                                             </svg>
-                                            Simpan
+                                            {{ __('ui.save') }}
                                         </button>
                                     </div>
                                 </div>
@@ -660,8 +712,8 @@
             </div>
         </div>
 
-        <!-- Search and Filter Section -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <!-- Search and Filter Section — overflow-visible so fixed modals inside table rows are not clipped -->
+        <div class="bg-white rounded-lg shadow overflow-visible no-backdrop-filter">
             <!-- Search and Filter Section -->
             <div class="p-4 border-b border-gray-200">
                 <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
@@ -699,12 +751,12 @@
 
                     <!-- Per Page Dropdown -->
                     <div class="flex items-center gap-2">
-                        <label for="per-page-filter" class="text-sm text-gray-600">Tampilkan:</label>
+                        <label for="per-page-filter" class="text-sm text-gray-600">{{ __('ui.room_show_per_page') }}</label>
                         <select id="per-page-filter"
                             class="border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                            <option value="8" {{ request('per_page', 8) == 8 ? 'selected' : '' }}>8</option>
-                            <option value="25" {{ request('per_page', 8) == 25 ? 'selected' : '' }}>25</option>
-                            <option value="50" {{ request('per_page', 8) == 50 ? 'selected' : '' }}>50</option>
+                            <option value="8" {{ request('per_page', 25) == 8 ? 'selected' : '' }}>8</option>
+                            <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25</option>
+                            <option value="50" {{ request('per_page', 25) == 50 ? 'selected' : '' }}>50</option>
                         </select>
                     </div>
 
@@ -715,7 +767,7 @@
             <div class="overflow-x-auto" id="roomTableContainer">
                 @include('pages.Properties.m-Rooms.partials.room_table', [
                     'properties' => $properties,
-                    'per_page' => request('per_page', 8),
+                    'per_page' => request('per_page', 25),
                 ])
             </div>
 
@@ -731,7 +783,7 @@
                 modalOpen: false,
                 step: 1,
                 images: [],
-                maxImages: 5,
+                maxImages: 20,
                 minImages: 3,
                 priceType: '',
                 dailyPrice: 0,
@@ -746,6 +798,13 @@
                 weekdayPriceFormatted: '',
                 weekendPrice: '',
                 weekendPriceFormatted: '',
+                /* Multi-Tier Pricing: holiday, high season, low season price state */
+                holidayPrice: '',
+                holidayPriceFormatted: '',
+                highSeasonPrice: '',
+                highSeasonPriceFormatted: '',
+                lowSeasonPrice: '',
+                lowSeasonPriceFormatted: '',
                 isCheckingRoomNo: false,
                 roomNoError: '',
                 thumbnailIndex: null,
@@ -820,6 +879,17 @@
                     this.monthlyPrice = 0;
                     this.dailyPriceError = '';
                     this.monthlyPriceError = '';
+                    /* Multi-Tier Pricing: reset all pricing category fields */
+                    this.weekdayPrice = '';
+                    this.weekdayPriceFormatted = '';
+                    this.weekendPrice = '';
+                    this.weekendPriceFormatted = '';
+                    this.holidayPrice = '';
+                    this.holidayPriceFormatted = '';
+                    this.highSeasonPrice = '';
+                    this.highSeasonPriceFormatted = '';
+                    this.lowSeasonPrice = '';
+                    this.lowSeasonPriceFormatted = '';
                     this.formErrors = {};
                     this.isLoading = false;
 
@@ -1182,6 +1252,22 @@
                     this.weekendPrice = numericValue ? parseInt(numericValue, 10) : '';
                     this.weekendPriceFormatted = this.weekendPrice ? new Intl.NumberFormat('id-ID').format(this.weekendPrice) : '';
                 },
+                /* Multi-Tier Pricing: format functions for holiday, high season, low season price inputs */
+                updateHolidayPrice(value) {
+                    const numericValue = value.replace(/[^\d]/g, '');
+                    this.holidayPrice = numericValue ? parseInt(numericValue, 10) : '';
+                    this.holidayPriceFormatted = this.holidayPrice ? new Intl.NumberFormat('id-ID').format(this.holidayPrice) : '';
+                },
+                updateHighSeasonPrice(value) {
+                    const numericValue = value.replace(/[^\d]/g, '');
+                    this.highSeasonPrice = numericValue ? parseInt(numericValue, 10) : '';
+                    this.highSeasonPriceFormatted = this.highSeasonPrice ? new Intl.NumberFormat('id-ID').format(this.highSeasonPrice) : '';
+                },
+                updateLowSeasonPrice(value) {
+                    const numericValue = value.replace(/[^\d]/g, '');
+                    this.lowSeasonPrice = numericValue ? parseInt(numericValue, 10) : '';
+                    this.lowSeasonPriceFormatted = this.lowSeasonPrice ? new Intl.NumberFormat('id-ID').format(this.lowSeasonPrice) : '';
+                },
 
                 // Perbaiki validateStep2()
                 validateStep2() {
@@ -1199,6 +1285,27 @@
                             if (!this.dailyPrice || this.dailyPrice <= 0) {
                                 this.showErrorAlert('Harga harian harus diisi dengan nilai yang valid',
                                     'Harga Tidak Valid');
+                                return false;
+                            }
+                            /* Multi-Tier Pricing: validate all 5 pricing categories are filled for daily rooms */
+                            if (!this.weekdayPrice || this.weekdayPrice <= 0) {
+                                this.showErrorAlert('Harga weekday harus diisi', 'Harga Tidak Valid');
+                                return false;
+                            }
+                            if (!this.weekendPrice || this.weekendPrice <= 0) {
+                                this.showErrorAlert('Harga weekend harus diisi', 'Harga Tidak Valid');
+                                return false;
+                            }
+                            if (!this.holidayPrice || this.holidayPrice <= 0) {
+                                this.showErrorAlert('Harga hari libur harus diisi', 'Harga Tidak Valid');
+                                return false;
+                            }
+                            if (!this.highSeasonPrice || this.highSeasonPrice <= 0) {
+                                this.showErrorAlert('Harga musim ramai harus diisi', 'Harga Tidak Valid');
+                                return false;
+                            }
+                            if (!this.lowSeasonPrice || this.lowSeasonPrice <= 0) {
+                                this.showErrorAlert('Harga musim sepi harus diisi', 'Harga Tidak Valid');
                                 return false;
                             }
                         } else if (this.priceType === 'monthly') {
@@ -1515,9 +1622,12 @@
                             formData.append('monthly_price', '0');
                             formData.append('annual_price', '0');
                             formData.append('price_type', 'daily');
-                            /* Multi-Tier Pricing: send weekday/weekend prices (fall back to daily price if empty) */
-                            formData.append('weekday_price', (this.weekdayPrice || this.dailyPrice).toString());
-                            formData.append('weekend_price', (this.weekendPrice || this.dailyPrice).toString());
+                            /* Multi-Tier Pricing: send all 5 pricing categories for daily rooms */
+                            formData.append('weekday_price', this.weekdayPrice.toString());
+                            formData.append('weekend_price', this.weekendPrice.toString());
+                            formData.append('holiday_price', this.holidayPrice.toString());
+                            formData.append('high_season_price', this.highSeasonPrice.toString());
+                            formData.append('low_season_price', this.lowSeasonPrice.toString());
                         } else if (this.priceType === 'monthly') {
                             // Untuk harga bulanan
                             formData.append('monthly_price', this.monthlyPrice.toString());
@@ -1669,6 +1779,7 @@
                 editModalOpen: false,
                 editStep: 1,
                 selectedPriceType: '',
+                originalPriceType: '',
                 priceTypes: {
                     daily: false,
                     monthly: false
@@ -1706,7 +1817,7 @@
                 editNewImages: [],
                 editDeletedImageIds: [],
                 editThumbnailIndex: null,
-                editMaxImages: 5,
+                editMaxImages: 20,
 
                 // COMPUTED PROPERTIES FOR IMAGES
                 get editAllImages() {
@@ -1767,6 +1878,9 @@
                         this.priceTypes = { daily: false, monthly: false };
                         this.selectedPriceType = '';
                     }
+
+                    // Store original price type to allow reverting without booking check
+                    this.originalPriceType = this.selectedPriceType;
 
                     if (this.roomData.daily_price) {
                         this.dailyPrice = parseFloat(this.roomData.daily_price) || 0;
@@ -1865,7 +1979,48 @@
                     }
                 },
 
-                onPriceTypeChange(type) {
+                /* Check for active/future bookings before allowing booking type change */
+                async onPriceTypeChange(type) {
+                    const previousType = this.selectedPriceType;
+
+                    // If type is the same as original, allow without check
+                    if (type === this.originalPriceType) {
+                        this.applyPriceTypeChange(type);
+                        return;
+                    }
+
+                    // Check for active/future bookings that block the change
+                    try {
+                        const response = await fetch('{{ route("rooms.check-room-bookings") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({ room_id: this.roomId })
+                        });
+                        const data = await response.json();
+
+                        if (data.has_bookings) {
+                            // Revert radio selection to previous value
+                            this.selectedPriceType = previousType;
+                            this.showErrorAlert(
+                                '{{ __("ui.room_booking_type_change_blocked_desc") }}',
+                                '{{ __("ui.room_booking_type_change_blocked") }}'
+                            );
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error checking bookings:', error);
+                        this.selectedPriceType = previousType;
+                        return;
+                    }
+
+                    this.applyPriceTypeChange(type);
+                },
+
+                /* Apply the booking type change after validation passes */
+                applyPriceTypeChange(type) {
                     this.selectedPriceType = type;
 
                     if (type === 'daily') {
@@ -1949,6 +2104,7 @@
                     }
                 },
 
+                /* Validate step 2 — daily type skips price check (managed via daily price management) */
                 validateStep2() {
                     try {
                         if (!this.selectedPriceType) {
@@ -1956,11 +2112,7 @@
                             return false;
                         }
 
-                        if (this.selectedPriceType === 'daily' && (!this.dailyPrice || this.dailyPrice <= 0)) {
-                            this.showErrorAlert('Harga harian harus diisi dan lebih dari 0', 'Harga Harian Tidak Valid');
-                            return false;
-                        }
-
+                        // Daily price is managed via daily price management, no validation needed here
                         if (this.selectedPriceType === 'monthly' && (!this.monthlyPrice || this.monthlyPrice <= 0)) {
                             this.showErrorAlert('Harga bulanan harus diisi dan lebih dari 0', 'Harga Bulanan Tidak Valid');
                             return false;
@@ -2458,6 +2610,13 @@
                 roomId: roomId,
                 basePrice: basePrice,
                 cleaveInstance: null,
+                /* Pricing rule values (raw numbers) and formatted strings for all 5 categories */
+                rulePrices: { weekday: '', weekend: '', holiday: '', high_season: '', low_season: '' },
+                weekdayPriceFormatted: '',
+                weekendPriceFormatted: '',
+                holidayPriceFormatted: '',
+                highSeasonPriceFormatted: '',
+                lowSeasonPriceFormatted: '',
 
                 // Computed properties
                 get calendarTitle() {
@@ -2492,53 +2651,75 @@
                     return this.formatCurrency(price);
                 },
 
-                get calendarWeeks() {
-                    const weeks = [];
+                /* Flat array of 35 or 42 day objects for the calendar grid (avoids nested x-for issues) */
+                get calendarDays() {
+                    const days = [];
                     const firstDay = new Date(this.currentYear, this.currentMonth, 1);
                     const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
 
-                    // Start from Sunday (0)
+                    /* Start from Sunday before (or on) the 1st */
                     let startDate = new Date(firstDay);
                     startDate.setDate(startDate.getDate() - startDate.getDay());
 
-                    for (let week = 0; week < 6; week++) {
-                        const days = [];
-                        for (let day = 0; day < 7; day++) {
-                            const currentDate = new Date(startDate);
-                            const dateKey = this.formatDateKey(currentDate);
-                            /* Multi-Tier Pricing: priceMap now returns {price, type} objects */
-                            const priceData = this.priceMap[dateKey];
-                            const price = priceData ? (priceData.price ?? priceData) : undefined;
-                            const priceType = priceData ? (priceData.type ?? 'weekday') : null;
-                            const isCurrentMonth = currentDate.getMonth() === this.currentMonth;
-                            const isToday = this.isToday(currentDate);
-                            const isPast = this.isPastDate(currentDate);
-                            const isSelected = this.selectedDate && this.isSameDate(currentDate, this.selectedDate);
+                    /* Calculate how many weeks needed: 5 weeks if fits, otherwise 6 */
+                    const totalDaysNeeded = firstDay.getDay() + lastDay.getDate();
+                    const totalWeeks = totalDaysNeeded > 35 ? 6 : 5;
+                    const totalCells = totalWeeks * 7;
 
-                            days.push({
-                                date: currentDate,
-                                isCurrentMonth,
-                                isToday,
-                                isPast,
-                                isSelected,
-                                price: price,
-                                priceType: priceType,
-                            });
+                    for (let i = 0; i < totalCells; i++) {
+                        const currentDate = new Date(startDate);
+                        const dateKey = this.formatDateKey(currentDate);
+                        const priceData = this.priceMap[dateKey];
+                        /* Parse price as number; handle both {price,type} objects and raw numbers */
+                        const rawPrice = priceData ? (typeof priceData === 'object' ? priceData.price : priceData) : undefined;
+                        const price = (rawPrice !== undefined && rawPrice !== null) ? parseFloat(rawPrice) : undefined;
+                        const priceType = priceData ? (typeof priceData === 'object' ? priceData.type : 'weekday') : null;
 
-                            startDate.setDate(startDate.getDate() + 1);
-                        }
-                        weeks.push(days);
+                        days.push({
+                            date: currentDate,
+                            index: i,
+                            isCurrentMonth: currentDate.getMonth() === this.currentMonth,
+                            isToday: this.isToday(currentDate),
+                            isPast: this.isPastDate(currentDate),
+                            isSelected: this.selectedDate && this.isSameDate(currentDate, this.selectedDate),
+                            price: price,
+                            priceType: priceType,
+                        });
+
+                        startDate.setDate(startDate.getDate() + 1);
                     }
-                    return weeks;
+                    return days;
                 },
 
                 // Methods
                 openModal() {
                     this.isOpen = true;
                     document.body.classList.add('overflow-hidden');
-                    this.$nextTick(() => {
-                        this.fetchMonthPrices();
-                    });
+                    /* Chain: regenerate → fetch prices → fetch rules (avoids $nextTick async issues) */
+                    this.regenerateAndFetch();
+                },
+
+                /* Regenerate prices on server, THEN fetch updated calendar + pricing rules */
+                async regenerateAndFetch() {
+                    await this.regeneratePrices();
+                    await this.fetchMonthPrices();
+                    this.fetchPricingRules();
+                },
+
+                /* Validate all 5 prices are filled before allowing modal close */
+                validateAndClose() {
+                    const ruleTypes = ['weekday', 'weekend', 'holiday', 'high_season', 'low_season'];
+                    const labels = {
+                        weekday: 'Weekday', weekend: 'Weekend',
+                        holiday: 'Holiday', high_season: 'High Season', low_season: 'Low Season'
+                    };
+                    const missing = ruleTypes.filter(t => !this.rulePrices[t] || this.rulePrices[t] <= 0);
+                    if (missing.length > 0) {
+                        const names = missing.map(t => labels[t]).join(', ');
+                        this.showAlert('warning', `Semua harga harus diisi sebelum menutup: ${names}`);
+                        return;
+                    }
+                    this.closeModal();
                 },
 
                 closeModal() {
@@ -2598,13 +2779,6 @@
                 selectDate(day) {
                     if (!day.isCurrentMonth || day.isPast) return;
                     this.selectedDate = day.date;
-
-                    // Set current price in the input field if available
-                    if (day.price !== undefined && day.price !== null && this.cleaveInstance) {
-                        this.cleaveInstance.setRawValue(day.price.toString());
-                    } else if (this.cleaveInstance) {
-                        this.cleaveInstance.setRawValue('');
-                    }
                 },
 
                 previousMonth() {
@@ -2659,46 +2833,100 @@
                     return colorMap[day.priceType] || 'bg-blue-200';
                 },
 
-                async updatePrice() {
-                    if (!this.selectedDate) {
-                        this.showAlert('warning', 'Silakan pilih tanggal terlebih dahulu');
-                        return;
-                    }
-
-                    this.isLoading = true;
-
+                /* Trigger server-side price regeneration so calendar reflects current rules + master calendar */
+                async regeneratePrices() {
                     try {
-                        const priceValue = this.cleaveInstance.getRawValue() ?
-                            parseFloat(this.cleaveInstance.getRawValue()) : null;
-
-                        const res = await fetch(`/properties/rooms/${this.roomId}/update-price`, {
+                        const res = await fetch(`/properties/rooms/${this.roomId}/regenerate-prices`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                                 'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                start_date: this.formatDateKey(this.selectedDate),
-                                end_date: this.formatDateKey(this.selectedDate),
-                                price: priceValue
-                            })
+                            }
                         });
+                        if (!res.ok) console.warn('Price regeneration failed');
+                    } catch (error) {
+                        console.warn('Price regeneration error:', error);
+                    }
+                },
 
+                /* Format a pricing rule input value and store the raw number */
+                formatRulePrice(ruleType, value) {
+                    const numericValue = value.replace(/[^\d]/g, '');
+                    const parsed = numericValue ? parseInt(numericValue, 10) : '';
+                    this.rulePrices[ruleType] = parsed;
+                    const formatted = parsed ? new Intl.NumberFormat('id-ID').format(parsed) : '';
+                    /* Update the corresponding formatted property */
+                    const formattedMap = {
+                        weekday: 'weekdayPriceFormatted',
+                        weekend: 'weekendPriceFormatted',
+                        holiday: 'holidayPriceFormatted',
+                        high_season: 'highSeasonPriceFormatted',
+                        low_season: 'lowSeasonPriceFormatted',
+                    };
+                    this[formattedMap[ruleType]] = formatted;
+                },
+
+                /* Fetch existing pricing rules for this room and populate the textboxes */
+                async fetchPricingRules() {
+                    try {
+                        const res = await fetch(`/properties/rooms/${this.roomId}/pricing-rules`);
+                        if (!res.ok) throw new Error('Failed to fetch pricing rules');
                         const data = await res.json();
+                        const rules = data.data?.rules || [];
+                        /* Map each rule into the rulePrices object and formatted displays */
+                        rules.forEach(rule => {
+                            if (this.rulePrices.hasOwnProperty(rule.rule_type)) {
+                                const price = parseFloat(rule.price);
+                                this.rulePrices[rule.rule_type] = price;
+                                const formattedMap = {
+                                    weekday: 'weekdayPriceFormatted',
+                                    weekend: 'weekendPriceFormatted',
+                                    holiday: 'holidayPriceFormatted',
+                                    high_season: 'highSeasonPriceFormatted',
+                                    low_season: 'lowSeasonPriceFormatted',
+                                };
+                                this[formattedMap[rule.rule_type]] = new Intl.NumberFormat('id-ID').format(price);
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error fetching pricing rules:', error);
+                    }
+                },
 
-                        if (!res.ok) {
-                            throw new Error(data.message || 'Gagal memperbarui harga');
+                /* Save all 5 pricing rules via the pricing-rules API, then regenerate daily prices */
+                async saveAllRules() {
+                    this.isLoading = true;
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+
+                    try {
+                        /* Save each rule type that has a value */
+                        const ruleTypes = ['weekday', 'weekend', 'holiday', 'high_season', 'low_season'];
+                        for (const ruleType of ruleTypes) {
+                            const price = this.rulePrices[ruleType];
+                            if (price === '' || price === null || price === undefined) continue;
+                            const res = await fetch(`/properties/rooms/${this.roomId}/pricing-rules`, {
+                                method: 'POST',
+                                headers,
+                                body: JSON.stringify({ rule_type: ruleType, price: parseFloat(price) })
+                            });
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                throw new Error(errData.message || `Gagal menyimpan harga ${ruleType}`);
+                            }
                         }
 
-                        this.showAlert('success', 'Harga berhasil diperbarui!');
+                        this.showAlert('success', 'Semua harga berhasil diperbarui!');
+                        /* Refresh calendar to reflect new prices */
                         await this.fetchMonthPrices();
-
-                        // Reset form
-                        this.cleaveInstance.setRawValue('');
                     } catch (error) {
-                        console.error('Update error:', error);
-                        this.showAlert('error', error.message || 'Terjadi kesalahan saat memperbarui harga');
+                        console.error('Save rules error:', error);
+                        this.showAlert('error', error.message || 'Terjadi kesalahan saat menyimpan harga');
                     } finally {
                         this.isLoading = false;
                     }
@@ -2717,20 +2945,7 @@
                 },
 
                 init() {
-                    // Initialize price input formatter
-                    this.$nextTick(() => {
-                        if (this.$refs.setPrice) {
-                            this.cleaveInstance = new Cleave(this.$refs.setPrice, {
-                                numeral: true,
-                                numeralDecimalMark: ',',
-                                delimiter: '.',
-                                numeralThousandsGroupStyle: 'thousand',
-                                onValueChanged: (e) => {
-                                    // Value is handled by getRawValue()
-                                }
-                            });
-                        }
-                    });
+                    /* No Cleave needed — pricing inputs use inline formatting via formatRulePrice() */
                 }
             }));
         });
@@ -2752,6 +2967,7 @@
         //     }
         // });
 
+        /* Toggle room status with booking check: blocks if room has current/future bookings */
         function toggleRoomStatus(checkbox) {
             const roomId = checkbox.getAttribute('data-id');
             const newStatus = checkbox.checked ? 1 : 0;
@@ -2769,21 +2985,23 @@
                     })
                 })
                 .then(res => {
-                    if (!res.ok) throw new Error("Gagal update status");
+                    /* Handle 422 response: room has active bookings */
+                    if (res.status === 422) {
+                        return res.json().then(data => { throw new Error(data.message || '{{ __("ui.room_status_has_bookings") }}'); });
+                    }
+                    if (!res.ok) throw new Error("{{ __('ui.room_status_update_failed') }}");
                     return res.json();
                 })
                 .then(() => {
-                    // Update label status
                     statusLabel.textContent = newStatus === 1 ? 'Active' : 'Inactive';
                     statusLabel.classList.remove('text-green-600', 'text-red-600');
                     statusLabel.classList.add(newStatus === 1 ? 'text-green-600' : 'text-red-600');
 
-                    // Show success toast
                     Swal.fire({
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: newStatus === 1 ? 'Kamar berhasil diaktifkan' : 'Kamar berhasil dinonaktifkan',
+                        title: newStatus === 1 ? '{{ __("ui.room_activated") }}' : '{{ __("ui.room_deactivated") }}',
                         showConfirmButton: false,
                         timer: 2000
                     });
@@ -2796,7 +3014,7 @@
                         toast: true,
                         position: 'top-end',
                         icon: 'error',
-                        title: 'Gagal memperbarui status kamar',
+                        title: err.message,
                         showConfirmButton: false,
                         timer: 3000
                     });
@@ -2887,7 +3105,7 @@
             else params.delete('search');
 
             if (perPage) params.set('per_page', perPage);
-            else params.set('per_page', '8');
+            else params.set('per_page', '25');
 
             window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
 
@@ -2984,7 +3202,7 @@
 
                 // Set per_page value
                 if (perPage) params.set('per_page', perPage);
-                else params.set('per_page', '8');
+                else params.set('per_page', '25');
 
                 // Update URL tanpa reload halaman
                 window.history.replaceState({}, '', `${window.location.pathname}?${params}`);

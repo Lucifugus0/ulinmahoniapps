@@ -25,7 +25,7 @@ class ContentServiceProvider extends ServiceProvider
     public function boot()
     {
         try {
-            $this->CRM_ISS = DB::table('global_title')->select('key')->where('key', 'OS Name')->first();
+            $this->CRM_ISS = DB::table('global_title')->select('key', 'nilai')->where('key', 'OS Name')->first();
         } catch (\Exception $e) {
             $this->CRM_ISS = null;
         }

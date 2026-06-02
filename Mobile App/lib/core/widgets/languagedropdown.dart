@@ -21,6 +21,12 @@ class _LanguageDropdownState extends ConsumerState<LanguageDropdown> {
   @override
   Widget build(BuildContext context) {
     final currentLocale = ref.watch(localeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Dropdown panel background and text color adapt to dark/light mode
+    final dropdownBg = isDark ? const Color(0xFF1F2937) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final arrowColor = isDark ? Colors.white70 : widget.iconColor;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: DropdownButtonHideUnderline(
@@ -28,9 +34,13 @@ class _LanguageDropdownState extends ConsumerState<LanguageDropdown> {
           value: currentLocale.languageCode.toUpperCase(),
           onChanged: (String? newValue) {
             if (newValue != null) {
-              final newLocale = newValue == 'ID' ? const Locale('id') : const Locale('en');
+              // Map language code to Locale — supports ID, EN, ZH
+              final newLocale = newValue == 'ID'
+                  ? const Locale('id')
+                  : newValue == 'ZH'
+                      ? const Locale('zh')
+                      : const Locale('en');
               ref.read(localeProvider.notifier).state = newLocale;
-
               setState(() {
                 isDropdownOpen = false;
               });
@@ -49,7 +59,7 @@ class _LanguageDropdownState extends ConsumerState<LanguageDropdown> {
                 children: [
                   _buildFlagImage(AppImage.indonesiaFlagurl, 'ID'),
                   const SizedBox(width: 8),
-                  const Text('ID'),
+                  Text('ID', style: TextStyle(color: textColor)),
                 ],
               ),
             ),
@@ -60,16 +70,29 @@ class _LanguageDropdownState extends ConsumerState<LanguageDropdown> {
                 children: [
                   _buildFlagImage(AppImage.usaFlagurl, 'EN'),
                   const SizedBox(width: 8),
-                  const Text('EN'),
+                  Text('EN', style: TextStyle(color: textColor)),
+                ],
+              ),
+            ),
+            // Simplified Chinese language option
+            DropdownMenuItem(
+              value: 'ZH',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildFlagImage(AppImage.chinaFlagurl, 'ZH'),
+                  const SizedBox(width: 8),
+                  Text('ZH', style: TextStyle(color: textColor)),
                 ],
               ),
             ),
           ],
           icon: Icon(
             isDropdownOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-            color: widget.iconColor,
+            color: arrowColor,
           ),
-          dropdownColor: Colors.white,
+          // Dropdown panel uses dark surface in dark mode
+          dropdownColor: dropdownBg,
           elevation: 2,
         ),
       ),

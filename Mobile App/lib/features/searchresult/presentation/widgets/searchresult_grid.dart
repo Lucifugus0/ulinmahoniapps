@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ulinmahoniapps/core/widgets/card/propertycard.dart';
-import 'package:ulinmahoniapps/features/home/model/properties_model.dart';
+import 'package:ulinmahoniapps/features/home/provider/property_provider.dart';
 import 'package:ulinmahoniapps/core/utils/formatcurrency.dart';
 import 'package:ulinmahoniapps/features/searchresult/model/searchfilter_model.dart';
+import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import '../../../../core/utils/app_logger.dart';
 
 class SearchResultGrid extends StatelessWidget {
-  final List<PropertyModel> properties;
+  final List<PropertyWithDistance> properties;
   final SearchFilter currentFilter;
 
   const SearchResultGrid({
@@ -18,6 +19,7 @@ class SearchResultGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     AppLogger.d('DEBUG: currentFilter.rentType: ${currentFilter.rentType}', 'SEARCH-RESULT');
     AppLogger.d('DEBUG: currentFilter.category: ${currentFilter.category}', 'SEARCH-RESULT');
     AppLogger.d('DEBUG: currentFilter.durationRaw: ${currentFilter.durationRaw}', 'SEARCH-RESULT');
@@ -38,17 +40,37 @@ class SearchResultGrid extends StatelessWidget {
       children: [
         Expanded(
           child: ListView.builder(
-            scrollDirection: Axis.vertical, 
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0), 
+            scrollDirection: Axis.vertical,
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
             itemCount: properties.length,
             itemBuilder: (context, index) {
-              final property = properties[index];
+              final pwd = properties[index];
+              final property = pwd.property;
 
-              // Calculate cheapest price: monthly first, then daily
+              /* Daily Multi Tier Pricing: show total price when daily search with dates */
+              /* Otherwise fall back to existing logic: monthly first, then daily */
+              final bool hasTotalPrice = property.lowestTotalPrice != null && property.lowestTotalPrice! > 0;
               final monthlyPrice = double.tryParse(property.priceOriginalMonthly) ?? 0;
               final dailyPrice = double.tryParse(property.priceOriginalDaily) ?? 0;
-              final displayPrice = monthlyPrice > 0 ? monthlyPrice : dailyPrice;
-              final priceLabel = monthlyPrice > 0 ? '/bulan' : '/hari';
+
+              final double displayPrice;
+              final String priceLabel;
+
+              if (hasTotalPrice && property.totalDays != null) {
+                displayPrice = property.lowestTotalPrice!;
+                priceLabel = '/ ${property.totalDays} malam';
+              } else if (monthlyPrice > 0) {
+                displayPrice = monthlyPrice;
+                priceLabel = localizations.roomDetailsPerMonth;
+              } else {
+                displayPrice = dailyPrice;
+                priceLabel = localizations.roomDetailsPerDay;
+              }
+
+              // Format distance as "X.X km" badge text
+              final String? distanceText = pwd.distanceKm != null
+                  ? '${pwd.distanceKm!.toStringAsFixed(1)} km'
+                  : null;
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 20.0),
@@ -56,9 +78,12 @@ class SearchResultGrid extends StatelessWidget {
                   image: property.image,
                   title: property.name,
                   location: '${property.subdistrict ?? ''}, ${property.city}'.trim().replaceAll(RegExp(r'^,\s*|,\s*$'), ''),
-                  detail: property.distance,
+                  detail: distanceText,
                   price: displayPrice > 0 ? '${formatCurrency(displayPrice.toString())}$priceLabel' : null,
                   imageHeight: 200,
+                  availableRooms: property.availableRooms,
+                  totalRooms: property.totalRooms,
+                  gender: property.gender,
                   onTap: () {
                     context.push('/detailproperty/${property.idrec}');
                   },

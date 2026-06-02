@@ -9,20 +9,23 @@ import 'package:ulinmahoniapps/features/book/payment/data/repositories/payment_r
 import 'package:ulinmahoniapps/core/network/api_result.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import 'package:ulinmahoniapps/core/utils/app_logger.dart'; 
+import 'package:ulinmahoniapps/core/utils/app_logger.dart';
 
+/// Parse dynamic value to double — strips currency symbols and whitespace
 double parseToDouble(dynamic value) {
   if (value == null) return 0.0;
   String stringValue = value.toString().replaceAll('Rp', '').replaceAll(' ', '');
   return double.tryParse(stringValue) ?? 0.0;
 }
 
+/// Parse dynamic value to int — strips currency symbols and whitespace
 int parseToInt(dynamic value) {
   if (value == null) return 0;
   String stringValue = value.toString().replaceAll('Rp', '').replaceAll(' ', '');
   return double.tryParse(stringValue)?.toInt() ?? 0;
 }
 
+/// State holding payment calculation data and booking post result
 class PaymentState {
   final AsyncValue<Map<String, dynamic>> paymentCalculationData;
   final AsyncValue<Map<String, dynamic>?> postBookingResult;
@@ -50,21 +53,21 @@ class PaymentState {
   }
 }
 
-// Provider for PaymentRepository
+/// Provider for PaymentRepository instance
 final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
   return PaymentRepository();
 });
 
-final paymentNotifierProvider = StateNotifierProvider<PaymentNotifier, PaymentState>((ref) {
-  return PaymentNotifier(ref);
-});
+/// Provider for PaymentNotifier — migrated from StateNotifierProvider to NotifierProvider
+final paymentNotifierProvider = NotifierProvider<PaymentNotifier, PaymentState>(PaymentNotifier.new);
 
-class PaymentNotifier extends StateNotifier<PaymentState> {
-  final Ref _ref;
+/// Riverpod 3.x Notifier for managing payment state — migrated from StateNotifier
+class PaymentNotifier extends Notifier<PaymentState> {
+  /// Build method returns the initial state with loading payment data
+  @override
+  PaymentState build() => PaymentState(paymentCalculationData: const AsyncValue.loading());
 
-  PaymentNotifier(this._ref)
-      : super(PaymentState(paymentCalculationData: const AsyncValue.loading()));
-
+  /// Load and calculate payment details for a new booking based on room, property, rent type, and duration
   Future<void> loadPaymentDetails({
     required RoomModel room,
     required DetailPropertyModel propertyData,
@@ -72,7 +75,9 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
     required int duration,
     required DateTime checkInDate,
     required DateTime checkOutDate,
-    required AppLocalizations localizations, 
+    required AppLocalizations localizations,
+    // Multi-tier total from price-preview API (weekday/weekend/holiday rates)
+    double? multiTierTotalPrice,
   }) async {
     state = state.copyWith(paymentCalculationData: const AsyncValue.loading());
     try {
@@ -96,7 +101,7 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
         // Multi-Tier Pricing: use per-date sum from price-preview API if available
         // The server calculates the correct total based on weekday/weekend/holiday/season rules
         // Fallback to flat rate if API fails or room has no per-date prices
-        originalTotal = originalDailyPrice * duration;
+        originalTotal = multiTierTotalPrice ?? (originalDailyPrice * duration);
         dailyDurationCalculated = duration;
         finalBookingDays = duration;
         finalDailyPrice = originalDailyPrice;
@@ -139,7 +144,7 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
         'service_fees': taxAmount,
       };
 
-      
+
       final currencyFormatter = NumberFormat.currency(
         locale: localizations.localeName,
         symbol: 'Rp',
@@ -149,7 +154,7 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
       final List<Map<String, dynamic>> itemDetails = [
         {
           'name': '$duration ${rentType == 'Daily' || rentType == 'daily' ? localizations.dailyDurationUnit : localizations.monthlyDurationUnit} ${localizations.normalPriceLabel}',
-          'price': currencyFormatter.format(originalTotal), 
+          'price': currencyFormatter.format(originalTotal),
           'rawPrice': originalTotal,
           'type': 'original',
         },
@@ -179,6 +184,7 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
     }
   }
 
+  /// Load and calculate payment details for a booking renewal
   Future<void> loadRenewalPaymentDetails({
     required int roomId,
     required int propertyId,
@@ -191,6 +197,8 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
     required DateTime checkInDate,
     required DateTime checkOutDate,
     required AppLocalizations localizations,
+    // Multi-tier total from price-preview API (weekday/weekend/holiday rates)
+    double? multiTierTotalPrice,
   }) async {
     state = state.copyWith(paymentCalculationData: const AsyncValue.loading());
     try {
@@ -202,7 +210,8 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
       double taxAmount = 30000;
 
       if (rentType == 'daily' || rentType == 'Daily') {
-        originalTotal = dailyPrice * duration;
+        // Use multi-tier total if available, fallback to flat rate
+        originalTotal = multiTierTotalPrice ?? (dailyPrice * duration);
         finalBookingDays = duration;
         finalBookingMonths = null;
       } else if (rentType == 'monthly' || rentType == 'Monthly') {
@@ -271,6 +280,7 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
   }
 
 
+  /// Calculate total price from item list plus tax fee
   double calculateTotalPrice(List<Map<String, dynamic>> items, double taxFee) {
     double totalPrice = 0;
     for (var item in items) {
@@ -279,15 +289,16 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
     return totalPrice;
   }
 
-  /// Update payment method for a booking
+  /// Update payment method for a booking — delegates to repository
   Future<ApiResult<UpdatePaymentMethodResponse>> updatePaymentMethod(
     String bookingId,
     UpdatePaymentMethodRequest request,
   ) async {
-    final repository = _ref.read(paymentRepositoryProvider);
+    final repository = ref.read(paymentRepositoryProvider);
     return await repository.updatePaymentMethod(bookingId, request);
   }
 
+  /// Post a new booking to the server with all payment and room details
   Future<void> postBooking({
     required String transactionType,
     String? voucherCode,
@@ -298,7 +309,7 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
   }) async {
     state = state.copyWith(postBookingResult: const AsyncValue.loading());
 
-    final user = _ref.read(authProvider).user.value;
+    final user = ref.read(authProvider).user.value;
     if (user == null) {
       state = state.copyWith(postBookingResult: AsyncValue.error('User not logged in', StackTrace.current));
       return;
@@ -334,7 +345,9 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
       monthlyPrice: roomDetails['monthly_price'],
       serviceFee: 30000.0,
       propertyType: roomDetails['propertyType']?.toString() ?? '',
-      bookingType: roomDetails['rentType']?.toString() ?? '',
+      // Lowercase: server expects 'daily'/'monthly'; the homepage search
+      // filter still stores capitalized 'Daily'/'Monthly'.
+      bookingType: roomDetails['rentType']?.toString().toLowerCase() ?? '',
       bookingDays: roomDetails['booking_days'],
       bookingMonths: roomDetails['booking_months'],
       transactionType: transactionType.toString(),
@@ -351,7 +364,7 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
     AppLogger.separator();
 
     // Use Repository with ApiResult pattern
-    final repository = _ref.read(paymentRepositoryProvider);
+    final repository = ref.read(paymentRepositoryProvider);
     final result = await repository.createBooking(bookingRequest);
 
     // Handle result with pattern matching

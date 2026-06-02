@@ -5,11 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kebijakan Privasi - {{ config('app.name') }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
         .policy-section {
             margin-bottom: 2.5rem;
@@ -44,6 +45,18 @@
             padding-left: 1.5rem;
             margin: 0.5rem 0;
         }
+
+        /* Dark mode overrides for privacy policy page */
+        html.dark body { background-color: #111827 !important; color: #e5e7eb !important; }
+        html.dark .policy-section h2 { color: #f3f4f6 !important; }
+        html.dark .policy-section h3 { color: #e5e7eb !important; }
+        html.dark .policy-content { color: #d1d5db !important; }
+        html.dark .policy-list li { color: #d1d5db !important; }
+        html.dark .policy-sub-list li { color: #d1d5db !important; }
+        html.dark .legal-card { background-color: #1f2937 !important; border-color: #374151 !important; }
+        html.dark .legal-card h1 { color: #f3f4f6 !important; }
+        html.dark .breadcrumb-text { color: #9ca3af !important; }
+        html.dark .breadcrumb-active { color: #e5e7eb !important; }
     </style>
 </head>
 <body class="font-inter antialiased bg-white text-gray-900 tracking-tight">
@@ -56,14 +69,15 @@
             <!-- Breadcrumb -->
             <nav class="mb-8">
                 <ol class="flex items-center space-x-2 text-gray-500">
-                    <li><a href="{{ route('homepage') }}" class="hover:text-gray-700">Beranda</a></li>
-                    <li><span class="mx-2">/</span></li>
-                    <li class="text-gray-700">Kebijakan Privasi</li>
+                    <li><a href="{{ route('homepage') }}" class="breadcrumb-text hover:text-gray-700">Beranda</a></li>
+                    <li><span class="mx-2 breadcrumb-text">/</span></li>
+                    <li class="breadcrumb-active">Kebijakan Privasi</li>
                 </ol>
             </nav>
 
             <!-- Main Content -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
+            <!-- Main content card with dark mode support -->
+            <div class="legal-card bg-white rounded-lg shadow-sm border border-gray-100 p-6 md:p-8">
                 <h1 class="text-3xl font-bold text-gray-900 mb-8">KEBIJAKAN PRIVASI DAN PERLINDUNGAN DATA PRIBADI</h1>
                 
                 <div class="prose max-w-none">

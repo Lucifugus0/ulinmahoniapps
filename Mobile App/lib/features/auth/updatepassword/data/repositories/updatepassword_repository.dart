@@ -52,20 +52,16 @@ class UpdatePasswordRepository {
   ApiResult<T> _handleErrorResponse<T>(Response response) {
     final statusCode = response.statusCode ?? 0;
     final data = response.data;
-    String message = data is Map<String, dynamic> ? data['message'] ?? '' : '';
-
-    // Translate specific error messages
-    if (message == "Current password is incorrect") {
-      message = "Password saat ini salah";
-    }
+    // Use backend response message directly — no local translation override
+    final String message = data is Map<String, dynamic> ? data['message'] ?? '' : '';
 
     AppLogger.w('API error response: Status $statusCode - $message', 'UPDATE-PASSWORD-REPO');
 
     return switch (statusCode) {
-      400 => Failure(errorType: ApiErrorType.badRequest, message: message.isNotEmpty ? message : 'Password saat ini salah', statusCode: statusCode),
-      401 => Failure(errorType: ApiErrorType.unauthorized, message: message.isNotEmpty ? message : 'Sesi berakhir', statusCode: statusCode),
+      400 => Failure(errorType: ApiErrorType.badRequest, message: message.isNotEmpty ? message : 'Bad request ($statusCode)', statusCode: statusCode),
+      401 => Failure(errorType: ApiErrorType.unauthorized, message: message.isNotEmpty ? message : 'Unauthorized ($statusCode)', statusCode: statusCode),
       422 => _handleValidationError(data),
-      _ => Failure(errorType: ApiErrorType.unknown, message: message.isNotEmpty ? message : 'Terjadi kesalahan ($statusCode)', statusCode: statusCode),
+      _ => Failure(errorType: ApiErrorType.unknown, message: message.isNotEmpty ? message : 'Error ($statusCode)', statusCode: statusCode),
     };
   }
 

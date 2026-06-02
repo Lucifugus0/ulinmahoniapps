@@ -260,6 +260,74 @@
         </div>
     </div>
 
+    <!-- View Voucher Modal — read-only detail view using same layout as Add Voucher -->
+    <div id="viewVoucherModal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 hidden" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">{{ __('ui.view') }} {{ __('ui.voucher') }}</h3>
+                    <button type="button" onclick="closeViewVoucherModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.voucher_code') }}</label>
+                            <p class="text-gray-900 dark:text-white font-medium" id="viewVoucherCode">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.voucher_name') }}</label>
+                            <p class="text-gray-900 dark:text-white font-medium" id="viewVoucherName">-</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.description') }}</label>
+                            <p class="text-gray-700 dark:text-gray-300 text-sm" id="viewVoucherDescription">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.discount_percent') }}</label>
+                            <p class="text-gray-900 dark:text-white" id="viewVoucherDiscount">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.max_discount') }}</label>
+                            <p class="text-gray-900 dark:text-white" id="viewVoucherMaxDiscount">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.max_total_usage') }}</label>
+                            <p class="text-gray-900 dark:text-white" id="viewVoucherMaxUsage">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.max_usage_per_user') }}</label>
+                            <p class="text-gray-900 dark:text-white" id="viewVoucherMaxPerUser">-</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.valid_period') }}</label>
+                            <p class="text-gray-900 dark:text-white" id="viewVoucherPeriod">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.min_transaction') }}</label>
+                            <p class="text-gray-900 dark:text-white" id="viewVoucherMinTransaction">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.scope') }}</label>
+                            <p class="text-gray-900 dark:text-white" id="viewVoucherScope">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.usage') }}</label>
+                            <p class="text-gray-900 dark:text-white" id="viewVoucherUsage">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ __('ui.status') }}</label>
+                            <p id="viewVoucherStatus">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         <script>
             // Translations object for JavaScript
@@ -462,6 +530,21 @@
             }
 
             // Filter functionality
+            // Sort state
+            let voucherSortBy = 'valid_to';
+            let voucherSortDir = 'desc';
+
+            // Called from table header onclick
+            window.voucherSort = function(column) {
+                if (voucherSortBy === column) {
+                    voucherSortDir = voucherSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    voucherSortBy = column;
+                    voucherSortDir = 'asc';
+                }
+                filterVouchers();
+            };
+
             let debounceTimer;
             $('#search, #status_filter, #per_page').on('change keyup', function() {
                 clearTimeout(debounceTimer);
@@ -479,7 +562,9 @@
                     data: {
                         search: search,
                         status: status,
-                        per_page: perPage
+                        per_page: perPage,
+                        sort_by: voucherSortBy,
+                        sort_dir: voucherSortDir
                     },
                     success: function(response) {
                         $('#vouchers-table-container').html(response.html);
@@ -489,6 +574,27 @@
                     }
                 });
             }
+
+            /* Intercept pagination link clicks inside the voucher table container.
+               Loads the page via AJAX instead of full browser navigation to prevent
+               raw JSON being displayed when clicking page 2, 3, etc. */
+            $(document).on('click', '#vouchers-table-container .pagination a', function(e) {
+                e.preventDefault();
+                const url = $(this).attr('href');
+                if (!url) return;
+
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(response) {
+                        $('#vouchers-table-container').html(response.html);
+                    },
+                    error: function(xhr) {
+                        console.error('Pagination error:', xhr);
+                    }
+                });
+            });
 
             // Reload table only without full page refresh
             function reloadTable() {
@@ -513,6 +619,49 @@
                 $('#scope_type').prop('disabled', false).removeClass('bg-gray-100 cursor-not-allowed opacity-60');
                 $('#voucherModal').removeClass('hidden').show();
             }
+
+            /** Open read-only view modal with voucher details */
+            function openViewVoucherModal(id) {
+                $.ajax({
+                    url: `/vouchers/${id}`,
+                    method: 'GET',
+                    success: function(response) {
+                        const v = response.data;
+                        $('#viewVoucherCode').text(v.code || '-');
+                        $('#viewVoucherName').text(v.name || '-');
+                        $('#viewVoucherDescription').text(v.description || '-');
+                        $('#viewVoucherDiscount').text(v.discount_percentage + '%');
+                        $('#viewVoucherMaxDiscount').text('Rp ' + Number(v.max_discount_amount || 0).toLocaleString('id-ID'));
+                        $('#viewVoucherMaxUsage').text(v.max_total_usage == 0 ? '∞' : v.max_total_usage);
+                        $('#viewVoucherMaxPerUser').text(v.max_usage_per_user || '-');
+                        $('#viewVoucherPeriod').text(
+                            (v.valid_from ? new Date(v.valid_from).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : '-') +
+                            ' — ' +
+                            (v.valid_to ? new Date(v.valid_to).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : '-')
+                        );
+                        $('#viewVoucherMinTransaction').text('Rp ' + Number(v.min_transaction_amount || 0).toLocaleString('id-ID'));
+                        $('#viewVoucherScope').text(v.scope_type ? v.scope_type.charAt(0).toUpperCase() + v.scope_type.slice(1) : '-');
+                        $('#viewVoucherUsage').text((v.current_usage_count || 0) + ' / ' + (v.max_total_usage == 0 ? '∞' : v.max_total_usage));
+                        const isActive = v.status === 'active';
+                        $('#viewVoucherStatus').html(`<span class="px-2 py-1 text-xs font-medium rounded-full ${isActive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">${isActive ? 'Active' : 'Inactive'}</span>`);
+                        $('#viewVoucherModal').removeClass('hidden').show();
+                    },
+                    error: function() {
+                        showToast('Failed to load voucher details', 'error');
+                    }
+                });
+            }
+
+            function closeViewVoucherModal() {
+                $('#viewVoucherModal').addClass('hidden').hide();
+            }
+
+            // Close view modal on backdrop click
+            $('#viewVoucherModal').on('click', function(e) {
+                if (e.target === this || $(e.target).closest('.flex.items-center.justify-center').length && !$(e.target).closest('.bg-white, .dark\\:bg-gray-800').length) {
+                    closeViewVoucherModal();
+                }
+            });
 
             function openEditModal(id) {
                 $.ajax({
@@ -626,39 +775,37 @@
             });
 
             // Delete voucher
-            function deleteVoucher(id) {
-                Swal.fire({
-                    title: voucherTranslations.confirmDelete,
-                    text: voucherTranslations.confirmDeleteVoucher,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: voucherTranslations.yesDelete,
-                    cancelButtonText: voucherTranslations.cancel
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: `/vouchers/${id}`,
-                            method: 'DELETE',
-                            data: {
-                                _token: '{{ csrf_token() }}'
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    showToast(response.message, 'success');
-                                    setTimeout(() => reloadTable(), 500);
-                                }
-                            },
-                            error: function(xhr) {
-                                showToast(voucherTranslations.failedDeleteVoucher, 'error');
-                            }
-                        });
+            /** Toggle voucher status via checkbox switch — matches Property master page pattern.
+                Reads checked state from the toggle, sends AJAX to update, reloads table on success. */
+            function toggleVoucherStatus(checkbox) {
+                const id = $(checkbox).data('id');
+                const newStatus = checkbox.checked ? 'active' : 'inactive';
+
+                $.ajax({
+                    url: '{{ route('vouchers.toggle-status') }}',
+                    method: 'POST',
+                    data: {
+                        id: id,
+                        status: newStatus,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast(response.message || voucherTranslations.statusChangedSuccess, 'success');
+                            setTimeout(() => reloadTable(), 500);
+                        }
+                    },
+                    error: function(xhr) {
+                        // Revert toggle on failure
+                        checkbox.checked = !checkbox.checked;
+                        showToast(voucherTranslations.failedChangeStatus, 'error');
                     }
                 });
             }
 
-            // Toggle status
+            /* deleteVoucher and old toggleStatus functions removed — replaced by toggleVoucherStatus above */
+
+            // Legacy toggleStatus kept for backward compatibility with cached pages
             function toggleStatus(id, currentStatus) {
                 const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
                 const statusText = newStatus === 'active' ? voucherTranslations.activate : voucherTranslations.deactivate;

@@ -8,17 +8,27 @@ use App\Models\Property;
 use App\Models\PropertyImage;
 use Illuminate\Support\Facades\Auth;
 use App\Models\PropertyFacility;
+use App\Models\City;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ManajementPropertiesController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 8);
+        // Default 5 items per page — must match the dropdown default in the view
+        $perPage = $request->input('per_page', 5);
         $statusFilter = $request->input('status', '1'); // Default menampilkan hanya yang aktif
 
-        $query = Property::with(['creator', 'images', 'thumbnail'])
-            ->orderBy('created_at', 'desc');
+        // Sortable columns: name (default asc), city
+        $sortBy = $request->input('sort_by', 'name');
+        $sortDir = $request->input('sort_dir', 'asc');
+        $allowedSorts = ['name', 'city'];
+        if (!in_array($sortBy, $allowedSorts)) { $sortBy = 'name'; }
+        $sortDir = $sortDir === 'desc' ? 'desc' : 'asc';
+
+        $query = Property::with(['creator', 'updater', 'images', 'thumbnail'])
+            ->orderBy($sortBy, $sortDir);
 
         // Filter berdasarkan property_id user (kecuali super admin dan HO role)
         $user = Auth::user();
@@ -73,12 +83,16 @@ class ManajementPropertiesController extends Controller
             return $property;
         });
 
+        // Fetch active cities for the city dropdown in create/edit forms
+        $cities = City::active()->orderBy('city_name')->get();
+
         return view('pages.Properties.m-Properties.index', [
             'generalFacilities' => $generalFacilities,
             'securityFacilities' => $securityFacilities,
             'amenitiesFacilities' => $amenitiesFacilities,
             'facilities' => $facilities,
             'properties' => $properties,
+            'cities' => $cities,
             'per_page' => $perPage,
             'statusFilter' => $statusFilter,
         ]);
@@ -86,12 +100,20 @@ class ManajementPropertiesController extends Controller
 
     public function filter(Request $request)
     {
-        $perPage = $request->input('per_page', 8);
+        // Default 5 items per page — must match the dropdown default in the view
+        $perPage = $request->input('per_page', 5);
         $search = $request->input('search');
         $status = $request->input('status', '1'); // Default aktif
 
-        $query = Property::with(['creator', 'images', 'thumbnail'])
-            ->orderBy('created_at', 'desc');
+        // Sortable columns: name (default asc), city
+        $sortBy = $request->input('sort_by', 'name');
+        $sortDir = $request->input('sort_dir', 'asc');
+        $allowedSorts = ['name', 'city'];
+        if (!in_array($sortBy, $allowedSorts)) { $sortBy = 'name'; }
+        $sortDir = $sortDir === 'desc' ? 'desc' : 'asc';
+
+        $query = Property::with(['creator', 'updater', 'images', 'thumbnail'])
+            ->orderBy($sortBy, $sortDir);
 
         // Filter berdasarkan property_id user (kecuali super admin dan HO role)
         $user = Auth::user();
@@ -131,14 +153,18 @@ class ManajementPropertiesController extends Controller
             ? $query->get()
             : $query->paginate((int) $perPage)->appends($request->all());
 
+        // Fetch active cities for the city dropdown in edit forms
+        $cities = City::active()->orderBy('city_name')->get();
+
         return response()->json([
             'html' => view('pages.Properties.m-Properties.partials.property_table', [
                 'properties' => $properties,
+                'cities' => $cities,
                 'per_page' => $perPage,
                 'generalFacilities' => $generalFacilities,
                 'securityFacilities' => $securityFacilities,
                 'amenitiesFacilities' => $amenitiesFacilities,
-                'facilities' => $facilities, // Tambahkan ini
+                'facilities' => $facilities,
             ])->render(),
             'pagination' => $perPage !== 'all'
                 ? $properties->links()->toHtml()
@@ -249,7 +275,10 @@ class ManajementPropertiesController extends Controller
     {
         $validated = $request->validate([
             'property_name' => 'required',
-            'initial' => 'required|string|max:3',
+            /* Initial field: increased max to 10 chars for longer property codes */
+            'initial' => 'required|string|max:10',
+            /* Property Invoice Code: optional prefix used on printed invoices, max 10 chars */
+            'invoice_code' => 'nullable|string|max:10',
             'property_type' => 'required',
             'gender' => 'nullable|string|in:male,female,mixed',
             'province' => 'required|string',
@@ -261,7 +290,7 @@ class ManajementPropertiesController extends Controller
             'description' => 'nullable|string',
             'latitude' => 'required',
             'longitude' => 'required',
-            'property_images' => 'required|array|min:3|max:10', // Minimal 3 foto
+            'property_images' => 'required|array|min:3|max:30', // Minimal 3 foto
             'property_images.*' => 'required|image|mimes:jpeg,jpg,png|max:5120',
             'facilities' => 'nullable|array',
             'thumbnail_index' => 'required|integer',
@@ -314,6 +343,8 @@ class ManajementPropertiesController extends Controller
         $property->gender = ($request->property_type === 'Kos' && $request->gender) ? $request->gender : null;
         $property->name = $request->property_name;
         $property->initial = $initials;
+        /* Persist optional invoice prefix used for receipt/transaction codes (uppercased for consistency with initial) */
+        $property->invoice_code = $request->filled('invoice_code') ? strtoupper($request->invoice_code) : null;
         $property->province = $request->province;
         $property->city = $request->city;
         $property->subdistrict = $request->district;
@@ -331,6 +362,20 @@ class ManajementPropertiesController extends Controller
         $property->status = '1';
         $property->created_by = Auth::id();
         $property->save();
+
+        /* Auto-save new city to m_cities master table if not already present.
+           This allows the city dropdown to accept new cities typed by the user. */
+        if ($request->city) {
+            City::firstOrCreate(
+                ['city_name' => $request->city],
+                [
+                    'province' => $request->province ?? '',
+                    'status' => '1',
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]
+            );
+        }
 
         // Simpan ke tabel m_property_images
         foreach ($imagePaths as $index => $imagePath) {
@@ -354,7 +399,10 @@ class ManajementPropertiesController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'initial' => 'required|string|max:3',
+                /* Initial field: increased max to 10 chars for longer property codes */
+            'initial' => 'required|string|max:10',
+                /* Property Invoice Code: optional prefix used on printed invoices, max 10 chars */
+                'invoice_code' => 'nullable|string|max:10',
                 'tags' => 'required|string',
                 'gender' => 'nullable|string|in:male,female,mixed',
                 'description' => 'required|string',
@@ -449,6 +497,8 @@ class ManajementPropertiesController extends Controller
             $property->update([
                 'name' => $request->input('name'),
                 'initial' => strtoupper($request->input('initial')),
+                /* Persist optional invoice prefix used for receipt/transaction codes */
+                'invoice_code' => $request->filled('invoice_code') ? strtoupper($request->input('invoice_code')) : null,
                 'tags' => $request->input('tags'),
                 'gender' => ($request->input('tags') === 'Kos' && $request->input('gender')) ? $request->input('gender') : null,
                 'description' => $request->input('description'),
@@ -468,6 +518,19 @@ class ManajementPropertiesController extends Controller
                 'updated_by' => Auth::id(),
                 'updated_at' => now(),
             ]);
+
+            /* Auto-save new city to m_cities master table on update */
+            if ($request->input('city')) {
+                City::firstOrCreate(
+                    ['city_name' => $request->input('city')],
+                    [
+                        'province' => $request->input('province') ?? '',
+                        'status' => '1',
+                        'created_by' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                    ]
+                );
+            }
 
             return response()->json([
                 'success' => true,
@@ -507,8 +570,12 @@ class ManajementPropertiesController extends Controller
             ? $query->get()
             : $query->paginate((int) $perPage)->withQueryString();
 
+        // Pass active cities for the city dropdown in edit forms
+        $cities = City::active()->orderBy('city_name')->get();
+
         return view('pages.Properties.m-Properties.partials.property_table', [
             'properties' => $properties,
+            'cities' => $cities,
             'per_page' => $perPage,
         ]);
     }
@@ -652,6 +719,195 @@ class ManajementPropertiesController extends Controller
             }
 
             $facility->update([
+                'status' => $request->status,
+                'updated_by' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status berhasil diubah'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengubah status'
+            ], 500);
+        }
+    }
+
+    /**
+     * List cities with search, status filter, and pagination.
+     * Supports AJAX requests for dynamic filtering.
+     */
+    public function indexCity(Request $request)
+    {
+        $query = City::with(['createdBy', 'updatedBy'])
+            ->when($request->search, function ($q) use ($request) {
+                // Search by city_name or province
+                $q->where(function ($sub) use ($request) {
+                    $sub->where('city_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('province', 'like', '%' . $request->search . '%');
+                });
+            })
+            ->when($request->status, function ($q) use ($request) {
+                // Convert status string to integer for DB query
+                $status = $request->status === 'active' ? 1 : 0;
+                $q->where('status', $status);
+            })
+            ->orderBy('province', 'asc')
+            ->orderBy('city_name', 'asc');
+
+        $perPage = $request->per_page ?? 8;
+        $cities = $perPage === 'all'
+            ? $query->get()
+            : $query->paginate($perPage)->withQueryString();
+
+        // Return partial HTML for AJAX requests
+        if ($request->ajax() || $request->header('X-Requested-With') == 'XMLHttpRequest') {
+            $tableHtml = view('pages.Properties.City_properties.partials.city_table', compact('cities'))->render();
+            $paginationHtml = $cities instanceof \Illuminate\Pagination\LengthAwarePaginator
+                ? $cities->appends($request->input())->links()->toHtml()
+                : '';
+
+            return '<div id="tableContainer">' . $tableHtml . '</div>'
+                 . '<div id="paginationContainer">' . $paginationHtml . '</div>';
+        }
+
+        return view('pages.Properties.City_properties.index', compact('cities'));
+    }
+
+    /**
+     * Store a new city record — validates input, auto-generates slug if empty.
+     */
+    public function storeCity(Request $request)
+    {
+        $validatedData = $request->validate([
+            'city_name' => 'required|string|max:255',
+            'province' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
+            'status' => 'required|boolean',
+        ]);
+
+        // <!-- Resolve the effective slug the same way the City model boot hook would:
+        //      use the explicit slug if provided, otherwise derive it from city_name.
+        //      Doing this here (instead of relying on the model hook) lets the uniqueness
+        //      check below cover the auto-generated value — otherwise an empty slug field
+        //      bypasses validation and the auto-generated slug hits a DB 1062 duplicate. -->
+        $resolvedSlug = $request->filled('slug')
+            ? Str::slug($validatedData['slug'])
+            : Str::slug($validatedData['city_name']);
+
+        // <!-- Reject a slug already used by another city row before it reaches the DB -->
+        if (City::where('slug', $resolvedSlug)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A city with this name already exists',
+                'errors' => ['slug' => ['The slug "' . $resolvedSlug . '" is already used by another city.']],
+            ], 422);
+        }
+
+        try {
+            $city = City::create([
+                'city_name' => $validatedData['city_name'],
+                'province' => $validatedData['province'],
+                'slug' => $resolvedSlug,
+                'status' => $validatedData['status'] ? 1 : 0,
+                'created_by' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'City created successfully',
+                'data' => $city,
+                'redirect_url' => route('cityProperty.index')
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create city',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update an existing city record by ID.
+     */
+    public function updateCity(Request $request, $id)
+    {
+        $validatedData = $request->validate([
+            'city_name' => 'required|string|max:255',
+            'province' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
+            'status' => 'required|boolean',
+        ]);
+
+        try {
+            $city = City::find($id);
+
+            if (!$city) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'City not found'
+                ], 404);
+            }
+
+            // <!-- Resolve the effective slug exactly as the City model boot hook would
+            //      (explicit slug, else derived from city_name). Validating the resolved
+            //      value here closes the gap where an empty slug field skips the unique
+            //      rule and the auto-generated slug then hits a DB 1062 duplicate. -->
+            $resolvedSlug = $request->filled('slug')
+                ? Str::slug($validatedData['slug'])
+                : Str::slug($validatedData['city_name']);
+
+            // <!-- Reject a slug already owned by a different city row (exclude self) -->
+            if (City::where('slug', $resolvedSlug)->where('idrec', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A city with this name already exists',
+                    'errors' => ['slug' => ['The slug "' . $resolvedSlug . '" is already used by another city.']],
+                ], 422);
+            }
+
+            $city->update([
+                'city_name' => $validatedData['city_name'],
+                'province' => $validatedData['province'],
+                'slug' => $resolvedSlug,
+                'status' => $validatedData['status'] ? 1 : 0,
+                'updated_by' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'City updated successfully',
+                'data' => $city,
+                'redirect_url' => route('cityProperty.index')
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update city',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Toggle city status (active/inactive) via AJAX.
+     */
+    public function toggleCityStatus(Request $request)
+    {
+        try {
+            $city = City::find($request->id);
+
+            if (!$city) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'City not found'
+                ], 404);
+            }
+
+            $city->update([
                 'status' => $request->status,
                 'updated_by' => Auth::id(),
             ]);

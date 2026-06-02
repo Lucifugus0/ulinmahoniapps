@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// Fallback room facilities with bullet text (no icons).
+/// Uses Column+Row instead of GridView to avoid excess vertical whitespace.
 class RoomFacilitiesTextGrid extends StatelessWidget {
-  
   final List<String> facilities;
 
   const RoomFacilitiesTextGrid({
@@ -11,59 +12,49 @@ class RoomFacilitiesTextGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     if (facilities.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    final List<Widget> rows = [];
+    for (int i = 0; i < facilities.length; i += 2) {
+      rows.add(Row(
+        children: [
+          Expanded(child: _buildItem(context, facilities[i])),
+          if (i + 1 < facilities.length)
+            Expanded(child: _buildItem(context, facilities[i + 1]))
+          else
+            const Expanded(child: SizedBox.shrink()),
+        ],
+      ));
+    }
 
-    const int crossAxisCount = 2;
-    final double mainAxisSpacing = 16.0;
-    final double crossAxisSpacing = 16.0;
-    const double childAspectRatio = 4.5; // Increased height for better visibility 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: rows,
+    );
+  }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(), 
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: crossAxisSpacing,
-        mainAxisSpacing: mainAxisSpacing,
-        childAspectRatio: childAspectRatio,
-      ),
-      itemCount: facilities.length, 
-      itemBuilder: (context, index) {
-        final featureName = facilities[index]; 
-
-        
-        return Align(
-          alignment: Alignment.centerLeft, 
-          child: Row(
-            mainAxisSize: MainAxisSize.min, 
-            crossAxisAlignment: CrossAxisAlignment.start, 
-            children: [
-              Text(
-                '• ',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 15,
-                ),
-              ),
-              Flexible(
-                child: Text(
-                  featureName,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 15, // Explicitly set font size to 15
-                  ),
-                  softWrap: true,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-              ),
-            ],
+  Widget _buildItem(BuildContext context, String name) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '• ',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15),
           ),
-        );
-      },
+          Flexible(
+            child: Text(
+              name,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
-

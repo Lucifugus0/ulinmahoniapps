@@ -20,11 +20,13 @@ class PropertyTypePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final localizations = AppLocalizations.of(context)!; 
+    final localizations = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final representativePropertiesAsync = ref.watch(representativePropertyTypesProvider);
     return MainLayout(
       currentIndex: 0,
-      backgroundColor: AppColors.backgroundColor,
+      // Use theme-aware background color for dark/light mode
+      backgroundColor: isDark ? const Color(0xFF111827) : AppColors.backgroundColor,
       showBottomNav: true,
       showNavBar: false,
       showContactBar: false,
@@ -33,8 +35,12 @@ class PropertyTypePage extends ConsumerWidget {
         child: Column(
           children: [
             CustomAppBar(
-              title: localizations.propertyTypePageTitle, 
+              title: localizations.propertyTypePageTitle,
               showBackButton: true,
+              // Dark mode: use dark header, Light mode: keep primary green
+              backgroundColor: isDark ? const Color(0xFF1F2937) : AppColors.primaryColor,
+              textColor: Colors.white,
+              backButtonColor: Colors.white,
             ),
             Expanded(
               child: RefreshIndicator(

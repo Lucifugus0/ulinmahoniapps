@@ -190,7 +190,8 @@ class _PromoDetailBannerState extends State<PromoDetailBanner> {
                     effect: ExpandingDotsEffect(
                       dotHeight: 8,
                       dotWidth: 8,
-                      activeDotColor: AppColors.primaryColor,
+                      // Use primaryAdaptive for dark/light mode compatibility
+                      activeDotColor: AppColors.primaryAdaptive(context),
                       dotColor: Colors.white.withValues(alpha: 0.5),
                       expansionFactor: 3,
                       spacing: 6,

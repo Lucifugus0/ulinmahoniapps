@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../data/repositories/auth_repository.dart';
 import '../model/auth_model.dart';
@@ -8,6 +7,7 @@ import '../model/apple/applesignin_model.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../core/services/chat_background_service.dart';
+import '../../../../core/services/fcm_service.dart';
 import '../../../../core/services/apple_multi_account_storage.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -16,7 +16,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 class AuthState {
   final bool isLoggedIn;
-  final AsyncValue<User?> user; 
+  final AsyncValue<User?> user;
   final String? token;
   final String? errorMessage;
 
@@ -42,11 +42,17 @@ class AuthState {
   }
 }
 
-
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this.ref) : super(AuthState());
-
-  final Ref ref;
+/// Auth notifier — migrated from StateNotifier to Notifier for Riverpod 3.x.
+/// Uses build() instead of constructor for initial state.
+/// ref is available as a property (no need to store it).
+class AuthNotifier extends Notifier<AuthState> {
+  /// Returns initial state and triggers auth status check via build method
+  @override
+  AuthState build() {
+    // Trigger async auth check after initialization
+    checkAuthStatus();
+    return AuthState();
+  }
 
 
   Future<void> checkAuthStatus() async {
@@ -89,6 +95,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Validate and refresh from server
       await refreshUserProfile();
 
+      /// Sync FCM device token to backend on session restore
+      /// (mirrors the sync done after fresh login)
+      try {
+        await FCMService().syncTokenToBackend();
+      } catch (e) {
+        AppLogger.w('FCM token sync on session restore failed: $e', 'AUTH-PROVIDER');
+      }
+
     } catch (e) {
       AppLogger.e('Failed to parse local user data, logging out', e, StackTrace.current, 'AUTH-PROVIDER');
       await repository.logout();
@@ -113,11 +127,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     switch (result) {
       case Success(:final data):
-        // Check if email is verified
+        // Log warning if email not verified — popup will be shown on HomePage
         if (!data.isEmailVerified) {
-          AppLogger.w('Email not verified for user ID: $currentUserId, logging out', 'AUTH-PROVIDER');
-          await logout();
-          return;
+          AppLogger.w('Email not verified for user ID: $currentUserId — popup will show on home', 'AUTH-PROVIDER');
         }
 
         // Update local storage
@@ -191,9 +203,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setInt('user_id', user.id);
 
+          /// Save auth token to SharedPreferences for the current session even
+          /// if Remember Me is off — required so DioClient's AuthInterceptor and
+          /// FCMService can attach the Bearer token. Cleared on logout.
+          await prefs.setString('auth_token', data.token);
+
           // Start background polling for chat notifications
           await ChatBackgroundService().startPolling();
           AppLogger.s('Background polling started for user ${user.id}', 'AUTH-PROVIDER');
+
+          /// Sync FCM device token to backend after successful login
+          try {
+            await FCMService().syncTokenToBackend();
+          } catch (e) {
+            AppLogger.w('FCM token sync after login failed: $e', 'AUTH-PROVIDER');
+          }
 
           state = state.copyWith(
             isLoggedIn: true,
@@ -507,15 +531,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final repository = ref.read(authRepositoryProvider);
     final currentUser = state.user.value;
 
-    // TODO: Uncomment when backend FCM endpoints ready
-    // Delete FCM token first
-    // try {
-    //   await FCMService().deleteToken();
-    //   AppLogger.d('FCM token deleted on logout', 'AUTH-PROVIDER');
-    // } catch (e) {
-    //   AppLogger.e('Failed to delete FCM token', e, null, 'AUTH-PROVIDER');
-    //   // Continue with logout even if FCM deletion fails
-    // }
+    /// Delete FCM device token from backend and Firebase on logout
+    try {
+      await FCMService().deleteToken();
+      AppLogger.d('FCM token deleted on logout', 'AUTH-PROVIDER');
+    } catch (e) {
+      AppLogger.e('Failed to delete FCM token', e, null, 'AUTH-PROVIDER');
+      // Continue with logout even if FCM deletion fails
+    }
 
     // Stop background polling
     await ChatBackgroundService().stopPolling();
@@ -544,11 +567,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  
-  
-  final notifier = AuthNotifier(ref);
-  notifier.checkAuthStatus();
-  return notifier;
-});
+/// Global auth provider — migrated from StateNotifierProvider to NotifierProvider
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);

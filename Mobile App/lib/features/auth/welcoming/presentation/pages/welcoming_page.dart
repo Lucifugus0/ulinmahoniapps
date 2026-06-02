@@ -9,6 +9,9 @@ import 'package:ulinmahoniapps/core/constants/appcolor_constants.dart';
 import 'package:ulinmahoniapps/core/utils/app_logger.dart';
 import 'package:ulinmahoniapps/features/auth/login/provider/auth_provider.dart';
 import 'package:ulinmahoniapps/l10n/app_localizations.dart';
+import 'package:ulinmahoniapps/core/provider/language_provider.dart';
+import 'package:ulinmahoniapps/core/theme/theme_provider.dart';
+import 'package:ulinmahoniapps/core/services/version_check_service.dart';
 
 class WelcomePage extends ConsumerStatefulWidget {
   const WelcomePage({super.key});
@@ -26,7 +29,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
   static const double _brandNameFontSize = 32.0;
   static const double _brandNameLetterSpacing = 2.0;
   static const double _buttonHeight = 56.0;
-  static const double _buttonBorderRadius = 12.0;
+  static const double _buttonBorderRadius = 16.0;
   static const double _buttonFontSize = 18.0;
   static const double _buttonPadding = 32.0;
   static const double _signUpFontSize = 15.0;
@@ -39,43 +42,50 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
   @override
   void initState() {
     super.initState();
-    AppLogger.d('🚀 WelcomePage: initState called', 'WELCOME-PAGE');
-    _checkFirstTime();
+    AppLogger.d('WelcomePage: initState called', 'WELCOME-PAGE');
+    // Run version check and video init in parallel for faster startup
     _initializeVideo();
+    _checkFirstTime();
   }
 
   Future<void> _checkFirstTime() async {
-    AppLogger.d('🔍 WelcomePage: Checking authentication status', 'WELCOME-PAGE');
+    AppLogger.d('WelcomePage: Checking version and authentication status', 'WELCOME-PAGE');
     try {
+      // Check app version in parallel — shows force update dialog if outdated
+      // Small delay to let the UI render first so the dialog has a context
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) VersionCheckService.checkVersion(context);
+      });
+
       final prefs = await SharedPreferences.getInstance();
 
       // Check for token and user data in SharedPreferences
       final token = prefs.getString('auth_token');
       final userJson = prefs.getString('user_profile');
 
-      AppLogger.i('📋 WelcomePage: Token exists = ${token != null && token.isNotEmpty}', 'WELCOME-PAGE');
-      AppLogger.i('📋 WelcomePage: User data exists = ${userJson != null && userJson.isNotEmpty}', 'WELCOME-PAGE');
+      AppLogger.i('WelcomePage: Token exists = ${token != null && token.isNotEmpty}', 'WELCOME-PAGE');
+      AppLogger.i('WelcomePage: User data exists = ${userJson != null && userJson.isNotEmpty}', 'WELCOME-PAGE');
 
       // Check auth state from provider
       final authState = ref.read(authProvider);
       final isLoggedIn = authState.isLoggedIn;
       final hasUser = authState.user.value != null;
 
-      AppLogger.i('📋 WelcomePage: Auth provider isLoggedIn = $isLoggedIn', 'WELCOME-PAGE');
-      AppLogger.i('📋 WelcomePage: Auth provider hasUser = $hasUser', 'WELCOME-PAGE');
+      AppLogger.i('WelcomePage: Auth provider isLoggedIn = $isLoggedIn', 'WELCOME-PAGE');
+      AppLogger.i('WelcomePage: Auth provider hasUser = $hasUser', 'WELCOME-PAGE');
 
       // Check if BOTH token AND user data exist in SharedPreferences
       final hasToken = token != null && token.isNotEmpty;
       final hasUserData = userJson != null && userJson.isNotEmpty;
 
       if (hasToken && hasUserData && mounted) {
-        AppLogger.s('✅ WelcomePage: User is authenticated, navigating to login page for biometric', 'WELCOME-PAGE');
+        AppLogger.s('WelcomePage: User is authenticated, navigating to login page for biometric', 'WELCOME-PAGE');
         AppLogger.d('   Token: ${token.substring(0, token.length > 20 ? 20 : token.length)}...', 'WELCOME-PAGE');
         AppLogger.d('   User ID: ${authState.user.value?.id}', 'WELCOME-PAGE');
         // User has Remember Me enabled, go to login page for biometric auth
         context.go('/login');
       } else {
-        AppLogger.i('👋 WelcomePage: No authentication found, showing welcome page', 'WELCOME-PAGE');
+        AppLogger.i('WelcomePage: No authentication found, showing welcome page', 'WELCOME-PAGE');
         if (!hasToken) {
           AppLogger.d('   Reason: No token found', 'WELCOME-PAGE');
         }
@@ -84,14 +94,14 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
         }
       }
     } catch (e, stackTrace) {
-      AppLogger.e('❌ WelcomePage: Error checking authentication', e, stackTrace, 'WELCOME-PAGE');
+      AppLogger.e('WelcomePage: Error checking authentication', e, stackTrace, 'WELCOME-PAGE');
       // On error, show welcome page (safe default)
-      AppLogger.w('⚠️ WelcomePage: Showing welcome page due to error', 'WELCOME-PAGE');
+      AppLogger.w('WelcomePage: Showing welcome page due to error', 'WELCOME-PAGE');
     }
   }
 
   Future<void> _initializeVideo() async {
-    AppLogger.d('🎥 WelcomePage: Initializing video player', 'WELCOME-PAGE');
+    AppLogger.d('WelcomePage: Initializing video player', 'WELCOME-PAGE');
     try {
       _controller = VideoPlayerController.asset(AppVideo.homeVideo)
         ..initialize().then((_) {
@@ -102,53 +112,64 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             _controller.setLooping(true);
             _controller.setVolume(0); // Mute the video
             _controller.play();
-            AppLogger.s('✅ WelcomePage: Video initialized and playing', 'WELCOME-PAGE');
+            AppLogger.s('WelcomePage: Video initialized and playing', 'WELCOME-PAGE');
           }
         }).catchError((error) {
-          AppLogger.e('❌ WelcomePage: Error initializing video', error, StackTrace.current, 'WELCOME-PAGE');
+          AppLogger.e('WelcomePage: Error initializing video', error, StackTrace.current, 'WELCOME-PAGE');
         });
     } catch (e, stackTrace) {
-      AppLogger.e('❌ WelcomePage: Failed to create video controller', e, stackTrace, 'WELCOME-PAGE');
+      AppLogger.e('WelcomePage: Failed to create video controller', e, stackTrace, 'WELCOME-PAGE');
     }
   }
 
   @override
   void dispose() {
-    AppLogger.d('🗑️ WelcomePage: Disposing video controller', 'WELCOME-PAGE');
+    AppLogger.d('WelcomePage: Disposing video controller', 'WELCOME-PAGE');
     _controller.dispose();
     super.dispose();
   }
 
   void _navigateToLogin() {
-    AppLogger.d('🔐 WelcomePage: Navigating to login page', 'WELCOME-PAGE');
+    AppLogger.d('WelcomePage: Navigating to login page', 'WELCOME-PAGE');
     if (!mounted) {
-      AppLogger.w('⚠️ WelcomePage: Widget not mounted, skipping navigation', 'WELCOME-PAGE');
+      AppLogger.w('WelcomePage: Widget not mounted, skipping navigation', 'WELCOME-PAGE');
       return;
     }
     context.push('/home');
-    AppLogger.i('➡️ WelcomePage: Navigation to login initiated', 'WELCOME-PAGE');
+    AppLogger.i('WelcomePage: Navigation to login initiated', 'WELCOME-PAGE');
   }
 
   void _navigateToRegister() {
-    AppLogger.d('📝 WelcomePage: Navigating to register page', 'WELCOME-PAGE');
+    AppLogger.d('WelcomePage: Navigating to register page', 'WELCOME-PAGE');
     if (!mounted) {
-      AppLogger.w('⚠️ WelcomePage: Widget not mounted, skipping navigation', 'WELCOME-PAGE');
+      AppLogger.w('WelcomePage: Widget not mounted, skipping navigation', 'WELCOME-PAGE');
       return;
     }
     context.push('/register');
-    AppLogger.i('➡️ WelcomePage: Navigation to register initiated', 'WELCOME-PAGE');
+    AppLogger.i('WelcomePage: Navigation to register initiated', 'WELCOME-PAGE');
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final localizations = AppLocalizations.of(context)!;
-    AppLogger.d('🎨 WelcomePage: Building UI (video initialized: $_isVideoInitialized)', 'WELCOME-PAGE');
+    final currentLocale = ref.watch(localeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    AppLogger.d('WelcomePage: Building UI (video initialized: $_isVideoInitialized)', 'WELCOME-PAGE');
 
     return Scaffold(
       body: Stack(
         children: [
-          // Video Background
+          // Static image placeholder — loads instantly while video buffers
+          SizedBox.expand(
+            child: Image.asset(
+              AppImage.defaultRoomImage,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+          ),
+
+          // Video Background — overlays the static image once ready
           if (_isVideoInitialized)
             SizedBox.expand(
               child: FittedBox(
@@ -157,20 +178,6 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   width: _controller.value.size.width,
                   height: _controller.value.size.height,
                   child: VideoPlayer(_controller),
-                ),
-              ),
-            )
-          else
-            // Fallback gradient while video is loading
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primaryColor.withValues(alpha: _gradientOpacity),
-                    AppColors.secondaryColor.withValues(alpha: _gradientOpacity),
-                  ],
                 ),
               ),
             ),
@@ -191,6 +198,80 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Top bar: language toggle + theme toggle
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // Dark/Light mode toggle
+                        GestureDetector(
+                          onTap: () => ref.read(themeProvider.notifier).toggle(),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: Icon(
+                              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Language switcher pill — cycles through ID → EN → ZH
+                        GestureDetector(
+                          onTap: () {
+                            // Cycle: id → en → zh → id
+                            final code = currentLocale.languageCode;
+                            final newLocale = code == 'id'
+                                ? const Locale('en')
+                                : code == 'en'
+                                    ? const Locale('zh')
+                                    : const Locale('id');
+                            ref.read(localeProvider.notifier).state = newLocale;
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.language,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  currentLocale.languageCode.toUpperCase(),
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   const Spacer(),
 
                   // Logo and Brand Name Section
@@ -257,8 +338,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                               ),
                             ],
                           ),
-                          children: const [
-                            TextSpan(
+                          // Remove const from children list — TextSpan uses non-const primaryAdaptive(context)
+                          children: [
+                            const TextSpan(
                               text: 'ULIN ',
                               style: TextStyle(
                                 color: AppColors.secondaryColor,
@@ -267,7 +349,8 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                             TextSpan(
                               text: 'MAHONI',
                               style: TextStyle(
-                                color: AppColors.primaryColor,
+                                // Use adaptive primary color for brand name text
+                                color: AppColors.primaryAdaptive(context),
                               ),
                             ),
                           ],
@@ -307,26 +390,42 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                         ),
                         const SizedBox(height: 32),
 
-                        // "Get Started" Button (Primary - goes to Login)
+                        // "Get Started" Button — liquid glass style with transparency
                         SizedBox(
                           width: double.infinity,
                           height: _buttonHeight,
-                          child: ElevatedButton(
-                            onPressed: _navigateToLogin,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryColor,
-                              foregroundColor: AppColors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(_buttonBorderRadius),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: Text(
-                              localizations.welcomeGetStartedButton,
-                              style: const TextStyle(
-                                fontSize: _buttonFontSize,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(_buttonBorderRadius),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  // Semi-transparent liquid glass surface
+                                  // Use primaryAdaptive for the liquid glass button surface color
+                  color: AppColors.primaryAdaptive(context).withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(_buttonBorderRadius),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.30),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: TextButton(
+                                  onPressed: _navigateToLogin,
+                                  style: TextButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(_buttonBorderRadius),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    localizations.welcomeGetStartedButton,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: _buttonFontSize,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),

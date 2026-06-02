@@ -46,7 +46,7 @@
                 </div>
             </div>
         </header>
-        <h2 class="text-lg font-semibold text-slate-800 mb-2">{{ $CRM_ISS->nilai }}</h2>
+        <h2 class="text-lg font-semibold text-slate-800 mb-2">{{ $CRM_ISS->nilai ?? 'Ulin Mahoni' }}</h2>
         <div class="text-xs font-semibold text-slate-400 uppercase mb-1">Sales</div>
         <div class="flex items-start">
             <div class="text-3xl font-bold text-slate-800 mr-2">${{ number_format($dataFeed->sumDataSet(3, 1), 0) }}</div>

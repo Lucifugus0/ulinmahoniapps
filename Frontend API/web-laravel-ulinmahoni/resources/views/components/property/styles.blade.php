@@ -1,3 +1,5 @@
+<!-- Liquid glass design: property detail styles use glass CSS variables from homepage/styles for
+     translucent backgrounds, rounded corners, and soft depth shadows -->
 <style>
         :root {
             --teal-600: #0d9488;
@@ -47,10 +49,11 @@
             background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
         }
 
+        /* Liquid glass feature icon — translucent circle with glass background */
         .feature-icon {
             width: 40px;
             height: 40px;
-            background-color: #f3f4f6;
+            background: var(--glass-bg, rgba(255, 255, 255, 0.18));
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -106,10 +109,11 @@
         }
 
         /* Additional styles for property details page */
+        /* Liquid glass property image — uses glass radius token for rounded corners */
         .property-image {
             position: relative;
             height: 500px;
-            border-radius: 0.5rem;
+            border-radius: var(--radius-lg, 1.75rem);
             overflow: hidden;
         }
 
@@ -130,12 +134,15 @@
             font-size: 0.875rem;
         }
 
+        /* Liquid glass price tag — frosted card with glass background and shadow */
         .price-tag {
-            background-color: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
+            background: var(--glass-bg, rgba(255, 255, 255, 0.18));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35));
+            border-radius: var(--radius-lg, 1.75rem);
             padding: 1.5rem;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.10));
         }
 
         .amenity-icon {
@@ -150,12 +157,13 @@
             margin-right: 0.75rem;
         }
 
+        /* Liquid glass action button — glass-radius rounded corners */
         .action-button {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
+            border-radius: var(--radius-lg, 1.75rem);
             font-weight: 500;
             transition: all 0.2s;
         }

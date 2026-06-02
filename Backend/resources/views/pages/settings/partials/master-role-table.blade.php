@@ -1,8 +1,12 @@
+{{-- Table rows for Access Management page --}}
+{{-- Styled to match All Bookings table: consistent text colors, badge styling, dark mode support --}}
 @forelse ($adminUsers as $index => $user)
     <tr class="hover:bg-gray-50 transition-colors duration-150">
+        {{-- Row number --}}
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             {{ $perPage === 'all' ? $index + 1 : ($adminUsers->currentPage() - 1) * $adminUsers->perPage() + $index + 1 }}
         </td>
+        {{-- User info: avatar + name + username --}}
         <td class="px-6 py-4 whitespace-nowrap">
             <div class="flex items-center">
                 <div class="flex-shrink-0 h-10 w-10">
@@ -21,37 +25,41 @@
                 </div>
             </div>
         </td>
+        {{-- Email --}}
         <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">{{ $user->email }}</div>
         </td>
+        {{-- Current Role badge — uses soft colored pill matching All Bookings status badge style --}}
         <td class="px-6 py-4 whitespace-nowrap">
             @if ($user->role)
                 <span
-                    class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                     {{ $user->role->name }}
                 </span>
             @else
                 <span
-                    class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                     No Role
                 </span>
             @endif
         </td>
+        {{-- Sidebar Access button — solid style for clear visibility --}}
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
             <button
                 onclick="manageAccessRights({{ $user->id }}, '{{ addslashes($user->first_name ?? $user->name) }}')"
-                class="btn-access-rights inline-flex items-center px-3 py-2 border border-blue-600 text-sm leading-4 font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150">
-                <i class="fas fa-key mr-2"></i>
-                Sidebar Menu
+                class="inline-flex items-center px-3 py-1.5 text-xs leading-5 font-semibold rounded-full bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150">
+                <i class="fas fa-key mr-1.5"></i>
+                {{ __('ui.settings_sidebar_menu') }}
             </button>
         </td>
+        {{-- Dashboard Widgets button — solid style for clear visibility --}}
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
             @if ($user->role)
                 <button
                     onclick="manageDashboardWidgets({{ $user->role->id }}, '{{ addslashes($user->role->name) }}')"
-                    class="btn-widgets inline-flex items-center px-3 py-2 border border-purple-600 text-sm leading-4 font-medium rounded-md text-purple-600 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-150">
-                    <i class="fas fa-th-large mr-2"></i>
-                    Widgets
+                    class="inline-flex items-center px-3 py-1.5 text-xs leading-5 font-semibold rounded-full bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-150">
+                    <i class="fas fa-th-large mr-1.5"></i>
+                    {{ __('ui.dashboard_widgets') }}
                 </button>
             @else
                 <span class="text-xs text-gray-500 italic">{{ __('ui.settings_no_role_assigned') }}</span>

@@ -18,8 +18,8 @@
             </div>
         </div>
 
-        <!-- Role Assignment Card -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <!-- Role Assignment Card — uses search-filter-container class for dark mode support (same as All Bookings) -->
+        <div class="search-filter-container bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <!-- Search and Filter Section -->
             <div class="p-4 border-b border-gray-200">
                 <form id="searchForm" method="GET" action="{{ route('master-role-management') }}">
@@ -104,7 +104,7 @@
         </div>
 
         <!-- Information Card -->
-        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="info-card mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div class="flex items-start">
                 <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
                 <div>
@@ -579,6 +579,150 @@
             font-size: 12px;
             font-weight: 500;
         }
+
+        /* ===== Dark mode overrides for Access Management modals ===== */
+
+        /* Modal container backgrounds */
+        html.dark #accessRightsModal > div,
+        html.dark #dashboardWidgetsModal > div {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+
+        /* Modal headings */
+        html.dark #accessRightsModal .text-gray-900,
+        html.dark #dashboardWidgetsModal .text-gray-900 {
+            color: #f3f4f6 !important;
+        }
+
+        /* Modal sub-text and labels */
+        html.dark #accessRightsModal .text-gray-700,
+        html.dark #dashboardWidgetsModal .text-gray-700 {
+            color: #d1d5db !important;
+        }
+
+        html.dark #accessRightsModal .text-gray-500,
+        html.dark #dashboardWidgetsModal .text-gray-500 {
+            color: #9ca3af !important;
+        }
+
+        html.dark #accessRightsModal .text-gray-800,
+        html.dark #dashboardWidgetsModal .text-gray-800 {
+            color: #e5e7eb !important;
+        }
+
+        /* Filter section backgrounds */
+        html.dark #accessRightsModal .bg-blue-50 {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+        }
+
+        /* Information Card (footer of master-role page) — readable on dark bg */
+        html.dark .info-card.bg-blue-50 {
+            background-color: rgba(30, 58, 138, 0.18) !important;
+            border-color: rgba(59, 130, 246, 0.45) !important;
+        }
+        html.dark .info-card .text-blue-500 { color: #60a5fa !important; }
+        html.dark .info-card .text-blue-700 { color: #bfdbfe !important; }
+        html.dark .info-card .text-blue-800 { color: #dbeafe !important; }
+        html.dark #dashboardWidgetsModal .bg-purple-50 {
+            background-color: rgba(168, 85, 247, 0.15) !important;
+        }
+
+        /* Table header and body */
+        html.dark #accessRightsModal .bg-gray-50,
+        html.dark #dashboardWidgetsModal .bg-gray-50 {
+            background-color: #374151 !important;
+        }
+        html.dark #accessRightsModal tbody.bg-white,
+        html.dark #dashboardWidgetsModal tbody.bg-white {
+            background-color: #1f2937 !important;
+        }
+        html.dark #accessRightsModal .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+        html.dark #dashboardWidgetsModal .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #374151 !important;
+        }
+        html.dark #accessRightsModal .border-gray-200,
+        html.dark #dashboardWidgetsModal .border-gray-200 {
+            border-color: #374151 !important;
+        }
+        html.dark #accessRightsModal .border-b,
+        html.dark #dashboardWidgetsModal .border-b,
+        html.dark #accessRightsModal .border-t,
+        html.dark #dashboardWidgetsModal .border-t {
+            border-color: #374151 !important;
+        }
+
+        /* Table row hover */
+        html.dark #accessRightsModal .hover\:bg-gray-50:hover,
+        html.dark #dashboardWidgetsModal .hover\:bg-gray-50:hover {
+            background-color: #374151 !important;
+        }
+
+        /* Menu detail text in table rows */
+        html.dark #accessRightsModal .text-sm.font-medium.text-gray-900,
+        html.dark #dashboardWidgetsModal .text-sm.font-medium.text-gray-900 {
+            color: #f3f4f6 !important;
+        }
+
+        /* Checkbox dark mode */
+        html.dark .modal-checkbox-round,
+        html.dark .widget-checkbox {
+            background-color: #374151 !important;
+            border-color: #6b7280 !important;
+        }
+        html.dark .modal-checkbox-round:checked {
+            background-color: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+        }
+        html.dark .widget-checkbox:checked {
+            background-color: #a855f7 !important;
+            border-color: #a855f7 !important;
+        }
+
+        /* Badge dark mode */
+        html.dark .badge-active {
+            background-color: rgba(22, 163, 106, 0.2) !important;
+            color: #4ade80 !important;
+        }
+        html.dark .badge-inactive {
+            background-color: rgba(107, 114, 128, 0.2) !important;
+            color: #9ca3af !important;
+        }
+
+        /* Category badge dark mode */
+        html.dark .bg-blue-100 { background-color: rgba(59, 130, 246, 0.2) !important; }
+        html.dark .text-blue-800 { color: #93c5fd !important; }
+        html.dark .bg-purple-100 { background-color: rgba(168, 85, 247, 0.2) !important; }
+        html.dark .text-purple-800 { color: #d8b4fe !important; }
+        html.dark .bg-green-100 { background-color: rgba(34, 197, 94, 0.2) !important; }
+        html.dark .text-green-800 { color: #86efac !important; }
+        html.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.2) !important; }
+        html.dark .text-emerald-800 { color: #6ee7b7 !important; }
+        html.dark .bg-orange-100 { background-color: rgba(249, 115, 22, 0.2) !important; }
+        html.dark .text-orange-800 { color: #fdba74 !important; }
+        html.dark .bg-pink-100 { background-color: rgba(236, 72, 153, 0.2) !important; }
+        html.dark .text-pink-800 { color: #f9a8d4 !important; }
+
+        /* Select dropdown dark mode */
+        html.dark #accessRightsModal select,
+        html.dark #dashboardWidgetsModal select {
+            background-color: #374151 !important;
+            color: #e5e7eb !important;
+            border-color: #4b5563 !important;
+        }
+
+        /* Cancel button dark mode */
+        html.dark #accessRightsModal .bg-gray-200,
+        html.dark #dashboardWidgetsModal .bg-gray-200 {
+            background-color: #4b5563 !important;
+            color: #e5e7eb !important;
+        }
+
+        /* Close X button */
+        html.dark #accessRightsModal .text-gray-400,
+        html.dark #dashboardWidgetsModal .text-gray-400 {
+            color: #9ca3af !important;
+        }
     </style>
 
     <script>
@@ -780,7 +924,18 @@
                             },
                         }).showToast();
 
+                        // Capture the saved user before closing (closeAccessRightsModal nulls currentUserId)
+                        const savedUserId = currentUserId;
                         closeAccessRightsModal();
+
+                        // Auto-reload when admin edits their OWN access rights so the sidebar
+                        // reflects the new permissions immediately. The sidebar is rendered server-side
+                        // via Blade authorization directives evaluated at request time, so a fresh page
+                        // load is the cleanest way to apply changes. Editing OTHER users skips reload
+                        // so the admin can iterate through roles without interruption.
+                        if (parseInt(savedUserId) === {{ Auth::id() }}) {
+                            setTimeout(() => window.location.reload(), 1000);
+                        }
                     } else {
                         Toastify({
                             text: data.message || "Failed to update permissions!",
@@ -958,6 +1113,14 @@
                 const childCheckboxes = document.querySelectorAll(
                     `#modalPermissionsTableBody .menu-item[data-main-menu="${mainMenuId}"]:not([data-is-main="true"]) .modal-checkbox-round`
                 );
+
+                // Leaf Main Menu items (Dashboard, Room Availability) have no children — their
+                // checked state is governed directly by the user's permission, not derived from
+                // non-existent children. Skip the recompute so we don't force-uncheck them on load.
+                if (childCheckboxes.length === 0) {
+                    updateModalBadgeStatus(mainMenuCheckbox);
+                    return;
+                }
 
                 const checkedCount = Array.from(childCheckboxes).filter(cb => cb.checked).length;
                 mainMenuCheckbox.checked = checkedCount > 0;

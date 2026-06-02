@@ -22,7 +22,7 @@
             <!-- Logo -->
             <a class="flex flex-row gap-3 items-center" href="{{ route('dashboard') }}">
                 <img src="/images/Logo.png" alt="" class='w-10 h-10'>
-                <p class="text-white text-center">{{ $CRM_ISS->nilai }}</p>
+                <p class="text-white text-center">{{ $CRM_ISS->nilai ?? 'Ulin Mahoni' }}</p>
             </a>
         </div>
 

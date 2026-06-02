@@ -106,6 +106,71 @@ class Room extends Model
 
 
     /**
+     * Compute whether a room is available based on rental type.
+     * Daily rooms (periode_daily = 1) are always available.
+     * Monthly-only rooms check t_booking + t_transactions for active bookings.
+     *
+     * @param int $roomId
+     * @param bool|int $periodDaily
+     * @param \Carbon\Carbon|string|null $checkIn
+     * @param \Carbon\Carbon|string|null $checkOut
+     * @return bool
+     */
+    public static function computeAvailability($roomId, $periodDaily, $checkIn = null, $checkOut = null)
+    {
+        // Daily rooms are always considered available
+        if ($periodDaily) {
+            return true;
+        }
+
+        // Monthly-only rooms: check for conflicting active bookings
+        $query = \DB::table('t_booking')
+            ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+            ->where('t_booking.room_id', $roomId)
+            ->where('t_booking.status', 1)
+            ->whereNull('t_booking.check_out_at')
+            ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired', 'checked_out', 'rejected']);
+
+        if ($checkIn && $checkOut) {
+            // Date range specified: check for overlapping bookings
+            $query->where('t_transactions.check_in', '<', $checkOut)
+                  ->where('t_transactions.check_out', '>', $checkIn);
+        }
+        // No dates: any active not-yet-checked-out booking blocks the room.
+        // The scheduled check_out passing alone does NOT release the room —
+        // admin must perform the physical checkout (sets check_out_at) first.
+        // Renewals naturally extend occupancy because the renewal is its own
+        // active row in t_booking with check_out_at NULL.
+
+        return !$query->exists();
+    }
+
+    /**
+     * Query scope: filter to available rooms only.
+     * Daily rooms (periode_daily = 1) always pass.
+     * Monthly-only rooms must have no active not-yet-checked-out booking
+     * (i.e. admin must have performed the physical checkout).
+     */
+    public function scopeAvailableRooms($query)
+    {
+        return $query->where(function ($q) {
+            // Daily rooms are always available
+            $q->where('m_rooms.periode_daily', 1)
+              // Monthly rooms: no active booking still occupying the room.
+              // Past check_out alone does NOT free the room — admin must check out.
+              ->orWhereNotExists(function ($sub) {
+                  $sub->select(\DB::raw(1))
+                      ->from('t_booking')
+                      ->join('t_transactions', 't_booking.order_id', '=', 't_transactions.order_id')
+                      ->whereColumn('t_booking.room_id', 'm_rooms.idrec')
+                      ->where('t_booking.status', 1)
+                      ->whereNull('t_booking.check_out_at')
+                      ->whereNotIn('t_transactions.transaction_status', ['cancelled', 'expired', 'checked_out', 'rejected']);
+              });
+        });
+    }
+
+    /**
      * Get the property that owns the room.
      */
     public function property()
@@ -306,10 +371,13 @@ class Room extends Model
                     WHERE idrec IN ($placeholders)
                 ", $facilityIds);
 
+                // <!-- Multi-language: parse facility name by current locale with fallback -->
+                $locale = app()->getLocale();
                 $facilities = [];
                 foreach ($facilityRecords as $record) {
                     $facilities[] = [
-                        'name' => $record->facility,
+                        'name' => \App\Helpers\DescriptionHelper::get($record->facility ?? '', $locale),
+                        'name_parsed' => \App\Helpers\DescriptionHelper::parse($record->facility ?? ''),
                         'icon' => $record->icon ?? null
                     ];
                 }

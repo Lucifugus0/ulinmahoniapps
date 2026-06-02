@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $house['name'] }} - Property Details</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
+    <script>if (localStorage.getItem('dark-mode') !== 'false') document.documentElement.classList.add('dark');</script>
     <style>
     .image-gallery {
             --gap: 1rem;
@@ -300,11 +301,27 @@
                                     <i class="fas fa-info-circle mr-2 text-teal-600"></i>
                                     Harga sudah termasuk PPN
                                 </p>
-                                <p class="flex items-center mt-1">
-                                    <i class="fas fa-credit-card mr-2 text-teal-600"></i>
-                                    Pembayaran dengan metode transfer bank
-                                </p>
                             </div>
+                            <!-- Payment Methods from CMS -->
+                            @if(isset($footerPayments) && $footerPayments->count() > 0)
+                                <p class="mt-3 text-xs text-gray-500 font-medium">{{ __('properties.price_info.accepted_payments') }}</p>
+                                <div class="mt-1.5 flex flex-wrap gap-2">
+                                    @foreach($footerPayments as $payment)
+                                        @php
+                                            $iconUrl = $payment->icon_image;
+                                            if ($iconUrl && !str_starts_with($iconUrl, 'http')) {
+                                                $iconUrl = rtrim(config('app.admin_url', env('ADMIN_URL', '')), '/') . '/storage/' . $iconUrl;
+                                            }
+                                        @endphp
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-gray-500 border border-gray-200">
+                                            @if($iconUrl)
+                                                <img src="{{ $iconUrl }}" alt="{{ $payment->name }}" class="h-4 object-contain">
+                                            @endif
+                                            {{ $payment->name }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -316,9 +333,9 @@
                 <div class="lg:col-span-2">
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">Tentang Properti</h2>
                     <div class="prose max-w-none">
-                        <p class="text-gray-600">
-                            {{ $house['description'] }}
-                        </p>
+                        <div class="text-gray-600">
+                            {!! \App\Helpers\DescriptionHelper::getHtml($house['description'] ?? '', app()->getLocale()) !!}
+                        </div>
                     </div>
 
                     <!-- Room Facilities -->
@@ -404,7 +421,7 @@
 
                     <!-- Rooms Section -->
                     <div id="rooms-section" class="mt-12">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Kamar Tersedia</h2>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Semua Kamar</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             @forelse($house['rooms'] as $room)
@@ -449,7 +466,7 @@
 
                                     <div class="p-6">
                                         <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $room['name'] }}</h3>
-                                        <p class="text-gray-600 text-sm mb-4">{{ $room['descriptions'] }}</p>
+                                        <div class="text-gray-600 text-sm mb-4">{!! \App\Helpers\DescriptionHelper::getHtml($room['descriptions'] ?? '', app()->getLocale()) !!}</div>
 
                                         <div class="mb-4">
                                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Room Facilities:</h4>

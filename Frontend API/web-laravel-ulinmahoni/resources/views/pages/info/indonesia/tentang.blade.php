@@ -5,14 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tentang Ulin Mahoni - Solusi Properti Terpercaya</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <!-- Styles -->
     @include('components.property.styles')
     @include('components.homepage.styles')
-    <!-- Dark mode: apply 'dark' class before render to prevent flash of light mode -->
+    {{-- Dark mode: apply only when localStorage explicitly says 'true' — matches the header
+         and homepage convention so the page and header agree on the initial theme. --}}
     <script>if (localStorage.getItem('dark-mode') === 'true') document.documentElement.classList.add('dark');</script>
     <style>
-        /* Full-viewport fixed video background — matches kerjasama page layout */
+        /* Video background fixed below header (header ~72px tall) */
         .video-wrapper {
             position: fixed;
             top: 0;
@@ -24,40 +26,51 @@
         }
         .video-background {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            min-width: 100%;
-            min-height: 100%;
-            width: auto;
-            height: auto;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            
+            
+            object-fit: cover;
             z-index: 1;
         }
+        /* Overlay — soft white wash in light mode, dark gradient in dark mode. */
         .video-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
+            background: linear-gradient(to bottom, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.30) 100%);
             z-index: 2;
         }
+        html.dark .video-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
+        }
+        /* Push page content below the fixed header */
+        main.relative {
+            padding-top: 72px;
+        }
 
-        /* Content containers — 50% transparent, same as header */
+        /* Glass content card — opaque white in light mode keeps dark Tailwind text readable;
+           dark mode override below drops it back to translucent dark glass. */
         .content-card {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             border-radius: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.50);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             padding: 2rem;
         }
 
         /* Dark mode overrides for content containers */
         html.dark .content-card {
-            background: rgba(17, 24, 39, 0.5) !important;
-            border-color: rgba(75, 85, 99, 0.5) !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.10) !important;
             color: #e5e7eb;
         }
         html.dark .content-card h1,
@@ -80,17 +93,14 @@
         }
     </style>
 </head>
-<body class="font-inter antialiased bg-white text-gray-900 tracking-tight video-page">
+<body class="font-inter antialiased text-gray-900 tracking-tight video-page">
     <!-- Header -->
     @include('components.homepage.header')
 
     <main class="relative">
-        <!-- Video Background — full-viewport fixed, same as kerjasama page -->
+        <!-- Image Background — fixed behind content -->
         <div class="video-wrapper">
-            <video class="video-background" autoplay loop muted playsinline>
-                <source src="{{ asset('images/assets/My_Movie.mp4') }}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+            <img src="{{ asset('images/assets/pics/WhatsApp Image 2025-02-20 at 14.30.45.jpeg') }}" alt="Background" class="video-background">
             <div class="video-overlay"></div>
         </div>
 

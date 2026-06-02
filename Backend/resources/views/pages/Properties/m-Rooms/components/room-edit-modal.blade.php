@@ -28,8 +28,8 @@
         <div class="bg-white rounded-2xl shadow-lg overflow-auto w-3/4 max-h-full flex flex-col text-left"
             @click.outside="editModalOpen = true" @keydown.escape.window="editModalOpen = false">
 
-            <!-- Modal header with step indicator -->
-            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <!-- Modal header with step indicator — room-edit-modal-header class for dark mode override in app.css -->
+            <div class="room-edit-modal-header px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div class="flex justify-between items-center mb-4">
                     <div class="font-bold text-xl text-gray-800">{{ __('ui.room_edit_title') }}</div>
                     <button type="button"
@@ -169,11 +169,11 @@
                                     <select id="edit_room_name" name="room_name" required
                                         class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         x-model="roomData.room_name">
+                                        {{-- Room type dropdown — populated from m_room_name_types master table --}}
                                         <option value="">{{ __('ui.room_select_type') }}</option>
-                                        <option value="Standar">Standar</option>
-                                        <option value="Superior">Superior</option>
-                                        <option value="Deluxe">Deluxe</option>
-                                        <option value="Suite">Suite</option>
+                                        @foreach($roomNameTypes as $type)
+                                            <option value="{{ $type->name }}">{{ $type->name }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
 
@@ -206,14 +206,17 @@
                                 </div>
                             </div>
 
+                            <!-- Room Description Multi-language -->
                             <div>
-                                <label for="edit_description"
-                                    class="block text-sm font-semibold text-gray-700 mb-2">
-                                    {{ __('ui.room_description_label') }} <span class="text-red-500">*</span>
-                                </label>
-                                <textarea id="edit_description" name="description" rows="4" required
-                                    class="w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    placeholder="{{ __('ui.room_description_placeholder') }}" x-model="roomData.description"></textarea>
+                                <x-multilang-textarea
+                                    name="description"
+                                    :value="''"
+                                    :required="true"
+                                    :rows="4"
+                                    :placeholder="__('ui.room_description_placeholder')"
+                                    :label="__('ui.room_description_label')"
+                                    xModel="roomData.description"
+                                />
                             </div>
                         </div>
                     </div>
@@ -247,23 +250,13 @@
                                 </div>
                             </div>
 
+                            <!-- Daily type: hide price input, show message to use daily price management -->
                             <div x-show="selectedPriceType === 'daily'" x-transition>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    {{ __('ui.room_daily_price') }} <span class="text-red-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500">Rp</span>
-                                    </div>
-                                    <input type="text" x-ref="dailyPriceInput"
-                                        class="w-full pl-10 border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="{{ __('ui.room_daily_price_placeholder') }}" x-model="dailyPriceFormatted"
-                                        @input="updateDailyPrice($event.target.value)">
-                                    <!-- Hidden input untuk backend -->
-                                    <input type="hidden" name="daily_price" x-model="dailyPrice">
-                                </div>
-                                <p x-show="dailyPriceError" class="text-red-500 text-xs mt-1"
-                                    x-text="dailyPriceError"></p>
+                                <p class="text-sm text-blue-600 font-medium bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                                    {{ __('ui.room_daily_use_management') }}
+                                </p>
+                                <!-- Hidden inputs to preserve daily price data -->
+                                <input type="hidden" name="daily_price" x-model="dailyPrice">
                             </div>
 
                             <div x-show="selectedPriceType === 'monthly'" x-transition class="mt-4">
@@ -319,7 +312,7 @@
                                                         @if (!empty($facility->icon))
                                                             <span class="iconify text-lg" data-icon="{{ $facility->icon }}"></span>
                                                         @endif
-                                                        {{ $facility->facility }}
+                                                        {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                                                     </span>
                                                     @if (!empty($facility->description))
                                                         <span class="block text-xs text-gray-500 mt-1">
@@ -356,7 +349,7 @@
                                 <label class="block text-sm font-semibold text-gray-700 mb-3">
                                     {{ __('ui.room_photos_label') }} <span class="text-red-500">*</span>
                                     <span class="text-sm font-normal text-gray-500">
-                                        (Minimal 3 foto, maksimal 5 foto - <span x-text="editRemainingSlots"></span> slot tersisa)
+                                        ({{ __('ui.room_photos_min_max') }} - <span x-text="editRemainingSlots"></span> {{ __('ui.room_slots_remaining') }})
                                     </span>
                                 </label>
 
@@ -394,7 +387,7 @@
                                                 {{ __('ui.room_click_photo_thumbnail') }}
                                             </p>
                                             <p class="text-xs text-gray-500">
-                                                Pastikan memilih foto terbaik sebagai thumbnail karena ini akan menjadi gambar utama kamar Anda.
+                                                {{ __('ui.room_best_thumbnail_hint') }}
                                             </p>
                                         </div>
                                     </div>
@@ -417,7 +410,7 @@
                                                 <input id="edit_room_images" name="room_images[]" type="file" multiple accept="image/*"
                                                     @change="handleEditFileSelect($event)" class="sr-only">
                                             </label>
-                                            <p class="pl-1">atau drag and drop</p>
+                                            <p class="pl-1">{{ __('ui.or_drag_and_drop') }}</p>
                                         </div>
                                         <p class="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
                                         <p class="text-xs text-blue-600" x-text="`Dapat upload ${editRemainingSlots} foto lagi`"></p>
@@ -430,8 +423,8 @@
                                         <svg class="w-12 h-12 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
-                                        <p class="text-sm text-green-600 font-medium">5 foto telah diupload!</p>
-                                        <p class="text-xs text-green-500">Maksimal foto telah tercapai</p>
+                                        <p class="text-sm text-green-600 font-medium" x-text="editAllImages.length + ' {{ __('ui.photos_uploaded') }}!'"></p>
+                                        <p class="text-xs text-green-500">{{ __('ui.max_photos_reached') }}</p>
                                     </div>
                                 </div>
 
@@ -523,12 +516,12 @@
                             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
-                            Sebelumnya
+                            {{ __('ui.previous') }}
                         </button>
                         <button type="button" x-show="editStep < 4"
                             @click="validateEditStep(editStep) && editStep++"
                             class="px-6 py-2 border-2 border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                            Selanjutnya
+                            {{ __('ui.next') }}
                             <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
@@ -538,7 +531,7 @@
                             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Update
+                            {{ __('ui.update') }}
                         </button>
                     </div>
                 </form>

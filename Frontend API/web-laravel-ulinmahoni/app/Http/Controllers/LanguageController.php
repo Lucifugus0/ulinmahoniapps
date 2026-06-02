@@ -54,9 +54,9 @@ class LanguageController extends Controller
         $parsedUrl = parse_url($url);
         $path = $parsedUrl['path'] ?? '/';
         
-        // Remove any existing locale prefix
+        // Remove any existing locale prefix (handle leading slash)
         /* Added 'zh' to locale prefix regex for URL rewriting */
-        $path = preg_replace('/^(id|en|zh)\/?/', '', $path);
+        $path = preg_replace('/^\/?(?:id|en|zh)\/?/', '', $path);
         
         // Add the new locale prefix
         $path = '/' . $locale . '/' . ltrim($path, '/');

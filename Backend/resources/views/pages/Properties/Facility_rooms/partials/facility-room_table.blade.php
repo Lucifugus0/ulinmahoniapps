@@ -20,9 +20,9 @@
                 Aksi</th>
         </tr>
     </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
+    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-300 dark:divide-gray-400">
         @forelse($facilities as $facility)
-            <tr>
+            <tr class="hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer border-b border-gray-300 property-table-row">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
                         @if($facility->icon)
@@ -35,10 +35,11 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex flex-col">
                         <div class="text-sm font-medium text-gray-900">
-                            {{ $facility->facility }}
+                            {{ \App\Helpers\DescriptionHelper::get($facility->facility, app()->getLocale()) }}
                         </div>
                         <div class="text-sm text-gray-500 break-words whitespace-normal">
-                            {{ $facility->description ?? '{{ __('ui.facility_no_description') }}' }}
+                            <!-- Display facility description, fallback to translation if null -->
+                            {{ $facility->description ?? __('ui.facility_no_description') }}
                         </div>
                     </div>
                 </td>

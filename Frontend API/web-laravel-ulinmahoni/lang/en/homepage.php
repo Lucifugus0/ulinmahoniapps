@@ -4,6 +4,7 @@ return [
     'hero' => [
         'title' => 'Welcome to Ulin Mahoni',
         'subtitle' => 'A safe and harmonious environment',
+        'description' => 'Find your dream kos, apartment, or villa easily, quickly, and reliably.',
         'hashtag' => '#UlinMahoni',
     ],
 
@@ -14,9 +15,15 @@ return [
         'submit' => 'Search Properties',
         'all_properties' => 'All Properties',
         'all_periods' => 'All Periods',
+        // Field labels rendered above each input in the hero search bar
+        'label_property_type' => 'Property Type',
+        'label_period' => 'Period',
+        'label_check_in' => 'Check-In',
+        'label_check_out' => 'Check-Out',
     ],
 
     'property_types' => [
+        'All' => 'All',
         'Kos' => 'Kos',
         'House' => 'House',
         'Apartment' => 'Apartment',
@@ -34,6 +41,8 @@ return [
         'promos' => 'Special Offers',
         'areas' => 'Popular Areas',
         'featured' => 'Featured Properties',
+        'category_property' => 'Category Property',
+        'location' => 'Location',
     ],
 
     'actions' => [
@@ -44,12 +53,14 @@ return [
 
     'titles' => [
         'ongoing_promos' => 'Ongoing Promotions',
-        'available_areas' => 'Available Areas',
+        'available_areas' => 'Nearest to You',
     ],
 
     'subtitles' => [
         'limited_offers' => 'Limited Offers',
-        'areas_around_you' => 'Available areas around you',
+        'areas_around_you' => 'Properties closest to your location',
+        'enable_location' => 'Enable location to see distances',
+        'calculating_distance' => 'Calculating distance...',
     ],
 
     'messages' => [
