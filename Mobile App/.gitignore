@@ -48,9 +48,9 @@ app.*.map.json
 *.jks
 AndroidKeyStore/
 
-# Dotenv
-.env
-*.env
+# Dotenv — included for portfolio (private repo)
+# .env
+# *.env
 
 # .md
 .md

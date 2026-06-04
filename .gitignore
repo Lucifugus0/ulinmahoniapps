@@ -1,8 +1,10 @@
-# Credentials & secrets
-.env
-.env.*
-!.env.example
-CLAUDE.md
+# OS files
+
+# Gradle build cache (generated, not needed for portfolio)
+Mobile App/android/.gradle/
+
+# Flutter generated / symlinks (reinstalled via flutter pub get)
+Mobile App/ios/.symlinks/
 
 # OS files
 .DS_Store
@@ -54,3 +56,6 @@ Mobile App/assets/videos/myvideo.mp4
 
 # Claude Code
 .claude/
+
+# Large archive
+Mobile App/android.zip
